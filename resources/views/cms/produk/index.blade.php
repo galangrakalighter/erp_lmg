@@ -123,13 +123,13 @@
                                         <option value="">-- Pilih DM --</option>
                                         @if(Auth::user()->role == "digital_marketing_manager")
                                             @foreach ($dm->where('dmm', Auth::user()->id) as $d)
-                                                <option value="{{ $d->id }}" {{ in_array($item->id, $d->client) ? 'selected' : '' }}>
+                                                <option value="{{ $d->id }}" {{ in_array($d->id, $d->client) ? 'selected' : '' }}>
                                                     {{ $d->email }}
                                                 </option>
                                             @endforeach
                                         @else
                                             @foreach ($dm as $d)
-                                                <option value="{{ $d->id }}" {{ in_array($item->id, $d->client) ? 'selected' : '' }}>
+                                                <option value="{{ $d->id }}" {{ in_array($d->id, $d->client) ? 'selected' : '' }}>
                                                     {{ $d->email }}
                                                 </option>
                                             @endforeach

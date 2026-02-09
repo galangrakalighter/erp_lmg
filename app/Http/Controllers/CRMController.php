@@ -9,21 +9,38 @@ class CRMController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         $title = "CRM";
+        $filter_layanan = CRM::whereNotNull('layanan')->distinct()->pluck('layanan');
+
+        $leads = CRM::whereNotNull('tanggal_chat')
+            // Filter Tanggal
+            ->when($request->start_date, function($query) use ($request) {
+                $query->whereDate('tanggal_chat', '>=', $request->start_date);
+            })
+            ->when($request->end_date, function($query) use ($request) {
+                $query->whereDate('tanggal_chat', '<=', $request->end_date);
+            })
+            // Filter Layanan
+            ->when($request->layanan, function($query) use ($request) {
+                $query->where('layanan', $request->layanan);
+            })
+            // Filter Stage
+            ->when($request->stage, function($query) use ($request) {
+                $query->where('project_stage', $request->stage);
+            })
+            ->orderBy('tanggal_chat', 'desc')
+            ->get();
+
         $stages = [
-            1 => ['label' => 'In Progress', 'color' => 'bg-blue-100 text-blue-800'],
-            2 => ['label' => 'Follow Up', 'color' => 'bg-yellow-100 text-yellow-800'],
-            3 => ['label' => 'Lost', 'color' => 'bg-red-100 text-red-800'],
-            4 => ['label' => 'Schedule', 'color' => 'bg-purple-100 text-purple-800'],
-            5 => ['label' => 'Completed', 'color' => 'bg-green-100 text-green-800'],
+            1 => ['label' => 'In Progress', 'color' => 'badge-primary'],
+            2 => ['label' => 'Follow Up', 'color' => 'badge-warning text-white'],
+            3 => ['label' => 'Lost', 'color' => 'badge-danger'],
+            4 => ['label' => 'Schedule', 'color' => 'badge-secondary'],
+            5 => ['label' => 'Completed', 'color' => 'badge-success'],
         ];
-        $leads = CRM::whereNotNull("tanggal_chat")->orderBy("tanggal_chat", 'DESC')->get();
-        // foreach($leads as $lead){
-        //     dd($lead->tanggal_chat);
-        // }
-        return view('crm.index', compact('title', 'leads', 'stages'));
+        return view('crm.index', compact('title', 'leads', 'stages', 'filter_layanan'));
     }
 
     /**

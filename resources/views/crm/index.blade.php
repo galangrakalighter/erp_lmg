@@ -15,13 +15,33 @@
         <div class="card-body border-bottom">
             <form action="{{ url()->current() }}" method="GET">
                 <div class="row align-items-end">
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label class="small font-weight-bold text-dark">Dari Tanggal:</label>
+                        {{-- request('start_date') sudah benar untuk mempertahankan nilai input date --}}
                         <input type="date" name="start_date" class="form-control form-control-sm" value="{{ request('start_date') }}">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label class="small font-weight-bold text-dark">Sampai Tanggal:</label>
                         <input type="date" name="end_date" class="form-control form-control-sm" value="{{ request('end_date') }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="small font-weight-bold text-dark">Layanan:</label>
+                        <select name="layanan" class="form-control form-control-sm">
+                            <option value="">Semua Layanan</option>
+                            {{-- Tambahkan ternary operator untuk mengecek request('layanan') --}}
+                            <option value="LGTR Digital Marketing" {{ request('layanan') == 'LGTR Digital Marketing' ? 'selected' : '' }}>LGTR Digital Marketing</option>
+                            <option value="Eikyoo MCN" {{ request('layanan') == 'Eikyoo MCN' ? 'selected' : '' }}>Eikyoo MCN</option>
+                            <option value="Lighter Tech" {{ request('layanan') == 'Lighter Tech' ? 'selected' : '' }}>Lighter Tech</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="small font-weight-bold text-dark">Stage:</label>
+                        <select name="stage" class="form-control form-control-sm">
+                            <option value="">Semua Stage</option>
+                            @foreach([1 => 'In Progress', 2 => 'Follow Up', 3 => 'Lost', 4 => 'Schedule', 5 => 'Completed'] as $id => $label)
+                                <option value="{{ $id }}" {{ request('stage') == $id ? 'selected' : '' }}>{{ $label }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="col-md-4">
                         <button type="submit" class="btn btn-primary btn-sm">
@@ -60,9 +80,16 @@
                             </td>
                             <td class="font-weight-bold text-left">{{ $lead->name ?? 'No Name' }}</td>
                             <td>
-                                <small class="badge badge-light border text-muted">
-                                    {{ $lead->phone ? +$lead->phone : "" }}
-                                </small>
+                                @if($lead->phone)
+                                <a href="https://wa.me/{{ $lead->phone }}" target="_blank" class="text-decoration-none">
+                                    <small class="badge badge-light border text-primary">
+                                        <i class="fab fa-whatsapp text-success mr-1"></i>
+                                        {{ $lead->phone }}
+                                    </small>
+                                </a>
+                                @else
+                                <span class="text-muted small">-</span>
+                                @endif
                             </td>
                             <td class="text-left small italic">{{ Str::limit($lead->layanan, 50) }}</td>
                             <td class="font-weight-bold text-success text-nowrap">

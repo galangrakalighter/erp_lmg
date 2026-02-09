@@ -129,7 +129,7 @@
                                 @foreach ($group->clients as $client)
                                     <div class="client-item-wrapper" style="width:7vw">
                                         
-                                        @if( Auth::user()->role == "super_admin" || in_array(2, Auth::user()->divisi) && in_array($client->id, Auth::user()->client))
+                                        @if( Auth::user()->role == "super_admin" || in_array(2, Auth::user()->divisi) && in_array($client->id, Auth::user()->client) || Auth::user()->role == "head_of_division")
                                         <a class="client-dropdown-link collapsed" data-toggle="collapse" data-target="#client_bd_{{ $client->id }}">
                                             <span>{{ $client->nama }}</span>
                                             <i class="fas fa-caret-right arrow-icon-xs"></i>

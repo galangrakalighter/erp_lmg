@@ -178,6 +178,13 @@
         </li>
     @endif
 
+    <li class="nav-item">
+        <a class="nav-link collapsed" href="{{ route('crm.index') }}">
+            <i class="fas fa-fw fa-users"></i>
+            <span>Customer Relationship Management</span>
+        </a>
+    </li>
+
     @if(request()->routeIs('cms*'))
         <div class="sidebar-heading mt-3 text-warning">CMS MANAGEMENT</div>
         <div class="cms-nav-group mx-2 mb-3">

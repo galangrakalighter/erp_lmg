@@ -26,6 +26,8 @@ Route::middleware('auth')->group(function() {
 
     // MANAJEMEN USER
     Route::resource('manajemen_user', App\Http\Controllers\UserController::class);
+    
+    Route::resource('crm', App\Http\Controllers\CRMController::class);
     // Route::get('/manajemen_user', [App\Http\Controllers\UserController::class, 'index'])->name('manajemen_user');
 
     // CMS MANAJEMEN`

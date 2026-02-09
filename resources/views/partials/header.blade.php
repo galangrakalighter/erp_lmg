@@ -10,7 +10,7 @@
     <meta name="author" content="">
     <meta name="robots" content="noindex, nofollow">
 
-    <title>Content Plan | {{ $title }}</title>
+    <title>ERP | {{ $title }}</title>
     <link rel="icon" type="image/png" href="{{ asset('img/logo.jpg') }}">
 
     <!-- Custom fonts for this template-->

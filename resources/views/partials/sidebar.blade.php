@@ -118,7 +118,7 @@
                     @endif
 
                     @foreach ($menus as $group)
-                        @if($group->id != 1)
+                        @if($group->id == 2 || $group->id == 3)
                         <div class="group-wrapper mb-2">
                             <a class="category-dropdown-link collapsed" data-toggle="collapse" data-target="#cat_bd_{{ $group->id }}">
                                 <span><i class="fas fa-folder-open mr-2 text-info"></i>{{ $group->category }}</span>

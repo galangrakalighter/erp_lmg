@@ -44,14 +44,16 @@
                     <thead class="thead-light text-nowrap">
                         <tr>
                             <th>No</th>
+                            <th>PIC</th>
                             <th>Judul</th>
                             <th>Inspirasi</th>
+                            <th>Prioritas</th>
                             <th>Type</th>
                             <th>Strategi</th>
                             <th>Pilar</th>
                             <th>Hook</th>
                             <th>Body</th>
-                        <th>CTA</th>
+                            <th>CTA</th>
                             <th>Durasi</th>
                             @if($kategory->id == 2)
                             <th>Warna</th>
@@ -59,7 +61,9 @@
                             <th>Komposisi</th>
                             <th>Note</th>
                             <th>Tanggal Posting (Y-M-D)</th>
+                            <th>Tanggal Mulai (Y-M-D)</th>
                             <th>Tanggal Deadline (Y-M-D)</th>
+                            <th>Durasi Mengerjakan</th>
                             <th>Link</th>
                             <th>Status</th>
                             <th>Action</th>
@@ -69,8 +73,17 @@
                         @foreach ($data as $item)
                             <tr>
                                 <th>{{ $loop->iteration }}</th>
+                                <th>{{ $item->vic_email }}</th>
                                 <th>{{ $item->judul }}</th>
                                 <th><a href="{{ $item->inspirasi }}">{{ $item->inspirasi }}</a></th>
+                                @php
+                                    $prioData = [
+                                        1 => ['class' => 'badge-info', 'label' => 'Rendah'],
+                                        2 => ['class' => 'badge-warning text-dark', 'label' => 'Sedang'],
+                                        3 => ['class' => 'badge-danger', 'label' => 'Tinggi']
+                                    ][$item->priority] ?? ['class' => 'badge-light', 'label' => 'N/A'];
+                                @endphp
+                                <th><span class="badge {{ $prioData['class'] }} shadow-sm px-3">{{ $prioData['label'] }}</span></th>
                                 <th>{{ $item->type }}</th>
                                 <th>{{ $item->strategy }}</th>
                                 <th>{{ $item->pilar }}</th>
@@ -84,7 +97,9 @@
                                 <th>{{ $item->komposisi }}</th>
                                 <th>{{ $item->note }}</th>
                                 <th>{{ $item->tanggal_posting }}</th>
+                                <th>{{ $item->tanggal_mulai }}</th>
                                 <th>{{ $item->tanggal_deadline }}</th>
+                                <th>{{ $item->menit ? $item->menit . " Menit" : ""}}</th>
                                 <th><a href="{{ $item->link }}">{{ $item->link }}</a></th>
                                 <th>{{ $item->nama_status }}</th>
                                 <th>
@@ -102,7 +117,6 @@
     </div>
 
     {{-- MODAL TAMBAH --}}
-    <!-- Modal Tambah Produk Jasa -->
     <div class="modal fade" id="tambahModal" tabindex="-1" role="dialog" aria-labelledby="tambahModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
             <div class="modal-content border-0 shadow-lg">
@@ -143,6 +157,7 @@
                                     </div>
                                 </div>
                             </div>
+
                             <div class="col-md-12">
                                 <div class="form-group">
                                     <label class="text-dark font-weight-bold small">Inspirasi / Referensi</label>
@@ -151,6 +166,40 @@
                                             <span class="input-group-text bg-white border-right-0"><i class="fas fa-link text-muted"></i></span>
                                         </div>
                                         <input type="text" name="inspirasi" class="form-control border-left-0 pl-0">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="text-dark font-weight-bold small">PIC (Person In Charge) <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text bg-white border-right-0"><i class="fas fa-user-tag text-muted"></i></span>
+                                        </div>
+                                        <select name="pic" class="form-control border-left-0 pl-0" required>
+                                            <option value="" disabled selected>-- Pilih Penanggung Jawab --</option>
+                                            @foreach($users as $user)
+                                                <option value="{{ $user->id }}">{{ $user->email }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="text-dark font-weight-bold small">Prioritas <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text bg-white border-right-0"><i class="fas fa-exclamation-circle text-muted"></i></span>
+                                        </div>
+                                        <select name="prioritas" class="form-control border-left-0 pl-0" required>
+                                            {{-- Value menggunakan angka 1, 2, 3 sesuai permintaan --}}
+                                            <option value="1">Rendah</option>
+                                            <option value="2" selected>Sedang</option>
+                                            <option value="3">TInggi</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
@@ -267,7 +316,32 @@
                         </div>
 
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-12 mb-3">
+                                <div class="form-group">
+                                    <label class="text-dark font-weight-bold small">Estimasi Durasi Mengerjakan (Menit) <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text bg-white border-right-0"><i class="fas fa-stopwatch text-warning"></i></span>
+                                        </div>
+                                        <input type="number" name="menit" class="form-control border-left-0 pl-0" min="1" required>
+                                        <div class="input-group-append">
+                                            <span class="input-group-text bg-light border-left-0 small">Menit</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label class="text-dark font-weight-bold small">Tanggal Mulai</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text bg-white border-right-0"><i class="fas fa-play-circle text-success"></i></span>
+                                        </div>
+                                        <input type="date" name="tanggal_mulai" class="form-control border-left-0 pl-0">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label class="text-dark font-weight-bold small">Tanggal Posting</label>
                                     <div class="input-group">
@@ -278,7 +352,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label class="text-dark font-weight-bold small">Tanggal Deadline</label>
                                     <div class="input-group">
@@ -374,6 +448,7 @@
                                     </div>
                                 </div>
                             </div>
+                            
                             <div class="col-md-12">
                                 <div class="form-group">
                                     <label class="text-dark font-weight-bold small">Inspirasi / Referensi</label>
@@ -382,6 +457,41 @@
                                             <span class="input-group-text bg-white border-right-0"><i class="fas fa-link text-muted"></i></span>
                                         </div>
                                         <input type="text" name="inspirasi" class="form-control border-left-0 pl-0" value="{{ $item->inspirasi }}" {{ Auth::user()->role == "content_creator" ? "readonly" : "" }}>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="text-dark font-weight-bold small">PIC (Person In Charge)</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text bg-white border-right-0"><i class="fas fa-user-tag text-muted"></i></span>
+                                        </div>
+                                        <select name="pic" class="form-control border-left-0 pl-0 bg-light" {{ Auth::user()->role == "content_creator" ? "disabled" : "" }}>
+                                            @foreach($users as $user)
+                                                <option value="{{ $user->id }}" {{ $item->pic == $user->id ? 'selected' : '' }}>
+                                                    {{ $user->email }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="text-dark font-weight-bold small">Prioritas <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text bg-white border-right-0"><i class="fas fa-exclamation-circle text-muted"></i></span>
+                                        </div>
+                                        <select name="prioritas" class="form-control border-left-0 pl-0 bg-light" {{ Auth::user()->role == "content_creator" ? "disabled" : "" }} required>
+                                            {{-- Perbaikan: Tambahkan logika selected berdasarkan angka 1, 2, 3 --}}
+                                            <option value="1" {{ $item->priority == 1 ? 'selected' : '' }}>Rendah</option>
+                                            <option value="2" {{ $item->priority == 2 ? 'selected' : '' }}>Sedang</option>
+                                            <option value="3" {{ $item->priority == 3 ? 'selected' : '' }}>Tinggi</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
@@ -490,13 +600,36 @@
                             <h6 class="text-warning font-weight-bold mb-0">Jadwal & Status</h6>
                         </div>
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-12 mb-3">
+                                <div class="form-group">
+                                    <label class="text-dark font-weight-bold small">Durasi Mengerjakan (Menit)</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text bg-white"><i class="fas fa-stopwatch text-warning"></i></span>
+                                        </div>
+                                        {{-- Ambil data menit dari tabel task yang berelasi --}}
+                                        <input type="number" name="menit" class="form-control" value="{{ $item->menit ?? 0 }}" min="1">
+                                        <div class="input-group-append">
+                                            <span class="input-group-text">Menit</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label class="text-dark font-weight-bold small">Tanggal Mulai</label>
+                                    <input type="date" name="tanggal_mulai" class="form-control border-left-0 pl-0" value="{{ $item->tanggal_mulai }}" {{ Auth::user()->role == "content_creator" ? "readonly" : "" }}>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label class="text-dark font-weight-bold small">Tanggal Posting</label>
                                     <input type="date" name="tanggal_posting" class="form-control" value="{{ $item->tanggal_posting }}" {{ Auth::user()->role == "content_creator" ? "readonly" : "" }}>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label class="text-dark font-weight-bold small">Tanggal Deadline</label>
                                     <input type="date" name="tanggal_deadline" class="form-control" value="{{ $item->tanggal_deadline }}" {{ Auth::user()->role == "content_creator" ? "readonly" : "" }}>

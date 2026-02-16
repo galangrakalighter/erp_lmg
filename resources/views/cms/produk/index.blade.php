@@ -287,6 +287,15 @@
                                 <label class="font-weight-bold small">Nama Produk</label>
                                 <input type="text" name="client" class="form-control" value="{{ $item->nama }}" required>
                             </div>
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label class="text-dark font-weight-bold small">Status <span class="text-danger">*</span></label>
+                                    <select name="status" class="form-control custom-select" required>
+                                        <option value="1" {{ $item->status == 1 ? "selected" : "" }}>Ditampilkan</option>
+                                        <option value="2" {{ $item->status == 2 ? "selected" : "" }}>Disembunyikan</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
 
                         {{-- SEKSI PLATFORM & ACCESS TOKEN --}}

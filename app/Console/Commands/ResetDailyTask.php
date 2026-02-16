@@ -1,0 +1,66 @@
+<?php
+
+namespace App\Console\Commands;
+
+use Illuminate\Console\Command;
+use App\Models\Task;
+use Carbon\Carbon;
+
+class ResetDailyTask extends Command
+{
+    /**
+     * Nama perintah yang dipanggil lewat terminal atau scheduler.
+     */
+    protected $signature = 'task:reset-daily';
+
+    /**
+     * Deskripsi perintah.
+     */
+    protected $description = 'Reset task menggantung ke pool dengan mengosongkan jam_mulai berdasarkan deadline di tanggal_mulai';
+
+    /**
+     * Jalankan perintah.
+     */
+    public function handle()
+    {
+        // 1. Ambil waktu sekarang
+        $now = Carbon::now();
+
+        // 2. Ambil task yang sedang terjadwal (jam_mulai tidak null)
+        // dan statusnya belum Done atau Waiting Approval
+        $tasks = Task::whereNotNull('jam_mulai')
+                     ->whereIn('status', [0, 1, 2, 5]) 
+                     ->get();
+
+        $resetCount = 0;
+
+        foreach ($tasks as $task) {
+            // Kita gunakan isi dari tanggal_mulai (format H:i:s) untuk menghitung deadline hari ini
+            // Jika tanggal_mulai null, kita lewati untuk menghindari error parse
+            if (!$task->tanggal_mulai) continue;
+
+            $startTime = Carbon::today()->parse($task->tanggal_mulai);
+            
+            // Hitung deadline (Waktu mulai + durasi menit)
+            $deadlineTime = $startTime->copy()->addMinutes($task->menit);
+            
+            // LOGIKA RESET:
+            // Jika waktu sekarang sudah melewati deadline tugas tersebut hari ini
+            if ($now->greaterThan($deadlineTime)) {
+                if($task->status == 2){
+                    $task->update([
+                        'jam_mulai' => null,
+                    ]);
+                }else{
+                    $task->update([
+                        'jam_mulai' => null, // HANYA jam_mulai yang dibuat NULL agar lepas dari grid
+                        'status'    => 0,    // Kembalikan ke Todo (Pool)
+                    ]);
+                }
+                $resetCount++;
+            }
+        }
+
+        $this->info("Pembersihan selesai: $resetCount task dikembalikan ke pool (jam_mulai di-reset).");
+    }
+}

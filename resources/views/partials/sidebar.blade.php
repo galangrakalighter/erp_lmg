@@ -167,6 +167,33 @@
                 </div>
             </div>
         </li>
+
+        <li class="nav-item {{ request()->is('*HC*') ? 'active' : '' }}">
+            <a class="nav-link {{ request()->is('*HC*') ? '' : 'collapsed' }}" href="#" 
+            data-toggle="collapse" data-target="#collapseHC" 
+            aria-expanded="{{ request()->is('*HC*') ? 'true' : 'false' }}" aria-controls="collapseHC">
+                <i class="fas fa-fw fa-users"></i>
+                <span>Human Capital</span>
+            </a>
+            
+            <div id="collapseHC" class="collapse {{ request()->is('*HC*') ? 'show' : '' }}" 
+                aria-labelledby="headingHC" data-parent="#accordionSidebar">
+                <div class="collapse-container">
+                    {{-- Menu Daily Work --}}
+                    <div class="client-item-wrapper mb-2">
+                        <a class="client-dropdown-link {{ request()->is('hc_dailywork') ? 'active' : '' }}" href="{{ route('hc_daily.index') }}">
+                            <span>Daily Work</span>
+                        </a>
+                    </div>
+
+                    <div class="client-item-wrapper" style="{{ Auth::user()->role == "digital_marketing" || Auth::user()->role == "content_creator" ? "display: none;" : "" }}">
+                        <a class="client-dropdown-link {{ request()->is('hc_overview.list') ? 'active' : '' }}" href="{{ route('hc_overview.list') }}">
+                            <span>Project Overview</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </li>
     @endif
 
     @if(Auth::user()->role == "head_of_division" || Auth::user()->role == "super_admin")

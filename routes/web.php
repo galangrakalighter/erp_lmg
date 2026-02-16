@@ -170,6 +170,13 @@ Route::middleware('auth')->group(function() {
     Route::post('cms_branding/moodboard/create', [App\Http\Controllers\moodBoardController::class, 'store'])->name('moodboard.store');
     Route::post('cms_branding/moodboard/edit/{id}', [App\Http\Controllers\moodBoardController::class, 'update'])->name('moodboard.update');
     Route::post('cms_branding/moodboard/delete/{id}', [App\Http\Controllers\moodBoardController::class, 'destroy'])->name('moodboard.destroy');
+
+    Route::get('hc_overview/{id_client}', [App\Http\controllers\HCOverviewController::class, 'index'])->name('hc_overview.index');
+    Route::post('hc_overview/{id_client}', [App\Http\controllers\HCOverviewController::class, 'store'])->name('hc_overview.store');
+    Route::put('hc_overview/{id_client}/{id}', [App\Http\controllers\HCOverviewController::class, 'update'])->name('hc_overview.update');
+    Route::delete('hc_overview/{id_client}/{id}', [App\Http\controllers\HCOverviewController::class, 'destroy'])->name('hc_overview.destroy');
+    Route::get('progress_client', [App\Http\controllers\HCOverviewController::class, 'list_client'])->name('hc_overview.list');
+    Route::get('hc_dailywork', [App\Http\controllers\HCDailyController::class, 'index'])->name('hc_daily.index');
 });
 
 Route::middleware('guest')->group(function() {

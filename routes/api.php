@@ -7,8 +7,8 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-Route::get('/get-dm/{id}', [App\http\controllers\ProdukController::class, 'getBawahanDM'])->name('getBawahanDM');
-Route::get('/get-cc/{id}', [App\http\controllers\ProdukController::class, 'getBawahanCC'])->name('getBawahanCC');
+Route::get('/get-dm/{id}', [App\http\Controllers\ProdukController::class, 'getBawahanDM'])->name('getBawahanDM');
+Route::get('/get-cc/{id}', [App\http\Controllers\ProdukController::class, 'getBawahanCC'])->name('getBawahanCC');
 
 Route::post('/hc/update-schedule', [App\Http\Controllers\HCDailyController::class, 'updateSchedule'])->name('hc.updateSchedule');
 Route::post('/hc/update-status', [App\Http\Controllers\HCDailyController::class, 'updateStatus'])->name('hc.updateStatus');

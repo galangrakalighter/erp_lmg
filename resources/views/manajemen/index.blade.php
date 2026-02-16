@@ -618,7 +618,7 @@
                             <div class="col-md-4">
                                 <div class="form-group">
                                     <label class="text-dark font-weight-bold small">Tanggal Mulai</label>
-                                    <input type="date" name="tanggal_mulai" class="form-control border-left-0 pl-0" value="{{ $item->tanggal_mulai }}" {{ Auth::user()->role == "content_creator" ? "readonly" : "" }}>
+                                    <input type="date" name="tanggal_mulai" class="form-control border-left-0 pl-0" value="{{ $item->tanggal_mulai }}" {{ Auth::user()->role == "content_creator" ? "readonly" : "" }} required>
                                 </div>
                             </div>
 
@@ -632,7 +632,7 @@
                             <div class="col-md-4">
                                 <div class="form-group">
                                     <label class="text-dark font-weight-bold small">Tanggal Deadline</label>
-                                    <input type="date" name="tanggal_deadline" class="form-control" value="{{ $item->tanggal_deadline }}" {{ Auth::user()->role == "content_creator" ? "readonly" : "" }}>
+                                    <input type="date" name="tanggal_deadline" class="form-control" value="{{ $item->tanggal_deadline }}" {{ Auth::user()->role == "content_creator" ? "readonly" : "" }} required>
                                 </div>
                             </div>
                             <div class="col-md-12">

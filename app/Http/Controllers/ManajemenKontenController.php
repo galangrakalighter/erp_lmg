@@ -13,7 +13,6 @@ class ManajemenKontenController extends Controller
     public function index(Request $request, $produk, $platform){
         $produk = DB::table('produk_client')->where('id', $produk)->first();
         $kategory = DB::table("kategori_jasa")->where('id', $produk->kategori_jasa_id)->first();
-        
         $query = DB::table("data_jasa")
         ->leftjoin('type_produk', 'type_produk.id', '=', 'data_jasa.type_produk_id')
         ->leftjoin('strategy', 'strategy.id', '=', 'data_jasa.strategy_id')
@@ -54,7 +53,11 @@ class ManajemenKontenController extends Controller
             $option[$tab] = $datatable->where('status', 1)->get();
         }
         $users = User::whereJsonContains('client', $produk->id)
-                ->leftJoin('data_jasa', 'data_jasa.pic', '=', 'users.id')
+                ->leftJoin('data_jasa', function($join) use ($produk) {
+                    $join->on('data_jasa.pic', '=', 'users.id')
+                        // Pindahkan filter ke sini agar Left Join tidak rusak
+                        ->where('data_jasa.produk_client_id', $produk->id);
+                })
                 ->select(
                     'users.id', 
                     'users.email', 

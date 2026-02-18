@@ -21,7 +21,6 @@ class HCOverviewController extends Controller
         $title = "Project Overview";
         $user = Auth::user();
         $id_client = (int)$id;
-
         // 1. Definisi List
         $divisi_list = [1 => 'Digital Marketing', 2 => 'Business Dev', 3 => 'Human Capital'];
         $prioritas = [1 => 'Rendah', 2 => 'Sedang', 3 => 'Tinggi'];
@@ -42,26 +41,26 @@ class HCOverviewController extends Controller
 
         // --- LOGIKA HAK AKSES DATA (Visibility) ---
         // Agar atasan bisa melihat task bawahannya, bukan cuma task dirinya sendiri
-        $taskQuery->where(function($q) use ($user) {
-            if ($user->role == 'digital_marketing') {
-                $q->where('task.pic', $user->id);
-            } elseif ($user->role == 'digital_marketing_manager') {
-                $q->where('task.pic', $user->id)
-                ->orWhere('users.dmm', $user->id);
-            } elseif ($user->role == 'head_of_division') {
-                $q->where('task.pic', $user->id)
-                ->orWhere('users.hod', $user->id);
-            }
-        });
+        // $taskQuery->where(function($q) use ($user) {
+        //     if ($user->role == 'digital_marketing') {
+        //         $q->where('task.pic', $user->id);
+        //     } elseif ($user->role == 'digital_marketing_manager') {
+        //         $q->where('task.pic', $user->id)
+        //         ->orWhere('users.dmm', $user->id);
+        //     } elseif ($user->role == 'head_of_division') {
+        //         $q->where('task.pic', $user->id)
+        //         ->orWhere('users.hod', $user->id);
+        //     }
+        // });
 
         // --- LOGIKA FILTER DARI REQUEST ---
         if ($request->filled('start_date') && $request->filled('end_date')) {
             $taskQuery->whereBetween('task.tanggal_mulai', [$request->start_date, $request->end_date]);
         }
-        if ($request->filled('status'))    $taskQuery->where('task.status', $request->status);
-        if ($request->filled('pic'))       $taskQuery->where('task.pic', $request->pic);
-        if ($request->filled('priority'))  $taskQuery->where('task.priority', $request->priority);
-        if ($request->filled('divisi'))    $taskQuery->where('task.divisi', $request->divisi);
+        if ($request->filled('status')) {   $taskQuery->where('task.status', $request->status); }
+        if ($request->filled('pic'))   {    $taskQuery->where('task.pic', $request->pic); }
+        if ($request->filled('priority')) { $taskQuery->where('task.priority', $request->priority); }
+        if ($request->filled('divisi'))   { $taskQuery->where('task.divisi', $request->divisi); }
 
         $data = $taskQuery->orderBy('task.tanggal_mulai', 'ASC')->get();
 

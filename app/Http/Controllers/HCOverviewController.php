@@ -77,6 +77,10 @@ class HCOverviewController extends Controller
             $vic_list = $userQuery->where(function($q) use ($user) {
                 $q->where('id', $user->id)->orWhere('dmm', $user->id);
             })->get();
+        } else if ($user->role == "digital_marketing") {
+            $vic_list = $userQuery->where(function($q) use ($user) {
+                $q->where('id', $user->id)->orWhere('dm', $user->id);
+            })->get();
         } else {
             $vic_list = $userQuery->where('id', $user->id)->get();
         }

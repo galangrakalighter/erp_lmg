@@ -61,7 +61,6 @@ class ManajemenKontenController extends Controller
                     'users.name',
                     DB::raw('SUM(COALESCE(data_jasa.menit, 0)) as total_beban')
                 )
-                ->where('data_jasa.produk_client_id', $produk->id)
                 ->where('users.role', '!=', 'head_of_division')
                 ->groupBy('users.id', 'users.email', 'users.name')
                 ->havingRaw('SUM(COALESCE(data_jasa.menit, 0)) < ?', [420])

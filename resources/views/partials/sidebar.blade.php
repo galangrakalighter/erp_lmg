@@ -186,7 +186,7 @@
                         </a>
                     </div>
 
-                    <div class="client-item-wrapper" style="{{ Auth::user()->role == "digital_marketing" || Auth::user()->role == "content_creator" ? "display: none;" : "" }}">
+                    <div class="client-item-wrapper">
                         <a class="client-dropdown-link {{ request()->is('hc_overview.list') ? 'active' : '' }}" href="{{ route('hc_overview.list') }}">
                             <span>Project Overview</span>
                         </a>

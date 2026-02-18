@@ -35,9 +35,6 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start mb-3">
                         <div style="flex: 1; min-width: 0;">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                ID Client: #{{ $p['nama_client'] }}
-                            </div>
                             <h5 class="font-weight-bold text-gray-800 mb-0 text-truncate" title="{{ $p['nama_client'] }}">
                                 {{ $p['nama_client'] }}
                             </h5>

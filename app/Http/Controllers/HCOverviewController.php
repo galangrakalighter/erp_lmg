@@ -19,22 +19,16 @@ class HCOverviewController extends Controller
     public function index(Request $request, $id)
     {
         $title = "Project Overview";
-    
-        // List definisi untuk filter di Blade
-        $divisi_list = [
-            1 => 'Digital Marketing',
-            2 => 'Business Dev',
-            3 => 'Human Capital'
-        ];
+        $user = Auth::user();
+        $id_client = (int)$id;
 
-        $prioritas = [
-            1 => 'Rendah',
-            2 => 'Sedang',
-            3 => 'Tinggi',
-        ];
+        // 1. Definisi List
+        $divisi_list = [1 => 'Digital Marketing', 2 => 'Business Dev', 3 => 'Human Capital'];
+        $prioritas = [1 => 'Rendah', 2 => 'Sedang', 3 => 'Tinggi'];
 
-        $query = Task::leftjoin('data_jasa', 'data_jasa.id', '=', 'task.id_manajement_konten')
-            ->leftjoin('produk_client', 'produk_client.id', '=', 'task.project') // Langsung join ke 'project' sesuai tabel Anda
+        // 2. Query Utama Task
+        $taskQuery = Task::leftjoin('data_jasa', 'data_jasa.id', '=', 'task.id_manajement_konten')
+            ->leftjoin('produk_client', 'produk_client.id', '=', 'task.project')
             ->leftjoin('users', 'users.id', '=', 'task.pic')
             ->select(
                 'task.*',
@@ -43,49 +37,61 @@ class HCOverviewController extends Controller
                 'users.email as vic_email',
                 'produk_client.nama as nama_client'
             )
-            // PENTING: Filter berdasarkan ID Client yang diklik
-            ->where('task.project', $id)
+            ->where('task.project', $id_client)
             ->whereNot('task.status', 5);
 
-        // --- LOGIKA FILTER (Sama seperti script Anda) ---
+        // --- LOGIKA HAK AKSES DATA (Visibility) ---
+        // Agar atasan bisa melihat task bawahannya, bukan cuma task dirinya sendiri
+        $taskQuery->where(function($q) use ($user) {
+            if ($user->role == 'digital_marketing') {
+                $q->where('task.pic', $user->id);
+            } elseif ($user->role == 'digital_marketing_manager') {
+                $q->where('task.pic', $user->id)
+                ->orWhere('users.dmm', $user->id);
+            } elseif ($user->role == 'head_of_division') {
+                $q->where('task.pic', $user->id)
+                ->orWhere('users.hod', $user->id);
+            }
+        });
+
+        // --- LOGIKA FILTER DARI REQUEST ---
         if ($request->filled('start_date') && $request->filled('end_date')) {
-            $query->whereBetween('task.tanggal_mulai', [$request->start_date, $request->end_date]);
+            $taskQuery->whereBetween('task.tanggal_mulai', [$request->start_date, $request->end_date]);
+        }
+        if ($request->filled('status'))    $taskQuery->where('task.status', $request->status);
+        if ($request->filled('pic'))       $taskQuery->where('task.pic', $request->pic);
+        if ($request->filled('priority'))  $taskQuery->where('task.priority', $request->priority);
+        if ($request->filled('divisi'))    $taskQuery->where('task.divisi', $request->divisi);
+
+        $data = $taskQuery->orderBy('task.tanggal_mulai', 'ASC')->get();
+
+        // 3. Ambil Daftar VIC untuk Dropdown Filter
+        $userQuery = User::whereIn("role", ["digital_marketing", "content_creator", "digital_marketing_manager"])
+                    ->whereJsonContains('client', $id_client)
+                    ->select('id', 'email', 'name');
+
+        if ($user->role == "head_of_division") {
+            $vic_list = $userQuery->where(function($q) use ($user) {
+                $q->where('id', $user->id)->orWhere('hod', $user->id);
+            })->get();
+        } else if ($user->role == "digital_marketing_manager") {
+            $vic_list = $userQuery->where(function($q) use ($user) {
+                $q->where('id', $user->id)->orWhere('dmm', $user->id);
+            })->get();
+        } else {
+            $vic_list = $userQuery->where('id', $user->id)->get();
         }
 
-        if ($request->filled('status')){
-            $query->where('task.status', $request->status);
-        }
-
-        if ($request->filled('pic')) {
-            $query->where('task.pic', $request->pic);
-        }
-
-        if ($request->filled('priority')) {
-            $query->where('task.priority', $request->priority);
-        }
-
-        if ($request->filled('divisi')) {
-            $query->where('task.divisi', $request->divisi);
-        }
-
-        // Ambil daftar VIC untuk dropdown filter di Blade
-        $vic_list = [];
-        $vic = User::whereIn("role", ["digital_marketing", "content_creator", 'digital_marketing_manager']);
-        if(Auth::user()->role == "head_of_division"){
-            $vic_list = $vic->where('hod', Auth::user()->id)->select('id', 'email') ->get();
-        }else if(Auth::user()->role == "digital_marketing_manager"){
-            $vic_list = $vic->where('dmm', Auth::user()->id)->select('id', 'email') ->get();
-        }            
-
+        // 4. Filter Divisi untuk UI
         $result = [];
-        foreach($divisi_list as $divId => $nama){
-            if(in_array($divId, Auth::user()->divisi)){
+        foreach($divisi_list as $divId => $nama) {
+            if(in_array($divId, (array)$user->divisi)) {
                 $result[$divId] = $nama;
             }
         }
 
-        $data = $query->orderBy('task.tanggal_mulai', 'ASC')->get();
-        $client = ProdukClient::where('id', $id)->first();
+        $client = ProdukClient::where('id', $id_client)->first();
+
         return view('hc.overview', compact('title', 'data', 'vic_list', 'result', 'prioritas', 'id', 'client'));
     }
 
@@ -93,59 +99,43 @@ class HCOverviewController extends Controller
      * Store a newly created resource in storage.
      */
     public function store(Request $request, $id_client)
-    {
-        // 1. Hitung beban kerja PIC yang sudah ada KHUSUS BULAN INI
-        $data = Task::where('pic', (int)$request->pic)
-                    ->whereMonth('tanggal_mulai', Carbon::now()->month)
-                    ->whereYear('tanggal_mulai', Carbon::now()->year)
-                    ->sum('menit');
+    {   
+        $data = Task::where('pic', (int)$request->pic)->where('project', (int)$request->project)->get();
+        
+        $dailyLoad = [];
+        foreach ($data as $job) {
+            if($job->tanggal_mulai != null){
+                $period = CarbonPeriod::create($job->tanggal_mulai, $job->tanggal_deadline);
+                
+                foreach ($period as $date) {
+                    $tgl = $date->format('Y-m-d');
                     
-        $inputMenit = $data + (int)$request->menit;
-        
-        // 2. Tentukan Rentang: Dari HARI INI sampai AKHIR BULAN
-        $start = Carbon::now(); 
-        $endOfMonth = Carbon::now()->endOfMonth(); 
-        $tahun = $start->year;
-
-        // 3. Ambil Data Libur dari API
-        $listLibur = [];
-        try {
-            $response = Http::timeout(5)->get("https://hari-libur-api.vercel.app/api?year=$tahun");
-            if($response->successful()){
-                $listLibur = collect($response->json())
-                    ->filter(function ($item) {
-                        return isset($item['is_national_holiday']) && $item['is_national_holiday'] === true;
-                    })
-                    ->pluck('event_date')
-                    ->toArray();
+                    if (!isset($dailyLoad[$tgl])) {
+                        $dailyLoad[$tgl] = 0;
+                    }
+                    
+                    $dailyLoad[$tgl] += $job->menit;
+                }
             }
-        } catch (\Exception $e) {
-            // Jika API gagal, listLibur tetap kosong agar aplikasi tidak mati
-            $listLibur = [];
         }
+        $newPeriod = CarbonPeriod::create($request->tanggal_mulai, $request->tanggal_deadline);
+        $newMenit  = (int) $request->menit;
+        $overloadDates = [];
 
-        // 4. Hitung Kapasitas Menit dari Hari Ini s/d Akhir Bulan
-        $sisaKapasitasMenit = 0;
-        $periode = CarbonPeriod::create($start, $endOfMonth);
-        
-        foreach ($periode as $date) {
-            $currentDate = $date->format('Y-m-d');
+        foreach ($newPeriod as $date) {
+            $tgl = $date->format('Y-m-d');
 
-            // Lewati jika hari Minggu atau hari Libur Nasional
-            if ($date->isSunday() || in_array($currentDate, $listLibur)) {
-                continue;
+            $currentLoad = $dailyLoad[$tgl] ?? 0;
+
+            $totalPrediksi = $currentLoad + $newMenit;
+
+            if ($totalPrediksi > 420) {
+                $overloadDates[] = "$tgl (Total: $totalPrediksi menit)";
             }
-
-            // Sabtu 5 jam (300m), Senin-Jumat 7 jam (420m)
-            $sisaKapasitasMenit += $date->isSaturday() ? 300 : 420;
         }
-
-        // 5. CEK OVERLOAD
-        if ($inputMenit > $sisaKapasitasMenit) {
-            $jamKapasitas = round($sisaKapasitasMenit / 60, 1);
-            $tglSekarang = $start->translatedFormat('d F Y');
-            
-            return back()->withInput()->with('overload', "Peringatan: Kapasitas waktu kerja PIC dari hari ini ($tglSekarang) sampai akhir bulan hanya tersisa $sisaKapasitasMenit menit ($jamKapasitas jam). Total beban PIC jika ditambah task ini menjadi $inputMenit menit!");
+        if(!empty($overloadDates)){
+            $list_tanggal_string = implode(', ', $overloadDates);
+            return redirect()->back()->with('error', "Gagal! Durasi melebihi 7 Jam (420 Menit) pada tanggal: " . $list_tanggal_string);
         }
 
         // 6. SIMPAN DATA

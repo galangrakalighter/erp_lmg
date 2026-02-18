@@ -202,7 +202,8 @@ class ManajemenKontenController extends Controller
                 "tanggal_mulai" => $request->tanggal_mulai,
                 "tanggal_deadline" => $request->tanggal_deadline,
                 "note" => $request->note,
-                "status" => 1
+                "status" => 0,
+                "project" => (int)$id
             ]);
 
             return redirect()->back()->with('success', 'Data berhasil disimpan');

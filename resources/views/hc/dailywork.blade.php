@@ -215,8 +215,8 @@
                                             @else
                                                 {{-- --- LOGIKA JIKA INI TASK ORANG LAIN (BAWAHAN) --- --}}
                                                 @if($task->status == 3) {{-- Jika statusnya perlu di-approve --}}
-                                                    <button onclick="approveTask({{ $task->id }}, 'approve')" class="btn btn-xs btn-success shadow-sm">Approve</button>
-                                                    <button onclick="approveTask({{ $task->id }}, 'reject')" class="btn btn-xs btn-danger shadow-sm">Reject</button>
+                                                    <button onclick="changeStatus({{ $task->id }}, 'approve')" class="btn btn-xs btn-success shadow-sm">Approve</button>
+                                                    <button onclick="changeStatus({{ $task->id }}, 'reject')" class="btn btn-xs btn-danger shadow-sm">Reject</button>
                                                 @else
                                                     {{-- Menampilkan info PIC jika bukan task kita --}}
                                                     <small class="badge badge-secondary" style="font-size: 9px; opacity: 0.8;">

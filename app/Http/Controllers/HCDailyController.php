@@ -30,8 +30,8 @@ class HCDailyController extends Controller
             case 'digital_marketing': $atasan = 'dm'; break;
         }
 
-        $query = Task::leftJoin('users', 'users.id', '=', 'task.pic')
-            ->select('task.*', 'users.email as vic_email', 'users.role as vic_role');
+        $query = Task::leftJoin('users', 'users.id', '=', 'task.pic')->join('produk_client', 'produk_client.id', '=', 'task.project')
+            ->select('task.*', 'users.email as vic_email', 'users.role as vic_role', 'produk_client.nama');
 
         $query->where(function($q) use ($user, $today, $hierarchy, $atasan) {
             // 1. DATA MILIK USER LOGIN
@@ -83,12 +83,12 @@ class HCDailyController extends Controller
         // --- FILTERING UNTUK VIEW ---
 
         $unscheduled_tasks = $all_tasks->filter(function ($task) {
-            return is_null($task->jam_mulai) || $task->status == 2;
+            return is_null($task->jam_mulai);
         });
 
         $scheduled_tasks = $all_tasks->filter(function ($task) use ($user, $today) {
             // Syarat Mutlak: Harus punya jam_mulai dan bukan revisi (2)
-            if (is_null($task->jam_mulai) || $task->status == 2) return false;
+            if (is_null($task->jam_mulai)) return false;
 
             // Logika Bawahan
             if ($task->pic != $user->id) return $task->status == 3;
@@ -105,12 +105,17 @@ class HCDailyController extends Controller
             }
 
             // Tampilkan status aktif (0, 1, 3)
-            return in_array($task->status, [0, 1, 3]);
+            return in_array($task->status, [0, 1, 2, 3]);
         });
+
+        $totalMenitPool = $unscheduled_tasks->sum('menit');
+        $jam = floor($totalMenitPool / 60);
+        $menitSisa = $totalMenitPool % 60;
+        $formatTotalPool = ($jam > 0 ? $jam . 'j ' : '') . $menitSisa . 'm';
 
         $priority_colors = [1 => 'info', 2 => 'warning', 3 => 'danger'];
 
-        return view('hc.dailywork', compact('title', 'unscheduled_tasks', 'scheduled_tasks', 'priority_colors'));
+        return view('hc.dailywork', compact('title', 'unscheduled_tasks', 'scheduled_tasks', 'priority_colors', 'formatTotalPool'));
     }
 
     public function updateSchedule(Request $request)

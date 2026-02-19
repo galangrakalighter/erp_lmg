@@ -39,20 +39,6 @@ class HCOverviewController extends Controller
             ->where('task.project', $id_client)
             ->whereNot('task.status', 5);
 
-        // --- LOGIKA HAK AKSES DATA (Visibility) ---
-        // Agar atasan bisa melihat task bawahannya, bukan cuma task dirinya sendiri
-        // $taskQuery->where(function($q) use ($user) {
-        //     if ($user->role == 'digital_marketing') {
-        //         $q->where('task.pic', $user->id);
-        //     } elseif ($user->role == 'digital_marketing_manager') {
-        //         $q->where('task.pic', $user->id)
-        //         ->orWhere('users.dmm', $user->id);
-        //     } elseif ($user->role == 'head_of_division') {
-        //         $q->where('task.pic', $user->id)
-        //         ->orWhere('users.hod', $user->id);
-        //     }
-        // });
-
         // --- LOGIKA FILTER DARI REQUEST ---
         if ($request->filled('start_date') && $request->filled('end_date')) {
             $taskQuery->whereBetween('task.tanggal_mulai', [$request->start_date, $request->end_date]);
@@ -103,7 +89,7 @@ class HCOverviewController extends Controller
      */
     public function store(Request $request, $id_client)
     {   
-        $data = Task::where('pic', (int)$request->pic)->where('project', (int)$request->project)->get();
+        $data = Task::where('pic', (int)$request->pic)->get();
         
         $dailyLoad = [];
         foreach ($data as $job) {
@@ -253,11 +239,7 @@ class HCOverviewController extends Controller
     public function list_client(){
         $title = "Client Progress Monitor";
 
-        // Ambil data client beserta task mereka
-        // Diasumsikan ada kolom 'client_id' di tabel tasks
         $userHandledClients = Auth::user()->client; // Contoh isinya: [13, 14]
-        // Pastikan $userHandledClients adalah array, jika di DB tersimpan sebagai string JSON
-        // Laravel biasanya otomatis melakukan cast jika sudah diatur di Model User
         if (!is_array($userHandledClients)) {
             $userHandledClients = json_decode($userHandledClients, true) ?: [];
         }

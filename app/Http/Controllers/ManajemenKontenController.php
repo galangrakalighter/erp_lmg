@@ -109,7 +109,6 @@ class ManajemenKontenController extends Controller
         $BATAS_HARIAN = 420;
         $existingJobs = DB::table('data_jasa')
                     ->where('pic', $request->pic)
-                    ->where('produk_client_id', (int)$id)
                     ->get();
 
         $dailyLoad = [];
@@ -219,7 +218,6 @@ class ManajemenKontenController extends Controller
         $BATAS_HARIAN = 420;
         $otherJobs = DB::table('data_jasa')
                     ->where('pic', (int)$request->pic)
-                    ->where('produk_client_id', $data->produk_client_id)
                     ->whereNot('id', $id)
                     ->get();
 

@@ -63,6 +63,14 @@
 
     body.resizing { cursor: ns-resize !important; user-select: none; }
     body.resizing .task-card-scheduled { transition: none !important; }
+    @keyframes pulse-red {
+        0% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.05); opacity: 0.8; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+    .animate-pulse {
+        animation: pulse-red 2s infinite;
+    }
 </style>
 
 <div class="container-fluid">
@@ -137,7 +145,7 @@
                                 $isRunning = ($task->status == 1);
                             @endphp
 
-                            <div class="task-card-scheduled card {{ $isRunning ? 'bg-primary text-white' : '' }} {{ $task->status == 5 ? 'bg-light' : '' }} border-left-{{ $priority_colors[$task->priority] ?? 'secondary' }}"
+                            <div class="task-card-scheduled card {{ $isRunning ? 'bg-primary text-white' : '' }} {{ $task->status == 5 ? 'bg-light' : '' }} {{ $task->status == 7 ? 'bg-danger text-white' : '' }} border-left-{{ $priority_colors[$task->priority] ?? 'secondary' }}"
                                 data-id="{{ $task->id }}" 
                                 data-status="{{ $task->status }}" 
                                 data-pic="{{ $task->pic }}" 
@@ -145,55 +153,80 @@
                                 style="top: {{ $topPx }}px; height: {{ $heightPx }}px; {{ $task->status == 5 ? 'min-height: 30px;' : '' }}">
 
                                 <div class="card-body p-2 position-relative h-100 d-flex flex-column justify-content-start align-items-start">
-                                    
                                     <div class="d-flex justify-content-between w-100 mb-1">
                                         <div class="text-truncate" style="max-width: 70%;">
-                                            <strong class="task-title {{ $isRunning ? 'text-white' : '' }}" style="display: block; {{ $task->status == 5 ? 'font-size: 11px !important;' : '' }}">
+                                            <strong class="task-title {{ ($isRunning || $task->status == 7) ? 'text-white' : '' }}" style="display: block; {{ $task->status == 5 ? 'font-size: 11px !important;' : '' }}">
                                                 {{ $task->nama_task }} 
                                                 @if($task->status == 5) <small class="text-muted">(Split)</small> @endif
                                             </strong>
-                                            {{-- @if($isRunning) 
+
+                                            @if($isRunning) 
+                                                {{-- data-duration adalah jatah menit (misal: 5), data-start-time adalah jam mulai grid (misal: 14:43) --}}
                                                 <small class="running-timer badge badge-light text-primary" 
                                                     data-id="{{ $task->id }}"
                                                     data-start-time="{{ $taskStart->format('H:i') }}" 
                                                     data-duration="{{ $task->menit }}"
                                                     style="font-size: 10px; font-weight: bold;">
-                                                    <i class="fas fa-hourglass-half mr-1"></i> Menghitung...
+                                                    <i class="fas fa-clock mr-1"></i> Menghitung...
                                                 </small>
-                                            @endif --}}
+                                            @endif
+
+                                            @if($task->status == 7)
+                                                <span class="badge badge-light text-danger animate-pulse" style="font-size: 10px; font-weight: 900;">
+                                                    <i class="fas fa-exclamation-circle mr-1"></i> OVERDUE
+                                                </span>
+                                            @endif
                                         </div>
                                         
                                         <div class="text-right">
-                                            <span class="task-time-range {{ $isRunning ? 'text-white' : '' }}" 
-                                                onclick="enableTimeEdit(this)"
-                                                style="cursor: pointer; {{ $task->status == 5 ? 'font-size: 9px !important;' : '' }}">
+                                            <span class="task-time-range {{ ($isRunning || $task->status == 7) ? 'text-white' : '' }}" 
+                                                {{-- Matikan edit waktu jika status 7 --}}
+                                                @if($task->status != 7) onclick="enableTimeEdit(this)" @endif
+                                                style="{{ $task->status != 7 ? 'cursor: pointer;' : '' }} {{ $task->status == 5 ? 'font-size: 9px !important;' : '' }}">
                                                 {{ $taskStart->format('H:i') }} - {{ $taskEnd->format('H:i') }}
                                             </span>
-
-                                            <input type="time" 
-                                                class="time-edit-input form-control form-control-sm mt-1" 
-                                                style="display: none; width: 85px; font-size: 10px; padding: 2px;"
-                                                onblur="saveManualTime(this)"
-                                                onkeydown="if(event.key==='Enter') this.blur()">
+                                            {{-- Input time edit otomatis tersembunyi karena kondisi di atas --}}
                                         </div>
                                     </div>
 
-                                    {{-- Sembunyikan tombol aksi jika status 5 --}}
-                                    @if($task->status != 5)
+                                    {{-- Sembunyikan tombol aksi jika status 5 ATAU status 7 --}}
+                                    @if(!in_array($task->status, [5, 7]))
                                         <div class="action-container">
                                             @if($isMyTask)
-                                                @if($isRunning)
+                                                {{-- --- LOGIKA JIKA INI TASK SAYA --- --}}
+                                                @if($task->status == 1) {{-- Running --}}
                                                     <button onclick="splitTask({{ $task->id }})" class="btn btn-xs btn-light text-primary border">Split</button>
                                                     <button onclick="changeStatus({{ $task->id }}, 'stop')" class="btn btn-xs btn-light text-primary border">Kirim</button>
-                                                @elseif(in_array($task->status, [0, 2]))
+                                                
+                                                @elseif(in_array($task->status, [0, 2])) {{-- Pending atau Revisi --}}
                                                     <button onclick="returnToPool({{ $task->id }})" class="btn btn-xs btn-light text-danger border"><i class="fas fa-reply"></i></button>
                                                     <button onclick="changeStatus({{ $task->id }}, 'play')" class="btn btn-xs btn-success shadow-sm">Start</button>
+                                                
+                                                @elseif($task->status == 3) {{-- Sedang di-Review Atasan --}}
+                                                    <span class="badge badge-warning text-dark"><i class="fas fa-hourglass-start"></i> Waiting Review</span>
+                                                
+                                                @elseif($task->status == 4) {{-- Selesai --}}
+                                                    <span class="badge badge-success"><i class="fas fa-check-circle"></i> Selesai</span>
+                                                    
+                                                @elseif($task->status == 7) {{-- Overdue --}}
+                                                    <span class="badge badge-dark">Terkunci (Overdue)</span>
+                                                @endif
+
+                                            @else
+                                                {{-- --- LOGIKA JIKA INI TASK ORANG LAIN (BAWAHAN) --- --}}
+                                                @if($task->status == 3) {{-- Jika statusnya perlu di-approve --}}
+                                                    <button onclick="approveTask({{ $task->id }}, 'approve')" class="btn btn-xs btn-success shadow-sm">Approve</button>
+                                                    <button onclick="approveTask({{ $task->id }}, 'reject')" class="btn btn-xs btn-danger shadow-sm">Reject</button>
+                                                @else
+                                                    {{-- Menampilkan info PIC jika bukan task kita --}}
+                                                    <small class="badge badge-secondary" style="font-size: 9px; opacity: 0.8;">
+                                                        <i class="fas fa-user"></i> {{ $task->vic_email }}
+                                                    </small>
                                                 @endif
                                             @endif
                                         </div>
-
-                                        <div class="resize-handle"></div>
                                     @endif
+                                    <div class="resize-handle"></div>
                                 </div>
                             </div>
                         @endforeach
@@ -363,44 +396,64 @@
             function revert() { input.style.display = 'none'; element.style.display = 'block'; }
         };
 
+        let isUpdatingStatus = new Set(); // Untuk mencegah request ganda ke server
+
         function updateRunningTimers() {
             const now = new Date();
 
             document.querySelectorAll('.running-timer').forEach(timer => {
-                const startTimeStr = timer.getAttribute('data-start-time'); // Format: "14:40"
-                if (!startTimeStr) return;
+                const taskId = timer.getAttribute('data-id');
+                if (isUpdatingStatus.has(taskId)) return;
 
-                // Pecah jam dan menit mulai
-                const [startHours, startMinutes] = startTimeStr.split(':').map(Number);
+                const startTimeStr = timer.getAttribute('data-start-time'); // Misal: "14:43"
+                const durationLimit = parseInt(timer.getAttribute('data-duration')); // Misal: 5
                 
-                // Buat objek Date untuk hari ini dengan jam mulai tersebut
+                // Buat objek Date jam mulai hari ini
+                const [h, m] = startTimeStr.split(':').map(Number);
                 const startTime = new Date();
-                startTime.setHours(startHours, startMinutes, 0, 0);
+                startTime.setHours(h, m, 0, 0);
 
-                // Hitung selisih dalam milidetik
-                const diffInMs = now - startTime;
+                // Hitung selisih detik yang sudah berjalan
+                const elapsedSeconds = Math.floor((now - startTime) / 1000);
+                const totalLimitSeconds = durationLimit * 60;
+                
+                // SISA WAKTU = Batas Menit - Waktu Berjalan
+                const remainingSeconds = totalLimitSeconds - elapsedSeconds;
 
-                if (diffInMs > 0) {
-                    const diffInSecs = Math.floor(diffInMs / 1000);
+                if (remainingSeconds <= 0) {
+                    // JIKA WAKTU HABIS
+                    timer.innerHTML = `<i class="fas fa-times-circle"></i> Waktu Habis!`;
+                    isUpdatingStatus.add(taskId);
                     
-                    // Konversi ke format Jam:Menit:Detik
-                    const hours = Math.floor(diffInSecs / 3600).toString().padStart(2, '0');
-                    const minutes = Math.floor((diffInSecs % 3600) / 60).toString().padStart(2, '0');
-                    const seconds = (diffInSecs % 60).toString().padStart(2, '0');
-
-                    // Jika durasi lebih dari 1 jam, tampilkan HH:MM:SS, jika kurang tampilkan MM:SS
-                    const displayTime = hours > 0 ? `${hours}:${minutes}:${seconds}` : `${minutes}:${seconds}`;
-                    
-                    timer.innerHTML = `<i class="fas fa-stopwatch mr-1"></i> ${displayTime}`;
-                    
-                    // Opsional: Beri warna merah jika sudah melebihi 1 jam (misalnya)
-                    if (hours > 0) {
-                        timer.classList.remove('text-primary');
-                        timer.classList.add('text-danger');
-                    }
+                    // Kirim perintah ke controller untuk ubah status ke 7
+                    autoUpdateToOverdue(taskId);
                 } else {
-                    timer.innerHTML = `<i class="fas fa-stopwatch mr-1"></i> 00:00`;
+                    // TAMPILKAN COUNTDOWN
+                    const mins = Math.floor(remainingSeconds / 60).toString().padStart(2, '0');
+                    const secs = (remainingSeconds % 60).toString().padStart(2, '0');
+                    
+                    timer.innerHTML = `<i class="fas fa-hourglass-half mr-1"></i> Sisa: ${mins}:${secs}`;
+                    
+                    // Efek visual jika sisa waktu kurang dari 1 menit
+                    if (remainingSeconds < 60) {
+                        timer.classList.replace('text-primary', 'text-danger');
+                    }
                 }
+            });
+        }
+
+        function autoUpdateToOverdue(id) {
+            axios.post("{{ route('hc.updateStatus') }}", { 
+                id: id, 
+                action: 'set_overdue', // Anda perlu menangani action ini di Controller
+                status: 7 
+            })
+            .then(() => {
+                location.reload(); // Reload untuk mengunci kartu (karena status sudah 7)
+            })
+            .catch(err => {
+                console.error("Gagal update status overdue", err);
+                isUpdatingStatus.delete(id);
             });
         }
 

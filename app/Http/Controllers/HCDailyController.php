@@ -43,7 +43,7 @@ class HCDailyController extends Controller
                         $grid->whereNotNull('task.jam_mulai')
                             ->where(function($statusQ) use ($today) {
                                 // Status Aktif: 0 (Pending), 1 (In Progress), 3 (Waiting)
-                                $statusQ->whereIn('task.status', [0, 1, 3])
+                                $statusQ->whereIn('task.status', [0, 1, 3, 7])
                                     // Status 5 (Split): Hanya tarik jika tanggal_split adalah HARI INI
                                     ->orWhere(function($splitToday) use ($today) {
                                         $splitToday->where('task.status', 5)
@@ -105,7 +105,7 @@ class HCDailyController extends Controller
             }
 
             // Tampilkan status aktif (0, 1, 3)
-            return in_array($task->status, [0, 1, 2, 3]);
+            return in_array($task->status, [0, 1, 2, 3, 7]);
         });
 
         $totalMenitPool = $unscheduled_tasks->sum('menit');
@@ -160,6 +160,8 @@ class HCDailyController extends Controller
             $task->update(['status' => 2, 'jam_mulai' => null, 'tanggal_revisi' => now()]); // Balik ke Pool Jadi Revisi
         } elseif ($action == 'approve') {
             $task->update(['status' => 4, 'tanggal_approve' => now()]); // Selesai
+        } elseif ($action == 'set_overdue'){
+            $task->update(['status' => 7]);
         }
 
         return response()->json(['success' => true]);

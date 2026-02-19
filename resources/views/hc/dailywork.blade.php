@@ -180,11 +180,18 @@
                                         
                                         <div class="text-right">
                                             <span class="task-time-range {{ ($isRunning || $task->status == 7) ? 'text-white' : '' }}" 
-                                                {{-- Matikan edit waktu jika status 7 --}}
-                                                @if($task->status != 7) onclick="enableTimeEdit(this)" @endif
-                                                style="{{ $task->status != 7 ? 'cursor: pointer;' : '' }} {{ $task->status == 5 ? 'font-size: 9px !important;' : '' }}">
+                                                @if($task->status != 7 && $task->status != 1 && $task->status != 3 && $task->status != 4) 
+                                                    onclick="enableTimeEdit(this)" 
+                                                @endif
+                                                style="{{ $task->status == 5 ? 'font-size: 9px !important;' : '' }}">
                                                 {{ $taskStart->format('H:i') }} - {{ $taskEnd->format('H:i') }}
                                             </span>
+                                            
+                                            {{-- TAMBAHKAN INPUT INI --}}
+                                            <input type="time" class="time-edit-input" 
+                                                onblur="saveManualTime(this)" 
+                                                onkeydown="if(event.key==='Enter') saveManualTime(this)"
+                                                min="09:00" max="17:00">
                                             {{-- Input time edit otomatis tersembunyi karena kondisi di atas --}}
                                         </div>
                                     </div>
@@ -359,41 +366,72 @@
         window.enableTimeEdit = function(element) {
             const card = element.closest('.task-card-scheduled');
             const status = card.dataset.status;
+            
+            // Cegah edit jika status Running(1), Waiting Review(3), atau Done(4)
             if (['1', '3', '4'].includes(status)) return;
-            const input = element.nextElementSibling;
+
+            const input = element.nextElementSibling; // Mengambil .time-edit-input
+            if (!input) return;
+
+            // Set value input sesuai jam mulai saat ini
             input.value = element.innerText.split(' - ')[0].trim();
+            
             element.style.display = 'none';
             input.style.display = 'block';
             input.focus();
         };
 
         window.saveManualTime = function(input) {
-            const element = input.previousElementSibling;
+            const element = input.previousElementSibling; // Span teks
             const card = input.closest('.task-card-scheduled');
             const taskId = card.dataset.id;
             const durationMinutes = parseInt(card.getAttribute('data-menit'));
             const timeVal = input.value;
+
+            const revert = () => {
+                input.style.display = 'none';
+                element.style.display = 'block';
+            };
+
             if (!timeVal) { revert(); return; }
+
             const [hours, minutes] = timeVal.split(':').map(Number);
             const totalMinutes = (hours * 60) + minutes;
-            const baselineMinutes = 9 * 60;
+            const baselineMinutes = 9 * 60; // 09:00 pagi
 
+            // Validasi Jam Kerja (09:00 - 17:00)
             if (totalMinutes < baselineMinutes || totalMinutes + durationMinutes > 17 * 60) {
-                alert("Waktu tidak valid!");
+                alert("Waktu harus di antara jam kerja (09:00 - 17:00)");
                 revert(); return;
             }
 
+            // Hitung posisi Top berdasarkan pixel (80px = 60 menit)
             let proposedTop = ((totalMinutes - baselineMinutes) / 60) * 80;
-            if (checkCollision(proposedTop, (durationMinutes/60)*80, taskId)) {
-                alert("Tabrakan!");
+
+            // Cek Tabrakan
+            if (checkCollision(proposedTop, (durationMinutes / 60) * 80, taskId)) {
+                alert("Waktu ini bertabrakan dengan jadwal lain!");
                 revert(); return;
             }
 
+            // Terapkan perubahan secara visual
             card.style.top = proposedTop + 'px';
             updateTimeDisplay(card, proposedTop, durationMinutes);
-            saveToDatabase(taskId, proposedTop, false); // Manual edit tanpa refresh
-            revert();
-            function revert() { input.style.display = 'none'; element.style.display = 'block'; }
+            
+            // Simpan ke Database
+            const totalMinStart = (proposedTop / 80) * 60;
+            axios.post("{{ route('hc.updateSchedule') }}", { 
+                id: taskId, 
+                top: totalMinStart 
+            })
+            .then(() => {
+                revert();
+                // Opsional: location.reload() jika ingin memastikan data tersinkron sempurna
+            })
+            .catch(err => {
+                alert("Gagal menyimpan perubahan.");
+                revert();
+            });
         };
 
         let isUpdatingStatus = new Set(); // Untuk mencegah request ganda ke server

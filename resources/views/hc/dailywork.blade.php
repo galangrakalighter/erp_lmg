@@ -225,7 +225,7 @@
                                         </div>
                                     </div>
 
-                                    @if(!in_array($task->status, [5, 7]))
+                                    @if($task->status != 5)
                                         <div class="action-container">
                                             @if($isMyTask)
                                                 @if($task->status == 1)

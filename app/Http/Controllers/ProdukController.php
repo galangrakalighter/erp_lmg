@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+use App\Models\Task;
 use Illuminate\Support\Arr;
 
 class ProdukController extends Controller
@@ -205,6 +206,7 @@ class ProdukController extends Controller
     public function destroy($id){
         $id = (int)$id;
         DB::table('produk_client')->where('id', $id)->delete($id);
+        Task::where('project', $id)->delete($id);
         DB::transaction(function () use ($id) {
 
         User::whereIn('role', ['digital_marketing', 'content_creator', 'digital_marketing_manager', 'head_of_division'])

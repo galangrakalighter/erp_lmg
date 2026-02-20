@@ -62,6 +62,30 @@
         box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
 
+    .task-subordinate {
+        border-left: 6px double #6c757d !important; /* Garis ganda untuk pembeda */
+        background-color: #fcfcfc;
+        opacity: 0.9;
+    }
+
+    .task-subordinate .task-title {
+        color: #4a5568;
+        font-style: italic;
+    }
+
+    /* Penanda teks Review untuk Bawahan */
+    .badge-subordinate-review {
+        background: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeeba;
+        font-size: 9px;
+    }
+
+    /* Class untuk menyembunyikan task bawahan secara default */
+    .subordinate-hidden {
+        display: none !important;
+    }
+
     .sortable-dragging * {
         user-select: none !important;
     }
@@ -115,6 +139,18 @@
     .bg-light-danger {
         background-color: #fff5f5;
     }
+    /* Sembunyikan secara default untuk elemen yang tidak aktif */
+
+    /* Gaya khusus untuk membedakan tampilan review agar tidak bingung */
+    .type-subordinate {
+        border-left: 6px solid #f6c23e !important; /* Warna kuning khas review */
+        background-color: #fffaf0;
+    }
+    .bg-white-transparent {
+        background: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    .gap-1 { gap: 4px; }
 </style>
 
 <div class="container-fluid py-4">
@@ -123,9 +159,17 @@
             <h1 class="h4 text-gray-800 font-weight-bold mb-0">Daily Work Schedule</h1>
             <small class="text-muted"><i class="far fa-calendar-alt mr-1"></i> Shift: 09:00 - 17:00</small>
         </div>
-        <button class="btn btn-sm btn-white border shadow-sm" onclick="location.reload()">
-            <i class="fas fa-sync-alt text-primary"></i> Refresh Grid
-        </button>
+        
+        @if(Auth::user()->role != "content_creator")
+            <div class="btn-group shadow-sm">
+                <button id="btn-self" class="btn btn-sm btn-primary active" onclick="switchMode('self')">
+                    <i class="fas fa-user mr-1"></i> My Schedule
+                </button>
+                <button id="btn-subordinate" class="btn btn-sm btn-white border" onclick="switchMode('subordinate')">
+                    <i class="fas fa-users mr-1"></i> Review Subordinate
+                </button>
+            </div>
+        @endif
     </div>
 
     {{-- TASK POOL SECTION --}}
@@ -225,75 +269,106 @@
                                 
                                 $isMyTask = ($task->pic == Auth::id());
                                 $isRunning = ($task->status == 1);
+                                $isReview = ($task->status == 3);
+                                $cardType = '';
+                                if ($isMyTask) {
+                                    $cardType = 'type-self';
+                                } elseif (!$isMyTask && $isReview) {
+                                    $cardType = 'type-subordinate';
+                                } else {
+                                    $cardType = 'type-other'; // Task orang lain yang bukan status 3 (biasanya disembunyikan)
+                                }
                             @endphp
 
-                            <div class="task-card-scheduled card {{ $isRunning ? 'bg-primary text-white' : '' }} {{ $task->status == 5 ? 'bg-light' : '' }} {{ $task->status == 7 ? 'bg-danger text-white' : '' }} {{ $task->status == 8 ? 'bg-warning text-white' : '' }} border-left-{{ $priority_colors[$task->priority] ?? 'secondary' }}"
+                            <div class="task-card-scheduled card {{ $cardType }} {{ (!$isMyTask) ? 'subordinate-hidden' : '' }} {{ $isRunning ? 'bg-primary text-white' : '' }} {{ $task->status == 5 ? 'bg-light' : '' }} {{ $task->status == 7 ? 'bg-danger text-white' : '' }} {{ $task->status == 8 ? 'bg-warning text-white' : '' }} border-left-{{ $priority_colors[$task->priority] ?? 'secondary' }}"
                                 data-id="{{ $task->id }}" 
+                                data-type="{{ $cardType }}"
                                 data-status="{{ $task->status }}" 
                                 data-pic="{{ $task->pic }}" 
                                 data-menit="{{ $task->menit }}" 
-                                style="top: {{ $topPx }}px; height: {{ $heightPx }}px; min-height: 30px;">
+                                style="top: {{ $topPx }}px; height: {{ $heightPx }}px; min-height: 40px; border-radius: 8px; transition: all 0.3s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
 
                                 <div class="card-body p-2 position-relative h-100 d-flex flex-column">
-                                    <div class="d-flex justify-content-between w-100">
-                                        <div class="text-truncate" style="max-width: 65%;">
-                                            <strong class="task-title {{ ($isRunning || $task->status == 7) ? 'text-white' : '' }}" style="{{ $task->status == 5 ? 'font-size: 11px !important;' : '' }}">
-                                                {{ $task->id_manajement_konten ? "Edit Konten" : "" }} {{ $task->nama_task }} ({{ Str::upper($task->nama) }})
-                                                @if($task->status == 5) <small>(Split)</small> @endif
+                                    <div class="d-flex justify-content-between w-100 mb-2">
+                                        <div class="text-truncate" style="max-width: 60%;">
+                                            @if(!$isMyTask && $isReview)
+                                                <span class="badge badge-pill badge-subordinate-review mb-1" style="font-size: 10px; letter-spacing: 0.5px;">
+                                                    <i class="fas fa-user-check mr-1"></i> REVIEW: {{ $task->vic_email }}
+                                                </span><br>
+                                            @endif
+                                            <strong class="task-title {{ ($isRunning || $task->status == 7) ? 'text-white' : 'text-dark' }}" style="font-size: 14px; font-weight: 700; line-height: 1.2;">
+                                                {{ $task->id_manajement_konten ? "Edit Konten" : "" }} {{ $task->nama_task }}
+                                                <span style="font-weight: 400; opacity: 0.8;">({{ Str::upper($task->nama) }})</span>
                                             </strong>
-
-                                            @if($isRunning) 
-                                                <div class="running-timer badge badge-light text-primary mt-1" 
-                                                    data-id="{{ $task->id }}"
-                                                    data-start-time="{{ $taskStart->format('H:i') }}" 
-                                                    data-duration="{{ $task->menit }}"
-                                                    style="font-size: 10px;">
-                                                    <i class="fas fa-spinner fa-spin mr-1"></i> Sync...
-                                                </div>
-                                            @endif
-
-                                            @if($task->status == 7)
-                                                <span class="badge badge-light text-danger animate-pulse mt-1" style="font-size: 10px;">
-                                                    <i class="fas fa-exclamation-circle mr-1"></i> OVERDUE
-                                                </span>
-                                            @elseif($task->status == 8)
-                                                <span class="badge badge-light text-danger animate-pulse mt-1" style="font-size: 10px;">
-                                                    <i class="fas fa-exclamation-circle mr-1"></i> WAKTU HARI INI HABIS
-                                                </span>
-                                            @endif
                                         </div>
                                         
-                                        <div class="text-right">
-                                            <span class="task-time-range {{ ($isRunning || $task->status == 7) ? 'text-white' : '' }}" 
-                                                @if(!in_array($task->status, [1, 3, 4, 7])) onclick="enableTimeEdit(this)" @endif>
-                                                {{ $taskStart->format('H:i') }} - {{ $taskEnd->format('H:i') }}
-                                            </span>
-                                            <input type="time" class="time-edit-input" onblur="saveManualTime(this)" onkeydown="if(event.key==='Enter') saveManualTime(this)">
+                                        <div class="text-right" style="min-width: 40%;">
+                                            <div class="mb-1">
+                                                <span class="task-time-range {{ ($isRunning || $task->status == 7) ? 'text-white' : 'text-primary' }}" 
+                                                    style="font-size: 14px; font-weight: 800; cursor: pointer; background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 4px;"
+                                                    @if(!in_array($task->status, [1, 3, 4, 7])) onclick="enableTimeEdit(this)" @endif>
+                                                    {{ $taskStart->format('H:i') }} - {{ $taskEnd->format('H:i') }}
+                                                </span>
+                                                <input type="time" class="time-edit-input" style="display:none; width: 100%; font-size: 12px; border: 1px solid #ddd; border-radius: 4px;" onblur="saveManualTime(this)" onkeydown="if(event.key==='Enter') saveManualTime(this)">
+                                            </div>
+                                            
+                                            <div class="task-date-info {{ ($isRunning || $task->status == 7) ? 'text-white' : '' }}" style="font-size: 11px; line-height: 1.2;">
+                                                <div style="font-weight: 600; opacity: 0.9;">Tgl: {{ \Carbon\Carbon::parse($task->tanggal_mulai)->format('d/m/Y') }}</div>
+                                                <div class="{{ ($isRunning || $task->status == 7) ? 'text-white' : 'text-danger' }}" style="font-weight: 800;">
+                                                    DL: {{ \Carbon\Carbon::parse($task->tanggal_deadline)->format('d/m/Y') }}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 
+                                    @if($task->note)
+                                        <div class="task-note mt-1 mb-2 p-2 {{ ($isRunning || $task->status == 7) ? 'bg-white-transparent text-white' : 'bg-light border' }}" 
+                                            style="font-size: 13px; border-radius: 6px; border-left: 4px solid #007bff; position: relative; overflow: hidden;">
+                                            <div style="font-weight: 800; text-transform: uppercase; font-size: 10px; margin-bottom: 2px; opacity: 0.7;">
+                                                <i class="fas fa-pen-nib mr-1"></i> Note
+                                            </div>
+                                            <div style="line-height: 1.4; font-weight: 500;">
+                                                {{ $task->note }}
+                                            </div>
+                                        </div>
+                                    @endif
+
                                     @if($task->status != 5)
-                                        <div class="action-container">
-                                            @if($isMyTask)
-                                                @if($task->status == 1)
-                                                    <button onclick="splitTask({{ $task->id }})" class="btn btn-xs btn-light text-primary border">Split</button>
-                                                    <button onclick="changeStatus({{ $task->id }}, 'stop')" class="btn btn-xs btn-light text-success border">Kirim Task</button>
-                                                @elseif(in_array($task->status, [0, 2]))
-                                                    <button onclick="returnToPool({{ $task->id }})" class="btn btn-xs btn-light text-danger border"><i class="fas fa-undo"></i></button>
-                                                    <button onclick="changeStatus({{ $task->id }}, 'play')" class="btn btn-xs btn-success shadow-sm">Start</button>
-                                                @elseif($task->status == 3)
-                                                    <span class="badge badge-warning text-dark" style="font-size: 9px;">Reviewing...</span>
-                                                @elseif($task->status == 4)
-                                                    <span class="badge badge-success" style="font-size: 9px;"><i class="fas fa-check"></i> Done</span>
-                                                @elseif($task->status == 7 || $task->status == 8)
-                                                    <button onclick="changeStatus({{ $task->id }}, 'stop')" class="btn btn-xs btn-light text-success border">Kirim Task</button>
-                                                @endif
+                                        <div class="action-container mt-auto pt-2 border-top d-flex align-items-center justify-content-between">
+                                            @if(!$isMyTask && $isReview)
+                                                <div class="btn-group btn-group-sm w-100">
+                                                    <button onclick="changeStatus({{ $task->id }}, 'approve')" class="btn btn-success font-weight-bold" style="border-radius: 4px 0 0 4px;">Approve</button>
+                                                    <button onclick="changeStatus({{ $task->id }}, 'revisi')" class="btn btn-danger font-weight-bold" style="border-radius: 0 4px 4px 0;">Reject</button>
+                                                </div>
                                             @else
-                                                @if($task->status == 3)
-                                                    <button onclick="changeStatus({{ $task->id }}, 'approve')" class="btn btn-xs btn-success">Approve</button>
-                                                    <button onclick="changeStatus({{ $task->id }}, 'revisi')" class="btn btn-xs btn-danger">Reject</button>
+                                                @if($isMyTask)
+                                                    <div class="d-flex gap-1">
+                                                        @if($task->status == 1)
+                                                            <button onclick="splitTask({{ $task->id }})" class="btn btn-xs btn-outline-secondary mr-1">Split</button>
+                                                            <button onclick="changeStatus({{ $task->id }}, 'stop')" class="btn btn-xs btn-success font-weight-bold shadow-sm">Kirim Task</button>
+                                                        @elseif(in_array($task->status, [0, 2]))
+                                                            <button onclick="returnToPool({{ $task->id }})" class="btn btn-xs btn-light border mr-1"><i class="fas fa-undo text-danger"></i></button>
+                                                            <button onclick="changeStatus({{ $task->id }}, 'play')" class="btn btn-xs btn-success px-3 shadow-sm font-weight-bold">START</button>
+                                                        @elseif($task->status == 3)
+                                                            <span class="badge badge-warning py-1 px-2" style="border-radius: 4px;"><i class="fas fa-clock mr-1"></i> Reviewing...</span>
+                                                        @elseif($task->status == 4)
+                                                            <span class="badge badge-success py-1 px-2" style="border-radius: 4px;"><i class="fas fa-check-circle mr-1"></i> Selesai</span>
+                                                        @elseif($task->status == 7 || $task->status == 8)
+                                                            <button onclick="changeStatus({{ $task->id }}, 'stop')" class="btn btn-xs btn-success font-weight-bold shadow-sm">Kirim Task</button>
+                                                        @endif
+                                                    </div>
                                                 @else
-                                                    <small class="text-muted" style="font-size: 9px;">PIC: {{ explode('@', $task->vic_email)[0] }}</small>
+                                                    @if($task->status == 3)
+                                                        <div class="btn-group btn-group-sm w-100">
+                                                            <button onclick="changeStatus({{ $task->id }}, 'approve')" class="btn btn-success">Approve</button>
+                                                            <button onclick="changeStatus({{ $task->id }}, 'revisi')" class="btn btn-danger">Reject</button>
+                                                        </div>
+                                                    @else
+                                                        <div class="d-flex align-items-center text-muted">
+                                                            <i class="fas fa-user-circle mr-1" style="font-size: 14px;"></i>
+                                                            <small style="font-size: 11px; font-weight: 600;">{{ explode('@', $task->vic_email)[0] }}</small>
+                                                        </div>
+                                                    @endif
                                                 @endif
                                             @endif
                                         </div>
@@ -398,13 +473,45 @@
             input.focus();
         };
 
+        window.switchMode = function(mode) {
+            const selfTasks = document.querySelectorAll('.task-card-scheduled[data-type="type-self"]');
+            const subTasks = document.querySelectorAll('.task-card-scheduled[data-type="type-subordinate"]');
+            const otherTasks = document.querySelectorAll('.task-card-scheduled[data-type="type-other"]');
+            
+            const btnSelf = document.getElementById('btn-self');
+            const btnSub = document.getElementById('btn-subordinate');
+
+            if (mode === 'subordinate') {
+                // Tampilkan Bawahan, Sembunyikan Diri Sendiri
+                selfTasks.forEach(t => t.classList.add('subordinate-hidden'));
+                otherTasks.forEach(t => t.classList.add('subordinate-hidden'));
+                subTasks.forEach(t => t.classList.remove('subordinate-hidden'));
+
+                // Update Tombol
+                btnSub.classList.replace('btn-white', 'btn-warning');
+                btnSub.classList.add('active', 'text-white');
+                btnSelf.classList.replace('btn-primary', 'btn-white');
+                btnSelf.classList.remove('active');
+            } else {
+                // Tampilkan Diri Sendiri, Sembunyikan Bawahan
+                subTasks.forEach(t => t.classList.add('subordinate-hidden'));
+                otherTasks.forEach(t => t.classList.add('subordinate-hidden'));
+                selfTasks.forEach(t => t.classList.remove('subordinate-hidden'));
+
+                // Update Tombol
+                btnSelf.classList.replace('btn-white', 'btn-primary');
+                btnSelf.classList.add('active');
+                btnSub.classList.replace('btn-warning', 'btn-white');
+                btnSub.classList.remove('active', 'text-white');
+            }
+        };
+
         window.saveManualTime = function(input) {
             const card = input.closest('.task-card-scheduled');
             const displayRange = card.querySelector('.task-time-range');
             const oldTime = input.getAttribute('data-old-value');
             const newValue = input.value;
 
-            // Jika tidak ada perubahan, langsung tutup
             if (newValue === oldTime) {
                 input.style.display = 'none';
                 displayRange.style.display = 'inline-block';
@@ -412,54 +519,61 @@
             }
 
             const [h, m] = newValue.split(':').map(Number);
-            
-            // 1. VALIDASI JAM KERJA
-            if (h < 9 || (h >= 17 && m > 0)) { 
-                alert("Di luar jam kerja (09:00 - 17:00)!"); 
-                input.value = oldTime; // Kembalikan nilai input ke jam lama
-                input.style.display = 'none';
-                displayRange.style.display = 'inline-block';
-                return; 
-            }
-
-            // 2. HITUNG POSISI BARU (Skala 300px)
-            const hourDiff = h - 9;
-            const proposedTop = (hourDiff * 300) + (m / 60 * 300);
             const duration = parseInt(card.getAttribute('data-menit'));
 
-            // 3. VALIDASI TABRAKAN (Collision) secara lokal
-            if (checkCollision(proposedTop, card.offsetHeight, card.dataset.id)) {
-                alert("Slot waktu tersebut sudah terisi task lain!");
-                input.value = oldTime;
-                input.style.display = 'none';
-                displayRange.style.display = 'inline-block';
+            // 1. HITUNG POSISI & TOTAL MENIT SELESAI
+            const hourDiff = h - 9;
+            const proposedTop = (hourDiff * 300) + (m / 60 * 300);
+            const totalMinutesFromNine = (hourDiff * 60) + m;
+            const endMinutesFromNine = totalMinutesFromNine + duration;
+
+            // 2. VALIDASI JAM KERJA (Max 17:00 adalah 480 menit dari 09:00)
+            if (h < 9) {
+                alert("Jam mulai tidak boleh sebelum jam 09:00!");
+                resetInput();
                 return;
             }
 
-            // 4. EFEK VISUAL INSTAN (Tanpa Refresh)
+            if (endMinutesFromNine > 480) {
+                alert(`Tidak bisa input jam ${newValue}. Karena durasi task ${duration} menit, jam selesai (${formatMinutesToTime(endMinutesFromNine)}) akan melebihi jam 17:00!`);
+                resetInput();
+                return;
+            }
+
+            // 3. VALIDASI TABRAKAN
+            if (checkCollision(proposedTop, card.offsetHeight, card.dataset.id)) {
+                alert("Slot waktu tersebut sudah terisi task lain!");
+                resetInput();
+                return;
+            }
+
+            // Eksekusi jika lolos validasi
             card.style.top = proposedTop + 'px';
-            updateTimeDisplay(card, proposedTop, duration); // Update teks jam di kartu
-            
-            // Sembunyikan input kembali
+            updateTimeDisplay(card, proposedTop, duration);
             input.style.display = 'none';
             displayRange.style.display = 'inline-block';
 
-            // 5. SIMPAN KE DATABASE DI BACKGROUND
             const minutesFromStart = (proposedTop / 300) * 60; 
             axios.post("{{ route('hc.updateSchedule') }}", { 
                 id: card.dataset.id, 
                 top: minutesFromStart 
-            })
-            .then(() => {
-                console.log("Jadwal berhasil diperbarui otomatis.");
-                // Opsi: Berikan notifikasi toast kecil di pojok jika perlu
-            })
-            .catch(err => {
-                console.error(err);
-                alert("Gagal sinkronisasi ke server. Halaman akan dimuat ulang.");
-                location.reload(); // Refresh hanya jika koneksi/DB bermasalah
+            }).catch(err => {
+                alert("Gagal sinkronisasi. Halaman dimuat ulang.");
+                location.reload();
             });
+
+            function resetInput() {
+                input.value = oldTime;
+                input.style.display = 'none';
+                displayRange.style.display = 'inline-block';
+            }
         };
+
+        function formatMinutesToTime(totalMinutes) {
+            const h = Math.floor(totalMinutes / 60) + 9;
+            const m = totalMinutes % 60;
+            return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+        }
 
         // --- COUNTDOWN TIMER ---
         function updateTimers() {
@@ -528,10 +642,6 @@
             const threshold = 200; 
             const windowHeight = window.innerHeight;
             const mouseY = e.clientY;
-
-            // --- LOG DEBUGGING ---
-            // Muncul di Console (F12) untuk memantau posisi kursor saat drag
-            console.log(`Dragging: ON | Mouse Y: ${mouseY} | Window Height: ${windowHeight} | Threshold: ${windowHeight - threshold}`);
 
             if (mouseY > windowHeight - threshold) {
                 if (!scrollInterval) {

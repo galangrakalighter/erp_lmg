@@ -158,7 +158,7 @@
                         <div class="card-body p-2">
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <span class="task-title {{ $isOverdue ? 'text-danger font-weight-bold' : 'text-dark' }} text-truncate" style="max-width: 160px;">
-                                    {{ $task->nama_task }}
+                                    {{ $task->id_manajement_konten ? "Edit Konten" : "" }} {{ $task->nama_task }} ({{ Str::upper($task->nama) }})
                                 </span>
                                 <span class="badge {{ $isOverdue ? 'badge-danger' : 'badge-primary' }}">
                                     {{ $task->menit }}m
@@ -238,7 +238,7 @@
                                     <div class="d-flex justify-content-between w-100">
                                         <div class="text-truncate" style="max-width: 65%;">
                                             <strong class="task-title {{ ($isRunning || $task->status == 7) ? 'text-white' : '' }}" style="{{ $task->status == 5 ? 'font-size: 11px !important;' : '' }}">
-                                                {{ $task->nama_task }} ({{ Str::upper($task->nama) }})
+                                                {{ $task->id_manajement_konten ? "Edit Konten" : "" }} {{ $task->nama_task }} ({{ Str::upper($task->nama) }})
                                                 @if($task->status == 5) <small>(Split)</small> @endif
                                             </strong>
 

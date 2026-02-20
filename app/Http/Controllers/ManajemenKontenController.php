@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
+use App\Models\Task;
 use Carbon\CarbonPeriod;
 use App\Models\ProdukClient;
 
@@ -322,15 +323,45 @@ class ManajemenKontenController extends Controller
             ]);
 
             if(Auth::user()->role != "content_creator"){
-                DB::table("task")->where('id_manajement_konten', $id)->update([
-                    "nama_task" => $request->judul,
-                    "pic" => $request->pic,
-                    "priority" => $request->prioritas,
-                    "menit" => $request->menit,
-                    "tanggal_mulai" => $request->tanggal_mulai,
-                    "tanggal_deadline" => $request->tanggal_deadline,
-                    "note" => $request->note
-                ]);
+                $check = Task::where('id_manajement_konten', $id)->first();
+                if($check){
+                    DB::table("task")->where('id_manajement_konten', $id)->update([
+                        "nama_task" => $request->judul,
+                        "pic" => $request->pic,
+                        "priority" => $request->prioritas,
+                        "menit" => $request->menit,
+                        "tanggal_mulai" => $request->tanggal_mulai,
+                        "tanggal_deadline" => $request->tanggal_deadline,
+                        "note" => $request->note
+                    ]);
+                }else{
+                    $produk = ProdukClient::find($id);
+                    $divisi = 0;
+                    switch ($produk->kategori_jasa_id) {
+                        case 1:
+                            $divisi = 1;
+                            break;
+                        case 2:
+                        case 3:
+                            $divisi = 2;
+                            break;
+                        default:
+                    }
+                    DB::table("task")->insert([
+                        "nama_task" => $request->judul,
+                        "divisi" => $divisi,
+                        "pic" => $request->pic,
+                        "priority" => $request->prioritas,
+                        "menit" => $request->menit,
+                        "id_manajement_konten" => $id,
+                        "tanggal_mulai" => $request->tanggal_mulai,
+                        "tanggal_deadline" => $request->tanggal_deadline,
+                        "note" => $request->note,
+                        "status" => 0,
+                        "project" => (int)$request->id_project
+                    ]);
+
+                }
             }
 
             return redirect()->back()->with('success', 'Data berhasil diubah');

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
@@ -66,7 +67,6 @@ class ManajemenKontenController extends Controller
                 )
                 ->where('users.role', '!=', 'head_of_division')
                 ->groupBy('users.id', 'users.email', 'users.name')
-                ->havingRaw('SUM(COALESCE(data_jasa.menit, 0)) < ?', [420])
                 ->get();
         return view("manajemen.index", compact('data', 'produk', 'option', 'title', 'kategory', 'platform', 'halaman', 'users'));
     }
@@ -321,16 +321,17 @@ class ManajemenKontenController extends Controller
                 'updated_at'       => now(),
             ]);
 
-            DB::table("task")->where('id_manajement_konten', $id)->update([
-                "nama_task" => $request->judul,
-                "pic" => $request->pic,
-                "priority" => $request->prioritas,
-                "menit" => $request->menit,
-                "tanggal_mulai" => $request->tanggal_mulai,
-                "tanggal_deadline" => $request->tanggal_deadline,
-                "note" => $request->note,
-                "status" => 1
-            ]);
+            if(Auth::user()->role != "content_creator"){
+                DB::table("task")->where('id_manajement_konten', $id)->update([
+                    "nama_task" => $request->judul,
+                    "pic" => $request->pic,
+                    "priority" => $request->prioritas,
+                    "menit" => $request->menit,
+                    "tanggal_mulai" => $request->tanggal_mulai,
+                    "tanggal_deadline" => $request->tanggal_deadline,
+                    "note" => $request->note
+                ]);
+            }
 
             return redirect()->back()->with('success', 'Data berhasil diubah');
         } catch (\Exception $e) {

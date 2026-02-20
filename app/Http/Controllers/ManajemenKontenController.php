@@ -333,9 +333,9 @@ class ManajemenKontenController extends Controller
                         "tanggal_mulai" => $request->tanggal_mulai,
                         "tanggal_deadline" => $request->tanggal_deadline,
                         "note" => $request->note
-                    ]);
+                        ]);
                 }else{
-                    $produk = ProdukClient::find($id);
+                    $produk = ProdukClient::find($data->produk_client_id);
                     $divisi = 0;
                     switch ($produk->kategori_jasa_id) {
                         case 1:

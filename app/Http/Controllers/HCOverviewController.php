@@ -173,7 +173,6 @@ class HCOverviewController extends Controller
             'tanggal_deadline' => $request->tanggal_deadline,
             'note'             => $request->note,
             'status'           => 0, // Default ke Pool
-            'pembuat'          => Auth::user()->role
         ]);
 
         return redirect()->back()->with('success', 'Task berhasil ditambahkan ke project!');
@@ -254,8 +253,7 @@ class HCOverviewController extends Controller
             'tanggal_mulai' => $request->tanggal_mulai,
             'tanggal_deadline' => $request->tanggal_deadline,
             'note' => $request->note,
-            'status' => 0,
-            'pembuat' => Auth::user()->role
+            'status' => 0
         ]);
         
 

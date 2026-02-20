@@ -39,6 +39,40 @@ class HCOverviewController extends Controller
             ->where('task.project', $id_client)
             ->whereNot('task.status', 5);
 
+            switch($user->role) {
+                case "digital_marketing_manager":
+                    $taskQuery->where(function($q) use ($user) {
+                        // Melihat task milik sendiri OR task yang manager/bawahannya adalah dia
+                        $q->where('task.pic', $user->id)
+                        ->orWhere('users.dmm', $user->id); // Pastikan nama kolom di tabel users benar (dmm atau dm)
+                    });
+                    break;
+
+                case "digital_marketing":
+                    $taskQuery->where(function($q) use ($user) {
+                        $q->where('task.pic', $user->id)
+                        ->orWhere('users.dm', $user->id);
+                    });
+                    break;
+
+                case "content_creator":
+                    $taskQuery->where('task.pic', $user->id);
+                    break;
+
+                case "head_of_division":
+                    // Biasanya HOD bisa melihat semua task di project tersebut
+                    // Jadi biarkan kosong agar tidak terfilter pic
+                    break;
+
+                default:
+                    // Jika role lain, batasi hanya melihat milik sendiri demi keamanan
+                    $taskQuery->where('task.pic', $user->id);
+                    break;
+            }
+            // if($user->role == "content_creator"){
+            //     $taskQuery->where('task.pic', $user->id);
+            // }
+
         // --- LOGIKA FILTER DARI REQUEST ---
         if ($request->filled('start_date') && $request->filled('end_date')) {
             $taskQuery->whereBetween('task.tanggal_mulai', [$request->start_date, $request->end_date]);
@@ -139,6 +173,7 @@ class HCOverviewController extends Controller
             'tanggal_deadline' => $request->tanggal_deadline,
             'note'             => $request->note,
             'status'           => 0, // Default ke Pool
+            'pembuat'          => Auth::user()->role
         ]);
 
         return redirect()->back()->with('success', 'Task berhasil ditambahkan ke project!');
@@ -219,7 +254,8 @@ class HCOverviewController extends Controller
             'tanggal_mulai' => $request->tanggal_mulai,
             'tanggal_deadline' => $request->tanggal_deadline,
             'note' => $request->note,
-            'status' => 0
+            'status' => 0,
+            'pembuat' => Auth::user()->role
         ]);
         
 

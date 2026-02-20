@@ -30,8 +30,12 @@ class HCDailyController extends Controller
             case 'digital_marketing': $atasan = 'dm'; break;
         }
 
-        $query = Task::leftJoin('users', 'users.id', '=', 'task.pic')->join('produk_client', 'produk_client.id', '=', 'task.project')
+        $query = Task::leftJoin('users', 'users.id', '=', 'task.pic')
+            ->join('produk_client', 'produk_client.id', '=', 'task.project')
             ->select('task.*', 'users.email as vic_email', 'users.role as vic_role', 'produk_client.nama');
+        
+        $query->whereMonth('task.tanggal_mulai', $today->month)
+              ->whereYear('task.tanggal_mulai', $today->year);
 
         $query->where(function($q) use ($user, $today, $hierarchy, $atasan) {
             // 1. DATA MILIK USER LOGIN
@@ -41,15 +45,17 @@ class HCDailyController extends Controller
                     // JALUR GRID
                     $sub->where(function($grid) use ($today) {
                         $grid->whereNotNull('task.jam_mulai')
+                            // TAMBAHKAN INI: Memastikan task tersebut dijadwalkan untuk HARI INI
+                            ->whereDate('task.tanggal_mulai', $today) 
                             ->where(function($statusQ) use ($today) {
-                                // Status Aktif: 0 (Pending), 1 (In Progress), 3 (Waiting)
-                                $statusQ->whereIn('task.status', [0, 1, 3, 7])
-                                    // Status 5 (Split): Hanya tarik jika tanggal_split adalah HARI INI
+                                // Status Aktif: 0, 1, 3, 7
+                                $statusQ->whereIn('task.status', [0, 1, 2, 3, 7, 8])
+                                    // Status 5 (Split): Hanya jika tanggal_split hari ini
                                     ->orWhere(function($splitToday) use ($today) {
                                         $splitToday->where('task.status', 5)
                                                 ->whereDate('task.tanggal_split', $today);
                                     })
-                                    // Status 4 (Done): Hanya tarik jika tanggal_approve adalah HARI INI
+                                    // Status 4 (Done): Hanya jika tanggal_approve hari ini
                                     ->orWhere(function($doneToday) use ($today) {
                                         $doneToday->where('task.status', 4)
                                                 ->whereDate('task.tanggal_approve', $today);
@@ -60,7 +66,7 @@ class HCDailyController extends Controller
                     // JALUR POOL & OVERDUE (Tetap sama)
                     ->orWhere(function($pool) use ($today) {
                         $pool->whereNull('task.jam_mulai')
-                            ->whereIn('task.status', [0, 2])
+                            ->whereIn('task.status', [0, 7])
                             ->whereDate('task.tanggal_deadline', '>=', $today);
                     })
                     ->orWhere(function($overdue) use ($today) {
@@ -79,11 +85,25 @@ class HCDailyController extends Controller
         });
 
         $all_tasks = $query->get();
+        // dd($all_tasks);
 
         // --- FILTERING UNTUK VIEW ---
 
-        $unscheduled_tasks = $all_tasks->filter(function ($task) {
-            return is_null($task->jam_mulai);
+        $unscheduled_tasks = $all_tasks->filter(function ($task) use ($today) {
+            // 1. Pastikan Jam Mulai Kosong
+            $noTime = is_null($task->jam_mulai);
+
+            // 2. Filter Status yang diperbolehkan di Pool (0, 2, atau 7)
+            $validStatus = in_array($task->status, [0, 2, 7]);
+            /**
+             * 3. Logika Tanggal:
+             * Jika status == 7, maka true (lolos filter tanggal apapun).
+             * Jika status != 7, maka harus hari ini.
+             */
+            $dateCheck = ($task->status == 7) ? true : \Carbon\Carbon::parse($task->tanggal_mulai)->isToday();
+
+            // Gabungkan: Harus Tanpa Jam DAN Status Valid DAN (Tanggal Hari Ini ATAU Status 7)
+            return $noTime && $validStatus && $dateCheck;
         });
 
         $scheduled_tasks = $all_tasks->filter(function ($task) use ($user, $today) {
@@ -104,8 +124,12 @@ class HCDailyController extends Controller
                 return $task->tanggal_approve && \Carbon\Carbon::parse($task->tanggal_approve)->isToday();
             }
 
+            if($task->status == 7){
+                return \Carbon\Carbon::parse($task->tanggal_mulai)->isToday() && $task->jam_mulai != null;
+            }
+
             // Tampilkan status aktif (0, 1, 3)
-            return in_array($task->status, [0, 1, 2, 3, 7]);
+            return in_array($task->status, [0, 1, 2, 3, 7, 8]);
         });
 
         $totalMenitPool = $unscheduled_tasks->sum('menit');
@@ -157,7 +181,7 @@ class HCDailyController extends Controller
         } elseif ($action == 'stop') {
             $task->update(['status' => 3]); // Menunggu Approval
         } elseif ($action == 'revisi') {
-            $task->update(['status' => 2, 'jam_mulai' => null, 'tanggal_revisi' => now()]); // Balik ke Pool Jadi Revisi
+            $task->update(['status' => 2, 'tanggal_revisi' => now()]); // Balik ke Pool Jadi Revisi
         } elseif ($action == 'approve') {
             $task->update(['status' => 4, 'tanggal_approve' => now()]); // Selesai
         } elseif ($action == 'set_overdue'){

@@ -37,8 +37,6 @@ class ResetDailyTask extends Command
         foreach ($tasks as $task) {
             // Kita gunakan isi dari tanggal_mulai (format H:i:s) untuk menghitung deadline hari ini
             // Jika tanggal_mulai null, kita lewati untuk menghindari error parse
-            if (!$task->tanggal_mulai) continue;
-
             $startTime = Carbon::today()->parse($task->tanggal_mulai);
             
             // Hitung deadline (Waktu mulai + durasi menit)
@@ -47,14 +45,18 @@ class ResetDailyTask extends Command
             // LOGIKA RESET:
             // Jika waktu sekarang sudah melewati deadline tugas tersebut hari ini
             if ($now->greaterThan($deadlineTime)) {
-                if($task->status == 2){
+                if ($task->status == 8) {
+                    // JIKA STATUS 8: Kembalikan ke Pool (Reset Total)
                     $task->update([
-                        'jam_mulai' => null,
+                        'status' => 0,
+                        'jam_mulai' => null
                     ]);
-                }else{
+                } else {
+                    // JIKA STATUS LAIN (0,1,2,5): Ubah ke Overdue (7)
+                    // Jam mulai tetap ada agar tetap tampil di grid dengan warna merah
                     $task->update([
-                        'jam_mulai' => null, // HANYA jam_mulai yang dibuat NULL agar lepas dari grid
-                        'status'    => 0,    // Kembalikan ke Todo (Pool)
+                        'status' => 7,
+                        'jam_mulai' => null
                     ]);
                 }
                 $resetCount++;

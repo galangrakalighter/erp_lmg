@@ -62,9 +62,23 @@
         box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
 
+    .sortable-dragging * {
+        user-select: none !important;
+    }
+
+    /* Memberikan bayangan pada kartu yang sedang diangkat */
+    .sortable-ghost {
+        opacity: 0.4;
+        background-color: var(--primary-color) !important;
+    }
+
     .task-card-scheduled[data-pic="{{ Auth::id() }}"][data-status="0"],
     .task-card-scheduled[data-pic="{{ Auth::id() }}"][data-status="2"] { cursor: grab !important; }
+    .task-card-scheduled[data-pic="{{ Auth::id() }}"][data-status="7"] { cursor: grab !important; }
     
+    .task-card-scheduled:active {
+        cursor: grabbing !important;
+    }
     .task-title { font-size: 13px !important; font-weight: 800; color: #1a202c; line-height: 1.2; }
     
     .task-time-range { 
@@ -98,6 +112,9 @@
     .animate-pulse { animation: pulse-red 2s infinite; }
     
     .badge-soft-primary { background: #eef2ff; color: #4e73df; }
+    .bg-light-danger {
+        background-color: #fff5f5;
+    }
 </style>
 
 <div class="container-fluid py-4">
@@ -125,16 +142,37 @@
         <div class="card-body bg-light rounded shadow-inner mt-2 m-3">
             <div id="unscheduled-pool" class="d-flex flex-wrap" style="gap: 12px; min-height: 60px;">
                 @foreach($unscheduled_tasks as $task)
-                    <div class="task-card-source card shadow-sm border-left-{{ $priority_colors[$task->priority] ?? 'secondary' }}"
+                    @php
+                        // Logika penentuan warna border dan background jika overdue
+                        $isOverdue = ($task->status == 7);
+                        $borderClass = $isOverdue ? 'border-danger' : 'border-left-' . ($priority_colors[$task->priority] ?? 'secondary');
+                        $bgClass = $isOverdue ? 'bg-light-danger' : 'bg-white';
+                    @endphp
+
+                    <div class="task-card-source card shadow-sm {{ $borderClass }} {{ $bgClass }}"
                         data-id="{{ $task->id }}" 
                         data-menit="{{ $task->menit }}" 
                         data-status="{{ $task->status }}" 
-                        style="width: 240px; cursor: grab; border-radius: 8px;">
+                        style="width: 240px; cursor: grab; border-radius: 8px; {{ $isOverdue ? 'border-left: 5px solid #e74a3b !important;' : '' }}">
+                        
                         <div class="card-body p-2">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="task-title text-dark text-truncate" style="max-width: 160px;">{{ $task->nama_task }}</span>
-                                <span class="badge badge-primary">{{ $task->menit }}m</span>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="task-title {{ $isOverdue ? 'text-danger font-weight-bold' : 'text-dark' }} text-truncate" style="max-width: 160px;">
+                                    {{ $task->nama_task }}
+                                </span>
+                                <span class="badge {{ $isOverdue ? 'badge-danger' : 'badge-primary' }}">
+                                    {{ $task->menit }}m
+                                </span>
                             </div>
+
+                            {{-- Keterangan Tambahan jika Overdue --}}
+                            @if($isOverdue)
+                                <div class="d-flex align-items-center mt-1">
+                                    <small class="text-danger font-italic" style="font-size: 0.75rem;">
+                                        <i class="fas fa-exclamation-triangle mr-1"></i> Overdue
+                                    </small>
+                                </div>
+                            @endif
                         </div>
                     </div>
                 @endforeach
@@ -167,7 +205,12 @@
                     <div id="daily-grid">
                         {{-- Garis Grid per Jam --}}
                         @for($i = 0; $i <= 8; $i++)
-                            <div class="grid-line" style="top: {{ $i * 80 }}px;"></div>
+                            <div class="grid-line" style="top: {{ $i * 300 }}px;"></div>
+                        @endfor
+                        @for($i = 0; $i <= 48; $i++)
+                            @if($i % 6 != 0) {{-- Hindari double line dengan jam utama --}}
+                                <div class="grid-line" style="top: {{ $i * 50 }}px; border-top: 1px dashed #ebedf3; opacity: 0.5;"></div>
+                            @endif
                         @endfor
 
                         @foreach($scheduled_tasks as $task)
@@ -184,7 +227,7 @@
                                 $isRunning = ($task->status == 1);
                             @endphp
 
-                            <div class="task-card-scheduled card {{ $isRunning ? 'bg-primary text-white' : '' }} {{ $task->status == 5 ? 'bg-light' : '' }} {{ $task->status == 7 ? 'bg-danger text-white' : '' }} border-left-{{ $priority_colors[$task->priority] ?? 'secondary' }}"
+                            <div class="task-card-scheduled card {{ $isRunning ? 'bg-primary text-white' : '' }} {{ $task->status == 5 ? 'bg-light' : '' }} {{ $task->status == 7 ? 'bg-danger text-white' : '' }} {{ $task->status == 8 ? 'bg-warning text-white' : '' }} border-left-{{ $priority_colors[$task->priority] ?? 'secondary' }}"
                                 data-id="{{ $task->id }}" 
                                 data-status="{{ $task->status }}" 
                                 data-pic="{{ $task->pic }}" 
@@ -213,6 +256,10 @@
                                                 <span class="badge badge-light text-danger animate-pulse mt-1" style="font-size: 10px;">
                                                     <i class="fas fa-exclamation-circle mr-1"></i> OVERDUE
                                                 </span>
+                                            @elseif($task->status == 8)
+                                                <span class="badge badge-light text-danger animate-pulse mt-1" style="font-size: 10px;">
+                                                    <i class="fas fa-exclamation-circle mr-1"></i> WAKTU HARI INI HABIS
+                                                </span>
                                             @endif
                                         </div>
                                         
@@ -238,22 +285,18 @@
                                                     <span class="badge badge-warning text-dark" style="font-size: 9px;">Reviewing...</span>
                                                 @elseif($task->status == 4)
                                                     <span class="badge badge-success" style="font-size: 9px;"><i class="fas fa-check"></i> Done</span>
-                                                @elseif($task->status == 7)
+                                                @elseif($task->status == 7 || $task->status == 8)
                                                     <button onclick="changeStatus({{ $task->id }}, 'stop')" class="btn btn-xs btn-light text-success border">Kirim Task</button>
                                                 @endif
                                             @else
                                                 @if($task->status == 3)
                                                     <button onclick="changeStatus({{ $task->id }}, 'approve')" class="btn btn-xs btn-success">Approve</button>
-                                                    <button onclick="changeStatus({{ $task->id }}, 'reject')" class="btn btn-xs btn-danger">Reject</button>
+                                                    <button onclick="changeStatus({{ $task->id }}, 'revisi')" class="btn btn-xs btn-danger">Reject</button>
                                                 @else
                                                     <small class="text-muted" style="font-size: 9px;">PIC: {{ explode('@', $task->vic_email)[0] }}</small>
                                                 @endif
                                             @endif
                                         </div>
-                                    @endif
-
-                                    @if($isMyTask && in_array($task->status, [0, 2]))
-                                        <div class="resize-handle"></div>
                                     @endif
                                 </div>
                             </div>
@@ -283,7 +326,12 @@
             group: 'schedule_group',
             animation: 150,
             sort: false,
-            draggable: ".task-card-source, .task-card-scheduled[data-status='0'], .task-card-scheduled[data-status='2']",
+            scroll: true,
+            forceAutoScrollEdge: true, // Sangat penting: memaksa scroll saat di ujung
+            scrollSensitivity: 150,    // Seberapa dekat kursor dengan tepi (dalam pixel)
+            scrollSpeed: 30,           // Kecepatan scroll
+            bubbleScroll: true,
+            draggable: ".task-card-source, .task-card-scheduled[data-status='0'], .task-card-scheduled[data-status='2'], .task-card-scheduled[data-status='7']",
             filter: ".resize-handle, .action-container, button",
             onAdd: (evt) => handleTaskMovement(evt, true),
             onEnd: (evt) => { if (evt.to === grid && evt.from === grid) handleTaskMovement(evt, false); }
@@ -339,19 +387,78 @@
         // --- TIME EDITING ---
         window.enableTimeEdit = function(el) {
             const input = el.nextElementSibling;
+            const currentTime = el.innerText.split(' - ')[0].trim();
+            
             el.style.display = 'none';
             input.style.display = 'inline-block';
-            input.value = el.innerText.split(' - ')[0].trim();
+            
+            // Simpan jam lama di atribut data untuk backup
+            input.setAttribute('data-old-value', currentTime); 
+            input.value = currentTime;
             input.focus();
         };
 
         window.saveManualTime = function(input) {
             const card = input.closest('.task-card-scheduled');
-            const [h, m] = input.value.split(':').map(Number);
-            if (h < 9 || h >= 17) { alert("Di luar jam kerja!"); location.reload(); return; }
+            const displayRange = card.querySelector('.task-time-range');
+            const oldTime = input.getAttribute('data-old-value');
+            const newValue = input.value;
 
-            const topPx = ((h - 9) * 80) + (m / 60 * 80);
-            saveToDatabase(card.dataset.id, topPx, true);
+            // Jika tidak ada perubahan, langsung tutup
+            if (newValue === oldTime) {
+                input.style.display = 'none';
+                displayRange.style.display = 'inline-block';
+                return;
+            }
+
+            const [h, m] = newValue.split(':').map(Number);
+            
+            // 1. VALIDASI JAM KERJA
+            if (h < 9 || (h >= 17 && m > 0)) { 
+                alert("Di luar jam kerja (09:00 - 17:00)!"); 
+                input.value = oldTime; // Kembalikan nilai input ke jam lama
+                input.style.display = 'none';
+                displayRange.style.display = 'inline-block';
+                return; 
+            }
+
+            // 2. HITUNG POSISI BARU (Skala 300px)
+            const hourDiff = h - 9;
+            const proposedTop = (hourDiff * 300) + (m / 60 * 300);
+            const duration = parseInt(card.getAttribute('data-menit'));
+
+            // 3. VALIDASI TABRAKAN (Collision) secara lokal
+            if (checkCollision(proposedTop, card.offsetHeight, card.dataset.id)) {
+                alert("Slot waktu tersebut sudah terisi task lain!");
+                input.value = oldTime;
+                input.style.display = 'none';
+                displayRange.style.display = 'inline-block';
+                return;
+            }
+
+            // 4. EFEK VISUAL INSTAN (Tanpa Refresh)
+            card.style.top = proposedTop + 'px';
+            updateTimeDisplay(card, proposedTop, duration); // Update teks jam di kartu
+            
+            // Sembunyikan input kembali
+            input.style.display = 'none';
+            displayRange.style.display = 'inline-block';
+
+            // 5. SIMPAN KE DATABASE DI BACKGROUND
+            const minutesFromStart = (proposedTop / 300) * 60; 
+            axios.post("{{ route('hc.updateSchedule') }}", { 
+                id: card.dataset.id, 
+                top: minutesFromStart 
+            })
+            .then(() => {
+                console.log("Jadwal berhasil diperbarui otomatis.");
+                // Opsi: Berikan notifikasi toast kecil di pojok jika perlu
+            })
+            .catch(err => {
+                console.error(err);
+                alert("Gagal sinkronisasi ke server. Halaman akan dimuat ulang.");
+                location.reload(); // Refresh hanya jika koneksi/DB bermasalah
+            });
         };
 
         // --- COUNTDOWN TIMER ---
@@ -365,7 +472,7 @@
                 const remain = total - elapsed;
 
                 if (remain <= 0) {
-                    autoUpdateToOverdue(timer.dataset.id);
+                    autoUpdateToEndsTime(timer.dataset.id);
                 } else {
                     const rm = Math.floor(remain / 60);
                     const rs = remain % 60;
@@ -386,21 +493,6 @@
                 startY = e.clientY;
                 startH = currentCard.offsetHeight;
                 document.body.classList.add('resizing');
-            }
-        });
-
-        document.addEventListener('mousemove', e => {
-            if (!isResizing) return;
-            
-            // Snap resize setiap 50px (10 menit)
-            let newH = Math.round((startH + (e.clientY - startY)) / 50) * 50;
-            if (newH < 50) newH = 50; // Minimal 10 menit
-            
-            // Ganti 640 menjadi 2400
-            if (parseFloat(currentCard.style.top) + newH <= 2400) {
-                currentCard.style.height = newH + 'px';
-                // Gunakan pembagi 300 untuk hitung menit
-                updateTimeDisplay(currentCard, parseFloat(currentCard.style.top), (newH / 300) * 60);
             }
         });
 
@@ -427,6 +519,54 @@
         }
     });
 
+    let scrollInterval;
+
+    document.addEventListener('mousemove', (e) => {
+        const draggingElement = document.querySelector('.sortable-chosen');
+        
+        if (draggingElement) {
+            const threshold = 200; 
+            const windowHeight = window.innerHeight;
+            const mouseY = e.clientY;
+
+            // --- LOG DEBUGGING ---
+            // Muncul di Console (F12) untuk memantau posisi kursor saat drag
+            console.log(`Dragging: ON | Mouse Y: ${mouseY} | Window Height: ${windowHeight} | Threshold: ${windowHeight - threshold}`);
+
+            if (mouseY > windowHeight - threshold) {
+                if (!scrollInterval) {
+                    console.warn("LOG: Mengaktifkan Scroll Bawah Otomatis"); // Log peringatan saat scroll mulai
+                    scrollInterval = setInterval(() => {
+                        window.scrollBy(0, 15);
+                    }, 20);
+                }
+            } 
+            else if (mouseY < threshold) {
+                if (!scrollInterval) {
+                    console.warn("LOG: Mengaktifkan Scroll Atas Otomatis");
+                    scrollInterval = setInterval(() => {
+                        window.scrollBy(0, -15);
+                    }, 20);
+                }
+            } 
+            else {
+                if (scrollInterval) {
+                    console.log("LOG: Area Aman - Menghentikan Scroll");
+                    clearInterval(scrollInterval);
+                    scrollInterval = null;
+                }
+            }
+        }
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (scrollInterval) {
+            console.log("LOG: Klik Dilepas - Membersihkan Interval Scroll");
+            clearInterval(scrollInterval);
+            scrollInterval = null;
+        }
+    });
+
     window.autoReturnToPool = function(id) {
         axios.post("{{ route('hc.updateSchedule') }}", { id: id, reset: true })
             .then(() => location.reload())
@@ -436,6 +576,9 @@
     // --- AJAX ACTIONS ---
     function autoUpdateToOverdue(id) {
         axios.post("{{ route('hc.updateStatus') }}", { id: id, action: 'set_overdue', status: 7 }).then(() => location.reload());
+    }
+    function autoUpdateToEndsTime(id) {
+        axios.post("{{ route('hc.updateStatus') }}", { id: id, action: 'set_overdue', status: 8 }).then(() => location.reload());
     }
     function returnToPool(id) {
         if(confirm('Kembalikan ke Pool?')) axios.post("{{ route('hc.updateSchedule') }}", { id: id, reset: true }).then(() => location.reload());

@@ -148,7 +148,11 @@ class HCDailyController extends Controller
         if (!$task) return response()->json(['success' => false], 404);
 
         if ($request->has('reset') && $request->reset == true) {
-            $task->update(['jam_mulai' => null, 'status' => 0]);
+            if($task->status == 7){
+                $task->update(['jam_mulai' => null]);
+            }else{
+                $task->update(['jam_mulai' => null, 'status' => 0]);
+            }
             return response()->json(['success' => true]);
         }
 

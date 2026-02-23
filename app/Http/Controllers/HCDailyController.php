@@ -298,10 +298,14 @@ class HCDailyController extends Controller
             ->where('task.pic', $userId)
             ->whereNotNull('task.jam_mulai')
             ->where(function($query) use ($today) {
-                // Logic filter tanggal & status sesuai controller Anda
-                $query->where(function($q) use ($today) {
-                    $q->whereDate('task.tanggal_mulai', $today)
-                    ->whereIn('task.status', [0, 1, 2, 3, 7, 8]);
+                // 1. KONDISI UTAMA: Selama Status 3, tampilkan tanpa cek tanggal
+                $query->where('task.status', 3)
+                
+                // 2. JALUR GRID NORMAL (Hari Ini)
+                ->orWhere(function($q) use ($today) {
+                    $q->where('task.tanggal_mulai', '<=', $today)
+                    ->where('task.tanggal_deadline', '>=', $today)
+                    ->whereIn('task.status', [0, 1, 2, 7, 8]);
                 })
                 ->orWhere(function($q) use ($today) {
                     $q->where('task.status', 5)->whereDate('task.tanggal_split', $today);

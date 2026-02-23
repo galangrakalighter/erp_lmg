@@ -69,9 +69,6 @@ class HCOverviewController extends Controller
                     $taskQuery->where('task.pic', $user->id);
                     break;
             }
-            // if($user->role == "content_creator"){
-            //     $taskQuery->where('task.pic', $user->id);
-            // }
 
         // --- LOGIKA FILTER DARI REQUEST ---
         if ($request->filled('start_date') && $request->filled('end_date')) {

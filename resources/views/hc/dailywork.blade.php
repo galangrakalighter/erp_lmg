@@ -151,6 +151,14 @@
         border: 1px solid rgba(255, 255, 255, 0.3);
     }
     .gap-1 { gap: 4px; }
+    .subordinate-task {
+        opacity: 0.95;
+        z-index: 5;
+        background-color: #fff9e6; /* Sedikit krem agar beda dengan putih */
+    }
+    .my-task {
+        z-index: 10;
+    }
 </style>
 
 <div class="container-fluid py-4">
@@ -161,13 +169,28 @@
         </div>
         
         @if(Auth::user()->role != "content_creator")
-            <div class="btn-group shadow-sm">
-                <button id="btn-self" class="btn btn-sm btn-primary active" onclick="switchMode('self')">
-                    <i class="fas fa-user mr-1"></i> My Schedule
-                </button>
-                <button id="btn-subordinate" class="btn btn-sm btn-white border" onclick="switchMode('subordinate')">
-                    <i class="fas fa-users mr-1"></i> Review Subordinate
-                </button>
+            <div class="d-flex align-items-center flex-wrap" style="gap: 8px;">
+                <div class="d-none d-md-flex align-items-center flex-wrap" style="gap: 4px;">
+                    
+                    {{-- 1. Tombol 'My Schedule' (Selalu Muncul) --}}
+                    <button class="btn btn-primary active btn-xs rounded-pill px-3 btn-filter-grid" 
+                            onclick="filterGrid('{{ Auth::id() }}', this)">
+                        <i class="fas fa-circle mr-1" style="font-size: 7px; vertical-align: middle; color: #fff;"></i>
+                        My Schedule
+                    </button>
+
+                    {{-- 2. Tombol Bawahan (Hanya muncul jika user_id bukan milik saya) --}}
+                    @foreach($subordinateTasks->unique('user_id') as $sub)
+                        @if($sub->user_id !== Auth::id())
+                            <button class="btn btn-outline-secondary btn-xs rounded-pill px-3 btn-filter-grid" 
+                                    onclick="filterGrid('{{ $sub->user_id }}', this)">
+                                <i class="fas fa-circle mr-1" style="font-size: 7px; vertical-align: middle; color: #ffc107;"></i>
+                                {{ $sub->email }}
+                            </button>
+                        @endif
+                    @endforeach
+
+                </div>
             </div>
         @endif
     </div>
@@ -262,6 +285,7 @@
                                 $startGrid = \Carbon\Carbon::createFromTime(9, 0, 0);
                                 $taskStart = \Carbon\Carbon::parse($task->jam_mulai);
                                 $taskEnd = $taskStart->copy()->addMinutes($task->menit);
+                                $email = $task->vic_email ?? '';
                                 
                                 // PERBAIKAN: Gunakan 300 (skala baru), bukan 80
                                 $topPx = ($startGrid->diffInMinutes($taskStart, false) / 60) * 300;
@@ -270,107 +294,112 @@
                                 $isMyTask = ($task->pic == Auth::id());
                                 $isRunning = ($task->status == 1);
                                 $isReview = ($task->status == 3);
-                                $cardType = '';
-                                if ($isMyTask) {
-                                    $cardType = 'type-self';
-                                } elseif (!$isMyTask && $isReview) {
-                                    $cardType = 'type-subordinate';
-                                } else {
-                                    $cardType = 'type-other'; // Task orang lain yang bukan status 3 (biasanya disembunyikan)
-                                }
+                                $cardTypeClass = $isMyTask ? 'my-task' : 'subordinate-task d-none';
+                                $borderStyle = !$isMyTask ? 'border-left: 4px solid #ffc107;' : '';
+                                $rentangWaktu = $taskStart->format('H.i') . ' - ' . $taskEnd->format('H.i');
                             @endphp
 
-                            <div class="task-card-scheduled card {{ $cardType }} {{ (!$isMyTask) ? 'subordinate-hidden' : '' }} {{ $isRunning ? 'bg-primary text-white' : '' }} {{ $task->status == 5 ? 'bg-light' : '' }} {{ $task->status == 7 ? 'bg-danger text-white' : '' }} {{ $task->status == 8 ? 'bg-warning text-white' : '' }} border-left-{{ $priority_colors[$task->priority] ?? 'secondary' }}"
+                            <div class="task-card-scheduled card {{ $cardTypeClass }} {{ $isRunning ? 'bg-primary text-white' : '' }} {{ $task->status == 5 ? 'bg-light' : '' }} {{ $task->status == 7 ? 'bg-danger text-white' : '' }} {{ $task->status == 8 ? 'bg-warning text-white' : '' }} border-left-{{ $priority_colors[$task->priority] ?? 'secondary' }}"
                                 data-id="{{ $task->id }}" 
-                                data-type="{{ $cardType }}"
+                                data-email="{{ $email }}"
                                 data-status="{{ $task->status }}" 
                                 data-pic="{{ $task->pic }}" 
                                 data-menit="{{ $task->menit }}" 
-                                style="top: {{ $topPx }}px; height: {{ $heightPx }}px; min-height: 40px; border-radius: 8px; transition: all 0.3s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                style="top: {{ $topPx }}px; height: {{ $heightPx }}px; min-height: 50px; border-radius: 8px; transition: all 0.3s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.05); position: absolute; width: 100%;">
 
-                                <div class="card-body p-2 position-relative h-100 d-flex flex-column">
-                                    <div class="d-flex justify-content-between w-100 mb-2">
-                                        <div class="text-truncate" style="max-width: 60%;">
-                                            @if(!$isMyTask && $isReview)
-                                                <span class="badge badge-pill badge-subordinate-review mb-1" style="font-size: 10px; letter-spacing: 0.5px;">
-                                                    <i class="fas fa-user-check mr-1"></i> REVIEW: {{ $task->vic_email }}
+                                <div class="card-body p-2 position-relative h-100 d-flex flex-column justify-content-center">
+                                    <div class="d-flex justify-content-between align-items-center w-100">
+                                        
+                                        <div class="text-truncate" style="flex-grow: 1; margin-right: 10px;">
+                                            {{-- Badge Nama untuk Bawahan --}}
+                                            @if(!$isMyTask)
+                                                <span class="badge {{ $isRunning || $task->status == 7 ? 'badge-light text-dark' : 'badge-dark' }} mb-1" style="font-size: 8px; opacity: 0.9;">
+                                                    <i class="fas fa-user mr-1"></i> {{ strtoupper(explode('@', $email)[0]) }}
                                                 </span><br>
                                             @endif
-                                            <strong class="task-title {{ ($isRunning || $task->status == 7) ? 'text-white' : 'text-dark' }}" style="font-size: 14px; font-weight: 700; line-height: 1.2;">
-                                                {{ $task->id_manajement_konten ? "Edit Konten" : "" }} {{ $task->nama_task }}
-                                                <span style="font-weight: 400; opacity: 0.8;">({{ Str::upper($task->nama) }})</span>
+
+                                            <strong class="task-title {{ ($isRunning || $task->status == 7) ? 'text-white' : 'text-dark' }}" style="font-size: 12px; font-weight: 700; line-height: 1.1; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                                {{ $task->id_manajement_konten ? "Edit Konten" : "" }} {{ $task->nama_task }} ({{ Str::upper($task->nama ?? $task->project_name) }})  @if($task->status == 1)
+                                                    <span class="badge badge-light text-primary border" style="font-size: 7px; padding: 1px 3px;"><i class="fas fa-play mr-1"></i>SEDANG BERJALAN</span>
+                                                @elseif($task->status == 3)
+                                                    <span class="badge badge-warning" style="font-size: 7px; padding: 1px 3px;"><i class="fas fa-clock mr-1"></i>MENUNGGU APPROVAL</span>
+                                                @elseif(in_array($task->status, [4, 5]))
+                                                    <span class="badge badge-success" style="font-size: 7px; padding: 1px 3px;"><i class="fas fa-check mr-1"></i>DONE</span>
+                                                @elseif($task->status == 7)
+                                                    <span class="badge badge-light text-danger" style="font-size: 7px; padding: 1px 3px;"><i class="fas fa-exclamation mr-1"></i>OVERDUE</span>
+                                                @elseif($task->status == 8)
+                                                    <span class="badge badge-danger" style="font-size: 7px; padding: 1px 3px;"><i class="fas fa-stopwatch mr-1"></i>WAKTU HABIS</span>
+                                                @endif
                                             </strong>
-                                        </div>
-                                        
-                                        <div class="text-right" style="min-width: 40%;">
-                                            <div class="mb-1">
-                                                <span class="task-time-range {{ ($isRunning || $task->status == 7) ? 'text-white' : 'text-primary' }}" 
-                                                    style="font-size: 14px; font-weight: 800; cursor: pointer; background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 4px;"
-                                                    @if(!in_array($task->status, [1, 3, 4, 7])) onclick="enableTimeEdit(this)" @endif>
-                                                    {{ $taskStart->format('H:i') }} - {{ $taskEnd->format('H:i') }}
-                                                </span>
-                                                <input type="time" class="time-edit-input" style="display:none; width: 100%; font-size: 12px; border: 1px solid #ddd; border-radius: 4px;" onblur="saveManualTime(this)" onkeydown="if(event.key==='Enter') saveManualTime(this)">
-                                            </div>
                                             
-                                            <div class="task-date-info {{ ($isRunning || $task->status == 7) ? 'text-white' : '' }}" style="font-size: 11px; line-height: 1.2;">
-                                                <div style="font-weight: 600; opacity: 0.9;">Tgl: {{ \Carbon\Carbon::parse($task->tanggal_mulai)->format('d/m/Y') }}</div>
-                                                <div class="{{ ($isRunning || $task->status == 7) ? 'text-white' : 'text-danger' }}" style="font-weight: 800;">
-                                                    DL: {{ \Carbon\Carbon::parse($task->tanggal_deadline)->format('d/m/Y') }}
+                                            {{-- LABEL STATUS DINAMIS --}}
+                                            @if($isRunning)
+                                                <span class="running-timer badge badge-light text-primary border shadow-sm ml-1" 
+                                                    data-id="{{ $task->id }}" 
+                                                    data-start-time="{{ $task->jam_mulai }}" 
+                                                    data-duration="{{ $task->menit }}"
+                                                    style="font-size: 9px; padding: 2px 4px; font-family: monospace;">
+                                                    <i class="fas fa-hourglass-half"></i> --:--
+                                                </span>
+                                            @endif
+                                        </div>
+
+                                        <div class="d-flex align-items-center flex-shrink-0" style="gap: 8px;">
+                                            
+                                            {{-- AREA TANGGAL --}}
+                                            <div class="task-date-info d-flex align-items-center {{ ($isRunning || $task->status == 7) ? 'text-white' : '' }}" 
+                                                style="gap: 6px; border-right: 1px solid rgba(0,0,0,0.1); padding-right: 8px;">
+                                                <div class="text-center" style="line-height: 1;">
+                                                    <small style="font-size: 7px; display: block; opacity: 0.7; font-weight: 600;">START</small>
+                                                    <span style="font-size: 11px; font-weight: 800;">{{ \Carbon\Carbon::parse($task->tanggal_mulai)->format('d/m') }}</span>
+                                                </div>
+                                                <div class="text-center" style="line-height: 1;">
+                                                    <small style="font-size: 7px; display: block; opacity: 0.7; font-weight: 600;">END</small>
+                                                    <span class="{{ ($isRunning || $task->status == 7) ? 'text-white' : 'text-danger' }}" style="font-size: 11px; font-weight: 800;">{{ \Carbon\Carbon::parse($task->tanggal_deadline)->format('d/m') }}</span>
+                                                </div>
+                                            </div>
+
+                                            {{-- JAM DAN TOMBOL ACTION (SEJAJAR) --}}
+                                            <div class="d-flex align-items-center" style="gap: 5px;">
+                                                <span class="task-time-range {{ ($isRunning || $task->status == 7) ? 'text-white' : 'text-primary' }}" 
+                                                    style="font-size: 10px; font-weight: 900; background: rgba(0,0,0,0.07); padding: 3px 6px; border-radius: 4px; white-space: nowrap;"
+                                                    @if($isMyTask && !in_array($task->status, [1, 3, 4, 7, 8])) onclick="enableTimeEdit(this)" @endif>
+                                                    {{ $rentangWaktu }}
+                                                </span>
+                                                <input type="time" class="form-control form-control-sm edit-time-input shadow-sm" 
+                                                    style="display: none; width: 85px; font-size: 11px; height: 26px; padding: 2px 5px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100; border: 2px solid #4e73df;" 
+                                                    onblur="saveManualTime(this)"
+                                                    onkeydown="if(event.key === 'Enter') { this.blur(); }">
+
+                                                {{-- PINDAHKAN LOGIKA BUTTON KE SINI --}}
+                                                <div class="action-buttons-wrapper">
+                                                    @if(!$isMyTask)
+                                                        @if($isReview)
+                                                            <div class="d-flex">
+                                                                <button onclick="changeStatus({{ $task->id }}, 'approve')" class="btn btn-xs btn-success mr-1 shadow-sm" style="font-size: 9px; padding: 1px 4px;"><i class="fas fa-check"></i></button>
+                                                                <button onclick="changeStatus({{ $task->id }}, 'revisi')" class="btn btn-xs btn-danger shadow-sm" style="font-size: 9px; padding: 1px 4px;"><i class="fas fa-times"></i></button>
+                                                            </div>
+                                                        @endif
+                                                    @else
+                                                        <div class="d-flex">
+                                                            @if($task->status == 1)
+                                                                <button onclick="splitTask({{ $task->id }})" class="btn btn-xs btn-outline-light mr-1" style="font-size: 9px; padding: 1px 4px;">Split</button>
+                                                                <button onclick="changeStatus({{ $task->id }}, 'stop')" class="btn btn-xs btn-success font-weight-bold shadow-sm" style="font-size: 9px; padding: 1px 6px;">Kirim</button>
+                                                            @elseif(in_array($task->status, [0, 2, 7]))
+                                                                <button onclick="returnToPool({{ $task->id }})" class="btn btn-xs btn-light border mr-1" style="padding: 1px 3px;"><i class="fas fa-undo text-danger" style="font-size: 9px;"></i></button>
+                                                                <button onclick="changeStatus({{ $task->id }}, 'play')" class="btn btn-xs btn-success shadow-sm font-weight-bold" style="font-size: 9px; padding: 1px 8px;">START</button>
+                                                            @endif
+                                                        </div>
+                                                    @endif
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
 
+                                    {{-- Note dipindahkan ke bawah judul secara ringkas jika ada --}}
                                     @if($task->note)
-                                        <div class="task-note mt-1 mb-2 p-2 {{ ($isRunning || $task->status == 7) ? 'bg-white-transparent text-white' : 'bg-light border' }}" 
-                                            style="font-size: 13px; border-radius: 6px; border-left: 4px solid #007bff; position: relative; overflow: hidden;">
-                                            <div style="font-weight: 800; text-transform: uppercase; font-size: 10px; margin-bottom: 2px; opacity: 0.7;">
-                                                <i class="fas fa-pen-nib mr-1"></i> Note
-                                            </div>
-                                            <div style="line-height: 1.4; font-weight: 500;">
-                                                {{ $task->note }}
-                                            </div>
-                                        </div>
-                                    @endif
-
-                                    @if($task->status != 5)
-                                        <div class="action-container mt-auto pt-2 border-top d-flex align-items-center justify-content-between">
-                                            @if(!$isMyTask && $isReview)
-                                                <div class="btn-group btn-group-sm w-100">
-                                                    <button onclick="changeStatus({{ $task->id }}, 'approve')" class="btn btn-success font-weight-bold" style="border-radius: 4px 0 0 4px;">Approve</button>
-                                                    <button onclick="changeStatus({{ $task->id }}, 'revisi')" class="btn btn-danger font-weight-bold" style="border-radius: 0 4px 4px 0;">Reject</button>
-                                                </div>
-                                            @else
-                                                @if($isMyTask)
-                                                    <div class="d-flex gap-1">
-                                                        @if($task->status == 1)
-                                                            <button onclick="splitTask({{ $task->id }})" class="btn btn-xs btn-outline-secondary mr-1">Split</button>
-                                                            <button onclick="changeStatus({{ $task->id }}, 'stop')" class="btn btn-xs btn-success font-weight-bold shadow-sm">Kirim Task</button>
-                                                        @elseif(in_array($task->status, [0, 2]))
-                                                            <button onclick="returnToPool({{ $task->id }})" class="btn btn-xs btn-light border mr-1"><i class="fas fa-undo text-danger"></i></button>
-                                                            <button onclick="changeStatus({{ $task->id }}, 'play')" class="btn btn-xs btn-success px-3 shadow-sm font-weight-bold">START</button>
-                                                        @elseif($task->status == 3)
-                                                            <span class="badge badge-warning py-1 px-2" style="border-radius: 4px;"><i class="fas fa-clock mr-1"></i> Reviewing...</span>
-                                                        @elseif($task->status == 4)
-                                                            <span class="badge badge-success py-1 px-2" style="border-radius: 4px;"><i class="fas fa-check-circle mr-1"></i> Selesai</span>
-                                                        @elseif($task->status == 7 || $task->status == 8)
-                                                            <button onclick="changeStatus({{ $task->id }}, 'stop')" class="btn btn-xs btn-success font-weight-bold shadow-sm">Kirim Task</button>
-                                                        @endif
-                                                    </div>
-                                                @else
-                                                    @if($task->status == 3)
-                                                        <div class="btn-group btn-group-sm w-100">
-                                                            <button onclick="changeStatus({{ $task->id }}, 'approve')" class="btn btn-success">Approve</button>
-                                                            <button onclick="changeStatus({{ $task->id }}, 'revisi')" class="btn btn-danger">Reject</button>
-                                                        </div>
-                                                    @else
-                                                        <div class="d-flex align-items-center text-muted">
-                                                            <i class="fas fa-user-circle mr-1" style="font-size: 14px;"></i>
-                                                            <small style="font-size: 11px; font-weight: 600;">{{ explode('@', $task->vic_email)[0] }}</small>
-                                                        </div>
-                                                    @endif
-                                                @endif
-                                            @endif
+                                        <div class="task-note mt-1" style="font-size: 9px; opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-top: 1px solid rgba(0,0,0,0.05); pt-1">
+                                            <i class="fas fa-sticky-note mr-1"></i>{{ $task->note }}
                                         </div>
                                     @endif
                                 </div>
@@ -389,6 +418,8 @@
         const pool = document.getElementById('unscheduled-pool');
         const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
         axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken;
+        const myRole = "{{ Auth::user()->role }}";
+        const myId = "{{ Auth::id() }}";
 
         // --- SORTABLE JS CONFIG ---
         new Sortable(pool, { 
@@ -406,23 +437,265 @@
             scrollSensitivity: 150,    // Seberapa dekat kursor dengan tepi (dalam pixel)
             scrollSpeed: 30,           // Kecepatan scroll
             bubbleScroll: true,
-            draggable: ".task-card-source, .task-card-scheduled[data-status='0'], .task-card-scheduled[data-status='2'], .task-card-scheduled[data-status='7']",
+            draggable: ".task-card-source, .task-card-scheduled[data-status='0'], .task-card-scheduled[data-status='2'], .task-card-scheduled[data-status='7'], .task-card-scheduled[data-status='8']",
             filter: ".resize-handle, .action-container, button",
             onAdd: (evt) => handleTaskMovement(evt, true),
             onEnd: (evt) => { if (evt.to === grid && evt.from === grid) handleTaskMovement(evt, false); }
         });
+        
+        window.filterGrid = async function(userId, btn) {
+            // Update UI Tombol (Visual feedback)
+            document.querySelectorAll('.btn-filter-grid').forEach(b => {
+                b.classList.replace('btn-primary', 'btn-outline-secondary');
+                b.classList.remove('active');
+                if(b.querySelector('.fa-circle')) b.querySelector('.fa-circle').style.color = '#ffc107';
+            });
+
+            btn.classList.replace('btn-outline-secondary', 'btn-primary');
+            btn.classList.add('active');
+            if(btn.querySelector('.fa-circle')) btn.querySelector('.fa-circle').style.color = '#fff';
+
+            // Tampilkan Loading
+            grid.innerHTML = '<div class="p-5 text-center text-muted"><i class="fas fa-spinner fa-spin mr-2"></i>Loading...</div>';
+
+            try {
+                const response = await axios.get(`api/hc/get-tasks-json?user_id=${userId}`);
+                const tasks = response.data;
+                
+                grid.innerHTML = ''; 
+                renderGridLines();   
+
+                tasks.forEach(task => {
+                    // PERBAIKAN: Gunakan == (dua sama dengan) atau konversi ke String agar aman dibanding dengan myId
+                    const isMyTask = (String(userId) === String(myId));
+                    
+                    // Masukkan parameter isMyTask dengan benar
+                    const cardHtml = renderTaskCard(task, isMyTask);
+                    grid.insertAdjacentHTML('beforeend', cardHtml);
+                });
+
+            } catch (error) {
+                console.error("Error fetching tasks:", error);
+                grid.innerHTML = '<div class="alert alert-danger m-3">Gagal memuat jadwal.</div>';
+            }
+        };
+
+        function renderTaskCard(task, isMyTask) {
+            const startHour = 9;
+            const myRole = "{{ Auth::user()->role }}";
+            
+            const jamMulai = task.jam_mulai || "09:00";
+            const durasiMenit = parseInt(task.menit) || 0;
+            
+            // 1. Perhitungan Posisi Top & Height
+            const [h, m] = jamMulai.split(':').map(Number);
+            const validH = isNaN(h) ? 9 : h;
+            const validM = isNaN(m) ? 0 : m;
+
+            const topPx = ((validH - startHour) * 300) + (validM / 60 * 300);
+            const heightPx = (durasiMenit / 60) * 300;
+
+            // 2. Perhitungan Jam Selesai
+            let totalMenitSelesai = (validH * 60) + validM + durasiMenit;
+            let jamSelesai = Math.floor(totalMenitSelesai / 60);
+            let menitSelesai = totalMenitSelesai % 60;
+
+            const jamSelesaiFmt = jamSelesai.toString().padStart(2, '0') + "." + 
+                                menitSelesai.toString().padStart(2, '0');
+            
+            const jamMulaiFmt = validH.toString().padStart(2, '0') + "." + 
+                                validM.toString().padStart(2, '0');
+
+            const rentangWaktu = `${jamMulaiFmt} - ${jamSelesaiFmt}`;
+            const dragClass = isMyTask ? 'task-card-scheduled' : 'task-card-locked';
+            const canEditTime = isMyTask && (task.status == 0 || task.status == 2 || task.status == 7);
+
+            // 3. Helper Format Tanggal
+            const fmtDate = (dateStr) => {
+                if (!dateStr) return "-/-";
+                const d = new Date(dateStr);
+                if (isNaN(d.getTime())) return "-/-"; 
+                return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}`;
+            };
+
+            const isRunning = (task.status == 1);
+            const isWaitingApproval = (task.status == 3);
+            const isDone = (task.status == 4 || task.status == 5);
+            const isOverdue = (task.status == 7);
+            const isEndsTime = (task.status == 8);
+            let statusLabel = '';
+
+            if (isRunning) {
+                statusLabel = `<span class="badge badge-light text-primary border ml-1" style="font-size: 8px;"><i class="fas fa-play mr-1"></i>SEDANG BERJALAN</span>`;
+            } else if (isWaitingApproval) {
+                statusLabel = `<span class="badge badge-warning ml-1" style="font-size: 8px;"><i class="fas fa-clock mr-1"></i>MENUNGGU APPROVAL</span>`;
+            } else if (isDone) {
+                statusLabel = `<span class="badge badge-light text-success ml-1" style="font-size: 8px;"><i class="fas fa-check-circle mr-1"></i>DONE</span>`;
+            } else if (isOverdue) {
+                statusLabel = `<span class="badge badge-light text-danger ml-1" style="font-size: 8px;"><i class="fas fa-exclamation-triangle mr-1"></i>OVERDUE</span>`;
+            } else if (isEndsTime) {
+                statusLabel = `<span class="badge badge-danger ml-1" style="font-size: 8px;"><i class="fas fa-stopwatch mr-1"></i>WAKTU HABIS</span>`;
+            }
+
+            // FIX: Logika penentuan class (mengganti titik koma menjadi ternary yang benar)
+            let statusClass = isRunning ? "bg-primary text-white" : 
+                            isWaitingApproval ? "bg-info text-white" : 
+                            isOverdue ? "bg-danger text-white" : 
+                            isDone ? "bg-success text-white" : 
+                            isEndsTime ? "bg-warning text-white" : "";
+
+            const priorityClass = {1: 'danger', 2: 'warning', 3: 'primary'}[task.priority] || 'secondary';
+            const emailPrefix = task.vic_email;
+
+            return `
+                <div class="${dragClass} card ${isMyTask ? 'my-task' : 'subordinate-task'} ${statusClass} border-left-${priorityClass}"
+                    data-id="${task.id}" 
+                    data-status="${task.status}" 
+                    data-pic="${task.pic}" 
+                    data-menit="${durasiMenit}"
+                    style="top: ${topPx}px; height: ${heightPx}px; position: absolute; width: 100%; border-radius: 8px; z-index: ${isRunning ? 10 : 1}; ${!isMyTask ? 'cursor: default;' : 'cursor: grab;'}">
+
+                    <div class="card-body p-2 d-flex flex-column h-100">
+                        <div class="d-flex justify-content-between align-items-start w-100">
+                            <div style="flex: 1; min-width: 0; padding-right: 10px;">
+                                ${!isMyTask ? `<span class="badge badge-dark mb-1" style="font-size: 8px; opacity: 0.9;"><i class="fas fa-user mr-1"></i>${emailPrefix}</span><br>` : ''}
+                                
+                                ${isWaitingApproval ? `<span class="badge badge-light text-info mb-1" style="font-size: 7px; text-transform: uppercase;">Menunggu Approval</span><br>` : ''}
+                                
+                                <div class="d-flex align-items-center" style="gap: 8px;">
+                                    <strong class="task-title text-truncate" style="font-size: 11px; line-height: 1.2; max-width: 70%;">
+                                        ${task.nama_task} (${(task.project_name || 'PROJECT').toUpperCase()}) ${statusLabel}
+                                    </strong>
+
+                                    ${isRunning ? `
+                                        <span class="running-timer badge badge-light text-primary border shadow-sm" 
+                                            id="timer-${task.id}"
+                                            data-id="${task.id}" 
+                                            data-start-time="${task.jam_mulai}" 
+                                            data-duration="${durasiMenit}"
+                                            style="font-size: 9px; padding: 2px 5px; font-family: monospace; white-space: nowrap;">
+                                            <i class="fas fa-hourglass-half"></i> --:--
+                                        </span>
+                                    ` : ''}
+                                </div>
+                            </div>
+
+                            <div class="d-flex align-items-center flex-shrink-0" style="gap: 10px;">
+                                <div class="d-flex border-right pr-2" style="gap: 8px; font-size: 9px; line-height: 1;">
+                                    <div class="text-center">
+                                        <small style="display:block; font-size: 6px; opacity: 0.8;">START</small>
+                                        <b>${fmtDate(task.tanggal_mulai)}</b>
+                                    </div>
+                                    <div class="text-center">
+                                        <small style="display:block; font-size: 6px; opacity: 0.8;">END</small>
+                                        <b class="${isRunning || isOverdue || isWaitingApproval ? 'text-white' : 'text-danger'}">${fmtDate(task.tanggal_deadline)}</b>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex align-items-center" style="gap: 6px;">
+                                    <div class="time-container" style="position: relative;">
+                                        <span class="task-time-range" 
+                                            ${canEditTime ? `onclick="enableTimeEdit(this)"` : ''}
+                                            style="font-size: 10px; font-weight: 800; background: rgba(0,0,0,0.1); padding: 4px 8px; border-radius: 6px; white-space: nowrap; ${canEditTime ? 'cursor: pointer; border: 1px dashed rgba(255,255,255,0.5);' : ''}">
+                                            ${rentangWaktu}
+                                        </span>
+
+                                        ${canEditTime ? `
+                                            <input type="time" class="manual-time-input shadow-sm" 
+                                                style="display: none; font-size: 11px; width: 80px; padding: 2px 5px; height: 26px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); border-radius: 4px; border: 2px solid #4e73df; background: white; color: #333; z-index: 20; outline: none;"
+                                                onblur="saveManualTime(this)"
+                                                onkeydown="if(event.key==='Enter') this.blur()">
+                                        ` : ''}
+                                    </div>
+                                    
+                                    <div class="action-buttons-inline">
+                                        ${renderButtons(task, isMyTask, isRunning)}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        ${task.note ? `<div class="mt-1" style="font-size: 8.5px; opacity: 0.9; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">${task.note}</div>` : ''}
+                    </div>
+                    ${isMyTask ? '<div class="resize-handle" style="position: absolute; bottom: 0; left: 0; right: 0; height: 5px; cursor: ns-resize;"></div>' : ''}
+                </div>
+            `;
+        }
+
+        function renderButtons(task, isMyTask) {
+            const status = parseInt(task.status);
+            const btnClass = "btn btn-xs shadow-sm font-weight-bold";
+
+            if (isMyTask) {
+                if (status === 1) {
+                    return `<div class="d-flex">
+                        <button onclick="splitTask(${task.id})" class="btn btn-xs btn-outline-light mr-1" style="font-size: 9px; padding: 1px 4px;">Split</button>
+                        <button onclick="changeStatus(${task.id}, 'stop')" class="${btnClass} btn-success" style="font-size: 9px; padding: 1px 6px;">Kirim</button>
+                    </div>`;
+                } else if(status === 8){
+                    return `<div class="d-flex">
+                        <button onclick="changeStatus(${task.id}, 'stop')" class="${btnClass} btn-success" style="font-size: 9px; padding: 1px 6px;">Kirim</button>
+                    </div>`;
+                } else if ([0, 2, 7].includes(status)) {
+                    return `<div class="d-flex">
+                        <button onclick="returnToPool(${task.id})" class="btn btn-xs btn-light border mr-1" style="padding: 1px 4px;"><i class="fas fa-undo text-danger" style="font-size: 9px;"></i></button>
+                        <button onclick="changeStatus(${task.id}, 'play')" class="${btnClass} btn-success" style="font-size: 9px; padding: 1px 8px;">START</button>
+                    </div>`;
+                } else if (status === 3) {
+                    return `<span class="badge badge-warning" style="font-size: 9px; padding: 3px 5px;"><i class="fas fa-clock mr-1"></i>Review</span>`;
+                }
+                return `<span></span>`;
+            }
+
+            // Tombol untuk BAWAHAN
+            if (status === 3) {
+                let canApprove = false;
+                if (typeof myRole !== 'undefined') {
+                    if (myRole === 'head_of_division' && task.vic_role === 'digital_marketing_manager') canApprove = true;
+                    else if (myRole === 'digital_marketing_manager' && task.vic_role === 'digital_marketing') canApprove = true;
+                    else if (myRole === 'digital_marketing' && task.vic_role === 'content_creator') canApprove = true;
+                }
+
+                if (canApprove) {
+                    return `<div class="d-flex">
+                        <button onclick="changeStatus(${task.id}, 'approve')" class="btn btn-xs btn-success mr-1 shadow-sm" style="font-size: 9px; padding: 1px 5px;"><i class="fas fa-check"></i></button>
+                        <button onclick="changeStatus(${task.id}, 'revisi')" class="btn btn-xs btn-danger shadow-sm" style="font-size: 9px; padding: 1px 5px;"><i class="fas fa-times"></i></button>
+                    </div>`;
+                }
+            }
+
+            return `<small class="${task.status == 1 || task.status == 7 ? 'text-white' : 'text-muted'} d-none d-lg-inline" style="font-size: 8px;">${typeof getStatusName === 'function' ? getStatusName(status) : ''}</small>`;
+        }
+
+        function getStatusName(status) {
+            const statuses = {0: 'Pending', 1: 'In Progress', 3: 'Review', 4: 'Done', 5: 'Split', 7: 'Overdue', 8: 'Waktu Habis'};
+            return statuses[status] || status;
+        }
+
+        function renderGridLines() {
+            for(let i=0; i<=8; i++) {
+                const line = `<div class="grid-line" style="position:absolute; top:${i*300}px; border-top:1px dashed #eee; width:100%; height:1px;"></div>`;
+                grid.insertAdjacentHTML('afterbegin', line);
+            }
+        }
+
+        // Auto-load jadwal sendiri saat pertama kali buka
+        const initialBtn = document.querySelector('.btn-filter-grid.active');
+        if(initialBtn) initialBtn.click();
 
         // --- CORE FUNCTIONS ---
         window.handleTaskMovement = function(evt, isNew) {
             const item = evt.item;
             const rect = grid.getBoundingClientRect();
-            const clientY = (evt.originalEvent.clientY || (evt.originalEvent.touches ? evt.originalEvent.touches[0].clientY : 0));
             const taskId = item.getAttribute('data-id');
-            const duration = parseInt(item.getAttribute('data-menit'));
+            const duration = parseInt(item.getAttribute('data-menit')) || 60;
+            
+            // Ambil koordinat Y dari event end
+            const clientY = evt.originalEvent.clientY || (evt.originalEvent.changedTouches ? evt.originalEvent.changedTouches[0].clientY : 0);
             
             let heightPx = isNew ? (duration / 60) * 300 : item.offsetHeight;
             let proposedTop = Math.round((clientY - rect.top) / 50) * 50;
 
+            // Batasi area grid (09:00 - 17:00 = 2400px)
             if (proposedTop < 0) proposedTop = 0;
             if (proposedTop + heightPx > 2400) proposedTop = 2400 - heightPx;
 
@@ -432,12 +705,16 @@
                 return;
             }
 
+            // Terapkan posisi secara permanen
             item.style.position = 'absolute';
             item.style.top = proposedTop + 'px';
             item.style.height = heightPx + 'px';
             item.style.width = '100%';
 
+            // Update tampilan jam seketika
             updateTimeDisplay(item, proposedTop, duration);
+            
+            // Simpan ke database
             saveToDatabase(taskId, proposedTop, isNew);
         };
 
@@ -471,39 +748,6 @@
             input.setAttribute('data-old-value', currentTime); 
             input.value = currentTime;
             input.focus();
-        };
-
-        window.switchMode = function(mode) {
-            const selfTasks = document.querySelectorAll('.task-card-scheduled[data-type="type-self"]');
-            const subTasks = document.querySelectorAll('.task-card-scheduled[data-type="type-subordinate"]');
-            const otherTasks = document.querySelectorAll('.task-card-scheduled[data-type="type-other"]');
-            
-            const btnSelf = document.getElementById('btn-self');
-            const btnSub = document.getElementById('btn-subordinate');
-
-            if (mode === 'subordinate') {
-                // Tampilkan Bawahan, Sembunyikan Diri Sendiri
-                selfTasks.forEach(t => t.classList.add('subordinate-hidden'));
-                otherTasks.forEach(t => t.classList.add('subordinate-hidden'));
-                subTasks.forEach(t => t.classList.remove('subordinate-hidden'));
-
-                // Update Tombol
-                btnSub.classList.replace('btn-white', 'btn-warning');
-                btnSub.classList.add('active', 'text-white');
-                btnSelf.classList.replace('btn-primary', 'btn-white');
-                btnSelf.classList.remove('active');
-            } else {
-                // Tampilkan Diri Sendiri, Sembunyikan Bawahan
-                subTasks.forEach(t => t.classList.add('subordinate-hidden'));
-                otherTasks.forEach(t => t.classList.add('subordinate-hidden'));
-                selfTasks.forEach(t => t.classList.remove('subordinate-hidden'));
-
-                // Update Tombol
-                btnSelf.classList.replace('btn-white', 'btn-primary');
-                btnSelf.classList.add('active');
-                btnSub.classList.replace('btn-warning', 'btn-white');
-                btnSub.classList.remove('active', 'text-white');
-            }
         };
 
         window.saveManualTime = function(input) {
@@ -575,26 +819,77 @@
             return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
         }
 
-        // --- COUNTDOWN TIMER ---
         function updateTimers() {
-            const now = new Date();
             document.querySelectorAll('.running-timer').forEach(timer => {
-                const [h, m] = timer.dataset.startTime.split(':').map(Number);
-                const start = new Date(); start.setHours(h, m, 0);
-                const elapsed = Math.floor((now - start) / 1000);
-                const total = parseInt(timer.dataset.duration) * 60;
-                const remain = total - elapsed;
+                // console.log(timer);
+                const startTimeStr = timer.dataset.startTime; 
+                // console.log(startTimeStr);
+                
+                const durationLimit = parseInt(timer.dataset.duration);
+                const taskId = timer.dataset.id;
 
-                if (remain <= 0) {
-                    autoUpdateToEndsTime(timer.dataset.id);
+                // Jika data tidak lengkap, jangan jalankan
+                if (!startTimeStr || startTimeStr === "null" || isNaN(durationLimit)) {
+                    timer.innerHTML = "<i class='fas fa-exclamation-triangle'></i> Format Error";
+                    return;
+                }
+
+                let startTime;
+                
+                try {
+                    // Memecah string tanggal "2024-05-20 14:00:00" menjadi array angka
+                    // Regex /[^\d]/ memecah berdasarkan karakter APAPUN yang bukan angka (spasi, strip, titik dua)
+                    const p = startTimeStr.split(/[^\d]/); 
+                    
+                    if (p.length >= 5) {
+                        // Format Lengkap: [YYYY, MM, DD, HH, MM, SS]
+                        // p[1]-1 karena bulan di JS dimulai dari 0
+                        startTime = new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2]), parseInt(p[3]), parseInt(p[4]), parseInt(p[5]) || 0);
+                    } else {
+                        // Format Jam Saja: [HH, MM, SS]
+                        startTime = new Date();
+                        startTime.setHours(parseInt(p[0]), parseInt(p[1]), parseInt(p[2]) || 0, 0);
+                    }
+                } catch (e) {
+                    timer.innerHTML = "Err Parse";
+                    return;
+                }
+
+                const now = new Date();
+                
+                
+                const diffMs = now.getTime() - startTime.getTime();
+
+                // VALIDASI TERAKHIR: Jika hasil pengurangan bukan angka
+                if (isNaN(diffMs)) {
+                    timer.innerHTML = "Waktu Invalid";
+                    return;
+                }
+
+                const detikTerpakai = Math.floor(diffMs / 1000);
+                const totalDetikLimit = durationLimit * 60;
+                const sisaDetikTotal = totalDetikLimit - detikTerpakai;
+
+                if (sisaDetikTotal <= 0) {
+                    timer.innerHTML = `<span class="badge badge-danger">SELESAIKAN!</span>`;
+                    if (!timer.dataset.isAutoUpdated) {
+                        timer.dataset.isAutoUpdated = "true";
+                        if (typeof autoUpdateToEndsTime === "function") autoUpdateToEndsTime(taskId);
+                    }
                 } else {
-                    const rm = Math.floor(remain / 60);
-                    const rs = remain % 60;
-                    timer.innerHTML = `<i class="fas fa-clock"></i> ${rm}:${rs < 10 ? '0' : ''}${rs}`;
-                    if (remain < 60) timer.classList.replace('text-primary', 'text-danger');
+                    const m = Math.floor(sisaDetikTotal / 60);
+                    const s = sisaDetikTotal % 60;
+                    
+                    // Mencegah tampilan NaN jika m atau s gagal dihitung
+                    const displayM = isNaN(m) ? 0 : m;
+                    const displayS = isNaN(s) ? 0 : s;
+
+                    timer.innerHTML = `<i class="fas fa-hourglass-half mr-1"></i>${displayM}:${displayS.toString().padStart(2, '0')}`;
                 }
             });
         }
+
+        // Jalankan setiap detik
         setInterval(updateTimers, 1000);
 
         // --- RESIZE LOGIC ---
@@ -642,36 +937,11 @@
             const threshold = 200; 
             const windowHeight = window.innerHeight;
             const mouseY = e.clientY;
-
-            if (mouseY > windowHeight - threshold) {
-                if (!scrollInterval) {
-                    console.warn("LOG: Mengaktifkan Scroll Bawah Otomatis"); // Log peringatan saat scroll mulai
-                    scrollInterval = setInterval(() => {
-                        window.scrollBy(0, 15);
-                    }, 20);
-                }
-            } 
-            else if (mouseY < threshold) {
-                if (!scrollInterval) {
-                    console.warn("LOG: Mengaktifkan Scroll Atas Otomatis");
-                    scrollInterval = setInterval(() => {
-                        window.scrollBy(0, -15);
-                    }, 20);
-                }
-            } 
-            else {
-                if (scrollInterval) {
-                    console.log("LOG: Area Aman - Menghentikan Scroll");
-                    clearInterval(scrollInterval);
-                    scrollInterval = null;
-                }
-            }
         }
     });
 
     document.addEventListener('mouseup', () => {
         if (scrollInterval) {
-            console.log("LOG: Klik Dilepas - Membersihkan Interval Scroll");
             clearInterval(scrollInterval);
             scrollInterval = null;
         }
@@ -688,7 +958,7 @@
         axios.post("{{ route('hc.updateStatus') }}", { id: id, action: 'set_overdue', status: 7 }).then(() => location.reload());
     }
     function autoUpdateToEndsTime(id) {
-        axios.post("{{ route('hc.updateStatus') }}", { id: id, action: 'set_overdue', status: 8 }).then(() => location.reload());
+        axios.post("{{ route('hc.updateStatus') }}", { id: id, action: 'habis', status: 8 }).then(() => location.reload());
     }
     function returnToPool(id) {
         if(confirm('Kembalikan ke Pool?')) axios.post("{{ route('hc.updateSchedule') }}", { id: id, reset: true }).then(() => location.reload());

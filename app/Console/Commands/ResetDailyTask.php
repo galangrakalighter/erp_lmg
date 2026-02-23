@@ -28,8 +28,8 @@ class ResetDailyTask extends Command
 
         // 2. Ambil task yang sedang terjadwal (jam_mulai tidak null)
         // dan statusnya belum Done atau Waiting Approval
-        $tasks = Task::whereNotNull('jam_mulai')
-                     ->whereIn('status', [0, 1, 2, 5]) 
+        $tasks = Task::whereIn('status', [0, 1, 2, 5, 8]) 
+                     ->whereIn('pic', [30, 31, 32])
                      ->get();
 
         $resetCount = 0;
@@ -37,28 +37,23 @@ class ResetDailyTask extends Command
         foreach ($tasks as $task) {
             // Kita gunakan isi dari tanggal_mulai (format H:i:s) untuk menghitung deadline hari ini
             // Jika tanggal_mulai null, kita lewati untuk menghindari error parse
-            $startTime = Carbon::today()->parse($task->tanggal_mulai);
-            
-            // Hitung deadline (Waktu mulai + durasi menit)
-            $deadlineTime = $startTime->copy()->addMinutes($task->menit);
-            
+            $deadlineTime = Carbon::parse($task->tanggal_deadline);
+
             // LOGIKA RESET:
             // Jika waktu sekarang sudah melewati deadline tugas tersebut hari ini
             if ($now->greaterThan($deadlineTime)) {
-                if ($task->status == 8) {
-                    // JIKA STATUS 8: Kembalikan ke Pool (Reset Total)
-                    $task->update([
-                        'status' => 0,
-                        'jam_mulai' => null
-                    ]);
-                } else {
                     // JIKA STATUS LAIN (0,1,2,5): Ubah ke Overdue (7)
                     // Jam mulai tetap ada agar tetap tampil di grid dengan warna merah
                     $task->update([
                         'status' => 7,
                         'jam_mulai' => null
                     ]);
-                }
+                $resetCount++;
+            }else{
+                $task->update([
+                    'status' => 0,
+                    'jam_mulai' => null
+                ]);
                 $resetCount++;
             }
         }

@@ -29,7 +29,6 @@ class ResetDailyTask extends Command
         // 2. Ambil task yang sedang terjadwal (jam_mulai tidak null)
         // dan statusnya belum Done atau Waiting Approval
         $tasks = Task::whereIn('status', [0, 1, 2, 5, 8]) 
-                     ->whereIn('pic', [30, 31, 32])
                      ->get();
 
         $resetCount = 0;

@@ -299,13 +299,13 @@ class HCDailyController extends Controller
             ->whereNotNull('task.jam_mulai')
             ->where(function($query) use ($today) {
                 // 1. KONDISI UTAMA: Selama Status 3, tampilkan tanpa cek tanggal
-                $query->where('task.status', 3)
+                $query->whereIn('task.status', [3, 7])
                 
                 // 2. JALUR GRID NORMAL (Hari Ini)
                 ->orWhere(function($q) use ($today) {
                     $q->where('task.tanggal_mulai', '<=', $today)
                     ->where('task.tanggal_deadline', '>=', $today)
-                    ->whereIn('task.status', [0, 1, 2, 7, 8]);
+                    ->whereIn('task.status', [0, 1, 2, 8]);
                 })
                 ->orWhere(function($q) use ($today) {
                     $q->where('task.status', 5)->whereDate('task.tanggal_split', $today);

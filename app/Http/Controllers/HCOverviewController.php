@@ -159,18 +159,20 @@ class HCOverviewController extends Controller
         }
 
         // 6. SIMPAN DATA
-        Task::create([
-            'project'          => (int)$id_client, // Hubungkan ke ID Client dari URL
-            'nama_task'        => $request->nama_task,
-            'divisi'           => (int)$request->divisi,
-            'pic'              => (int)$request->pic,
-            'priority'         => (int)$request->priority,
-            'menit'            => (int)$request->menit,
-            'tanggal_mulai'    => $request->tanggal_mulai,
-            'tanggal_deadline' => $request->tanggal_deadline,
-            'note'             => $request->note,
-            'status'           => 0, // Default ke Pool
-        ]);
+        foreach ($newPeriod as $date) {
+            Task::create([
+                'project'          => (int)$id_client,
+                'nama_task'        => $request->nama_task,
+                'divisi'           => (int)$request->divisi,
+                'pic'              => (int)$request->pic,
+                'priority'         => (int)$request->priority,
+                'menit'            => (int)$request->menit,
+                'tanggal_mulai'    => $date->format('Y-m-d'),
+                'tanggal_deadline' => $date->format('Y-m-d'),
+                'note'             => $request->note,
+                'status'           => 0, // Default ke Pool
+            ]);
+        }
 
         return redirect()->back()->with('success', 'Task berhasil ditambahkan ke project!');
     }

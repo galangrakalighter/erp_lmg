@@ -313,4 +313,119 @@ class HCOverviewController extends Controller
         if ($percentage <= 70) return 'warning';
         return 'success';
     }
+
+    public function getDataDashboardBawahan(Request $request, $id) {
+        $now = Carbon::now();
+        $query = Task::where('pic', $id);
+
+        // Ambil input filter
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+
+        // Filter Query Utama jika ada tanggal
+        if ($startDate && $endDate) {
+            $query->whereBetween('tanggal_mulai', [$startDate, $endDate]);
+        }
+
+        // 1. Statistik Utama (Summary)
+        $summary = [
+            'total_this_month' => (clone $query)->count(),
+            'done'      => (clone $query)->where('status', 4)->count(),
+            'overdue'          => (clone $query)->where('status', 7)->count(),
+            'monthly_hours'    => (clone $query)->sum('menit') ?? 0,
+        ];
+
+        // dd($summary);
+
+        // 2. Data Status untuk Doughnut Chart
+        $statusCount = [
+            'pending'          => (clone $query)->where('status', 0)->count(),
+            'on_progress'      => (clone $query)->where('status', 1)->count(),
+            'revisi'           => (clone $query)->where('status', 2)->count(),
+            'waiting_approval' => (clone $query)->where('status', 3)->count(),
+            'approved'         => (clone $query)->where('status', 4)->count(),
+            'overdue'          => (clone $query)->where('status', 7)->count(),
+        ];
+
+        // 3. Logika Bar Chart Dinamis
+        $monthlyData = [];
+        $labels = [];
+
+        $currentYear = Carbon::now()->year;
+
+        if ($startDate && $endDate) {
+            // Tampilkan bulan hanya dalam range filter
+            $period = CarbonPeriod::create(Carbon::parse($startDate)->startOfMonth(), '1 month', Carbon::parse($endDate)->startOfMonth());
+            foreach ($period as $date) {
+                $labels[] = $date->translatedFormat('F');
+                $monthlyData[] = (int) Task::where('pic', $id)
+                    ->whereBetween('tanggal_mulai', [$startDate, $endDate])
+                    ->whereMonth('tanggal_mulai', $date->month)
+                    ->whereYear('tanggal_mulai', $date->year)
+                    ->sum('menit');
+            }
+        } else {
+            // Default: 12 Bulan Terakhir
+            $allTasksThisYear = Task::where('pic', $id)
+                ->whereYear('tanggal_mulai', $currentYear)
+                ->get();
+
+            // 2. Gunakan Collection Laravel untuk mengelompokkan berdasarkan bulan
+            // Ini menghindari error "ONLY_FULL_GROUP_BY" di database
+            $groupedByMonth = $allTasksThisYear->groupBy(function($item) {
+                return Carbon::parse($item->tanggal_mulai)->month; 
+            });
+
+            // 3. Loop pasti 1 - 12 (Januari sampai Desember)
+            for ($m = 1; $m <= 12; $m++) {
+                $monthName = Carbon::create($currentYear, $m, 1)->translatedFormat('F');
+                
+                // Cek apakah ada data di bulan tersebut di dalam collection
+                $totalMenit = isset($groupedByMonth[$m]) ? $groupedByMonth[$m]->sum('menit') : 0;
+
+                // Hanya tampilkan di chart jika ada datanya (sesuai permintaan Anda)
+                if ($totalMenit > 0) {
+                    $labels[] = $monthName;
+                    $monthlyData[] = $totalMenit;
+                }
+            }
+        }
+
+
+        // 4. Daftar Task Terbaru
+        $recentTasks = (clone $query)->join('produk_client', 'produk_client.id', '=', 'task.project')->select('task.*', 'produk_client.nama')->latest('tanggal_deadline')->take(10)->get();
+        return response()->json([
+            'summary'      => $summary,
+            'status_count' => $statusCount,
+            'monthly_data' => $monthlyData,
+            'labels'       => $labels,
+            'recent_tasks' => $recentTasks
+        ]);
+    }
+
+    public function dashboard(){
+        $title = 'Dashboard';
+        $user = Auth::user();
+
+        $karyawan = [];
+        switch ($user->role) {
+            case 'head_of_division':
+                $allUser = User::where('hod', $user->id)->orWhere('id', $user->id)->get();
+                break;
+            case 'digital_marketing_manager':
+                $allUser = User::where('dmm', $user->id)->orWhere('id', $user->id)->get();
+                break;
+            case 'digital_marketing':
+                $allUser = User::where('dm', $user->id)->orWhere('id', $user->id)->get();
+                break;
+            case 'conten_creator':
+                $allUser = User::where('id', $user->id)->get();
+                break;
+            default:
+                $allUser = User::whereNot('role', 'super_admin')->get();
+                break;
+        }
+
+        return view('hc.dashboard', compact('title', 'allUser'));
+    }
 }

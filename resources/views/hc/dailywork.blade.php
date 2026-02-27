@@ -623,6 +623,8 @@
 
         function renderButtons(task, isMyTask) {
             const status = parseInt(task.status);
+            const approve = task.tanggal_approve;
+            console.log(approve);
             const btnClass = "btn btn-xs shadow-sm font-weight-bold";
 
             if (isMyTask) {
@@ -631,17 +633,19 @@
                         <button onclick="splitTask(${task.id})" class="btn btn-xs btn-outline-light mr-1" style="font-size: 9px; padding: 1px 4px;">Split</button>
                         <button onclick="changeStatus(${task.id}, 'stop')" class="${btnClass} btn-success" style="font-size: 9px; padding: 1px 6px;">Kirim</button>
                     </div>`;
-                } else if(status === 8){
+                } else if(status === 8 || status === 7){
                     return `<div class="d-flex">
                         <button onclick="changeStatus(${task.id}, 'stop')" class="${btnClass} btn-success" style="font-size: 9px; padding: 1px 6px;">Kirim</button>
                     </div>`;
-                } else if ([0, 2, 7].includes(status)) {
+                } else if ([0, 2].includes(status)) {
                     return `<div class="d-flex">
                         <button onclick="returnToPool(${task.id})" class="btn btn-xs btn-light border mr-1" style="padding: 1px 4px;"><i class="fas fa-undo text-danger" style="font-size: 9px;"></i></button>
                         <button onclick="changeStatus(${task.id}, 'play')" class="${btnClass} btn-success" style="font-size: 9px; padding: 1px 8px;">START</button>
                     </div>`;
                 } else if (status === 3) {
                     return `<span class="badge badge-warning" style="font-size: 9px; padding: 3px 5px;"><i class="fas fa-clock mr-1"></i>Review</span>`;
+                } else if (approve != null){
+                    return `<span class="badge badge-warning" style="font-size: 9px; padding: 3px 5px;"><i class="fas fa-clock mr-1"></i>Done</span>`;
                 }
                 return `<span></span>`;
             }

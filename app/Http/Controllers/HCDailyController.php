@@ -121,6 +121,11 @@ class HCDailyController extends Controller
             // 2. Cek status yang valid (Belum dikerjakan, Tertunda, atau Overdue)
             $validStatus = in_array($task->status, [0, 2, 7]);
 
+            $checkApprove = false;
+            if($task->status == 7 && is_null($task->tanggal_approve)){
+                $checkApprove = true;
+            }
+
             // 3. PERBAIKAN: Cek apakah $today berada di antara tanggal mulai dan deadline
             // Gunakan parse untuk memastikan objek Carbon, lalu bandingkan
             $tglMulai = \Carbon\Carbon::parse($task->tanggal_mulai)->startOfDay();
@@ -132,7 +137,7 @@ class HCDailyController extends Controller
             $inRange = $currentDate->between($tglMulai, $tglDeadline);
             $dateCheck = ($task->status == 7) || $inRange;
 
-            return $noTime && $validStatus && $dateCheck;
+            return $noTime && $validStatus && $dateCheck && $checkApprove;
         });
 
         $scheduled_tasks = $all_tasks->filter(function ($task) use ($user, $today) {
@@ -211,7 +216,11 @@ class HCDailyController extends Controller
         } elseif ($action == 'revisi') {
             $task->update(['status' => 2, 'tanggal_revisi' => now()]); // Balik ke Pool Jadi Revisi
         } elseif ($action == 'approve') {
-            $task->update(['status' => 4, 'tanggal_approve' => now()]); // Selesai
+            if($task->status == 7){
+                $task->update(['tanggal_approve' => now()]); // Selesai
+            }else{
+                $task->update(['status' => 4, 'tanggal_approve' => now()]); // Selesai
+            }
         } elseif ($action == 'set_overdue'){
             $task->update(['status' => 7]);
         } elseif ($action == 'habis'){

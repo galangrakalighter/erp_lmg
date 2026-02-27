@@ -171,6 +171,9 @@ Route::middleware('auth')->group(function() {
     Route::post('cms_branding/moodboard/edit/{id}', [App\Http\Controllers\moodBoardController::class, 'update'])->name('moodboard.update');
     Route::post('cms_branding/moodboard/delete/{id}', [App\Http\Controllers\moodBoardController::class, 'destroy'])->name('moodboard.destroy');
 
+    // Dashboard HC
+    Route::get('dashboard_hc', [App\Http\Controllers\HCOverviewController::class, 'dashboard'])->name('overview.dashboard');
+
     Route::get('hc_overview/{id_client}', [App\Http\Controllers\HCOverviewController::class, 'index'])->name('hc_overview.index');
     Route::post('hc_overview/{id_client}', [App\Http\Controllers\HCOverviewController::class, 'store'])->name('hc_overview.store');
     Route::put('hc_overview/{id_client}/{id}', [App\Http\Controllers\HCOverviewController::class, 'update'])->name('hc_overview.update');

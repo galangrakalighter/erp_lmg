@@ -186,9 +186,15 @@
                         </a>
                     </div>
 
-                    <div class="client-item-wrapper">
+                    <div class="client-item-wrapper mb-2">
                         <a class="client-dropdown-link {{ request()->is('hc_overview.list') ? 'active' : '' }}" href="{{ route('hc_overview.list') }}">
                             <span>Project Overview</span>
+                        </a>
+                    </div>
+
+                    <div class="client-item-wrapper">
+                        <a class="client-dropdown-link {{ request()->is('hc_overview.list') ? 'active' : '' }}" href="{{ route('overview.dashboard') }}">
+                            <span>Dashboard</span>
                         </a>
                     </div>
                 </div>

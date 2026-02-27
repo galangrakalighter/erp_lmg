@@ -315,89 +315,127 @@ class HCOverviewController extends Controller
     }
 
     public function getDataDashboardBawahan(Request $request, $id) {
+        $type = $request->query('type', 'monthly');
         $now = Carbon::now();
-        $query = Task::where('pic', $id);
-
-        // Ambil input filter
+        $currentYear = $now->year;
+        
         $startDate = $request->query('start_date');
         $endDate = $request->query('end_date');
 
-        // Filter Query Utama jika ada tanggal
+        $clickedDate = $request->query('clicked_date');
+        $clickedMonth = $request->query('clicked_month');
+        $clickedStatus = $request->query('clicked_status');
+
+        // Query Dasar
+        $baseQuery = Task::where('pic', $id);
+
+        // Filter Global (Mempengaruhi Summary & Recent Tasks)
         if ($startDate && $endDate) {
-            $query->whereBetween('tanggal_mulai', [$startDate, $endDate]);
+            $baseQuery->whereBetween('tanggal_mulai', [$startDate, $endDate]);
         }
 
         // 1. Statistik Utama (Summary)
         $summary = [
-            'total_this_month' => (clone $query)->count(),
-            'done'      => (clone $query)->where('status', 4)->count(),
-            'overdue'          => (clone $query)->where('status', 7)->count(),
-            'monthly_hours'    => (clone $query)->sum('menit') ?? 0,
+            'total_this_month' => (clone $baseQuery)->count(),
+            'done'             => (clone $baseQuery)->where('status', 4)->count(),
+            'overdue'          => (clone $baseQuery)->where('status', 7)->whereNull('tanggal_approve')->count(),
+            'overdue_done'          => (clone $baseQuery)->where('status', 7)->whereNotNull('tanggal_approve')->count(),
+            'monthly_hours'    => (clone $baseQuery)->sum('menit') ?? 0,
         ];
-
-        // dd($summary);
 
         // 2. Data Status untuk Doughnut Chart
         $statusCount = [
-            'pending'          => (clone $query)->where('status', 0)->count(),
-            'on_progress'      => (clone $query)->where('status', 1)->count(),
-            'revisi'           => (clone $query)->where('status', 2)->count(),
-            'waiting_approval' => (clone $query)->where('status', 3)->count(),
-            'approved'         => (clone $query)->where('status', 4)->count(),
-            'overdue'          => (clone $query)->where('status', 7)->count(),
+            'pending'          => (clone $baseQuery)->where('status', 0)->count(),
+            'on_progress'      => (clone $baseQuery)->where('status', 1)->count(),
+            'revisi'           => (clone $baseQuery)->where('status', 2)->count(),
+            'waiting_approval' => (clone $baseQuery)->where('status', 3)->count(),
+            'approved'         => (clone $baseQuery)->where('status', 4)->count(),
+            'overdue'          => (clone $baseQuery)->where('status', 7)->whereNull('tanggal_approve')->count(),
+            'overdue_done'     => (clone $baseQuery)->where('status', 7)->whereNotNull('tanggal_approve')->count(),
         ];
 
-        // 3. Logika Bar Chart Dinamis
-        $monthlyData = [];
+        // 3. Logika Chart (Hanya satu logika yang dijalankan)
         $labels = [];
+        $chartData = [];
+        $queryChart = clone $baseQuery; // Clone dari base yang bersih
+        
+        if (!$startDate && !$endDate) {
+            $queryChart->whereYear('tanggal_mulai', $currentYear);
+        }
 
-        $currentYear = Carbon::now()->year;
+        // --- FIX UNTUK LOGIKA KLIK CHART ---
+        // Logika klik diletakkan di sini agar Chart dan Tabel tersinkronisasi
+        if ($clickedDate) {
+            $queryChart->whereDate('tanggal_mulai', $clickedDate);
+        } elseif ($clickedMonth) {
+            $queryChart->whereRaw('EXTRACT(MONTH FROM tanggal_mulai) = ?', [$clickedMonth])
+                       ->whereRaw('EXTRACT(YEAR FROM tanggal_mulai) = ?', [$currentYear]);
+        }
 
-        if ($startDate && $endDate) {
-            // Tampilkan bulan hanya dalam range filter
-            $period = CarbonPeriod::create(Carbon::parse($startDate)->startOfMonth(), '1 month', Carbon::parse($endDate)->startOfMonth());
-            foreach ($period as $date) {
-                $labels[] = $date->translatedFormat('F');
-                $monthlyData[] = (int) Task::where('pic', $id)
-                    ->whereBetween('tanggal_mulai', [$startDate, $endDate])
-                    ->whereMonth('tanggal_mulai', $date->month)
-                    ->whereYear('tanggal_mulai', $date->year)
-                    ->sum('menit');
+        if ($clickedStatus !== null) {
+            if ($clickedStatus === '7_done') {
+                // Status 7 dan sudah di-approve (Done)
+                $queryChart->where('task.status', 7)
+                        ->whereNotNull('task.tanggal_approve');
+            } elseif ($clickedStatus == 7) {
+                // Status 7 dan belum di-approve (Masih Overdue)
+                $queryChart->where('task.status', 7)
+                        ->whereNull('task.tanggal_approve');
+            } else {
+                // Status lainnya (0, 1, 2, 3, 4)
+                $queryChart->where('task.status', $clickedStatus);
+            }
+        }
+
+        if ($type == 'daily') {
+            $data = (clone $queryChart)->selectRaw('tanggal_mulai, SUM(menit) as total')
+                ->groupBy('tanggal_mulai')
+                ->orderBy('tanggal_mulai')
+                ->get();
+            foreach ($data as $item) {
+                $labels[] = \Carbon\Carbon::parse($item->tanggal_mulai)->translatedFormat('d M');
+                $chartData[] = (int) $item->total;
+            }
+        } elseif ($type == 'weekly') {
+            // Gunakan GROUP BY RAW untuk PGSQL agar tidak error alias
+            $data = (clone $queryChart)->selectRaw('EXTRACT(WEEK FROM tanggal_mulai) as week, EXTRACT(YEAR FROM tanggal_mulai) as year, SUM(menit) as total')
+                ->groupByRaw('year, week') 
+                ->orderByRaw('year ASC, week ASC')
+                ->get();
+            foreach ($data as $item) {
+                $labels[] = "Minggu-" . (int)$item->week;
+                $chartData[] = (int) $item->total;
             }
         } else {
-            // Default: 12 Bulan Terakhir
-            $allTasksThisYear = Task::where('pic', $id)
-                ->whereYear('tanggal_mulai', $currentYear)
-                ->get();
-
-            // 2. Gunakan Collection Laravel untuk mengelompokkan berdasarkan bulan
-            // Ini menghindari error "ONLY_FULL_GROUP_BY" di database
-            $groupedByMonth = $allTasksThisYear->groupBy(function($item) {
-                return Carbon::parse($item->tanggal_mulai)->month; 
-            });
-
-            // 3. Loop pasti 1 - 12 (Januari sampai Desember)
+            $data = (clone $queryChart)->selectRaw('EXTRACT(MONTH FROM tanggal_mulai) as month, SUM(menit) as total')
+                ->groupByRaw('month')
+                ->orderByRaw('month ASC')
+                ->get()
+                ->pluck('total', 'month');
+            
             for ($m = 1; $m <= 12; $m++) {
-                $monthName = Carbon::create($currentYear, $m, 1)->translatedFormat('F');
-                
-                // Cek apakah ada data di bulan tersebut di dalam collection
-                $totalMenit = isset($groupedByMonth[$m]) ? $groupedByMonth[$m]->sum('menit') : 0;
-
-                // Hanya tampilkan di chart jika ada datanya (sesuai permintaan Anda)
-                if ($totalMenit > 0) {
+                $monthName = \Carbon\Carbon::create($currentYear, $m, 1)->translatedFormat('F');
+                $total = $data->get((float)$m) ?? $data->get($m) ?? 0;
+                if ($total > 0) {
                     $labels[] = $monthName;
-                    $monthlyData[] = $totalMenit;
+                    $chartData[] = (int) $total;
                 }
             }
         }
 
+        // 4. Daftar Task Terbaru (MENGGUNAKAN QUERY BERSIH)
+        // Gunakan $queryChart yang sudah difilter Klik, tapi TANPA selectRaw/groupBy
+        $recentTasks = $queryChart
+            ->join('produk_client', 'produk_client.id', '=', 'task.project')
+            ->select('task.*', 'produk_client.nama')
+            ->latest('task.tanggal_deadline')
+            ->take(20) // Tambah limit jika perlu
+            ->get();
 
-        // 4. Daftar Task Terbaru
-        $recentTasks = (clone $query)->join('produk_client', 'produk_client.id', '=', 'task.project')->select('task.*', 'produk_client.nama')->latest('tanggal_deadline')->take(10)->get();
         return response()->json([
             'summary'      => $summary,
             'status_count' => $statusCount,
-            'monthly_data' => $monthlyData,
+            'monthly_data' => $chartData,
             'labels'       => $labels,
             'recent_tasks' => $recentTasks
         ]);

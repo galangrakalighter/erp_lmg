@@ -109,6 +109,62 @@
     .transition {
         transition: opacity 0.3s ease;
     }
+    
+    .modern-segmented {
+        position: relative;
+        display: inline-grid;
+        /* Ubah repeat(3, 1fr) menjadi repeat(2, 1fr) */
+        grid-template-columns: repeat(2, 1fr); 
+        background: #f1f5f9;
+        padding: 4px;
+        border-radius: 50px;
+        width: 220px; /* Lebar diperkecil agar lebih proposional untuk 2 tombol */
+        font-weight: 500;
+        font-size: 14px;
+    }
+
+    .modern-segmented input {
+        display: none;
+    }
+
+    .modern-segmented label {
+        position: relative;
+        text-align: center;
+        padding: 8px 0;
+        cursor: pointer;
+        z-index: 2;
+        border-radius: 50px;
+        transition: color 0.3s ease;
+        color: #64748b;
+    }
+
+    /* Active Text Color */
+    .modern-segmented input:checked + label {
+        color: #fff;
+    }
+
+    /* Sliding Background */
+    .modern-segmented .slider {
+        position: absolute;
+        top: 4px;
+        bottom: 4px;
+        left: 4px;
+        /* Lebar slider disesuaikan menjadi setengah (100% / 2) */
+        width: calc((100% - 8px) / 2); 
+        background: linear-gradient(135deg, #4e73df, #224abe);
+        border-radius: 50px;
+        transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+    }
+
+    /* Slide Positions */
+    #daily:checked ~ .slider {
+        transform: translateX(0%);
+    }
+
+    /* Karena Weekly dihapus, Monthly langsung lompat ke posisi ke-2 (100%) */
+    #monthly:checked ~ .slider {
+        transform: translateX(100%);
+    }
 </style>
 
 <div class="container-fluid px-4">
@@ -156,36 +212,68 @@
         </div>
     </div>
 
-    <div class="row g-3 mb-4 text-center">
-        <div class="col-xl-3 col-md-6">
-            <div class="card card-hover shadow-sm border-start border-primary border-4 rounded-4 h-100 py-2">
-                <div class="card-body">
-                    <div class="text-xs-bold text-primary mb-1">Total Task</div>
-                    <div class="h4 mb-0 font-weight-bold text-gray-800" id="stat-total">0</div>
+    <div class="row g-3 mb-4">
+        <div class="col-xl col-md-4">
+            <div class="card card-hover shadow-sm border-0 rounded-4 h-100 overflow-hidden">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="text-xs-bold text-primary mb-1">Total Task</div>
+                            <div class="h4 mb-0 fw-bold text-dark" id="stat-total">0</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="card card-hover shadow-sm border-start border-warning border-4 rounded-4 h-100 py-2">
-                <div class="card-body">
-                    <div class="text-xs-bold text-success mb-1">Done</div>
-                    <div class="h4 mb-0 font-weight-bold text-gray-800" id="stat-done">0</div>
+
+        <div class="col-xl col-md-4">
+            <div class="card card-hover shadow-sm border-0 rounded-4 h-100 overflow-hidden">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="text-xs-bold text-success mb-1">Done</div>
+                            <div class="h4 mb-0 fw-bold text-dark" id="stat-done">0</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="card card-hover shadow-sm border-start border-danger border-4 rounded-4 h-100 py-2">
-                <div class="card-body">
-                    <div class="text-xs-bold text-danger mb-1">Overdue</div>
-                    <div class="h4 mb-0 font-weight-bold text-gray-800" id="stat-overdue">0</div>
+
+        <div class="col-xl col-md-4">
+            <div class="card card-hover shadow-sm border-0 rounded-4 h-100 overflow-hidden">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="text-xs-bold text-danger mb-1">Overdue</div>
+                            <div class="h4 mb-0 fw-bold text-dark" id="stat-overdue">0</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="card card-hover shadow-sm border-start border-success border-4 rounded-4 h-100 py-2">
-                <div class="card-body">
-                    <div class="text-xs-bold text-success mb-1">Total Jam Kerja</div>
-                    <div class="h4 mb-0 font-weight-bold text-gray-800" id="stat-hours">0 Menit</div>
+
+        <div class="col-xl col-md-6">
+            <div class="card card-hover shadow-sm border-0 rounded-4 h-100 overflow-hidden">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="text-xs-bold text-warning mb-1">Overdue (Done)</div>
+                            <div class="h4 mb-0 fw-bold text-dark" id="stat-overdue-done">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl col-md-6">
+            <div class="card card-hover shadow-sm border-0 rounded-4 h-100 overflow-hidden">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="text-xs-bold text-info mb-1">Total Durasi</div>
+                            <div class="h4 mb-0 fw-bold text-dark" id="stat-hours">0 Menit</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -195,8 +283,24 @@
         <div class="col-xl-8 col-lg-7">
             <div class="card shadow-sm rounded-4 mb-4">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 font-weight-bold text-primary">Productivity Chart (Monthly)</h6>
-                    <span class="badge bg-light text-primary small fw-bold">Minutes based</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <div>
+                            <h6 class="m-0 font-weight-bold text-dark tracking-tight">Productivity Analytics</h6>
+                            <p class="text-muted small mb-0" style="font-size: 0.7rem;">Metrics based on total minutes worked</p>
+                        </div>
+                    </div>
+
+                    <div class="modern-segmented">
+
+                        <input type="radio" name="chartFilter" id="daily" value="daily">
+                        <label for="daily">Daily</label>
+
+                        <input type="radio" name="chartFilter" id="monthly" value="monthly" checked>
+                        <label for="monthly">Monthly</label>
+
+                        <div class="slider"></div>
+
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="chart-area" style="height: 320px;">
@@ -229,6 +333,7 @@
                         <tr class="text-secondary">
                             <th class="px-4">Project / Task</th>
                             <th>Status</th>
+                            <th class="text-center">Start Date</th>
                             <th class="text-center">Due Date</th>
                         </tr>
                     </thead>
@@ -286,12 +391,25 @@
         return map[s] || '';
     }
 
-    function getStatusLabel(status) {
+    function getStatusLabel(status, tanggal_approve = null) {
         const s = parseInt(status);
+        
+        // Logika Khusus untuk Status 7 (Overdue)
+        if (s === 7) {
+            return (tanggal_approve === null || tanggal_approve === "" || tanggal_approve === undefined) 
+                ? 'Overdue' 
+                : 'Overdue (Done)';
+        }
+
         const map = { 
-            0: 'Pending', 1: 'On Progress', 2: 'Revisi', 
-            3: 'Waiting Approval', 4: 'Approved', 7: 'Overdue', 8: 'EndsTime' 
+            0: 'Pending', 
+            1: 'On Progress', 
+            2: 'Revisi', 
+            3: 'Waiting Approval', 
+            4: 'Approved', 
+            8: 'EndsTime' 
         };
+
         return map[s] || 'Unknown';
     }
 
@@ -317,7 +435,7 @@
 
     // --- DATA LOADING ---
 
-    let taskDatatable = null;
+    let currentChartType = 'monthly';
 
     async function loadData(userId) {
         showLoading(true);
@@ -326,7 +444,8 @@
 
         // Gunakan URLSearchParams agar query string rapi
         let params = new URLSearchParams({
-            id: userId
+            id: userId,
+            type: currentChartType // Kirim tipe filter (daily/weekly/monthly)
         });
         
         if (start && end) {
@@ -342,6 +461,7 @@
             animateValue("stat-total", data.summary.total_this_month);
             animateValue("stat-done", data.summary.done);
             animateValue("stat-overdue", data.summary.overdue);
+            animateValue("stat-overdue-done", data.summary.overdue_done);
             
             document.getElementById('stat-hours').innerText = formatDurasi(data.summary.monthly_hours);
 
@@ -356,8 +476,11 @@
                     </td>
                     <td class="text-center">
                         <span class="${getStatusClass(t.status)}">
-                            ${getStatusIcon(t.status)} ${getStatusLabel(t.status)}
+                            ${getStatusIcon(t.status)} ${getStatusLabel(t.status, t.tanggal_approve)}
                         </span>
+                    </td>
+                    <td class="text-center px-4">
+                        <div class="text-dark small fw-bold">${t.tanggal_mulai}</div>
                     </td>
                     <td class="text-center px-4">
                         <div class="text-dark small fw-bold">${t.tanggal_deadline}</div>
@@ -367,9 +490,6 @@
 
             // 3. Update Charts
             updateCharts(data);
-
-            updateTaskTable(data.recent_tasks);
-
         } catch (error) {
             console.error("Fetch error:", error);
         } finally {
@@ -377,31 +497,78 @@
         }
     }
 
+    function parseChartLabelToDate(label) {
+        const currentYear = new Date().getFullYear();
+        const months = {
+            'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04', 'May': '05', 'Jun': '06',
+            'Jul': '07', 'Aug': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12',
+            // Tambahkan versi Indonesia jika perlu
+            'Januari': '01', 'Februari': '02', 'Maret': '03', 'April': '04', 'Mei': '05', 'Juni': '06',
+            'Juli': '07', 'Agustus': '08', 'September': '09', 'Oktober': '10', 'November': '11', 'Desember': '12'
+        };
+
+        // Pecah label "04 Feb" menjadi ["04", "Feb"]
+        const parts = label.split(' ');
+        const day = parts[0].padStart(2, '0');
+        const monthName = parts[1];
+        const month = months[monthName] || '01';
+
+        return `${currentYear}-${month}-${day}`; // Menghasilkan "2026-02-04"
+    }
+
     function updateTaskTable(tasks) {
         const tableBody = document.getElementById('task-table');
-        
-        // Hancurkan DataTable jika sudah ada sebelumnya
-        if (taskDataTable) {
-            taskDataTable.destroy();
-        }
 
         // Isi HTML ke dalam tbody
         tableBody.innerHTML = tasks.map(t => `
             <tr>
                 <td class="px-4 py-3">
                     <div class="fw-bold text-dark text-start">${t.nama_task || t.name}</div>
-                    <div class="text-xs text-muted text-start">${t.nama_produk || 'No Project'}</div>
+                    <div class="text-xs text-muted text-start">${t.nama}</div>
                 </td>
                 <td>
                     <span class="${getStatusClass(t.status)}">
-                        ${getStatusIcon(t.status)} ${getStatusLabel(t.status)}
+                        ${getStatusIcon(t.status)} ${getStatusLabel(t.status,t.tanggal_approve)}
                     </span>
                 </td>
                 <td class="text-center">
-                    <div class="text-dark small fw-bold">${t.tanggal_deadline || t.ends_time}</div>
+                    <div class="text-dark small fw-bold">${t.tanggal_mulai}</div>
+                </td>
+                </td>
+                <td class="text-center">
+                    <div class="text-dark small fw-bold">${t.tanggal_deadline   }</div>
                 </td>
             </tr>
         `).join('');
+    }
+
+    document.querySelectorAll('input[name="chartFilter"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            currentChartType = this.value;
+            const userId = document.getElementById('user-filter').value;
+            loadData(userId);
+        });
+    });
+
+    function reloadTaskTable(params) {
+        const selectedUserId = document.getElementById('user-filter').value;
+        // Tampilkan loading pada tabel
+        $('#myTaskTable tbody').html('<tr><td colspan="5" class="text-center">Loading tasks...</td></tr>');
+        let queryParams = new URLSearchParams(params);
+        $.ajax({
+            url: `/api/dashboard-bawahan/${selectedUserId}?${queryParams.toString()}`, // Sesuaikan URL Anda
+            method: 'GET',
+            data: params,
+            success: function(response) {
+                // Fungsi untuk merender ulang isi tabel myTaskTable
+                updateTaskTable(response.recent_tasks);
+                
+                // Opsional: Scroll ke arah tabel agar user tahu data berubah
+                $('html, body').animate({
+                    scrollTop: $("#myTaskTable").offset().top - 100
+                }, 500);
+            }
+        });
     }
 
     function updateCharts(data) {
@@ -466,6 +633,39 @@
                         }
                     }
                 },
+                onClick: (event, elements) => {
+                    if (elements.length > 0) {
+                        const index = elements[0]._index;
+                        const label = barChart.data.labels[index];
+                        const filterType = $('input[name="chartFilter"]:checked').val();
+                        
+                        // Ambil data berdasarkan tipe filter yang aktif
+                        let params = { type: filterType };
+                        
+                        if (filterType === 'daily') {
+                            // Jika harian, label biasanya "DD MMM". 
+                            // Sebaiknya simpan format YYYY-MM-DD di dataset hidden atau kirim string labelnya
+                            params.clicked_date = parseChartLabelToDate(label); 
+                        } else if (filterType === 'monthly') {
+                            const monthMap = {
+                                // Bahasa Inggris
+                                'January': 1, 'February': 2, 'March': 3, 'April': 4, 'May': 5, 'June': 6,
+                                'July': 7, 'August': 8, 'September': 9, 'October': 10, 'November': 11, 'December': 12,
+                                // Bahasa Indonesia (Carbon translatedFormat)
+                                'Januari': 1, 'Februari': 2, 'Maret': 3, 'April': 4, 'Mei': 5, 'Juni': 6,
+                                'Juli': 7, 'Agustus': 8, 'September': 9, 'Oktober': 10, 'November': 11, 'Desember': 12
+                            };
+
+                            // Gunakan trim() untuk membuang spasi kosong jika ada
+                            params.clicked_month = monthMap[label.trim()];
+                        }
+
+                        console.log(params);
+
+                        // Panggil fungsi untuk reload tabel saja
+                        reloadTaskTable(params);
+                    }
+                },
                 scales: {
                     yAxes: [{
                         ticks: {
@@ -508,15 +708,16 @@
         donutChart = new Chart(ctxDonut, {
             type: 'doughnut',
             data: {
-                labels: ['Pending', 'Progress', 'Overdue', 'Approved'],
+                labels: ['Pending', 'Progress', 'Overdue', 'Approved', 'Overdue (Done)'],
                 datasets: [{
                     data: [
                         data.status_count.pending,
                         data.status_count.on_progress,
                         data.status_count.overdue,
+                        data.status_count.overdue_done,
                         data.status_count.approved
                     ],
-                    backgroundColor: ['#f6c23e', '#4e73df', '#e74a3b', '#1cc88a'],
+                    backgroundColor: ['#f6c23e', '#4e73df', '#e74a3b', '#1cc88a', '#8b5cf6'],
                     borderWidth: 4,
                     borderColor: '#ffffff',
                     hoverOffset: 10
@@ -526,6 +727,36 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 cutout: '75%',
+                onClick: (event, elements) => {
+                    if (elements.length > 0) {
+                        const index = elements[0]._index;
+                        const label = donutChart.data.labels[index];
+
+                        // Map Label ke ID Status sesuai database Anda
+                        const statusMap = {
+                            'Pending': 0,
+                            'Progress': 1,
+                            'Revisi': 2,
+                            'Waiting Approval': 3,
+                            'Approved': 4,
+                            'Overdue': 7,
+                            'Overdue (Done)': '7_done' // Berikan penanda khusus untuk Overdue (Done)
+                        };
+
+                        const selectedStatus = statusMap[label];
+
+                        // Ambil filter tanggal yang sedang aktif
+                        const start = document.getElementById('start-date').value;
+                        const end = document.getElementById('end-date').value;
+
+                        // Kirim filter status ke tabel
+                        reloadTaskTable({ 
+                            clicked_status: selectedStatus,
+                            start_date: start,
+                            end_date: end
+                        });
+                    }
+                },
                 plugins: {
                     legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } }
                 }

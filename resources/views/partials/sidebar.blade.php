@@ -200,26 +200,26 @@
                 </div>
             </div>
         </li>
-        
+
         <li class="nav-item {{ request()->is('*HC*') ? 'active' : '' }}">
             <a class="nav-link {{ request()->is('*HC*') ? '' : 'collapsed' }}" href="#" 
-            data-toggle="collapse" data-target="#collapseHC" 
-            aria-expanded="{{ request()->is('*HC*') ? 'true' : 'false' }}" aria-controls="collapseHC">
+            data-toggle="collapse" data-target="#collapseMCN" 
+            aria-expanded="{{ request()->is('*HC*') ? 'true' : 'false' }}" aria-controls="collapseMCN">
                 <i class="fas fa-fw fa-users"></i>
-                <span>Human Capital</span>
+                <span>MCN</span>
             </a>
             
-            <div id="collapseHC" class="collapse {{ request()->is('*HC*') ? 'show' : '' }}" 
+            <div id="collapseMCN" class="collapse {{ request()->is('*HC*') ? 'show' : '' }}" 
                 aria-labelledby="headingHC" data-parent="#accordionSidebar">
                 <div class="collapse-container">
                     {{-- Menu Daily Work --}}
-                    <div class="client-item-wrapper mb-2">
+                    {{-- <div class="client-item-wrapper mb-2">
                         <a class="client-dropdown-link {{ request()->is('hc_dailywork') ? 'active' : '' }}" href="{{ route('hc_daily.index') }}">
                             <span>Daily Work</span>
                         </a>
-                    </div>
+                    </div> --}}
 
-                    <div class="client-item-wrapper mb-2">
+                    {{-- <div class="client-item-wrapper mb-2">
                         <a class="client-dropdown-link {{ request()->is('hc_overview.list') ? 'active' : '' }}" href="{{ route('hc_overview.list') }}">
                             <span>Project Overview</span>
                         </a>
@@ -229,7 +229,7 @@
                         <a class="client-dropdown-link {{ request()->is('hc_overview.list') ? 'active' : '' }}" href="{{ route('overview.dashboard') }}">
                             <span>Dashboard</span>
                         </a>
-                    </div>
+                    </div> --}}
                 </div>
             </div>
         </li>

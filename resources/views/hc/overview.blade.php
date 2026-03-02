@@ -57,7 +57,7 @@
                         <label class="small font-weight-bold text-dark">Status:</label>
                         <select name="status" class="form-control form-control-sm border-primary">
                             <option value="">- Semua -</option>
-                            <option value="0" {{ request('status') === '0' ? 'selected' : '' }}>Pending</option>
+                            <option value="0" {{ request('status') === '0' ? 'selected' : '' }}>Not Started</option>
                             <option value="1" {{ request('status') === '1' ? 'selected' : '' }}>In Progress</option>
                             <option value="2" {{ request('status') === '2' ? 'selected' : '' }}>Revisi</option>
                             <option value="3" {{ request('status') === '3' ? 'selected' : '' }}>Minta Approval</option>
@@ -117,7 +117,7 @@
                                 <td>@switch($d->status)
                                         @case(0)
                                             <span class="badge badge-secondary shadow-sm px-2">
-                                                <i class="fas fa-clock mr-1"></i> Pending
+                                                <i class="fas fa-clock mr-1"></i> Not Started
                                             </span>
                                             @break
                                         @case(1)

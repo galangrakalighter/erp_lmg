@@ -402,7 +402,7 @@
         }
 
         const map = { 
-            0: 'Pending', 
+            0: 'Not Started', 
             1: 'On Progress', 
             2: 'Revisi', 
             3: 'Waiting Approval', 
@@ -708,7 +708,7 @@
         donutChart = new Chart(ctxDonut, {
             type: 'doughnut',
             data: {
-                labels: ['Pending', 'Progress', 'Overdue', 'Approved', 'Overdue (Done)'],
+                labels: ['Not Started', 'Progress', 'Overdue', 'Approved', 'Overdue (Done)'],
                 datasets: [{
                     data: [
                         data.status_count.pending,

@@ -109,6 +109,10 @@ class HCDailyController extends Controller
                     $q->where('task.pic', $user->id);
                 });
                 break;
+            case "super_admin":
+                $tugas_bawahan->where(function($q) use ($user) {
+                    $q->whereNot('role', 'super_admin');
+                });
             default:
                 break;
         }

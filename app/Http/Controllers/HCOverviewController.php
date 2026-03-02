@@ -63,10 +63,11 @@ class HCOverviewController extends Controller
                     // Biasanya HOD bisa melihat semua task di project tersebut
                     // Jadi biarkan kosong agar tidak terfilter pic
                     break;
-
+                case "super_admin":
+                    // Biasanya HOD bisa melihat semua task di project tersebut
+                    // Jadi biarkan kosong agar tidak terfilter pic
+                    break;
                 default:
-                    // Jika role lain, batasi hanya melihat milik sendiri demi keamanan
-                    $taskQuery->where('task.pic', $user->id);
                     break;
             }
 
@@ -98,12 +99,19 @@ class HCOverviewController extends Controller
             $vic_list = $userQuery->where(function($q) use ($user) {
                 $q->where('id', $user->id)->orWhere('dm', $user->id);
             })->get();
+        } else if ($user->role == "super_admin") {
+            $vic_list = $userQuery->where(function($q) use ($user) {
+                $q->whereNot('role', $user->role);
+            })->get();
         } else {
             $vic_list = $userQuery->where('id', $user->id)->get();
         }
 
         // 4. Filter Divisi untuk UI
         $result = [];
+        if($user->role == "super_admin"){
+            $result = $divisi_list;
+        }
         foreach($divisi_list as $divId => $nama) {
             if(in_array($divId, (array)$user->divisi)) {
                 $result[$divId] = $nama;
@@ -429,7 +437,7 @@ class HCOverviewController extends Controller
             ->join('produk_client', 'produk_client.id', '=', 'task.project')
             ->select('task.*', 'produk_client.nama')
             ->latest('task.tanggal_deadline')
-            ->take(20) // Tambah limit jika perlu
+            ->take(10)
             ->get();
 
         return response()->json([

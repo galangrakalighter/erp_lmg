@@ -671,7 +671,7 @@
         }
 
         function getStatusName(status) {
-            const statuses = {0: 'Pending', 1: 'In Progress', 3: 'Review', 4: 'Done', 5: 'Split', 7: 'Overdue', 8: 'Waktu Habis'};
+            const statuses = {0: 'Not Started', 1: 'In Progress', 3: 'Review', 4: 'Done', 5: 'Split', 7: 'Overdue', 8: 'Waktu Habis'};
             return statuses[status] || status;
         }
 

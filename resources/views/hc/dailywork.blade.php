@@ -956,7 +956,7 @@
     });
 
         function updateTimeDisplay(item, topPx, duration) {
-            const CONFIG_START_HOUR = {{ (Auth::id() == 39) ? 8 : 9 }};
+            const CONFIG_START_HOUR = 8;
             const startHour = CONFIG_START_HOUR;
     
             // Hitung total menit dari titik 0:00 hari tersebut

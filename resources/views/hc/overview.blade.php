@@ -140,6 +140,11 @@
                                                 <i class="fas fa-check-double mr-1"></i> Done
                                             </span>
                                             @break
+                                        @case(8)
+                                            <span class="badge badge-warning shadow-sm px-2">
+                                                <i class="fas fa-check-double mr-1"></i> Waktu Habis
+                                            </span>
+                                            @break
                                         @default
                                             <span class="badge badge-dark px-2">Unknown</span>
                                     @endswitch

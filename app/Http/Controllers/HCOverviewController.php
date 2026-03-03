@@ -150,7 +150,7 @@ class HCOverviewController extends Controller
         $newMenit  = (int) $request->menit;
         $overloadDates = [];
         $batasWaktu = 420;
-        if(Auth::user()->id == 39){
+        if((int)$request->pic == 39){
             $batasWaktu = 480;
         }
 

@@ -117,6 +117,9 @@ class HCDailyController extends Controller
                 break;
         }
 
+        $startHour = (Auth::id() == 39) ? 8 : 9;
+        $totalHours = 17 - $startHour;
+
         $subordinateTasks = $tugas_bawahan->whereNotNull('jam_mulai')->whereDate('task.tanggal_mulai', $today)->get();
 
         $unscheduled_tasks = $all_tasks->filter(function ($task) use ($today) {
@@ -125,20 +128,19 @@ class HCDailyController extends Controller
             // 2. Cek status yang valid (Belum dikerjakan, Tertunda, atau Overdue)
             $validStatus = in_array($task->status, [0, 2, 7]);
 
-            $checkApprove = false;
-            if($task->status == 7 && is_null($task->tanggal_approve)){
-                $checkApprove = true;
-            }
-
             // 3. PERBAIKAN: Cek apakah $today berada di antara tanggal mulai dan deadline
             // Gunakan parse untuk memastikan objek Carbon, lalu bandingkan
             $tglMulai = \Carbon\Carbon::parse($task->tanggal_mulai)->startOfDay();
             $tglDeadline = \Carbon\Carbon::parse($task->tanggal_deadline)->endOfDay();
             $currentDate = \Carbon\Carbon::parse($today);
-
+                
             // Tugas muncul jika hari ini >= tanggal mulai DAN hari ini <= tanggal deadline
             // Khusus status 7 (overdue), biasanya tetap ditampilkan agar user segera menjadwalkan
             $inRange = $currentDate->between($tglMulai, $tglDeadline);
+            $checkApprove = true;
+            if ($task->status == 7) {
+                $checkApprove = is_null($task->tanggal_approve);
+            }
             $dateCheck = ($task->status == 7) || $inRange;
 
             return $noTime && $validStatus && $dateCheck && $checkApprove;
@@ -172,7 +174,7 @@ class HCDailyController extends Controller
 
         $priority_colors = [1 => 'info', 2 => 'warning', 3 => 'danger'];
 
-        return view('hc.dailywork', compact('title', 'unscheduled_tasks', 'scheduled_tasks', 'priority_colors', 'formatTotalPool', 'subordinateTasks'));
+        return view('hc.dailywork', compact('title', 'unscheduled_tasks', 'scheduled_tasks', 'priority_colors', 'startHour','totalHours','formatTotalPool', 'subordinateTasks'));
     }
 
     public function updateSchedule(Request $request)
@@ -190,7 +192,7 @@ class HCDailyController extends Controller
         }
 
         if ($request->has('top')) {
-            $newTime = Carbon::createFromTime(9, 0, 0)->addMinutes($request->top);
+            $newTime = Carbon::createFromTime(8, 0, 0)->addMinutes($request->top);
             $task->update([
                 'jam_mulai' => $newTime->format('H:i:s'),
                 'tanggal_mulai' => Carbon::today(),
@@ -302,7 +304,8 @@ class HCDailyController extends Controller
     }
 
     public function getTaskJSON(Request $request){
-        $userId = $request->query('user_id', Auth::id());
+        $userId = $request->query('user_id');
+        $userId = (int)$userId;
         $today = \Carbon\Carbon::today();
 
         $tasks = Task::leftJoin('users', 'users.id', '=', 'task.pic')

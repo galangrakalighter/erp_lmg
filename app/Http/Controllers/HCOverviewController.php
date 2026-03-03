@@ -149,6 +149,10 @@ class HCOverviewController extends Controller
         $newPeriod = CarbonPeriod::create($request->tanggal_mulai, $request->tanggal_deadline);
         $newMenit  = (int) $request->menit;
         $overloadDates = [];
+        $batasWaktu = 420;
+        if(Auth::user()->id == 39){
+            $batasWaktu = 480;
+        }
 
         foreach ($newPeriod as $date) {
             $tgl = $date->format('Y-m-d');
@@ -157,7 +161,7 @@ class HCOverviewController extends Controller
 
             $totalPrediksi = $currentLoad + $newMenit;
 
-            if ($totalPrediksi > 420) {
+            if ($totalPrediksi > $batasWaktu) {
                 $overloadDates[] = "$tgl (Total: $totalPrediksi menit)";
             }
         }

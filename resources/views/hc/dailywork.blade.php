@@ -39,7 +39,7 @@
 
     #daily-grid {
         /* Total tinggi: 8 jam * 300px = 2400px */
-        height: 2400px; 
+        height: 2700px; 
         background-color: #fff; 
         position: relative;
         border: 1px solid var(--border-color);
@@ -49,7 +49,10 @@
     }
 
     .grid-line {
-        position: absolute; width: 100%; border-top: 1px solid var(--border-color);
+        position: absolute; 
+        width: 100%; 
+        border-top: 
+        1px solid var(--border-color);
         pointer-events: none; z-index: 1;
     }
 
@@ -253,7 +256,7 @@
             <div class="row no-gutters">
                 {{-- Sidebar Jam --}}
                 <div class="col-auto hour-sidebar border-right">
-                    @for($i = 9; $i <= 16; $i++)
+                    @for($i = 8; $i <= 16; $i++)
                         {{-- Label Jam Utama (09:00, 10:00, dst) --}}
                         <div class="hour-major">{{ sprintf('%02d:00', $i) }}</div>
                         
@@ -282,7 +285,7 @@
 
                         @foreach($scheduled_tasks as $task)
                             @php
-                                $startGrid = \Carbon\Carbon::createFromTime(9, 0, 0);
+                                $startGrid = \Carbon\Carbon::createFromTime($startHour, 0, 0);
                                 $taskStart = \Carbon\Carbon::parse($task->jam_mulai);
                                 $taskEnd = $taskStart->copy()->addMinutes($task->menit);
                                 $email = $task->vic_email ?? '';
@@ -481,7 +484,7 @@
         };
 
         function renderTaskCard(task, isMyTask) {
-            const startHour = 9;
+            const startHour = 8;
             const myRole = "{{ Auth::user()->role }}";
             
             const jamMulai = task.jam_mulai || "09:00";
@@ -676,7 +679,7 @@
         }
 
         function renderGridLines() {
-            for(let i=0; i<=8; i++) {
+            for(let i=0; i<=9; i++) {
                 const line = `<div class="grid-line" style="position:absolute; top:${i*300}px; border-top:1px dashed #eee; width:100%; height:1px;"></div>`;
                 grid.insertAdjacentHTML('afterbegin', line);
             }
@@ -688,6 +691,10 @@
 
         // --- CORE FUNCTIONS ---
         window.handleTaskMovement = function(evt, isNew) {
+            const CONFIG_START_HOUR = 8;
+            const CONFIG_END_HOUR = 17;
+            const TOTAL_HOURS = CONFIG_END_HOUR - CONFIG_START_HOUR;
+            const MAX_GRID_HEIGHT = TOTAL_HOURS * 300;
             const item = evt.item;
             const rect = grid.getBoundingClientRect();
             const taskId = item.getAttribute('data-id');
@@ -699,9 +706,18 @@
             let heightPx = isNew ? (duration / 60) * 300 : item.offsetHeight;
             let proposedTop = Math.round((clientY - rect.top) / 50) * 50;
 
+            const minTopAllowed = {{ (Auth::id() == 39) ? 0 : 300 }}; 
+
+            if (proposedTop < minTopAllowed) {
+                @if(Auth::id() != 39)
+                    alert("Maaf, jadwal kerja Anda dimulai dari jam 09:00!");
+                @endif
+                proposedTop = minTopAllowed;
+            }
+
             // Batasi area grid (09:00 - 17:00 = 2400px)
             if (proposedTop < 0) proposedTop = 0;
-            if (proposedTop + heightPx > 2400) proposedTop = 2400 - heightPx;
+            if (proposedTop + heightPx > MAX_GRID_HEIGHT) proposedTop = MAX_GRID_HEIGHT - heightPx;
 
             if (checkCollision(proposedTop, heightPx, taskId)) {
                 alert("Slot waktu sudah terisi!");
@@ -734,6 +750,7 @@
         }
 
         function saveToDatabase(taskId, topPx, shouldRefresh) {
+            console.log("masuk save to database");
             // topPx / 300 * 60 menit
             const minutesFromStart = (topPx / 300) * 60; 
             axios.post("{{ route('hc.updateSchedule') }}", { id: taskId, top: minutesFromStart })
@@ -759,6 +776,11 @@
             const displayRange = card.querySelector('.task-time-range');
             const oldTime = input.getAttribute('data-old-value');
             const newValue = input.value;
+            const CONFIG_START_HOUR = {{ (Auth::id() == 39) ? 8 : 9 }};
+
+            const startHour = CONFIG_START_HOUR;
+            const endHour = 17;
+            const maxMinutes = (endHour - startHour) * 60; // Jika jam 8, maka 540 menit. Jika jam 9, maka 480 menit.
 
             if (newValue === oldTime) {
                 input.style.display = 'none';
@@ -769,21 +791,28 @@
             const [h, m] = newValue.split(':').map(Number);
             const duration = parseInt(card.getAttribute('data-menit'));
 
-            // 1. HITUNG POSISI & TOTAL MENIT SELESAI
-            const hourDiff = h - 9;
+            // 1. HITUNG POSISI BERDASARKAN START HOUR DINAMIS
+            const hourDiff = h - startHour;
             const proposedTop = (hourDiff * 300) + (m / 60 * 300);
-            const totalMinutesFromNine = (hourDiff * 60) + m;
-            const endMinutesFromNine = totalMinutesFromNine + duration;
+            
+            // Total menit dari titik 0 grid
+            const totalMinutesFromStart = (hourDiff * 60) + m;
+            const endMinutesFromStart = totalMinutesFromStart + duration;
 
-            // 2. VALIDASI JAM KERJA (Max 17:00 adalah 480 menit dari 09:00)
-            if (h < 9) {
-                alert("Jam mulai tidak boleh sebelum jam 09:00!");
+            // 2. VALIDASI JAM KERJA DINAMIS
+            if (h < startHour) {
+                alert(`Jam mulai tidak boleh sebelum jam ${String(startHour).padStart(2, '0')}:00!`);
                 resetInput();
                 return;
             }
 
-            if (endMinutesFromNine > 480) {
-                alert(`Tidak bisa input jam ${newValue}. Karena durasi task ${duration} menit, jam selesai (${formatMinutesToTime(endMinutesFromNine)}) akan melebihi jam 17:00!`);
+            if (endMinutesFromStart > maxMinutes) {
+                // Fungsi helper untuk format jam selesai agar alert lebih informatif
+                const endH = Math.floor((startHour * 60 + endMinutesFromStart) / 60);
+                const endM = Math.round((startHour * 60 + endMinutesFromStart) % 60);
+                const formatEnd = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+
+                alert(`Tidak bisa input jam ${newValue}. Karena durasi task ${duration} menit, jam selesai (${formatEnd}) akan melebihi jam 17:00!`);
                 resetInput();
                 return;
             }
@@ -795,16 +824,19 @@
                 return;
             }
 
-            // Eksekusi jika lolos validasi
+            // EKSEKUSI JIKA LOLOS VALIDASI
             card.style.top = proposedTop + 'px';
+            
+            // Pastikan updateTimeDisplay juga menggunakan startHour yang benar di dalamnya
             updateTimeDisplay(card, proposedTop, duration);
+            
             input.style.display = 'none';
             displayRange.style.display = 'inline-block';
 
-            const minutesFromStart = (proposedTop / 300) * 60; 
+            // Simpan ke database (Top relatif terhadap grid)
             axios.post("{{ route('hc.updateSchedule') }}", { 
                 id: card.dataset.id, 
-                top: minutesFromStart 
+                top: totalMinutesFromStart 
             }).catch(err => {
                 alert("Gagal sinkronisasi. Halaman dimuat ulang.");
                 location.reload();
@@ -924,11 +956,26 @@
     });
 
         function updateTimeDisplay(item, topPx, duration) {
-            const startTotal = (9 * 60) + (topPx / 300 * 60); // 300 adalah height per jam sekarang
+            const CONFIG_START_HOUR = {{ (Auth::id() == 39) ? 8 : 9 }};
+            const startHour = CONFIG_START_HOUR;
+    
+            // Hitung total menit dari titik 0:00 hari tersebut
+            // (startHour * 60) adalah offset jam mulai (misal 8 * 60 = 480 menit)
+            // (topPx / 300 * 60) adalah posisi menit relatif di dalam grid
+            const startTotal = (startHour * 60) + (topPx / 300 * 60); 
             const endTotal = startTotal + duration;
-            const format = (m) => `${Math.floor(m/60).toString().padStart(2,'0')}:${Math.round(m%60).toString().padStart(2,'0')}`;
+
+            // Helper untuk format menit ke HH:mm
+            const format = (m) => {
+                const h = Math.floor(m / 60);
+                const min = Math.round(m % 60);
+                return `${h.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`;
+            };
+
             const display = item.querySelector('.task-time-range');
-            if (display) display.innerText = `${format(startTotal)} - ${format(endTotal)}`;
+            if (display) {
+                display.innerText = `${format(startTotal)} - ${format(endTotal)}`;
+            }
         }
     });
 

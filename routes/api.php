@@ -9,7 +9,6 @@ Route::get('/user', function (Request $request) {
 
 Route::get('/get-dm/{id}', [App\Http\Controllers\ProdukController::class, 'getBawahanDM'])->name('getBawahanDM');
 Route::get('/get-cc/{id}', [App\Http\Controllers\ProdukController::class, 'getBawahanCC'])->name('getBawahanCC');
-Route::get('/hc/get-tasks-json', [App\Http\Controllers\HCDailyController::class, 'getTaskJSON'])->name('getTaskJSON');
 Route::get('/dashboard-bawahan/{id}', [App\Http\Controllers\HCOverviewController::class, 'getDataDashboardBawahan'])->name('getDataDashboardBawahan');
 Route::get('/get-tasks-by-date', [App\Http\Controllers\HCOverviewController::class, 'getTasksByDate'])->name('getTaskByDate');
 Route::post('/hc/update-schedule', [App\Http\Controllers\HCDailyController::class, 'updateSchedule'])->name('hc.updateSchedule');

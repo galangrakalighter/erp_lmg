@@ -313,9 +313,19 @@ class HCDailyController extends Controller
             ->select('task.*', 'users.email as vic_email', 'produk_client.nama as project_name', 'users.role as vic_role')
             ->where('task.pic', $userId)
             ->whereNotNull('task.jam_mulai')
-            ->where(function($query) use ($today) {
-                // 1. KONDISI UTAMA: Selama Status 3, tampilkan tanpa cek tanggal
-                $query->whereIn('task.status', [3, 7])
+            ->where(function($query) use ($today, $userId) {
+                $status = $userId == Auth::id();
+                $query->where(function($q) use ($status, $today) {
+                    if ($status) {
+                        $q->where(function($sub) use ($today) {
+                            $sub->where('task.status', 3)
+                                ->where('task.tanggal_mulai', $today);
+                        })->orWhere('task.status', 7);
+                    } else {
+                        // Jika orang lain (False): Tampilkan 3 dan 7 secara normal (logika lama Anda)
+                        $q->whereIn('task.status', [3, 7]);
+                    }
+                })
                 
                 // 2. JALUR GRID NORMAL (Hari Ini)
                 ->orWhere(function($q) use ($today) {

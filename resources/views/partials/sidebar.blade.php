@@ -213,11 +213,11 @@
                 aria-labelledby="headingHC" data-parent="#accordionSidebar">
                 <div class="collapse-container">
                     {{-- Menu Daily Work --}}
-                    {{-- <div class="client-item-wrapper mb-2">
-                        <a class="client-dropdown-link {{ request()->is('hc_dailywork') ? 'active' : '' }}" href="{{ route('hc_daily.index') }}">
-                            <span>Daily Work</span>
+                    <div class="client-item-wrapper mb-2">
+                        <a class="client-dropdown-link {{ request()->is('social_creator') ? 'active' : '' }}" href="{{ route('social_creator.index') }}">
+                            <span>Affiliator</span>
                         </a>
-                    </div> --}}
+                    </div>
 
                     {{-- <div class="client-item-wrapper mb-2">
                         <a class="client-dropdown-link {{ request()->is('hc_overview.list') ? 'active' : '' }}" href="{{ route('hc_overview.list') }}">

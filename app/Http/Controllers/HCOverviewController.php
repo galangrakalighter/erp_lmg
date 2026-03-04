@@ -181,6 +181,7 @@ class HCOverviewController extends Controller
                 'menit'            => (int)$request->menit,
                 'tanggal_mulai'    => $date->format('Y-m-d'),
                 'tanggal_deadline' => $date->format('Y-m-d'),
+                'jam_mulai'        => $request->jam_mulai,
                 'note'             => $request->note,
                 'status'           => 0, // Default ke Pool
             ]);
@@ -263,6 +264,7 @@ class HCOverviewController extends Controller
             'menit' => (int)$request->menit,
             'tanggal_mulai' => $request->tanggal_mulai,
             'tanggal_deadline' => $request->tanggal_deadline,
+            'jam_mulai'        => $request->jam_mulai,
             'note' => $request->note,
             'status' => 0
         ]);
@@ -477,5 +479,23 @@ class HCOverviewController extends Controller
         }
 
         return view('hc.dashboard', compact('title', 'allUser'));
+    }
+
+    public function getTasksByDate(Request $request)
+    {
+        $tanggal = $request->query('tanggal');
+        $picId = $request->query('pic');
+
+        if (!$tanggal || !$picId) {
+            return response()->json(['error' => 'Parameter tidak lengkap'], 400);
+        }
+
+        // Mengambil task pada tanggal tertentu untuk PIC tertentu
+        $tasks = Task::join('produk_client', 'produk_client.id', '=', 'task.project')->where('tanggal_mulai', $tanggal)
+                     ->where('pic', $picId)
+                     ->select('task.*', 'produk_client.nama')
+                     ->orderBy('jam_mulai', 'asc')
+                     ->get();
+        return response()->json($tasks);
     }
 }

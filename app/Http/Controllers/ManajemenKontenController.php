@@ -24,9 +24,13 @@ class ManajemenKontenController extends Controller
         ->leftjoin('jenis_body', 'jenis_body.id', '=', 'data_jasa.body_id')
         ->leftjoin('jenis_cta', 'jenis_cta.id', '=', 'data_jasa.cta_id')
         ->leftjoin('users', 'users.id', '=', 'data_jasa.pic')
+        ->leftJoin('task', function($join) {
+            $join->on('task.id_manajement_konten', '=', 'data_jasa.id')
+                ->whereRaw('task.id IN (select MAX(a.id) from task as a group by a.id_manajement_konten)');
+        })
         ->where('data_jasa.produk_client_id', $produk->id)
         ->where('data_jasa.platform', $platform)
-        ->select('data_jasa.*', 'type_produk.type', 'strategy.strategy', 'status.nama_status', 'pilar.pilar', 'hooks.hooks', 'jenis_body.nama_body', 'jenis_cta.nama_cta', 'users.id as users_id', 'users.email as vic_email');
+        ->select('data_jasa.*', 'type_produk.type', 'strategy.strategy', 'status.nama_status', 'pilar.pilar', 'hooks.hooks', 'jenis_body.nama_body', 'jenis_cta.nama_cta', 'users.id as users_id', 'users.email as vic_email', 'task.jam_mulai');
         if ($request->filled('start_date')) {
             $query->whereDate('data_jasa.tanggal_posting', '>=', $request->start_date);
         }
@@ -107,49 +111,6 @@ class ManajemenKontenController extends Controller
             'note'              => 'nullable|string',
         ]);
 
-        $BATAS_HARIAN = 420;
-        $existingJobs = DB::table('data_jasa')
-                    ->where('pic', $request->pic)
-                    ->get();
-
-        $dailyLoad = [];
-        foreach ($existingJobs as $job) {
-            if($job->tanggal_mulai != null){
-                $period = CarbonPeriod::create($job->tanggal_mulai, $job->tanggal_deadline);
-                
-                foreach ($period as $date) {
-                    $tgl = $date->format('Y-m-d');
-                    
-                    if (!isset($dailyLoad[$tgl])) {
-                        $dailyLoad[$tgl] = 0;
-                    }
-                    
-                    $dailyLoad[$tgl] += $job->menit;
-                }
-            }
-        }
-        
-        $newPeriod = CarbonPeriod::create($request->tanggal_mulai, $request->tanggal_deadline);
-        $newMenit  = (int) $request->menit;
-        $overloadDates = [];
-
-        foreach ($newPeriod as $date) {
-            $tgl = $date->format('Y-m-d');
-
-            $currentLoad = $dailyLoad[$tgl] ?? 0;
-
-            $totalPrediksi = $currentLoad + $newMenit;
-
-            if ($totalPrediksi > $BATAS_HARIAN) {
-                $overloadDates[] = "$tgl (Total: $totalPrediksi menit)";
-            }
-        }
-
-        if(!empty($overloadDates)){
-            $list_tanggal_string = implode(', ', $overloadDates);
-            return redirect()->back()->with('error', "Gagal! Durasi melebihi 7 Jam (420 Menit) pada tanggal: " . $list_tanggal_string);
-        }
-
         // Kirim Data Ke Database
         try {
             $data_jasa = DB::table('data_jasa')->insertGetId([
@@ -179,6 +140,49 @@ class ManajemenKontenController extends Controller
                 'updated_at'       => now(),
             ]);
 
+            $BATAS_HARIAN = (int)$request->pic == 39 ? 480 : 420;
+            $existingJobs = DB::table('data_jasa')
+                        ->where('pic', $request->pic)
+                        ->get();
+
+            $dailyLoad = [];
+            foreach ($existingJobs as $job) {
+                if($job->tanggal_mulai != null){
+                    $period = CarbonPeriod::create($job->tanggal_mulai, $job->tanggal_deadline);
+                    
+                    foreach ($period as $date) {
+                        $tgl = $date->format('Y-m-d');
+                        
+                        if (!isset($dailyLoad[$tgl])) {
+                            $dailyLoad[$tgl] = 0;
+                        }
+                        
+                        $dailyLoad[$tgl] += $job->menit;
+                    }
+                }
+            }
+            
+            $newPeriod = CarbonPeriod::create($request->tanggal_mulai, $request->tanggal_deadline);
+            $newMenit  = (int) $request->menit;
+            $overloadDates = [];
+
+            foreach ($newPeriod as $date) {
+                $tgl = $date->format('Y-m-d');
+
+                $currentLoad = $dailyLoad[$tgl] ?? 0;
+
+                $totalPrediksi = $currentLoad + $newMenit;
+
+                if ($totalPrediksi > $BATAS_HARIAN) {
+                    $overloadDates[] = "$tgl (Total: $totalPrediksi menit)";
+                }
+            }
+
+            if(!empty($overloadDates)){
+                $list_tanggal_string = implode(', ', $overloadDates);
+                return redirect()->back()->with('error', "Gagal! Durasi melebihi 7 Jam (420 Menit) pada tanggal: " . $list_tanggal_string);
+            }
+
             $produk = ProdukClient::find((int)$id);
             $divisi = 0;
             switch ($produk->kategori_jasa_id) {
@@ -192,19 +196,22 @@ class ManajemenKontenController extends Controller
                 default:
             }
 
-            DB::table("task")->insert([
-                "nama_task" => $request->judul,
-                "divisi" => $divisi,
-                "pic" => $request->pic,
-                "priority" => $request->prioritas,
-                "menit" => $request->menit,
-                "id_manajement_konten" => $data_jasa,
-                "tanggal_mulai" => $request->tanggal_mulai,
-                "tanggal_deadline" => $request->tanggal_deadline,
-                "note" => $request->note,
-                "status" => 0,
-                "project" => (int)$id
-            ]);
+            foreach ($newPeriod as $date){
+                DB::table("task")->insert([
+                    "nama_task"             => $request->judul,
+                    "divisi"                => (int)$divisi,
+                    "pic"                   => (int)$request->pic,
+                    "priority"              => (int)$request->prioritas,
+                    "menit"                 => (int)$request->menit,
+                    "id_manajement_konten"  => $data_jasa,
+                    "tanggal_mulai"         => $date->format('Y-m-d'),
+                    "tanggal_deadline"      => $date->format('Y-m-d'),
+                    "jam_mulai"             => $request->jam_mulai,
+                    "note"                  => $request->note,
+                    "status"                => 0,
+                    "project"               => (int)$id
+                ]);
+            }
 
             return redirect()->back()->with('success', 'Data berhasil disimpan');
         } catch (\Exception $e) {
@@ -216,7 +223,7 @@ class ManajemenKontenController extends Controller
 
     public function update($id, Request $request){
         $data = DB::table('data_jasa')->where('id', $id)->first();
-        $BATAS_HARIAN = 420;
+        $BATAS_HARIAN = (int)$request->pic == 39 ? 480 : 420;
         $otherJobs = DB::table('data_jasa')
                     ->where('pic', (int)$request->pic)
                     ->whereNot('id', $id)
@@ -332,8 +339,9 @@ class ManajemenKontenController extends Controller
                         "menit" => $request->menit,
                         "tanggal_mulai" => $request->tanggal_mulai,
                         "tanggal_deadline" => $request->tanggal_deadline,
+                        "jam_mulai" => $request->jam_mulai,
                         "note" => $request->note
-                        ]);
+                    ]);
                 }else{
                     $produk = ProdukClient::find($data->produk_client_id);
                     $divisi = 0;

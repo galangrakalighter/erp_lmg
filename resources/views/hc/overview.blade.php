@@ -158,7 +158,7 @@
                                         @elseif($d->status > 0 && $d->status < 4)
                                         @else
                                             {{-- Task Belum Selesai: Boleh Edit & Hapus --}}
-                                            <button class="btn btn-sm btn-circle btn-warning" data-toggle="modal" data-target="#editModal_{{ $d->id }}"><i class="fas fa-edit"></i></button>
+                                            <button class="btn btn-sm btn-circle btn-warning" data-toggle="modal" onclick="getDataEdit('{{ $d->id }}')" data-target="#editModal_{{ $d->id }}"><i class="fas fa-edit"></i></button>
                                             <button class="btn btn-sm btn-circle btn-danger" data-toggle="modal" data-target="#deleteModal_{{ $d->id }}"><i class="fas fa-trash"></i></button>
                                         @endif
                                     @else
@@ -182,69 +182,132 @@
 {{-- MODAL TAMBAH --}}
 <div class="modal fade" id="tambahModal" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content shadow">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title font-weight-bold">Tambah Task Baru</h5>
-                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white" style="background: linear-gradient(45deg, #4e73df, #224abe);">
+                <h5 class="modal-title font-weight-bold">
+                    <i class="fas fa-plus-circle mr-2"></i>Tambah Task Baru
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
             </div>
+
             <form action="{{ route('hc_overview.store', $id) }}" method="POST">
                 @csrf
-                {{-- Input hidden agar project ID otomatis terisi sesuai halaman --}}
                 <input type="hidden" name="project" value="{{ $id }}">
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label class="font-weight-bold small">Nama Task</label>
-                        <input type="text" name="nama_task" class="form-control" required>
+                
+                <div class="modal-body p-4" style="background-color: #f8f9fc;">
+                    
+                    <h6 class="text-primary font-weight-bold uppercase small mb-3"><i class="fas fa-info-circle mr-1"></i> Informasi Utama</h6>
+                    <div class="form-group mb-4">
+                        <label class="font-weight-bold text-dark small">NAMA TASK</label>
+                        <div class="input-group shadow-sm">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text bg-white border-right-0"><i class="fas fa-tasks text-muted"></i></span>
+                            </div>
+                            <input type="text" name="nama_task" class="form-control border-left-0 pl-0" placeholder="Apa yang akan dikerjakan?" required>
+                        </div>
                     </div>
+
                     <div class="row">
-                        <div class="col-md-6 form-group">
-                            <label class="font-weight-bold small">Divisi</label>
-                            <select name="divisi" class="form-control" required>
+                        <div class="col-md-6 form-group mb-4">
+                            <label class="font-weight-bold text-dark small">DIVISI</label>
+                            <select name="divisi" class="form-control custom-select shadow-sm border-0" required>
                                 @foreach($result as $divId => $nama)
                                     <option value="{{ $divId }}">{{ $nama }}</option>
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-6 form-group">
-                            <label class="font-weight-bold small">PIC</label>
-                            <select name="pic" class="form-control" required>
+                        <div class="col-md-6 form-group mb-4">
+                            <label class="font-weight-bold text-dark small">PIC (PERSON IN CHARGE)</label>
+                            <select name="pic" id="pic_select" class="form-control custom-select shadow-sm border-0" required>
+                                <option value="" selected disabled>-- Pilih PIC --</option>
                                 @foreach($vic_list as $user)
                                     <option value="{{ $user->id }}">{{ $user->email }}</option>
                                 @endforeach
                             </select>
                         </div>
                     </div>
+
+                    <hr class="my-4">
+
+                    <h6 class="text-primary font-weight-bold uppercase small mb-3"><i class="fas fa-calendar-alt mr-1"></i> Penjadwalan & Waktu</h6>
                     <div class="row">
-                        <div class="col-md-6 form-group">
-                            <label class="font-weight-bold small">Prioritas</label>
-                            <select name="priority" class="form-control" required>
+                        <div class="col-md-6 form-group mb-3">
+                            <label class="font-weight-bold text-dark small">TANGGAL MULAI</label>
+                            <input type="date" name="tanggal_mulai" id="tanggal_mulai" class="form-control shadow-sm border-0" required>
+                        </div>
+                        <div class="col-md-6 form-group mb-3">
+                            <label class="font-weight-bold text-dark small">TANGGAL DEADLINE</label>
+                            <input type="date" name="tanggal_deadline" class="form-control shadow-sm border-0" required>
+                        </div>
+                    </div>
+
+                    <div id="task-list-container" class="mb-4 animate__animated animate__fadeIn" style="display: none;">
+                        <div class="card border-0 shadow-sm" style="border-radius: 10px; overflow: hidden;">
+                            <div class="card-header bg-info text-white py-2 d-flex justify-content-between align-items-center">
+                                <span class="small font-weight-bold"><i class="fas fa-user-clock mr-1"></i> Jadwal PIC di Tanggal Ini</span>
+                                <span id="total-durasi-container" class="badge badge-light text-info shadow-sm">
+                                    Total: 0 Menit
+                                </span>
+                            </div>
+                            <div class="table-responsive" style="max-height: 150px; overflow-y: auto;">
+                                <table class="table table-sm table-hover mb-0 bg-white" style="font-size: 12px;">
+                                    <thead class="text-muted" style="background-color: #f1f3f5;">
+                                        <tr>
+                                            <th class="border-0 pl-3">Nama Task</th>
+                                            <th class="border-0">Waktu</th>
+                                            <th class="border-0">Durasi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="task-list-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 form-group mb-3">
+                            <label class="font-weight-bold text-dark small">JAM MULAI</label>
+                            <input type="time" name="jam_mulai" id="jam_mulai" class="form-control shadow-sm border-0" required>
+                        </div>
+                        <div class="col-md-4 form-group mb-3">
+                            <label class="font-weight-bold text-dark small">JAM SELESAI</label>
+                            <input type="time" name="jam_selesai" id="jam_selesai" class="form-control shadow-sm border-0" required>
+                        </div>
+                        <div class="col-md-4 form-group mb-3">
+                            <label class="font-weight-bold text-dark small">ESTIMASI</label>
+                            <div class="input-group shadow-sm">
+                                <input type="number" name="menit" id="menit" class="form-control bg-white font-weight-bold text-primary border-0" readonly placeholder="0">
+                                <div class="input-group-append">
+                                    <span class="input-group-text bg-white border-0 small">Min</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 form-group mb-4">
+                            <label class="font-weight-bold text-dark small">PRIORITAS</label>
+                            <select name="priority" class="form-control custom-select shadow-sm border-0" required>
                                 @foreach($prioritas as $pId => $pName)
                                     <option value="{{ $pId }}">{{ $pName }}</option>
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-6 form-group">
-                            <label class="font-weight-bold small">Estimasi (Menit)</label>
-                            <input type="number" name="menit" class="form-control">
-                        </div>
                     </div>
-                    <div class="row">
-                        <div class="col-md-6 form-group">
-                            <label class="font-weight-bold small">Tgl Mulai</label>
-                            <input type="date" name="tanggal_mulai" class="form-control" required>
-                        </div>
-                        <div class="col-md-6 form-group">
-                            <label class="font-weight-bold small">Tgl Deadline</label>
-                            <input type="date" name="tanggal_deadline" class="form-control" required>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="font-weight-bold small">Catatan</label>
-                        <textarea name="note" class="form-control" rows="2"></textarea>
+
+                    <div class="form-group mb-0">
+                        <label class="font-weight-bold text-dark small">CATATAN</label>
+                        <textarea name="note" class="form-control shadow-sm border-0" rows="3" style="border-radius: 8px;" placeholder="Tambahkan rincian atau catatan khusus..."></textarea>
                     </div>
                 </div>
-                <div class="modal-footer bg-light">
-                    <button type="submit" class="btn btn-primary btn-block">Simpan Task</button>
+
+                <div class="modal-footer bg-white border-0 px-4 pb-4">
+                    <button type="button" class="btn btn-light font-weight-bold px-4 text-muted" data-dismiss="modal">BATAL</button>
+                    <button type="submit" class="btn btn-primary shadow-lg px-5 font-weight-bold" style="border-radius: 8px; letter-spacing: 1px;">
+                        <i class="fas fa-save mr-2"></i>SIMPAN TASK
+                    </button>
                 </div>
             </form>
         </div>
@@ -255,38 +318,48 @@
     {{-- MODAL EDIT --}}
     <div class="modal fade" id="editModal_{{ $d->id }}" tabindex="-1" role="dialog">
         <div class="modal-dialog modal-lg" role="document">
-            <div class="modal-content">
-                <div class="modal-header bg-warning">
-                    <h5 class="modal-title font-weight-bold">Edit Task</h5>
-                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-warning text-dark" style="background: linear-gradient(45deg, #f6e05e, #ecc94b);">
+                    <h5 class="modal-title font-weight-bold">
+                        <i class="fas fa-edit mr-2"></i>Edit Task
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
                 </div>
-                {{-- Sesuaikan Route Update: Butuh id_client dan id task --}}
+                
                 <form action="{{ route('hc_overview.update', [$id, $d->id]) }}" method="POST">
                     @csrf
                     @method('PUT')
-                    <div class="modal-body p-4">
+                    
+                    <div class="modal-body p-4" style="background-color: #fcfaf2;">
+                        <h6 class="text-warning font-weight-bold uppercase small mb-3" style="filter: brightness(0.7);">
+                            <i class="fas fa-info-circle mr-1"></i> Informasi Utama
+                        </h6>
+                        
                         <div class="form-group mb-4">
-                            <label class="text-dark font-weight-bold small uppercase">Nama Task</label>
-                            <div class="input-group">
+                            <label class="font-weight-bold text-dark small">NAMA TASK</label>
+                            <div class="input-group shadow-sm">
                                 <div class="input-group-prepend">
-                                    <span class="input-group-text bg-light border-right-0"><i class="fas fa-tasks text-muted"></i></span>
+                                    <span class="input-group-text bg-white border-right-0"><i class="fas fa-tasks text-muted"></i></span>
                                 </div>
-                                <input type="text" name="nama_task" class="form-control border-left-0 bg-light" value="{{ $d->nama_task }}" required>
+                                <input type="text" name="nama_task" class="form-control border-left-0 pl-0" value="{{ $d->nama_task }}" required>
                             </div>
                         </div>
 
                         <div class="row">
-                            <div class="col-md-6 form-group mb-3">
-                                <label class="text-dark font-weight-bold small uppercase">Divisi</label>
-                                <select name="divisi" class="form-control custom-select bg-light" required>
-                                    @foreach($result as $id => $nama)
-                                        <option value="{{ $id }}" {{ $d->divisi == $id ? 'selected' : '' }}>{{ $nama }}</option>
+                            <div class="col-md-6 form-group mb-4">
+                                <label class="font-weight-bold text-dark small">DIVISI</label>
+                                <select name="divisi" class="form-control custom-select shadow-sm border-0" required>
+                                    @foreach($result as $divId => $nama)
+                                        <option value="{{ $divId }}" {{ $d->divisi == $divId ? 'selected' : '' }}>{{ $nama }}</option>
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-6 form-group mb-3">
-                                <label class="text-dark font-weight-bold small uppercase">PIC (Person in Charge)</label>
-                                <select name="pic" class="form-control custom-select bg-light" required>
+                            <div class="col-md-6 form-group mb-4">
+                                <label class="font-weight-bold text-dark small">PIC (PERSON IN CHARGE)</label>
+                                <select name="pic" class="form-control custom-select shadow-sm border-0 pic-select-edit" 
+                                        data-id="{{ $d->id }}" required>
                                     @foreach($vic_list as $user)
                                         <option value="{{ $user->id }}" {{ $d->pic == $user->id ? 'selected' : '' }}>{{ $user->email }}</option>
                                     @endforeach
@@ -294,49 +367,92 @@
                             </div>
                         </div>
 
-                        <hr class="my-4">
+                        <hr class="my-4" style="border-top: 1px dashed #d4d4d4;">
+
+                        <h6 class="text-warning font-weight-bold uppercase small mb-3" style="filter: brightness(0.7);">
+                            <i class="fas fa-calendar-alt mr-1"></i> Penjadwalan & Waktu
+                        </h6>
 
                         <div class="row">
                             <div class="col-md-6 form-group mb-3">
-                                <label class="text-dark font-weight-bold small uppercase">Prioritas</label>
-                                <select name="priority" class="form-control custom-select bg-light" required>
-                                    @foreach($prioritas as $pId => $pName)
-                                        <option value="{{ $pId }}" {{ $d->priority == $pId ? 'selected' : '' }}>{{ $pName }}</option>
-                                    @endforeach
-                                </select>
+                                <label class="font-weight-bold text-dark small">TANGGAL MULAI</label>
+                                <input type="date" name="tanggal_mulai" class="form-control shadow-sm border-0 tanggal-mulai-edit" 
+                                    data-id="{{ $d->id }}" value="{{ $d->tanggal_mulai }}" required>
                             </div>
                             <div class="col-md-6 form-group mb-3">
-                                <label class="text-dark font-weight-bold small uppercase">Durasi (Menit)</label>
-                                <div class="input-group">
-                                    <input type="number" name="menit" class="form-control bg-light" value="{{ $d->menit }}">
+                                <label class="font-weight-bold text-dark small">TANGGAL DEADLINE</label>
+                                <input type="date" name="tanggal_deadline" class="form-control shadow-sm border-0" value="{{ $d->tanggal_deadline }}" required>
+                            </div>
+                        </div>
+
+                        <div id="task-list-container-edit-{{ $d->id }}" class="mb-4 animate__animated animate__fadeIn" style="display: none;">
+                            <div class="card border-0 shadow-sm" style="border-radius: 10px; overflow: hidden;">
+                                <div class="card-header bg-info text-white py-2 d-flex justify-content-between align-items-center" style="background: linear-gradient(45deg, #36b9cc, #258391);">
+                                    <span class="small font-weight-bold"><i class="fas fa-user-clock mr-1"></i> Jadwal PIC di Tanggal Ini</span>
+                                    <span id="total-durasi-edit-{{ $d->id }}" class="badge badge-light text-info shadow-sm">
+                                        Total: 0 Menit
+                                    </span>
+                                </div>
+                                <div class="table-responsive" style="max-height: 150px; overflow-y: auto;">
+                                    <table class="table table-sm table-hover mb-0 bg-white" style="font-size: 11px;">
+                                        <thead class="text-muted" style="background-color: #f1f3f5;">
+                                            <tr>
+                                                <th class="border-0 pl-3">Nama Task</th>
+                                                <th class="border-0">Waktu</th>
+                                                <th class="border-0">Durasi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="task-list-body-edit-{{ $d->id }}"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 form-group mb-3">
+                                <label class="font-weight-bold text-dark small">JAM MULAI</label>
+                                <input type="time" name="jam_mulai" id="jam_mulai_edit_{{ $d->id }}" 
+                                    class="form-control shadow-sm border-0" value="{{ $d->jam_mulai }}" 
+                                    onchange="hitungMenitEdit({{ $d->id }})" required>
+                            </div>
+                            <div class="col-md-4 form-group mb-3">
+                                <label class="font-weight-bold text-dark small">JAM SELESAI</label>
+                                <input type="time" name="jam_selesai" id="jam_selesai_edit_{{ $d->id }}" 
+                                    class="form-control shadow-sm border-0" value="{{ $d->jam_selesai }}" 
+                                    onchange="hitungMenitEdit({{ $d->id }})" required>
+                            </div>
+                            <div class="col-md-4 form-group mb-3">
+                                <label class="font-weight-bold text-dark small">ESTIMASI</label>
+                                <div class="input-group shadow-sm">
+                                    <input type="number" name="menit" id="menit_edit_{{ $d->id }}" class="form-control bg-white font-weight-bold text-primary border-0" value="{{ $d->menit }}" readonly>
                                     <div class="input-group-append">
-                                        <span class="input-group-text bg-light text-muted small">min</span>
+                                        <span class="input-group-text bg-white border-0 small">Min</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <div class="row">
-                            <div class="col-md-6 form-group mb-3">
-                                <label class="text-dark font-weight-bold small uppercase">Tanggal Mulai</label>
-                                <input type="date" name="tanggal_mulai" class="form-control bg-light" value="{{ $d->tanggal_mulai }}" required>
-                            </div>
-                            <div class="col-md-6 form-group mb-3">
-                                <label class="text-dark font-weight-bold small uppercase">Tanggal Deadline</label>
-                                <input type="date" name="tanggal_deadline" class="form-control bg-light" value="{{ $d->tanggal_deadline }}" required>
+                            <div class="col-md-12 form-group mb-4">
+                                <label class="font-weight-bold text-dark small">PRIORITAS</label>
+                                <select name="priority" class="form-control custom-select shadow-sm border-0" required>
+                                    @foreach($prioritas as $pId => $pName)
+                                        <option value="{{ $pId }}" {{ $d->priority == $pId ? 'selected' : '' }}>{{ $pName }}</option>
+                                    @endforeach
+                                </select>
                             </div>
                         </div>
 
                         <div class="form-group mb-0">
-                            <label class="text-dark font-weight-bold small uppercase">Catatan Tambahan</label>
-                            <textarea name="note" class="form-control bg-light" rows="3">{{ $d->note }}</textarea>
+                            <label class="font-weight-bold text-dark small">CATATAN</label>
+                            <textarea name="note" class="form-control shadow-sm border-0" rows="3" style="border-radius: 8px;" placeholder="Tambahkan catatan khusus...">{{ $d->note }}</textarea>
                         </div>
                     </div>
 
-                    <div class="modal-footer bg-light border-0 px-4">
-                        <button type="button" class="btn btn-link text-muted font-weight-bold" data-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-info px-4 shadow-sm font-weight-bold">
-                            <i class="fas fa-save mr-2"></i>Perbarui Task
+                    <div class="modal-footer bg-white border-0 px-4 pb-4">
+                        <button type="button" class="btn btn-light font-weight-bold px-4 text-muted" data-dismiss="modal">BATAL</button>
+                        <button type="submit" class="btn btn-warning shadow font-weight-bold px-5" style="border-radius: 8px; color: #333;">
+                            <i class="fas fa-save mr-2"></i>PERBARUI TASK
                         </button>
                     </div>
                 </form>
@@ -366,5 +482,266 @@
         </div>
     </div>
 @endforeach
+
+<script>
+/**
+ * Helper: Memformat menit ke format "X Jam X Menit"
+ */
+function hitungJamSelesaiManual(jamMulai, durasiMenit) {
+    if (!jamMulai) return "00:00";
+    const [jam, menit] = jamMulai.split(':').map(Number);
+    const totalMenit = (jam * 60) + menit + parseInt(durasiMenit || 0);
+    console.log(totalMenit);
+    
+    const h = Math.floor(totalMenit / 60);
+    const m = totalMenit % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+function formatDurasi(menit) {
+    if (!menit || menit <= 0) return "0 Menit";
+    let jam = Math.floor(menit / 60);
+    let sisaMenit = menit % 60;
+    if (jam > 0) {
+        return sisaMenit > 0 ? `${jam} Jam ${sisaMenit} Menit` : `${jam} Jam`;
+    } else {
+        return `${menit} Menit`;
+    }
+}
+
+function getDataEdit(id){
+    const inputMulai = document.getElementById('jam_mulai_edit_' + id);
+    const inputMenit = document.getElementById('menit_edit_' + id);
+    const inputSelesai = document.getElementById('jam_selesai_edit_' + id);
+
+    if (inputMulai && inputMenit && inputSelesai) {
+        const jamMulaiVal = inputMulai.value; // Contoh: "08:00"
+        const menitVal = parseInt(inputMenit.value) || 0;
+
+        if (jamMulaiVal && menitVal > 0) {
+            // Pecah jam dan menit secara manual (Lebih aman dari NaN)
+            let [hours, minutes] = jamMulaiVal.split(':').map(Number);
+            
+            let date = new Date();
+            date.setHours(hours);
+            date.setMinutes(minutes + menitVal);
+
+            // Format kembali ke HH:mm
+            const h = String(date.getHours()).padStart(2, '0');
+            const m = String(date.getMinutes()).padStart(2, '0');
+
+            inputSelesai.value = `${h}:${m}`;
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const baseUrl = window.location.origin;
+
+    // --- LOGIKA MODAL TAMBAH ---
+    const inputPic = document.getElementById('pic_select');
+    const inputTanggal = document.getElementById('tanggal_mulai');
+    const inputMulai = document.getElementById('jam_mulai');
+    const inputSelesai = document.getElementById('jam_selesai');
+    const inputEstimasi = document.getElementById('estimasi_menit');
+
+    function fetchTaskByPic() {
+        const tanggal = inputTanggal.value;
+        const pic = inputPic.value;
+        const container = document.getElementById('task-list-container');
+        const tableBody = document.getElementById('task-list-body');
+        if (tanggal && pic) {
+            tableBody.innerHTML = '<tr><td colspan="3" class="text-center p-2 text-muted small italic">Mengecek jadwal...</td></tr>';
+            container.style.display = 'block';
+
+            fetch(`${baseUrl}/api/get-tasks-by-date?tanggal=${tanggal}&pic=${pic}`)
+                .then(response => response.json())
+                .then(data => {
+                    const totalContainer = document.getElementById('total-durasi-container');
+                    
+                    tableBody.innerHTML = '';
+                    let totalMenitAkumulasi = 0; // Inisialisasi counter
+
+                    if (data.length > 0) {
+                        data.forEach(task => {
+                            // Tambahkan durasi ke total
+                            let durasiTask = parseInt(task.menit || 0);
+                            totalMenitAkumulasi += durasiTask;
+
+                            let jamM = task.jam_mulai ? task.jam_mulai.substring(0, 5) : "00:00";
+                            let jamS = (task.jam_selesai && task.jam_selesai !== "00:00:00") 
+                                    ? task.jam_selesai.substring(0, 5) 
+                                    : hitungJamSelesaiManual(jamM, durasiTask);
+
+                            tableBody.innerHTML += `
+                                <tr>
+                                    <td>${task.nama_task}</td>
+                                    <td><span class="badge badge-secondary">${jamM} - ${jamS}</span></td>
+                                    <td>${formatDurasi(durasiTask)}</td>
+                                </tr>`;
+                        });
+
+                        // Tampilkan total di header
+                        if(totalContainer) {
+                            totalContainer.innerText = "Total: " + formatDurasi(totalMenitAkumulasi);
+                            totalContainer.classList.replace('badge-light', 'badge-warning'); // Ubah warna jadi kuning agar kontras
+                        }
+
+                    } else {
+                        tableBody.innerHTML = '<tr><td colspan="3" class="text-center p-2 text-success">Jadwal Kosong</td></tr>';
+                        if(totalContainer) totalContainer.innerText = "Total: 0 Menit";
+                    }
+                })
+                .catch(err => {
+                    console.error('Fetch error:', err);
+                    tableBody.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Gagal memuat data</td></tr>';
+                });
+        } else {
+            if(container) container.style.display = 'none';
+        }
+    }
+
+    function calculateMinutes() {
+        const picId = inputPic.value;
+        const mulai = inputMulai.value;
+        const selesai = inputSelesai.value;
+
+        if (mulai) {
+            const jamM = parseInt(mulai.split(':')[0]);
+            let limitMulai = (picId == "39") ? 8 : 9;
+            if (jamM < limitMulai) {
+                alert(`PIC ini minimal mulai jam 0${limitMulai}:00`);
+                inputMulai.value = ""; return;
+            }
+        }
+
+        if (selesai) {
+            const [jamS, menitS] = selesai.split(':').map(Number);
+            if (jamS > 17 || (jamS === 17 && menitS > 0)) {
+                alert("Jam selesai tidak boleh lebih dari jam 17:00");
+                inputSelesai.value = ""; return;
+            }
+        }
+
+        if (mulai && selesai) {
+            const [h1, m1] = mulai.split(':').map(Number);
+            const [h2, m2] = selesai.split(':').map(Number);
+            const diff = ((h2 * 60) + m2) - ((h1 * 60) + m1);
+            
+            if (diff < 0) {
+                alert("Jam selesai tidak boleh sebelum jam mulai!");
+                inputSelesai.value = ""; 
+                inputEstimasi.value = "";
+            } else {
+                inputEstimasi.value = diff;
+            }
+        }
+    }
+
+    // Event Listeners Modal Tambah
+    if(inputPic) inputPic.addEventListener('change', () => { fetchTaskByPic(); calculateMinutes(); });
+    if(inputTanggal) inputTanggal.addEventListener('change', fetchTaskByPic);
+    if(inputMulai) inputMulai.addEventListener('change', calculateMinutes);
+    if(inputSelesai) inputSelesai.addEventListener('change', calculateMinutes);
+
+
+    // --- LOGIKA MODAL EDIT (Delegasi Event) ---
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('pic-select-edit') || e.target.classList.contains('tanggal-mulai-edit')) {
+            
+            const id = e.target.getAttribute('data-id'); // ID Row/Task dari database
+            const pic = document.querySelector(`.pic-select-edit[data-id="${id}"]`).value;
+            const tanggal = document.querySelector(`.tanggal-mulai-edit[data-id="${id}"]`).value;
+
+            if (pic && tanggal) {
+                const containerTotal = document.getElementById(`total-durasi-edit-${id}`);
+                const tableBody = document.getElementById(`task-list-body-edit-${id}`);
+                const cardContainer = document.getElementById(`task-list-container-edit-${id}`);
+
+                tableBody.innerHTML = '<tr><td colspan="3" class="text-center p-2 text-muted italic">Mengecek...</td></tr>';
+
+                fetch(`${baseUrl}/api/get-tasks-by-date?tanggal=${tanggal}&pic=${pic}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        tableBody.innerHTML = '';
+                        let totalMenitAkumulasi = 0;
+
+                        if (data.length > 0) {
+                            if(cardContainer) cardContainer.style.display = 'block';
+                            
+                            data.forEach(task => {
+                                let durasiTask = parseInt(task.menit || 0);
+                                totalMenitAkumulasi += durasiTask;
+
+                                let jamM = task.jam_mulai ? task.jam_mulai.substring(0, 5) : "00:00";
+                                let jamS = (task.jam_selesai && task.jam_selesai !== "00:00:00") 
+                                           ? task.jam_selesai.substring(0, 5) 
+                                           : hitungJamSelesaiManual(jamM, durasiTask);
+
+                                tableBody.innerHTML += `
+                                    <tr>
+                                        <td>${task.nama_task} | ${task.nama}</td>
+                                        <td><span class="badge badge-secondary">${jamM} - ${jamS}</span></td>
+                                        <td>${formatDurasi(durasiTask)}</td>
+                                    </tr>`;
+                            });
+
+                            // Update label total durasi di header card modal edit
+                            if(containerTotal) {
+                                containerTotal.innerText = "Total Jam: " + formatDurasi(totalMenitAkumulasi);
+                            }
+                        } else {
+                            if(cardContainer) cardContainer.style.display = 'none';
+                            if(containerTotal) containerTotal.innerText = "Total: 0 Menit";
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Error:', err);
+                        tableBody.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Gagal memuat data</td></tr>';
+                    });
+            }
+        }
+    });
+});
+
+function hitungMenitEdit(id) {
+    const pic = document.querySelector(`.pic-select-edit[data-id="${id}"]`).value;
+    const inputMulai = document.getElementById('jam_mulai_edit_' + id);
+    const inputSelesai = document.getElementById('jam_selesai_edit_' + id);
+    const inputMenit = document.getElementById('menit_edit_' + id);
+
+    if (inputMulai.value) {
+        const jamM = parseInt(inputMulai.value.split(':')[0]);
+        let limitMulai = (pic == "39") ? 8 : 9;
+        if (jamM < limitMulai) {
+            alert(`PIC ini minimal mulai jam 0${limitMulai}:00`);
+            inputMulai.value = ""; return;
+        }
+    }
+
+    if (inputSelesai.value) {
+        const [jamS, menitS] = inputSelesai.value.split(':').map(Number);
+        if (jamS > 17 || (jamS === 17 && menitS > 0)) {
+            alert("Jam selesai maksimal jam 17:00");
+            inputSelesai.value = ""; return;
+        }
+    }
+
+    if (inputMulai.value && inputSelesai.value) {
+        const start = new Date("1970-01-01T" + inputMulai.value);
+        const end = new Date("1970-01-01T" + inputSelesai.value);
+
+        if (end <= start) {
+            alert("Jam selesai harus lebih besar dari jam mulai!");
+            inputSelesai.value = '';
+            inputMenit.value = '';
+            return;
+        }
+
+        const diff = (end - start) / (1000 * 60);
+        inputMenit.value = diff;
+    }
+}
+</script>
 
 @include('partials.footer')

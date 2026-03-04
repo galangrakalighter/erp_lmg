@@ -776,7 +776,7 @@
             const displayRange = card.querySelector('.task-time-range');
             const oldTime = input.getAttribute('data-old-value');
             const newValue = input.value;
-            const CONFIG_START_HOUR = {{ (Auth::id() == 39) ? 8 : 9 }};
+            const CONFIG_START_HOUR = 8;
 
             const startHour = CONFIG_START_HOUR;
             const endHour = 17;

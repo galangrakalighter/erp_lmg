@@ -28,8 +28,11 @@ Route::middleware('auth')->group(function() {
     Route::resource('manajemen_user', App\Http\Controllers\UserController::class);
     
     Route::resource('crm', App\Http\Controllers\CRMController::class);
+    
+    // Route::resource('social_creator', App\Http\Controllers\SosialCreatorController::class);
+    // Route::post('/import_creator', [App\Http\Controllers\SosialCreatorController::class, 'import'])->name('creator.import');
     // Route::get('/manajemen_user', [App\Http\Controllers\UserController::class, 'index'])->name('manajemen_user');
-
+    Route::get('api/hc/get-tasks-json', [App\Http\Controllers\HCDailyController::class, 'getTaskJSON'])->name('getTaskJSON');
     // CMS MANAJEMEN`
 
     // Manajemen Konten

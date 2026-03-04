@@ -543,7 +543,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const inputTanggal = document.getElementById('tanggal_mulai');
     const inputMulai = document.getElementById('jam_mulai');
     const inputSelesai = document.getElementById('jam_selesai');
-    const inputEstimasi = document.getElementById('estimasi_menit');
+    const inputEstimasi = document.getElementById('menit');
 
     function fetchTaskByPic() {
         const tanggal = inputTanggal.value;

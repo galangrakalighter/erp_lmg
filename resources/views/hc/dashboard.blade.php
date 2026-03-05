@@ -344,12 +344,16 @@
                 </table>
             </div>
         </div>
+        <div id="pagination-container"></div>
     </div>
 </div>
 
 <script>
     let barChart = null;
     let donutChart = null;
+    let allTasks = []; // Menyimpan data task dari API
+    let currentPage = 1;
+    const itemsPerPage = 10;
 
     // --- HELPER FUNCTIONS ---
 
@@ -469,7 +473,6 @@
 
             // 2. Update Table
             const tbody = document.getElementById('task-table');
-            console.log(data.recent_tasks);
             tbody.innerHTML = data.recent_tasks.length ? data.recent_tasks.map(t => `
                 <tr>
                     <td class="px-4 py-3">
@@ -495,7 +498,7 @@
                     </td>
                 </tr>
             `).join('') : '<tr><td colspan="3" class="p-4 text-center italic text-muted">No data available.</td></tr>';
-
+            updateTaskTable(data.recent_tasks, 1);
             // 3. Update Charts
             updateCharts(data);
         } catch (error) {
@@ -535,11 +538,22 @@
         return `${currentYear}-${month}-${day}`; // Menghasilkan "2026-02-04"
     }
 
-    function updateTaskTable(tasks) {
+    function updateTaskTable(tasks, page = 1) {
+        allTasks = tasks;
+        currentPage = page;
         const tableBody = document.getElementById('task-table');
+        if (!tasks || tasks.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="6" class="p-4 text-center italic text-muted">No data available.</td></tr>';
+            renderPagination(0);
+            return;
+        }
+
+        const startIndex = (page - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const paginatedItems = tasks.slice(startIndex, endIndex);
 
         // Isi HTML ke dalam tbody
-        tableBody.innerHTML = tasks.map(t => `
+        tableBody.innerHTML = paginatedItems.map(t => `
             <tr>
                 <td class="px-4 py-3">
                     <div class="fw-bold text-dark text-start">${t.nama_task || t.name}</div>
@@ -550,6 +564,12 @@
                         ${getStatusIcon(t.status)} ${getStatusLabel(t.status,t.tanggal_approve)}
                     </span>
                 </td>
+                <td class="text-center px-4">
+                    <div class="text-dark small fw-bold">${t.jam_mulai ? t.jam_mulai.substring(0, 5) : "-"}</div>
+                </td>
+                <td class="text-center px-4">
+                    <div class="text-dark small fw-bold">${t.jam_mulai ? hitungJamSelesaiManual(t.jam_mulai, t.menit) : '-'}</div>
+                </td>
                 <td class="text-center">
                     <div class="text-dark small fw-bold">${t.tanggal_mulai}</div>
                 </td>
@@ -559,6 +579,54 @@
                 </td>
             </tr>
         `).join('');
+
+        renderPagination(tasks.length);
+    }
+
+    function renderPagination(totalItems) {
+        const totalPages = Math.ceil(totalItems / itemsPerPage);
+        let paginationHtml = '';
+
+        if (totalPages > 1) {
+            paginationHtml += `<nav><ul class="pagination pagination-sm justify-content-end mt-3">`;
+            
+            // Tombol Previous
+            paginationHtml += `
+                <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="javascript:void(0)" onclick="changePage(${currentPage - 1})">Previous</a>
+                </li>`;
+
+            // Tombol Angka
+            for (let i = 1; i <= totalPages; i++) {
+                paginationHtml += `
+                    <li class="page-item ${i === currentPage ? 'active' : ''}">
+                        <a class="page-link" href="javascript:void(0)" onclick="changePage(${i})">${i}</a>
+                    </li>`;
+            }
+
+            // Tombol Next
+            paginationHtml += `
+                <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                    <a class="page-link" href="javascript:void(0)" onclick="changePage(${currentPage + 1})">Next</a>
+                </li>`;
+                
+            paginationHtml += `</ul></nav>`;
+        }
+
+        // Pastikan ada container pagination di HTML Anda
+        const container = document.getElementById('pagination-container');
+        if (container) {
+            container.innerHTML = paginationHtml;
+        }
+    }
+
+    function changePage(page) {
+        const totalPages = Math.ceil(allTasks.length / itemsPerPage);
+        if (page < 1 || page > totalPages) return;
+        updateTaskTable(allTasks, page);
+        
+        // Auto scroll ke atas tabel
+        document.getElementById('myTaskTable').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     document.querySelectorAll('input[name="chartFilter"]').forEach(radio => {
@@ -580,7 +648,7 @@
             data: params,
             success: function(response) {
                 // Fungsi untuk merender ulang isi tabel myTaskTable
-                updateTaskTable(response.recent_tasks);
+                updateTaskTable(response.recent_tasks, 1);
                 
                 // Opsional: Scroll ke arah tabel agar user tahu data berubah
                 $('html, body').animate({

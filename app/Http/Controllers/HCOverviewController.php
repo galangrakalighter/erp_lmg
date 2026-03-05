@@ -443,7 +443,6 @@ class HCOverviewController extends Controller
             ->join('produk_client', 'produk_client.id', '=', 'task.project')
             ->select('task.*', 'produk_client.nama')
             ->latest('task.tanggal_deadline')
-            ->take(10)
             ->get();
 
         return response()->json([

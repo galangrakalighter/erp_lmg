@@ -375,25 +375,6 @@
     let currentPage = 1;
     let itemsPerPage = 10;
 
-    function handleSearch() {
-        const keyword = document.getElementById('table-search').value.toLowerCase();
-        
-        // Filter data berdasarkan nama_task atau nama
-        filteredTasks = allTasks.filter(t => {
-            return (t.nama_task && t.nama_task.toLowerCase().includes(keyword)) || 
-                (t.nama && t.nama.toLowerCase().includes(keyword));
-        });
-
-        currentPage = 1; // Reset ke halaman pertama setiap kali mencari
-        renderTable();
-    }
-
-    function changePerPage() {
-        itemsPerPage = parseInt(document.getElementById('per-page-select').value);
-        currentPage = 1; // Reset ke halaman pertama
-        renderTable();
-    }
-
     // --- HELPER FUNCTIONS ---
 
     function formatDurasi(totalMenit) {
@@ -540,7 +521,7 @@
                     </td>
                 </tr>
             `).join('') : '<tr><td colspan="3" class="p-4 text-center italic text-muted">No data available.</td></tr>';
-            renderTable();
+            updateTaskTable(data.recent_tasks, 1);
             // 3. Update Charts
             updateCharts(data);
         } catch (error) {
@@ -548,47 +529,6 @@
         } finally {
             showLoading(false);
         }
-    }
-
-    function renderTable() {
-        const tbody = document.getElementById('task-table');
-        
-        // Hitung Slice
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        const endIndex = startIndex + itemsPerPage;
-        const paginatedItems = filteredTasks.slice(startIndex, endIndex);
-
-        if (paginatedItems.length > 0) {
-            tbody.innerHTML = paginatedItems.map(t => `
-                <tr>
-                    <td class="px-4 py-3">
-                        <div class="fw-bold text-dark text-start">${t.nama_task || '-'}</div>
-                        <div class="text-xs text-muted text-start">${t.nama || '-'}</div>
-                    </td>
-                    <td class="text-center">
-                        <span class="${getStatusClass(t.status)}">
-                            ${getStatusIcon(t.status)} ${getStatusLabel(t.status, t.tanggal_approve)}
-                        </span>
-                    </td>
-                    <td class="text-center">
-                        <div class="text-dark small fw-bold">${t.jam_mulai ? t.jam_mulai.substring(0, 5) : "-"}</div>
-                    </td>
-                    <td class="text-center">
-                        <div class="text-dark small fw-bold">${t.jam_mulai ? hitungJamSelesaiManual(t.jam_mulai, t.menit) : '-'}</div>
-                    </td>
-                    <td class="text-center">
-                        <div class="text-dark small fw-bold">${t.tanggal_mulai || '-'}</div>
-                    </td>
-                    <td class="text-center">
-                        <div class="text-dark small fw-bold">${t.tanggal_deadline || '-'}</div>
-                    </td>
-                </tr>
-            `).join('');
-        } else {
-            tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center italic text-muted">No matching data found.</td></tr>';
-        }
-
-        renderPagination(filteredTasks.length);
     }
 
     function hitungJamSelesaiManual(jamMulai, durasiMenit) {
@@ -619,6 +559,86 @@
         const month = months[monthName] || '01';
 
         return `${currentYear}-${month}-${day}`; // Menghasilkan "2026-02-04"
+    }
+
+    function updateTaskTable(tasks, page = 1) {
+        currentPage = page;
+        const tableBody = document.getElementById('task-table');
+        if (tasks !== null && typeof tasks !== 'undefined') {
+            allTasks = tasks;
+            // Jika sedang tidak mencari, pastikan filteredTasks terisi
+            const keyword = document.getElementById('table-search')?.value || "";
+            if (!keyword.trim()) {
+                filteredTasks = [...allTasks];
+            }
+        }
+
+        if (!filteredTasks || filteredTasks.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="6" class="p-4 text-center italic text-muted">No matching records found.</td></tr>';
+            renderPagination(0);
+            return;
+        }
+
+        const startIndex = (page - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const paginatedItems = filteredTasks.slice(startIndex, endIndex);
+
+        // Isi HTML ke dalam tbody
+        tableBody.innerHTML = paginatedItems.map(t => `
+            <tr>
+                <td class="px-4 py-3">
+                    <div class="fw-bold text-dark text-start">${t.nama_task || t.name}</div>
+                    <div class="text-xs text-muted text-start">${t.nama}</div>
+                </td>
+                <td>
+                    <span class="${getStatusClass(t.status)}">
+                        ${getStatusIcon(t.status)} ${getStatusLabel(t.status,t.tanggal_approve)}
+                    </span>
+                </td>
+                <td class="text-center px-4">
+                    <div class="text-dark small fw-bold">${t.jam_mulai ? t.jam_mulai.substring(0, 5) : "-"}</div>
+                </td>
+                <td class="text-center px-4">
+                    <div class="text-dark small fw-bold">${t.jam_mulai ? hitungJamSelesaiManual(t.jam_mulai, t.menit) : '-'}</div>
+                </td>
+                <td class="text-center">
+                    <div class="text-dark small fw-bold">${t.tanggal_mulai}</div>
+                </td>
+                </td>
+                <td class="text-center">
+                    <div class="text-dark small fw-bold">${t.tanggal_deadline   }</div>
+                </td>
+            </tr>
+        `).join('');
+
+        renderPagination(filteredTasks.length);
+    }
+
+    function handleSearch() {
+        const keyword = document.getElementById('table-search').value.toLowerCase();
+        
+        if (!keyword || keyword.trim() === "") {
+            // Jika input kosong, kembalikan filteredTasks ke seluruh data asli
+            filteredTasks = [...allTasks];
+        } else {
+            // Jika ada keyword, lakukan filter pada allTasks (data master)
+            filteredTasks = allTasks.filter(t => {
+                const namaTask = (t.nama_task || t.name || "").toLowerCase();
+                const namaOrang = (t.nama || "").toLowerCase();
+                return namaTask.includes(keyword) || namaOrang.includes(keyword);
+            });
+        }
+
+        currentPage = 1; 
+        // PANGGIL DENGAN NULL agar updateTaskTable tidak menimpa allTasks
+        // tapi menggunakan filteredTasks yang baru saja kita buat di atas
+        updateTaskTable(null, 1);
+    }
+
+    function changePerPage() {
+        itemsPerPage = parseInt(document.getElementById('per-page-select').value);
+        currentPage = 1; // Reset ke halaman pertama
+        updateTaskTable(null, 1);
     }
 
     function renderPagination(totalItems) {
@@ -660,8 +680,12 @@
     function changePage(page) {
         const totalPages = Math.ceil(filteredTasks.length / itemsPerPage);
         if (page < 1 || page > totalPages) return;
-        currentPage = page;
-        renderTable();
+        
+        // Panggil updateTaskTable dengan null agar dia pakai data yang sudah tersimpan
+        updateTaskTable(allTasks, page);
+        
+        // Scroll ke atas tabel agar user tidak bingung
+        document.getElementById('myTaskTable').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     document.querySelectorAll('input[name="chartFilter"]').forEach(radio => {
@@ -683,7 +707,7 @@
             data: params,
             success: function(response) {
                 // Fungsi untuk merender ulang isi tabel myTaskTable
-                renderTable()
+                updateTaskTable(response.recent_tasks, 1);
                 
                 // Opsional: Scroll ke arah tabel agar user tahu data berubah
                 $('html, body').animate({

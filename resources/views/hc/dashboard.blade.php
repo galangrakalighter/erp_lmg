@@ -333,6 +333,8 @@
                         <tr class="text-secondary">
                             <th class="px-4">Project / Task</th>
                             <th>Status</th>
+                            <th class="text-center">Jam Mulai</th>
+                            <th class="text-center">Jam Selesai</th>
                             <th class="text-center">Start Date</th>
                             <th class="text-center">Due Date</th>
                         </tr>
@@ -480,6 +482,12 @@
                         </span>
                     </td>
                     <td class="text-center px-4">
+                        <div class="text-dark small fw-bold">${t.jam_mulai ? t.jam_mulai.substring(0, 5) : "-"}</div>
+                    </td>
+                    <td class="text-center px-4">
+                        <div class="text-dark small fw-bold">${t.jam_mulai ? hitungJamSelesaiManual(t.jam_mulai, t.menit) : '-'}</div>
+                    </td>
+                    <td class="text-center px-4">
                         <div class="text-dark small fw-bold">${t.tanggal_mulai}</div>
                     </td>
                     <td class="text-center px-4">
@@ -495,6 +503,17 @@
         } finally {
             showLoading(false);
         }
+    }
+
+    function hitungJamSelesaiManual(jamMulai, durasiMenit) {
+        if (!jamMulai) return "00:00";
+        const [jam, menit] = jamMulai.split(':').map(Number);
+        const totalMenit = (jam * 60) + menit + parseInt(durasiMenit || 0);
+        console.log(totalMenit);
+        
+        const h = Math.floor(totalMenit / 60);
+        const m = totalMenit % 60;
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
     }
 
     function parseChartLabelToDate(label) {

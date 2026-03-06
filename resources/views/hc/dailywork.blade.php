@@ -571,7 +571,7 @@
                                 
                                 <div class="d-flex align-items-center" style="gap: 8px;">
                                     <strong class="task-title text-truncate" style="font-size: 11px; line-height: 1.2; max-width: 70%;">
-                                    ${teks} : ${task.nama_task} (${(task.project_name || 'PROJECT').toUpperCase()}) ${statusLabel}
+                                    ${teks} ${task.nama_task} (${(task.project_name || 'PROJECT').toUpperCase()}) ${statusLabel}
                                     </strong>
 
                                     ${isRunning ? `

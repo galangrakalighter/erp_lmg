@@ -724,7 +724,6 @@
         if (barChart) {
             barChart.destroy();
         }
-
         // 1. BUAT GRADIENT WARNA (Primary Blue ke Light Blue)
         var gradient = ctxBar.createLinearGradient(0, 0, 0, 400);
         gradient.addColorStop(0, '#4e73df');   // Warna atas
@@ -851,6 +850,7 @@
         // --- DONUT CHART ---
         const ctxDonut = document.getElementById('donutChart');
         if (donutChart) donutChart.destroy();
+
         donutChart = new Chart(ctxDonut, {
             type: 'doughnut',
             data: {
@@ -860,8 +860,8 @@
                         data.status_count.pending,
                         data.status_count.on_progress,
                         data.status_count.overdue,
-                        data.status_count.overdue_done,
-                        data.status_count.approved
+                        data.status_count.approved, // Sesuaikan urutan dengan label
+                        data.status_count.overdue_done
                     ],
                     backgroundColor: ['#f6c23e', '#4e73df', '#e74a3b', '#1cc88a', '#8b5cf6'],
                     borderWidth: 4,
@@ -875,36 +875,51 @@
                 cutout: '75%',
                 onClick: (event, elements) => {
                     if (elements.length > 0) {
-                        const index = elements[0]._index;
+                        // Mendapatkan index dari elemen yang diklik
+                        const index = elements[0]._index; 
                         const label = donutChart.data.labels[index];
 
-                        // Map Label ke ID Status sesuai database Anda
+                        // 1. Map Label ke ID Status (Pastikan sesuai dengan filter di Controller)
                         const statusMap = {
-                            'Pending': 0,
+                            'Not Started': 0,
                             'Progress': 1,
-                            'Revisi': 2,
-                            'Waiting Approval': 3,
-                            'Approved': 4,
                             'Overdue': 7,
-                            'Overdue (Done)': '7_done' // Berikan penanda khusus untuk Overdue (Done)
+                            'Approved': 4,
+                            'Overdue (Done)': '7_done'
                         };
 
                         const selectedStatus = statusMap[label];
 
-                        // Ambil filter tanggal yang sedang aktif
+                        // 2. Ambil filter tambahan (Tanggal & Tipe Filter Bar)
                         const start = document.getElementById('start-date').value;
                         const end = document.getElementById('end-date').value;
+                        const filterType = $('input[name="chartFilter"]:checked').val();
 
-                        // Kirim filter status ke tabel
+                        // 3. Eksekusi Reload Tabel (Sama seperti logika Bar Chart)
+                        console.log("Filtering Table by Status:", label, selectedStatus);
+                        
                         reloadTaskTable({ 
                             clicked_status: selectedStatus,
                             start_date: start,
-                            end_date: end
+                            end_date: end,
+                            type: filterType // Tambahkan tipe filter agar sinkron dengan Bar Chart
                         });
                     }
                 },
-                plugins: {
-                    legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } }
+                // Catatan: Chart.js v2 menggunakan 'legend' di root, v3+ di dalam 'plugins'
+                legend: { 
+                    position: 'bottom', 
+                    labels: { 
+                        usePointStyle: true, 
+                        padding: 20,
+                        fontColor: "#858796" 
+                    } 
+                },
+                plugins: { // Untuk Chart.js versi 3/4
+                    legend: { 
+                        position: 'bottom', 
+                        labels: { usePointStyle: true, padding: 20 } 
+                    }
                 }
             }
         });

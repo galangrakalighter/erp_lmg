@@ -140,9 +140,25 @@
                                                 <i class="fas fa-check-double mr-1"></i> Done
                                             </span>
                                             @break
+                                        @case(7)
+                                            @if($d->tanggal_approve == null)
+                                                <span class="badge badge-danger shadow-sm px-2">
+                                                    <i class="fas fa-check-double mr-1"></i> Overdue
+                                                </span>
+                                            @else
+                                                <span class="badge badge-danger shadow-sm px-2">
+                                                    <i class="fas fa-check-double mr-1"></i> Done (Overdue)
+                                                </span>
+                                            @endif
+                                            @break
                                         @case(8)
                                             <span class="badge badge-warning shadow-sm px-2">
                                                 <i class="fas fa-check-double mr-1"></i> Waktu Habis
+                                            </span>
+                                            @break
+                                        @case(9)
+                                            <span class="badge badge-danger shadow-sm px-2">
+                                                <i class="fas fa-paper-plane mr-1"></i> Minta Approval (Overdue)
                                             </span>
                                             @break
                                         @default
@@ -156,6 +172,10 @@
                                             {{-- Task Done: Hanya boleh Edit (biasanya untuk catatan/lampiran) --}}
                                             <span class="badge badge-light border text-muted">Done</span>
                                         @elseif($d->status > 0 && $d->status < 4)
+                                        @elseif($d->status == 7 && $d->tanggal_approve != null)
+                                            <span class="badge badge-light border text-muted">Done</span>
+                                        @elseif($d->status == 9 && $d->can_approve == true)
+                                            <button class="btn btn-sm btn-circle btn-primary" onclick="changeStatus({{ $d->id }}, 'approve')"><i class="fas fa-check"></i></button>
                                         @else
                                             {{-- Task Belum Selesai: Boleh Edit & Hapus --}}
                                             <button class="btn btn-sm btn-circle btn-warning" data-toggle="modal" onclick="getDataEdit('{{ $d->id }}')" data-target="#editModal_{{ $d->id }}"><i class="fas fa-edit"></i></button>
@@ -165,6 +185,8 @@
                                         {{-- Jika task berasal dari Manajemen Konten --}}
                                         @if($d->status == 5)
                                             <span class="badge badge-light border text-muted">Task yang Di split</span>
+                                        @elseif($d->status == 9 && $d->can_approve == true)
+                                            <button class="btn btn-sm btn-circle btn-primary" onclick="changeStatus({{ $d->id }}, 'approve')"><i class="fas fa-check"></i></button>
                                         @else
                                             <span class="badge badge-light border text-muted">Hapus Di Manajemen Konten</span>
                                         @endif
@@ -482,7 +504,7 @@
         </div>
     </div>
 @endforeach
-
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script>
 /**
  * Helper: Memformat menit ke format "X Jam X Menit"
@@ -507,6 +529,11 @@ function formatDurasi(menit) {
     } else {
         return `${menit} Menit`;
     }
+}
+
+function changeStatus(id, action) {
+    let jamMulaiStr = null;
+    axios.post("{{ route('hc.updateStatus') }}", { id: id, action: action, jam_mulai: jamMulaiStr }).then(() => location.reload());
 }
 
 function getDataEdit(id){

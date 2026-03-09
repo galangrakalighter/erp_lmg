@@ -218,12 +218,16 @@ class HCDailyController extends Controller
 
             $task->update($updateData);
         } elseif ($action == 'stop') {
-            $task->update(['status' => 3]); // Menunggu Approval
+            if($task->status == 7){
+                $task->update(['status' => 9]);
+            }else{
+                $task->update(['status' => 3]); // Menunggu Approval
+            }
         } elseif ($action == 'revisi') {
             $task->update(['status' => 2, 'tanggal_revisi' => now()]); // Balik ke Pool Jadi Revisi
         } elseif ($action == 'approve') {
-            if($task->status == 7){
-                $task->update(['tanggal_approve' => now()]); // Selesai
+            if($task->status == 9){
+                $task->update(['status' => 7,'tanggal_approve' => now()]); // Selesai
             }else{
                 $task->update(['status' => 4, 'tanggal_approve' => now()]); // Selesai
             }
@@ -320,10 +324,10 @@ class HCDailyController extends Controller
                         $q->where(function($sub) use ($today) {
                             $sub->where('task.status', 3)
                                 ->where('task.tanggal_mulai', $today);
-                        })->orWhere('task.status', 7);
+                        });
                     } else {
                         // Jika orang lain (False): Tampilkan 3 dan 7 secara normal (logika lama Anda)
-                        $q->whereIn('task.status', [3, 7]);
+                        $q->where('task.status', 3);
                     }
                 })
                 

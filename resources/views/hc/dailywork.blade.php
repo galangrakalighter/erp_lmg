@@ -217,13 +217,14 @@
                         $isOverdue = ($task->status == 7);
                         $borderClass = $isOverdue ? 'border-danger' : 'border-left-' . ($priority_colors[$task->priority] ?? 'secondary');
                         $bgClass = $isOverdue ? 'bg-light-danger' : 'bg-white';
+                        $dragClass = $isOverdue ? 'no-drag' : 'task-card-source';
                     @endphp
 
-                    <div class="task-card-source card shadow-sm {{ $borderClass }} {{ $bgClass }}"
+                    <div class="{{ $dragClass }} card shadow-sm {{ $borderClass }} {{ $bgClass }}"
                         data-id="{{ $task->id }}" 
                         data-menit="{{ $task->menit }}" 
                         data-status="{{ $task->status }}" 
-                        style="width: 240px; cursor: grab; border-radius: 8px; {{ $isOverdue ? 'border-left: 5px solid #e74a3b !important;' : '' }}">
+                        style="width: 240px; cursor: {{ $isOverdue ? 'default' : 'grab' }}; border-radius: 8px; {{ $isOverdue ? 'border-left: 5px solid #e74a3b !important;' : '' }}">
                         
                         <div class="card-body p-2">
                             <div class="d-flex justify-content-between align-items-center mb-1">
@@ -235,14 +236,21 @@
                                 </span>
                             </div>
 
-                            {{-- Keterangan Tambahan jika Overdue --}}
-                            @if($isOverdue)
-                                <div class="d-flex align-items-center mt-1">
+                            <div class="d-flex align-items-center justify-content-between mt-1">
+                                @if($isOverdue)
                                     <small class="text-danger font-italic" style="font-size: 0.75rem;">
                                         <i class="fas fa-exclamation-triangle mr-1"></i> Overdue
                                     </small>
-                                </div>
-                            @endif
+                                    
+                                    {{-- TOMBOL KIRIM / SEND --}}
+                                    <button type="button" 
+                                        onclick="changeStatus({{ $task->id }}, 'stop')" 
+                                        class="btn btn-xs btn-primary py-0 px-2" 
+                                        style="font-size: 0.7rem; border-radius: 4px; background-color: #4e73df;">
+                                        <i class="fas fa-paper-plane mr-1"></i> Kirim
+                                    </button>
+                                @endif
+                            </div>
                         </div>
                     </div>
                 @endforeach
@@ -440,7 +448,7 @@
             scrollSensitivity: 150,    // Seberapa dekat kursor dengan tepi (dalam pixel)
             scrollSpeed: 30,           // Kecepatan scroll
             bubbleScroll: true,
-            draggable: ".task-card-source, .task-card-scheduled[data-status='0'], .task-card-scheduled[data-status='2'], .task-card-scheduled[data-status='7'], .task-card-scheduled[data-status='8']",
+            draggable: ".task-card-source, .task-card-scheduled[data-status='0'], .task-card-scheduled[data-status='2'], .task-card-scheduled[data-status='8']",
             filter: ".resize-handle, .action-container, button",
             onAdd: (evt) => handleTaskMovement(evt, true),
             onEnd: (evt) => { if (evt.to === grid && evt.from === grid) handleTaskMovement(evt, false); }

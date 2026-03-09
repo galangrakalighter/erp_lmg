@@ -34,6 +34,10 @@ class HCOverviewController extends Controller
                 'data_jasa.tanggal_mulai as tgl_mulai_jasa',
                 'data_jasa.tanggal_deadline as tgl_deadline_jasa',
                 'users.email as vic_email',
+                'users.role as role_pic', // Ambil role PIC
+                'users.hod as pic_hod',    // ID HOD si PIC
+                'users.dmm as pic_dmm',    // ID DMM si PIC
+                'users.dm as pic_dm',
                 'produk_client.nama as nama_client'
             )
             ->where('task.project', $id_client)
@@ -119,6 +123,35 @@ class HCOverviewController extends Controller
         }
 
         $client = ProdukClient::where('id', $id_client)->first();
+
+        $data->transform(function ($item) use ($user) {
+            $canApprove = false;
+
+            // Jika Status 7 dan Belum Di-approve
+            if ($item->status == 9 && $item->tanggal_approve == null) {
+                // 1. Admin bisa semua
+                if ($user->role == "super_admin") {
+                    $canApprove = true;
+                } 
+                else {
+                    // Jika PIC-nya DM, maka HOD yang bisa kirim
+                    if ($item->role_pic == "digital_marketing" && $item->pic_hod == $user->id) {
+                        $canApprove = true;
+                    }
+                    // Jika PIC-nya Content Creator, maka Manager (DMM) yang bisa kirim
+                    elseif ($item->role_pic == "content_creator" && $item->pic_dmm == $user->id) {
+                        $canApprove = true;
+                    }
+                    // Jika PIC-nya DM/CC dan atasan teknisnya (DM) adalah user login
+                    elseif ($item->pic_dm == $user->id) {
+                        $canApprove = true;
+                    }
+                }
+            }
+
+            $item->can_approve = $canApprove;
+            return $item;
+        });
 
         return view('hc.overview', compact('title', 'data', 'vic_list', 'result', 'prioritas', 'id', 'client'));
     }

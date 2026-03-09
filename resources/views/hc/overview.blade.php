@@ -187,6 +187,8 @@
                                             <span class="badge badge-light border text-muted">Task yang Di split</span>
                                         @elseif($d->status == 9 && $d->can_approve == true)
                                             <button class="btn btn-sm btn-circle btn-primary" onclick="changeStatus({{ $d->id }}, 'approve')"><i class="fas fa-check"></i></button>
+                                        @elseif($d->status == 7 && $d->tanggal_approve != null)
+                                            <span class="badge badge-light border text-muted">Done</span>
                                         @else
                                             <span class="badge badge-light border text-muted">Hapus Di Manajemen Konten</span>
                                         @endif

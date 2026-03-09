@@ -123,7 +123,6 @@ class HCOverviewController extends Controller
         }
 
         $client = ProdukClient::where('id', $id_client)->first();
-
         $data->transform(function ($item) use ($user) {
             $canApprove = false;
 
@@ -135,11 +134,14 @@ class HCOverviewController extends Controller
                 } 
                 else {
                     // Jika PIC-nya DM, maka HOD yang bisa kirim
-                    if ($item->role_pic == "digital_marketing" && $item->pic_hod == $user->id) {
+                    if ($item->role_pic == "digital_marketing_manager" && $item->pic_hod == $user->id) {
                         $canApprove = true;
                     }
-                    // Jika PIC-nya Content Creator, maka Manager (DMM) yang bisa kirim
-                    elseif ($item->role_pic == "content_creator" && $item->pic_dmm == $user->id) {
+                        // Jika PIC-nya Content Creator, maka Manager (DMM) yang bisa kirim
+                    elseif ($item->role_pic == "digital_marketing" && $item->pic_dmm == $user->id) {
+                        $canApprove = true;
+                    }
+                    elseif ($item->role_pic == "content_creator" && $item->pic_dm == $user->id) {
                         $canApprove = true;
                     }
                     // Jika PIC-nya DM/CC dan atasan teknisnya (DM) adalah user login

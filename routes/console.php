@@ -10,4 +10,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('libur:sync')->yearly();
-Schedule::command('task:reset-daily')->dailyAt('13:55')->timezone('Asia/Jakarta');
+Schedule::command('task:reset-daily')->dailyAt('12:57')->timezone('Asia/Jakarta');

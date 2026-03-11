@@ -48,12 +48,6 @@ class ResetDailyTask extends Command
                         'jam_mulai' => null
                     ]);
                 $resetCount++;
-            }else{
-                $task->update([
-                    'status' => 0,
-                    'jam_mulai' => null
-                ]);
-                $resetCount++;
             }
         }
 

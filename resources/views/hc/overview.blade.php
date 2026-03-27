@@ -280,6 +280,7 @@
                                     <thead class="text-muted" style="background-color: #f1f3f5;">
                                         <tr>
                                             <th class="border-0 pl-3">Nama Task</th>
+                                            <th class="border-0">Project</th>
                                             <th class="border-0">Waktu</th>
                                             <th class="border-0">Durasi</th>
                                         </tr>
@@ -422,6 +423,7 @@
                                         <thead class="text-muted" style="background-color: #f1f3f5;">
                                             <tr>
                                                 <th class="border-0 pl-3">Nama Task</th>
+                                                <th class="border-0">Project</th>
                                                 <th class="border-0">Waktu</th>
                                                 <th class="border-0">Durasi</th>
                                             </tr>
@@ -605,6 +607,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             tableBody.innerHTML += `
                                 <tr>
                                     <td>${task.nama_task}</td>
+                                    <td>${task.nama}</td>
                                     <td><span class="badge badge-secondary">${jamM} - ${jamS}</span></td>
                                     <td>${formatDurasi(durasiTask)}</td>
                                 </tr>`;
@@ -706,10 +709,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                 let jamS = (task.jam_selesai && task.jam_selesai !== "00:00:00") 
                                            ? task.jam_selesai.substring(0, 5) 
                                            : hitungJamSelesaiManual(jamM, durasiTask);
-
+                                console.log(task);
                                 tableBody.innerHTML += `
                                     <tr>
-                                        <td>${task.nama_task} | ${task.nama}</td>
+                                        <td>${task.nama_task}</td>
+                                        <td>${task.nama}</td>
                                         <td><span class="badge badge-secondary">${jamM} - ${jamS}</span></td>
                                         <td>${formatDurasi(durasiTask)}</td>
                                     </tr>`;

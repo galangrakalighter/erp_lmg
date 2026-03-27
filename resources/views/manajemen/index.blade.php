@@ -426,6 +426,7 @@
                                             <thead class="bg-light text-muted">
                                                 <tr>
                                                     <th class="px-3">NAMA TASK</th>
+                                                    <th>PROJECT</th>
                                                     <th>WAKTU</th>
                                                     <th>DURASI</th>
                                                 </tr>
@@ -721,7 +722,7 @@
                                             <table class="table table-sm table-hover mb-0" style="font-size: 12px;">
                                                 <thead class="bg-light">
                                                     <tr>
-                                                        <th>Task</th><th>Waktu</th><th>Durasi</th>
+                                                        <th>Task</th><th>Project</th><th>Waktu</th><th>Durasi</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody id="task-list-body-edit-{{ $item->id }}"></tbody>
@@ -897,7 +898,8 @@
 
                                 tableBody.innerHTML += `
                                     <tr>
-                                        <td>${task.nama_task} | ${task.nama}</td>
+                                        <td>${task.nama_task}</td>
+                                        <td>${task.nama}</td>
                                         <td><span class="badge badge-secondary">${jamM} - ${jamS}</span></td>
                                         <td>${formatDurasi(durasiTask)}</td>
                                     </tr>`;
@@ -1000,6 +1002,7 @@
                                     tableBody.innerHTML += `
                                         <tr>
                                             <td>${task.nama_task}</td>
+                                            <td>${task.nama}</td>
                                             <td><span class="badge badge-secondary">${jamM} - ${jamS}</span></td>
                                             <td>${formatDurasi(durasiTask)}</td>
                                         </tr>`;

@@ -219,7 +219,7 @@ class HCDailyController extends Controller
             $task->update($updateData);
         } elseif ($action == 'stop') {
             if($task->status == 7){
-                $task->update(['status' => 9]);
+                $task->update(['status' => 9, 'jam_mulai' => $task->jam_mulai]);
             }else{
                 $task->update(['status' => 3]); // Menunggu Approval
             }

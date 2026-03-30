@@ -394,6 +394,7 @@
             '0': 'bg-soft-secondary text-secondary',
             '1': 'bg-soft-primary text-primary',
             '2': 'bg-soft-danger text-danger',
+            '9': 'bg-soft-danger text-danger',
             '3': 'bg-soft-warning text-warning',
             '4': 'bg-soft-success text-success',
             '7': 'bg-danger text-white animate-pulse shadow-sm',
@@ -410,6 +411,7 @@
             '1': '<i class="fas fa-spinner fa-spin me-1"></i>',
             '2': '<i class="fas fa-undo me-1"></i>',
             '3': '<i class="fas fa-pause-circle me-1"></i>',
+            '9': '<i class="fas fa-pause-circle me-1"></i>',
             '4': '<i class="fas fa-check-circle me-1"></i>',
             '7': '<i class="fas fa-exclamation-triangle me-1"></i>',
             '8': '<i class="fas fa-hourglass-end me-1"></i>'
@@ -433,7 +435,8 @@
             2: 'Revisi', 
             3: 'Waiting Approval', 
             4: 'Approved', 
-            8: 'EndsTime' 
+            8: 'EndsTime',
+            9: 'Waiting Approval (Overdue)' 
         };
 
         return map[s] || 'Unknown';

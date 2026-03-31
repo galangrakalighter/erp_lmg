@@ -212,24 +212,61 @@
             <div id="collapseMCN" class="collapse {{ request()->is('*HC*') ? 'show' : '' }}" 
                 aria-labelledby="headingHC" data-parent="#accordionSidebar">
                 <div class="collapse-container">
-                    {{-- Menu Daily Work --}}
+                    <div class="client-item-wrapper mb-2">
+                        <a class="client-dropdown-link {{ request()->is('barang_client') ? 'active' : '' }}" href="{{ route('barang_client.index') }}">
+                            <span>Project MCN</span>
+                        </a>
+                    </div>
+
                     <div class="client-item-wrapper mb-2">
                         <a class="client-dropdown-link {{ request()->is('social_creator') ? 'active' : '' }}" href="{{ route('social_creator.index') }}">
                             <span>Affiliator</span>
                         </a>
                     </div>
 
-                    {{-- <div class="client-item-wrapper mb-2">
-                        <a class="client-dropdown-link {{ request()->is('hc_overview.list') ? 'active' : '' }}" href="{{ route('hc_overview.list') }}">
-                            <span>Project Overview</span>
+                    <div class="client-item-wrapper mb-2">
+                        <a class="client-dropdown-link {{ request()->is('blacklist') ? 'active' : '' }}" href="{{ route('blacklist.index') }}">
+                            <span>Blacklist</span>
                         </a>
                     </div>
 
-                    <div class="client-item-wrapper">
-                        <a class="client-dropdown-link {{ request()->is('hc_overview.list') ? 'active' : '' }}" href="{{ route('overview.dashboard') }}">
-                            <span>Dashboard</span>
+                    @foreach ($mcnClient as $item)
+                    <a class="client-dropdown-link {{ request()->is('project/' . $item->id . '*') ? '' : 'collapsed' }}" 
+                        data-toggle="collapse" 
+                        data-target="#client_mcn_{{ $item->id }}" 
+                        aria-expanded="{{ request()->is('project/' . $item->id . '*') ? 'true' : 'false' }}"
+                        style="cursor: pointer;">
+                            <span class="text-uppercase font-weight-bold">
+                                <i class="far fa-user-circle mr-2"></i>{{ strtoupper($item->project) }}
+                            </span>
+                            <i class="fas fa-chevron-down arrow-icon-xs"></i>
                         </a>
-                    </div> --}}
+
+                        {{-- Konten Sub-Menu --}}
+                        <div id="client_mcn_{{ $item->id }}" class="collapse {{ request()->segment(2) == $item->id ? 'show' : '' }}">
+                            <div class="platform-sub-links pl-4"> {{-- Tambah padding kiri agar terlihat bertingkat --}}
+                                
+                                {{-- Link Gform --}}
+                                <div class="client-item-wrapper mb-1">
+                                    <a class="client-dropdown-link {{ request()->is('gform_affiliate/' . $item->id) ? 'active text-primary' : '' }}" 
+                                    href="{{ route('gform_affiliate.index', ['project_id' => $item->id]) }}">
+                                        <i class="fas fa-file-alt mr-2"></i><span>Gform</span>
+                                    </a>
+                                </div>
+
+                                {{-- Link Hasil Seleksi --}}
+                                <div class="client-item-wrapper mb-1">
+                                    <a class="client-dropdown-link {{ request()->is('selection/' . $item->id) ? 'active text-primary' : '' }}" 
+                                    href="{{ route('selection.index', ['project_id' => $item->id]) }}">
+                                        <i class="fas fa-clipboard-check mr-2"></i><span>Hasil Seleksi</span>
+                                    </a>
+                                </div>
+                                
+                            </div>
+                        </div>
+                    @endforeach
+
+
                 </div>
             </div>
         </li>

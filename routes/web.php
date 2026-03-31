@@ -30,6 +30,10 @@ Route::middleware('auth')->group(function() {
     Route::resource('crm', App\Http\Controllers\CRMController::class);
     
     Route::resource('social_creator', App\Http\Controllers\SosialCreatorController::class);
+    Route::resource('blacklist', App\Http\Controllers\BlacklistController::class);
+    Route::resource('gform_affiliate', App\Http\Controllers\gformAffiliateController::class);
+    Route::resource('selection', App\Http\Controllers\selectionController::class);
+    Route::resource('barang_client', App\Http\Controllers\BarangClientController::class);
     Route::post('/import_creator', [App\Http\Controllers\SosialCreatorController::class, 'import'])->name('creator.import');
     // Route::get('/manajemen_user', [App\Http\Controllers\UserController::class, 'index'])->name('manajemen_user');
     Route::get('api/hc/get-tasks-json', [App\Http\Controllers\HCDailyController::class, 'getTaskJSON'])->name('getTaskJSON');

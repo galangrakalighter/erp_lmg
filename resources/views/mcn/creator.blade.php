@@ -152,7 +152,7 @@
                                     -
                                 @endif
                             </td>
-                            <td class="align-middle">Rp {{ number_format($d->gmv_tt, 0, ',', '.') }}</td>
+                            <td class="align-middle">{{ $d->gmv_tt }}</td>
                             <td class="align-middle">{{ $d->provinsi }}</td>
                             <td class="align-middle"><span class="badge badge-secondary mb-1">{{ $d->gender }}</td>
 

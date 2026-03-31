@@ -15,3 +15,4 @@ Route::post('/hc/update-schedule', [App\Http\Controllers\HCDailyController::clas
 Route::post('/hc/update-status', [App\Http\Controllers\HCDailyController::class, 'updateStatus'])->name('hc.updateStatus');
 Route::post('hc/cancel-remaining', [App\Http\Controllers\HCDailyController::class, 'cancelRemaining'])->name('hc.cancelRemaining');
 Route::delete('/hc/delete-task/{id}', [App\Http\Controllers\HCDailyController::class, 'destroy']);
+Route::post('/updateStatusChecked', [App\Http\Controllers\selectionController::class, 'updateStatus'])->name('selection.updateStatus');

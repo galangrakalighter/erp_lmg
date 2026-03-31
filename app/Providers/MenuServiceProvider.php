@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\DB;
 use App\Models\KategoriJasa;
 use Illuminate\Support\Facades\Request;
 
@@ -29,9 +30,12 @@ class MenuServiceProvider extends ServiceProvider
                                     ? str_replace('cms_', '', $segment) 
                                     : null;
             
+            $mcnClient = DB::table('barang_client')->get();
+            
             $view->with([
                 'menus' => KategoriJasa::with('clients')->get(),
                 'activeProductCode' => $currentProductCode,
+                'mcnClient' => $mcnClient
             ]);
         });
     }

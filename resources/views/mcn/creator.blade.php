@@ -143,9 +143,29 @@
                     </select>
                 </div>
                 <div class="col-md-2 mb-3">
-                    <label class="small font-weight-bold">Min. Followers</label>
-                    <input type="number" class="form-control form-control-sm" id="filterFollowers" oninput="filterTable()" placeholder="0">
+                    <label class="small font-weight-bold">Platform Followers</label>
+                    <select class="form-control form-control-sm border-left-warning shadow-sm" id="filterPlatform" onchange="filterTable()">
+                        <option value="all">Gabungan (Semua)</option>
+                        <option value="tiktok">TikTok</option>
+                        <option value="instagram">Instagram</option>
+                        <option value="shopee">Shopee</option>
+                    </select>
                 </div>
+
+                <div class="col-md-2 mb-3">
+                    <label class="small font-weight-bold">Min. Followers</label>
+                    <input type="number" class="form-control form-control-sm shadow-sm" id="filterFollowers" oninput="filterTable()" placeholder="0">
+                </div>
+
+                <div class="col-md-2 mb-3">
+                    <label class="small font-weight-bold">Platform GMV</label>
+                    <select class="form-control form-control-sm border-left-warning shadow-sm" id="filterPlatformGMV" onchange="filterTable()">
+                        <option value="all">Gabungan (Semua)</option>
+                        <option value="tiktok">TikTok</option>
+                        <option value="shopee">Shopee</option>
+                    </select>
+                </div>
+
                 <div class="col-md-2 mb-3">
                     <label class="small font-weight-bold">Min. GMV</label>
                     <input type="number" class="form-control form-control-sm" id="filterGMV" oninput="filterTable()" placeholder="0">
@@ -228,7 +248,13 @@
                             <td class="align-middle" data-gmv="{{ $d->gmv_shopee }}">Rp {{ number_format($d->gmv_shopee, 0, ',', '.') }}</td>
                             <td class="align-middle">{{ $d->provinsi }}</td>
                             <td class="align-middle"><span class="badge badge-secondary mb-1">{{ $d->gender }}</td>
-                            <td class="align-middle">{{ $d->contact }}</td>
+                            <td class="align-middle">@php
+                                    // Menghapus '0' di awal dan menggantinya dengan '62'
+                                    $waNumber = preg_replace(['/-/', '/^0/'], ['', '62'], $d->contact);
+                                @endphp
+                                <a href="https://wa.me/{{ $waNumber }}" target="_blank" class="text-success font-weight-bold">
+                                    {{ $d->contact }}
+                                </a></td>
 
                             <td class="text-center align-middle">{{ $d->detail }}</td>
                             <td class="text-center align-middle">{{ $d->reels }}</td>
@@ -795,6 +821,8 @@
             const cells = row.querySelectorAll('td');
 
             // --- FILTER ANGKA (Ambil dari dataset agar akurat) ---
+            var platform = $('#filterPlatform').val();
+            var platformGMV = $('#filterPlatformGMV').val();
             const minFolInput = parseInt(document.getElementById('filterFollowers').value) || 0;
             const minGMVInput = parseInt(document.getElementById('filterGMV').value) || 0;
 
@@ -814,8 +842,27 @@
             const txtGen = data[14].toLowerCase().trim();
 
             // --- LOGIKA PERBANDINGAN ---
-            const matchFol = (folTT >= minFolInput || folSHP >= minFolInput || folIG >= minFolInput);
-            const matchGMV = (gmvTT >= minGMVInput || gmvSHP >= minGMVInput);
+            var matchFol = false;
+            if (platform === "tiktok") {
+                matchFol = (folTT >= minFolInput);
+            } else if (platform === "instagram") {
+                matchFol = (folIG >= minFolInput);
+            } else if (platform === "shopee") {
+                matchFol = (folSHP >= minFolInput);
+            } else {
+                // Default: Lolos jika salah satu dari ketiganya memenuhi
+                matchFol = (folTT >= minFolInput || folSHP >= minFolInput || folIG >= minFolInput);
+            }
+
+            var matchGMV = false;
+            if (platformGMV === "tiktok") {
+                matchGMV = (gmvTT >= minGMVInput);
+            } else if (platformGMV === "shopee") {
+                matchGMV = (gmvSHP >= minGMVInput);
+            } else {
+                // Default: Lolos jika salah satu dari ketiganya memenuhi
+                matchGMV = (gmvTT >= minGMVInput || gmvSHP >= minGMVInput);
+            }
             const matchKat = fKat === "" || txtKat.includes(fKat);
             const matchLok = fLok === "" || txtLok.includes(fLok);
             const matchGen = fGen === "" || txtGen === fGen;

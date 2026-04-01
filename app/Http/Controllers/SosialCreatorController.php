@@ -37,6 +37,35 @@ class SosialCreatorController extends Controller
             $data['category'] = null;
         }
 
+        // 4. CEK BLACKLIST
+        // Kita cari apakah ada ID creator yang terkait dengan username-username tersebut di tabel blacklist
+        $isBlacklisted = Social_Creator::join('black_list', 'black_list.id_creator', '=', 'social_commerce_creator.id')
+        ->where(function($query) use ($request) {
+                if ($request->user_tt) $query->orWhere('social_commerce_creator.user_tt', $request->user_tt);
+                if ($request->user_shopee) $query->orWhere('social_commerce_creator.user_shopee', $request->user_shopee);
+                if ($request->user_ig) $query->orWhere('social_commerce_creator.user_ig', $request->user_ig);
+            })->exists();
+
+        if ($isBlacklisted) {
+            return redirect()->back()->with('Error', 'Salah satu akun social media ini masuk dalam daftar Blacklist!');
+        }
+
+        $isDuplicate = Social_Creator::where(function($query) use ($request) {
+            if ($request->user_tt) {
+                $query->orWhere('user_tt', $request->user_tt);
+            }
+            if ($request->user_shopee) {
+                $query->orWhere('user_shopee', $request->user_shopee);
+            }
+            if ($request->user_ig) {
+                $query->orWhere('user_ig', $request->user_ig);
+            }
+        })->exists();
+
+        if ($isDuplicate) {
+            return redirect()->back()->with('Error', 'Creator sudah terdaftar (Username TikTok/Shopee/IG sudah ada di database)!');
+        }
+
         Social_Creator::create($data);
         return redirect()->back()->with('success', 'Data Creator ' . $request->user_tt . ' berhasil disimpan!');
     }

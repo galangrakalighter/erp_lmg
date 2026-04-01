@@ -34,6 +34,31 @@
     .text-xs { font-size: 0.75rem; }
     .modal-xl { max-width: 1140px; }
     input:focus, select:focus { border-color: #4e73df !important; box-shadow: 0 0 0 0.2rem rgba(78,115,223,0.1) !important; }
+    .choices__list--dropdown, .choices__inner {
+        background-color: #ffffff !important;
+        opacity: 1 !important;
+        z-index: 9999 !important; /* Pastikan di atas input lain */
+    }
+
+    /* 2. Beri border agar terlihat jelas batasnya */
+    .choices__list--dropdown {
+        border: 1px solid #d1d3e2 !important; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* Tambah bayangan agar estetik */
+    }
+
+    /* 3. Warna saat opsi disorot (hover) */
+    .choices__list--dropdown .choices__item--selectable.is-highlighted {
+        background-color: #f8f9fc !important;
+        color: #4e73df !important;
+    }
+
+    /* 4. Menyesuaikan ukuran agar seukuran form-control-sm (opsional) */
+    .choices__inner {
+        min-height: 31px !important;
+        padding: 2px 8px !important;
+        border: 1px solid #d1d3e2 !important;
+        border-radius: 4px !important;
+    }
 </style>
 
 <div class="container-fluid mt-4">
@@ -235,7 +260,58 @@
                                         <div class="col-md-6">
                                             <div class="form-group">
                                                 <label class="small font-weight-bold text-dark">Provinsi</label>
-                                                <input type="text" name="provinsi" class="form-control form-control-sm" placeholder="Contoh: Jawa Barat" required>
+                                                <select name="provinsi" id="choices-provinsi" class="form-control" required>
+                                                    <optgroup label="Sumatra">
+                                                        <option value="Aceh">Aceh</option>
+                                                        <option value="Sumatera Utara">Sumatera Utara</option>
+                                                        <option value="Sumatera Barat">Sumatera Barat</option>
+                                                        <option value="Riau">Riau</option>
+                                                        <option value="Kepulauan Riau">Kepulauan Riau</option>
+                                                        <option value="Jambi">Jambi</option>
+                                                        <option value="Bengkulu">Bengkulu</option>
+                                                        <option value="Sumatera Selatan">Sumatera Selatan</option>
+                                                        <option value="Kepulauan Bangka Belitung">Kepulauan Bangka Belitung</option>
+                                                        <option value="Lampung">Lampung</option>
+                                                    </optgroup>
+                                                    <optgroup label="Jawa">
+                                                        <option value="DKI Jakarta">DKI Jakarta</option>
+                                                        <option value="Banten">Banten</option>
+                                                        <option value="Jawa Barat">Jawa Barat</option>
+                                                        <option value="Jawa Tengah">Jawa Tengah</option>
+                                                        <option value="DI Yogyakarta">DI Yogyakarta</option>
+                                                        <option value="Jawa Timur">Jawa Timur</option>
+                                                    </optgroup>
+                                                    <optgroup label="Bali & Nusa Tenggara">
+                                                        <option value="Bali">Bali</option>
+                                                        <option value="Nusa Tenggara Barat">Nusa Tenggara Barat</option>
+                                                        <option value="Nusa Tenggara Timur">Nusa Tenggara Timur</option>
+                                                    </optgroup>
+                                                    <optgroup label="Kalimantan">
+                                                        <option value="Kalimantan Barat">Kalimantan Barat</option>
+                                                        <option value="Kalimantan Tengah">Kalimantan Tengah</option>
+                                                        <option value="Kalimantan Selatan">Kalimantan Selatan</option>
+                                                        <option value="Kalimantan Timur">Kalimantan Timur</option>
+                                                        <option value="Kalimantan Utara">Kalimantan Utara</option>
+                                                    </optgroup>
+                                                    <optgroup label="Sulawesi">
+                                                        <option value="Sulawesi Utara">Sulawesi Utara</option>
+                                                        <option value="Gorontalo">Gorontalo</option>
+                                                        <option value="Sulawesi Tengah">Sulawesi Tengah</option>
+                                                        <option value="Sulawesi Barat">Sulawesi Barat</option>
+                                                        <option value="Sulawesi Selatan">Sulawesi Selatan</option>
+                                                        <option value="Sulawesi Tenggara">Sulawesi Tenggara</option>
+                                                    </optgroup>
+                                                    <optgroup label="Maluku & Papua">
+                                                        <option value="Maluku">Maluku</option>
+                                                        <option value="Maluku Utara">Maluku Utara</option>
+                                                        <option value="Papua">Papua</option>
+                                                        <option value="Papua Barat">Papua Barat</option>
+                                                        <option value="Papua Selatan">Papua Selatan</option>
+                                                        <option value="Papua Tengah">Papua Tengah</option>
+                                                        <option value="Papua Pegunungan">Papua Pegunungan</option>
+                                                        <option value="Papua Barat Daya">Papua Barat Daya</option>
+                                                    </optgroup>
+                                                </select>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
@@ -457,7 +533,63 @@
                                         <div class="col-md-6">
                                             <div class="form-group">
                                                 <label class="small font-weight-bold">Provinsi</label>
-                                                <input type="text" name="provinsi" class="form-control form-control-sm" value="{{ $d->provinsi }}" required>
+                                                <select name="provinsi" class="form-control form-control-sm select-choices-edit" required>
+                                                    <optgroup label="Jawa">
+                                                        <option value="DKI Jakarta" {{ $d->provinsi == 'DKI Jakarta' ? 'selected' : '' }}>DKI Jakarta</option>
+                                                        <option value="Banten" {{ $d->provinsi == 'Banten' ? 'selected' : '' }}>Banten</option>
+                                                        <option value="Jawa Barat" {{ $d->provinsi == 'Jawa Barat' ? 'selected' : '' }}>Jawa Barat</option>
+                                                        <option value="Jawa Tengah" {{ $d->provinsi == 'Jawa Tengah' ? 'selected' : '' }}>Jawa Tengah</option>
+                                                        <option value="DI Yogyakarta" {{ $d->provinsi == 'DI Yogyakarta' ? 'selected' : '' }}>DI Yogyakarta</option>
+                                                        <option value="Jawa Timur" {{ $d->provinsi == 'Jawa Timur' ? 'selected' : '' }}>Jawa Timur</option>
+                                                    </optgroup>
+
+                                                    <optgroup label="Sumatra">
+                                                        <option value="Aceh" {{ $d->provinsi == 'Aceh' ? 'selected' : '' }}>Aceh</option>
+                                                        <option value="Sumatera Utara" {{ $d->provinsi == 'Sumatera Utara' ? 'selected' : '' }}>Sumatera Utara</option>
+                                                        <option value="Sumatera Barat" {{ $d->provinsi == 'Sumatera Barat' ? 'selected' : '' }}>Sumatera Barat</option>
+                                                        <option value="Riau" {{ $d->provinsi == 'Riau' ? 'selected' : '' }}>Riau</option>
+                                                        <option value="Kepulauan Riau" {{ $d->provinsi == 'Kepulauan Riau' ? 'selected' : '' }}>Kepulauan Riau</option>
+                                                        <option value="Jambi" {{ $d->provinsi == 'Jambi' ? 'selected' : '' }}>Jambi</option>
+                                                        <option value="Bengkulu" {{ $d->provinsi == 'Bengkulu' ? 'selected' : '' }}>Bengkulu</option>
+                                                        <option value="Sumatera Selatan" {{ $d->provinsi == 'Sumatera Selatan' ? 'selected' : '' }}>Sumatera Selatan</option>
+                                                        <option value="Kepulauan Bangka Belitung" {{ $d->provinsi == 'Kepulauan Bangka Belitung' ? 'selected' : '' }}>Kepulauan Bangka Belitung</option>
+                                                        <option value="Lampung" {{ $d->provinsi == 'Lampung' ? 'selected' : '' }}>Lampung</option>
+                                                    </optgroup>
+
+                                                    <optgroup label="Kalimantan">
+                                                        <option value="Kalimantan Barat" {{ $d->provinsi == 'Kalimantan Barat' ? 'selected' : '' }}>Kalimantan Barat</option>
+                                                        <option value="Kalimantan Tengah" {{ $d->provinsi == 'Kalimantan Tengah' ? 'selected' : '' }}>Kalimantan Tengah</option>
+                                                        <option value="Kalimantan Selatan" {{ $d->provinsi == 'Kalimantan Selatan' ? 'selected' : '' }}>Kalimantan Selatan</option>
+                                                        <option value="Kalimantan Timur" {{ $d->provinsi == 'Kalimantan Timur' ? 'selected' : '' }}>Kalimantan Timur</option>
+                                                        <option value="Kalimantan Utara" {{ $d->provinsi == 'Kalimantan Utara' ? 'selected' : '' }}>Kalimantan Utara</option>
+                                                    </optgroup>
+
+                                                    <optgroup label="Sulawesi">
+                                                        <option value="Sulawesi Utara" {{ $d->provinsi == 'Sulawesi Utara' ? 'selected' : '' }}>Sulawesi Utara</option>
+                                                        <option value="Gorontalo" {{ $d->provinsi == 'Gorontalo' ? 'selected' : '' }}>Gorontalo</option>
+                                                        <option value="Sulawesi Tengah" {{ $d->provinsi == 'Sulawesi Tengah' ? 'selected' : '' }}>Sulawesi Tengah</option>
+                                                        <option value="Sulawesi Barat" {{ $d->provinsi == 'Sulawesi Barat' ? 'selected' : '' }}>Sulawesi Barat</option>
+                                                        <option value="Sulawesi Selatan" {{ $d->provinsi == 'Sulawesi Selatan' ? 'selected' : '' }}>Sulawesi Selatan</option>
+                                                        <option value="Sulawesi Tenggara" {{ $d->provinsi == 'Sulawesi Tenggara' ? 'selected' : '' }}>Sulawesi Tenggara</option>
+                                                    </optgroup>
+
+                                                    <optgroup label="Bali & Nusa Tenggara">
+                                                        <option value="Bali" {{ $d->provinsi == 'Bali' ? 'selected' : '' }}>Bali</option>
+                                                        <option value="Nusa Tenggara Barat" {{ $d->provinsi == 'Nusa Tenggara Barat' ? 'selected' : '' }}>Nusa Tenggara Barat</option>
+                                                        <option value="Nusa Tenggara Timur" {{ $d->provinsi == 'Nusa Tenggara Timur' ? 'selected' : '' }}>Nusa Tenggara Timur</option>
+                                                    </optgroup>
+
+                                                    <optgroup label="Maluku & Papua">
+                                                        <option value="Maluku" {{ $d->provinsi == 'Maluku' ? 'selected' : '' }}>Maluku</option>
+                                                        <option value="Maluku Utara" {{ $d->provinsi == 'Maluku Utara' ? 'selected' : '' }}>Maluku Utara</option>
+                                                        <option value="Papua" {{ $d->provinsi == 'Papua' ? 'selected' : '' }}>Papua</option>
+                                                        <option value="Papua Barat" {{ $d->provinsi == 'Papua Barat' ? 'selected' : '' }}>Papua Barat</option>
+                                                        <option value="Papua Selatan" {{ $d->provinsi == 'Papua Selatan' ? 'selected' : '' }}>Papua Selatan</option>
+                                                        <option value="Papua Tengah" {{ $d->provinsi == 'Papua Tengah' ? 'selected' : '' }}>Papua Tengah</option>
+                                                        <option value="Papua Pegunungan" {{ $d->provinsi == 'Papua Pegunungan' ? 'selected' : '' }}>Papua Pegunungan</option>
+                                                        <option value="Papua Barat Daya" {{ $d->provinsi == 'Papua Barat Daya' ? 'selected' : '' }}>Papua Barat Daya</option>
+                                                    </optgroup>
+                                                </select>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
@@ -575,6 +707,9 @@
     </div>
 </div>
 @endforeach
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 
 <script>
     function filterTable() {
@@ -616,6 +751,28 @@
         // Trigger filter kembali agar tabel menampilkan semua data
         filterTable();
     }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const config = {
+            searchEnabled: true,
+            itemSelectText: '',
+            shouldSort: false,
+            placeholder: true,
+            position: 'bottom',
+            // Hapus bg-white dari sini agar tidak error
+            classNames: {
+                containerInner: 'choices__inner', 
+            }
+        };
+
+        // Inisialisasi Modal Tambah
+        const elementTambah = document.getElementById('choices-provinsi');
+        if (elementTambah) new Choices(elementTambah, config);
+
+        // Inisialisasi Modal Edit
+        const elementsEdit = document.querySelectorAll('.select-choices-edit');
+        elementsEdit.forEach(el => new Choices(el, config));
+    });
 </script>
 
 @include('partials.footer')

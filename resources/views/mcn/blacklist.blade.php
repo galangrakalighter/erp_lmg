@@ -308,10 +308,11 @@
                     <div class="row">
                         <div class="col-md-6 form-group">
                             <label class="font-weight-bold">Pilih Kreator</label>
-                            <select name="id_creator" class="form-control select2" style="width: 100%" required>
-                                <option value=""> Cari Username IG/TT... </option>
+                            <select name="id_creator" class="form-control select-choices-creator" required>
                                 @foreach($creators as $c)
-                                    <option value="{{ $c->id }}">{{ $c->user_ig }} (IG) / {{ $c->user_tt }} (TT)</option>
+                                    <option value="{{ $c->id }}">
+                                        {{ $c->user_ig ?? '-' }} (IG) / {{ $c->user_tt ?? '-' }} (TT)
+                                    </option>
                                 @endforeach
                             </select>
                         </div>
@@ -365,10 +366,8 @@
                         <div class="row">
                             <div class="col-md-12 form-group">
                                 <label class="font-weight-bold">Pilih Kreator</label>
-                                <select name="id_creator" class="form-control select2" style="width: 100%" required>
-                                    <option value=""> Cari Username IG/TT... </option>
+                                <select name="id_creator" class="form-control select-choices-blacklist-edit" required>
                                     @foreach($creators_blacklist as $c)
-                                        {{-- Cek apakah ID creator di loop sama dengan ID creator di data blacklist --}}
                                         <option value="{{ $c->id }}" {{ $d->id_creator == $c->id ? 'selected' : '' }}>
                                             {{ $c->user_ig }} (IG) / {{ $c->user_tt }} (TT)
                                         </option>
@@ -459,6 +458,9 @@
 @endforeach
 
 @include('partials.footer')
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 
 <script>
 $(document).ready(function() {
@@ -485,6 +487,35 @@ $(document).ready(function() {
     $('#filterKet').on('change', function() { 
         var val = $.fn.dataTable.util.escapeRegex($(this).val());
         table.column(11).search(val ? '^' + val + '$' : '', true, false).draw(); 
+    });
+});
+document.addEventListener('DOMContentLoaded', function() {
+    const config = {
+        searchEnabled: true,
+        itemSelectText: '',
+        shouldSort: false,
+        placeholder: true,
+        position: 'bottom',
+        // Hapus bg-white dari sini agar tidak error
+        classNames: {
+            containerInner: 'choices__inner', 
+        }
+    };
+
+    const elementsCreator = document.querySelectorAll('.select-choices-creator');
+    elementsCreator.forEach(el => {
+        new Choices(el, {
+            ...config,
+            searchPlaceholderValue: 'Ketik username...',
+        });
+    });
+
+    const elementsBlacklistEdit = document.querySelectorAll('.select-choices-blacklist-edit');
+    elementsBlacklistEdit.forEach(el => {
+        new Choices(el, {
+            ...config,
+            searchPlaceholderValue: 'Ketik username...',
+        });
     });
 });
 </script>

@@ -75,10 +75,6 @@
     </div>
 
     <div class="card shadow mb-4">
-        <div class="card-header py-3 d-flex justify-content-between align-items-center">
-            <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-filter mr-2"></i>Filter Pencarian</h6>
-            <span class="badge badge-primary">Data Real-time</span>
-        </div>
         <div class="card-body">
             <form id="filterForm" class="row">
                 <div class="col-md-3 mb-3">
@@ -97,24 +93,73 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-3 mb-3">
-                    <label class="small font-weight-bold">Provinsi/Domisili</label>
-                    <input type="text" class="form-control form-control-sm border-left-success shadow-sm" id="filterLokasi" oninput="filterTable()" placeholder="Cari Provinsi...">
-                </div>
                 <div class="col-md-2 mb-3">
-                    <label class="small font-weight-bold">Gender</label>
-                    <select class="form-control form-control-sm border-left-info shadow-sm" id="filterGender" onchange="filterTable()">
-                        <option value="">Semua</option>
-                        <option value="Pria">Pria</option>
-                        <option value="Wanita">Wanita</option>
+                    <label class="small font-weight-bold">Provinsi</label>
+                    <select class="form-control form-control-sm border-left-success shadow-sm" id="filterLokasi">
+                        <option value="">Semua Provinsi</option>
+                        <option value="Banten">Banten</option>
+                        <option value="DKI Jakarta">DKI Jakarta</option>
+                        <option value="Jawa Barat">Jawa Barat</option>
+                        <option value="Jawa Tengah">Jawa Tengah</option>
+                        <option value="DI Yogyakarta">DI Yogyakarta</option>
+                        <option value="Jawa Timur">Jawa Timur</option>
+
+                        <option value="Aceh">Aceh</option>
+                        <option value="Sumatera Utara">Sumatera Utara</option>
+                        <option value="Sumatera Barat">Sumatera Barat</option>
+                        <option value="Riau">Riau</option>
+                        <option value="Kepulauan Riau">Kepulauan Riau</option>
+                        <option value="Jambi">Jambi</option>
+                        <option value="Sumatera Selatan">Sumatera Selatan</option>
+                        <option value="Bengkulu">Bengkulu</option>
+                        <option value="Lampung">Lampung</option>
+                        <option value="Kepulauan Bangka Belitung">Bangka Belitung</option>
+
+                        <option value="Bali">Bali</option>
+                        <option value="Nusa Tenggara Barat">Nusa Tenggara Barat</option>
+                        <option value="Nusa Tenggara Timur">Nusa Tenggara Timur</option>
+
+                        <option value="Kalimantan Barat">Kalimantan Barat</option>
+                        <option value="Kalimantan Tengah">Kalimantan Tengah</option>
+                        <option value="Kalimantan Selatan">Kalimantan Selatan</option>
+                        <option value="Kalimantan Timur">Kalimantan Timur</option>
+                        <option value="Kalimantan Utara">Kalimantan Utara</option>
+
+                        <option value="Sulawesi Utara">Sulawesi Utara</option>
+                        <option value="Gorontalo">Gorontalo</option>
+                        <option value="Sulawesi Tengah">Sulawesi Tengah</option>
+                        <option value="Sulawesi Barat">Sulawesi Barat</option>
+                        <option value="Sulawesi Selatan">Sulawesi Selatan</option>
+                        <option value="Sulawesi Tenggara">Sulawesi Tenggara</option>
+
+                        <option value="Maluku">Maluku</option>
+                        <option value="Maluku Utara">Maluku Utara</option>
+                        <option value="Papua">Papua</option>
+                        <option value="Papua Barat">Papua Barat</option>
+                        <option value="Papua Selatan">Papua Selatan</option>
+                        <option value="Papua Tengah">Papua Tengah</option>
+                        <option value="Papua Pegunungan">Papua Pegunungan</option>
+                        <option value="Papua Barat Daya">Papua Barat Daya</option>
                     </select>
                 </div>
-                <div class="col-md-4 mb-3 d-flex align-items-end">
-                    <div class="btn-group w-100">
-                        <button type="button" class="btn btn-secondary btn-sm" onclick="resetFilter()">
-                            <i class="fas fa-sync mr-1"></i> Reset Filter
-                        </button>
+                <div class="col-md-2 mb-3">
+                    <label class="small font-weight-bold">Min. Followers</label>
+                    <input type="number" class="form-control form-control-sm" id="filterFollowers" oninput="filterTable()" placeholder="0">
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label class="small font-weight-bold">Min. GMV</label>
+                    <input type="number" class="form-control form-control-sm" id="filterGMV" oninput="filterTable()" placeholder="0">
+                </div>
+                <div class="col-md-3 mb-3 d-flex align-items-end">
+                    <div class="w-100 mr-2">
+                        <label class="small font-weight-bold">Gender</label>
+                        <select class="form-control form-control-sm" id="filterGender" onchange="filterTable()">
+                            <option value="">Semua</option>
+                            <option value="Pria">Pria</option>
+                            <option value="Wanita">Wanita</option>
+                        </select>
                     </div>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="resetFilter()"><i class="fas fa-sync"></i></button>
                 </div>
             </form>
         </div>
@@ -123,11 +168,11 @@
     <div class="card shadow mb-4">
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered table-hover table-sm nowrap" id="dataTable" width="100%" cellspacing="0">
+                <table class="table table-bordered table-hover table-sm nowrap" id="dataTables1" width="100%" cellspacing="0">
                     <thead class="bg-primary text-white text-center">
                         <tr>
                             <th rowspan="2" class="align-middle">No</th>
-                            <th colspan="13" class="align-middle text-uppercase" style="font-size: 1.1rem; letter-spacing: 1px;">Data Affiliator</th>
+                            <th colspan="15" class="align-middle text-uppercase" style="font-size: 1.1rem; letter-spacing: 1px;">Data Affiliator</th>
                             <th colspan="6" class="align-middle text-uppercase" style="font-size: 1.1rem; letter-spacing: 1px;">Rate Card</th>
                             <th rowspan="2" class="align-middle">Action</th>
                         </tr>
@@ -143,8 +188,10 @@
                             <th>Followers IG</th>
                             <th>Kategori</th>
                             <th>GMV TT</th>
+                            <th>GMV Shopee</th>
                             <th>Provinsi</th>
                             <th>Gender</th>
+                            <th>Contact</th>
                             
                             <th>Detail</th>
                             <th>Reels</th>
@@ -161,13 +208,13 @@
                             
                             <td class="align-middle">{{ $d->user_tt }}</td>
                             <td class="align-middle"><a href="{{ $d->url_tt }}" target="_blank" class="btn btn-xs btn-link p-0"><i class="fab fa-tiktok"></i> Link</a></td>
-                            <td class="align-middle">{{ number_format($d->fol_tt) }}</td>
+                            <td class="align-middle" data-fol="{{ $d->fol_tt }}"">{{ number_format($d->fol_tt) }}</td>
                             <td class="align-middle">{{ $d->user_shopee }}</td>
                             <td class="align-middle"><a href="{{ $d->url_shp }}" target="_blank" class="btn btn-xs btn-link p-0"><i class="fas fa-shopping-bag"></i> Link</a></td>
-                            <td class="align-middle">{{ number_format($d->fol_shopee) }}</td>
+                            <td class="align-middle" data-fol="{{ $d->fol_shopee }}">{{ number_format($d->fol_shopee) }}</td>
                             <td class="align-middle">{{ $d->user_ig }}</td>
                             <td class="align-middle"><a href="{{ $d->url_ig }}" target="_blank" class="btn btn-xs btn-link p-0"><i class="fab fa-instagram"></i> Link</a></td>
-                            <td class="align-middle">{{ number_format($d->fol_ig) }}</td>
+                            <td class="align-middle" data-fol="{{ $d->fol_ig }}">{{ number_format($d->fol_ig) }}</td>
                             <td class="align-middle">
                                 @if($d->category)
                                     @foreach(explode(',', $d->category) as $cat)
@@ -177,9 +224,11 @@
                                     -
                                 @endif
                             </td>
-                            <td class="align-middle">{{ $d->gmv_tt }}</td>
+                            <td class="align-middle" data-gmv="{{ $d->gmv_tt }}">Rp {{ number_format($d->gmv_tt, 0, ',', '.') }}</td>
+                            <td class="align-middle" data-gmv="{{ $d->gmv_shopee }}">Rp {{ number_format($d->gmv_shopee, 0, ',', '.') }}</td>
                             <td class="align-middle">{{ $d->provinsi }}</td>
                             <td class="align-middle"><span class="badge badge-secondary mb-1">{{ $d->gender }}</td>
+                            <td class="align-middle">{{ $d->contact }}</td>
 
                             <td class="text-center align-middle">{{ $d->detail }}</td>
                             <td class="text-center align-middle">{{ $d->reels }}</td>
@@ -712,46 +761,6 @@
 <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 
 <script>
-    function filterTable() {
-        // 1. Ambil nilai filter dan bersihkan spasi serta ubah ke lowercase
-        const filterKat = document.getElementById('filterKategori').value.toLowerCase().trim();
-        const filterLok = document.getElementById('filterLokasi').value.toLowerCase().trim();
-        const filterGen = document.getElementById('filterGender').value.toLowerCase().trim();
-
-        // 2. Ambil baris tabel
-        const rows = document.querySelectorAll('#dataTable tbody tr');
-
-        rows.forEach(row => {
-            const cells = row.getElementsByTagName('td');
-            if (cells.length > 0) {
-                // Index Kolom: 10 (Kategori), 12 (Provinsi), 13 (Gender)
-                const txtKat = cells[10].innerText.toLowerCase();
-                const txtLok = cells[12].innerText.toLowerCase();
-                const txtGen = cells[13].innerText.toLowerCase().trim();
-
-                // 3. Logika Filter Real-time
-                const matchKat = filterKat === "" || txtKat.includes(filterKat);
-                const matchLok = filterLok === "" || txtLok.includes(filterLok);
-                
-                // Khusus Gender kita gunakan perbandingan sama persis agar akurat
-                const matchGen = filterGen === "" || txtGen === filterGen;
-
-                // 4. Tampilkan/Sembunyikan tanpa refresh
-                if (matchKat && matchLok && matchGen) {
-                    row.style.display = "";
-                } else {
-                    row.style.display = "none";
-                }
-            }
-        });
-    }
-
-    function resetFilter() {
-        document.getElementById('filterForm').reset();
-        // Trigger filter kembali agar tabel menampilkan semua data
-        filterTable();
-    }
-
     document.addEventListener('DOMContentLoaded', function() {
         const config = {
             searchEnabled: true,
@@ -772,6 +781,65 @@
         // Inisialisasi Modal Edit
         const elementsEdit = document.querySelectorAll('.select-choices-edit');
         elementsEdit.forEach(el => new Choices(el, config));
+        
+        const elementsFilter = document.getElementById('filterLokasi');
+        if (elementsFilter) new Choices(elementsFilter, config);
+
+        const table = $('#dataTables1').DataTable();
+
+        // 2. Daftarkan Fungsi Filter Global (Vanilla JS Logic)
+        // DataTable akan menjalankan fungsi ini untuk SETIAP baris di SEMUA halaman
+        $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+            // Ambil elemen asli barisnya (untuk baca dataset)
+            const row = table.row(dataIndex).node();
+            const cells = row.querySelectorAll('td');
+
+            // --- FILTER ANGKA (Ambil dari dataset agar akurat) ---
+            const minFolInput = parseInt(document.getElementById('filterFollowers').value) || 0;
+            const minGMVInput = parseInt(document.getElementById('filterGMV').value) || 0;
+
+            const folTT  = parseInt(cells[3].dataset.fol) || 0;
+            const folSHP = parseInt(cells[6].dataset.fol) || 0;
+            const folIG  = parseInt(cells[9].dataset.fol) || 0;
+            const gmvTT  = parseInt(cells[11].dataset.gmv) || 0;
+            const gmvSHP = parseInt(cells[12].dataset.gmv) || 0;
+
+            // --- FILTER TEKS ---
+            const fKat = document.getElementById('filterKategori').value.toLowerCase();
+            const fLok = document.getElementById('filterLokasi').value.toLowerCase();
+            const fGen = document.getElementById('filterGender').value.toLowerCase().trim();
+
+            const txtKat = data[10].toLowerCase(); // data[index] adalah isi teks kolom
+            const txtLok = data[13].toLowerCase();
+            const txtGen = data[14].toLowerCase().trim();
+
+            // --- LOGIKA PERBANDINGAN ---
+            const matchFol = (folTT >= minFolInput || folSHP >= minFolInput || folIG >= minFolInput);
+            const matchGMV = (gmvTT >= minGMVInput || gmvSHP >= minGMVInput);
+            const matchKat = fKat === "" || txtKat.includes(fKat);
+            const matchLok = fLok === "" || txtLok.includes(fLok);
+            const matchGen = fGen === "" || txtGen === fGen;
+
+            // Kembalikan true jika baris ini boleh tampil
+            return matchFol && matchGMV && matchKat && matchLok && matchGen;
+        });
+
+        // 3. Hubungkan Event Listener ke Input (Vanilla JS)
+        const filterInputs = ['filterKategori', 'filterLokasi', 'filterFollowers', 'filterGMV', 'filterGender'];
+        filterInputs.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                // Setiap kali input berubah, suruh DataTable gambar ulang (draw)
+                el.addEventListener('input', () => table.draw());
+                el.addEventListener('change', () => table.draw());
+            }
+        });
+
+        // Fungsi Reset
+        window.resetFilter = function() {
+            document.getElementById('filterForm').reset();
+            table.draw();
+        };
     });
 </script>
 

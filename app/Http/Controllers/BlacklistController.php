@@ -77,6 +77,7 @@ class BlacklistController extends Controller
                 'job'         => $request->job,
                 'keterangan'  => (int)$request->keterangan,
                 'link_report' => $request->link_report,
+                'note' => $request->note
             ]);
 
             // 4. Redirect dengan pesan sukses

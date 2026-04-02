@@ -212,6 +212,7 @@
                             <th>Link SPE</th>
                             <th>Alamat</th>
                             <th>WhatsApp</th>
+                            <th>Note</th>
                             <th>Keterangan</th>
                             <th>Aksi</th>
                         </tr>
@@ -242,6 +243,7 @@
                                 <a href="https://wa.me/{{ $waNumber }}" target="_blank" class="text-success font-weight-bold">
                                     {{ $d->contact }}
                                 </a></td>
+                                <td>{{ $d->note }}</td>
                                 
                                 @php
                                     $textKet = '-';
@@ -338,6 +340,17 @@
                             <label class="font-weight-bold">Link Report (Optional)</label>
                             <input type="text" name="link_report" class="form-control" placeholder="https://...">
                         </div>
+                        <div class="col-md-12 form-group">
+                            <label class="text-dark font-weight-bold small">
+                                <i class="fas fa-link mr-1 text-primary"></i> Catatan Tambahan <span class="text-muted">(Optional)</span>
+                            </label>
+                            <textarea 
+                                name="note" 
+                                class="form-control shadow-sm" 
+                                rows="4" 
+                                style="border-radius: 10px; border: 1px solid #d1d3e2; resize: none;"></textarea>
+                            <small class="form-text text-muted italic">Pastikan link dapat diakses oleh tim terkait.</small>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer bg-light">
@@ -399,6 +412,19 @@
                             <div class="col-md-6 form-group">
                                 <label class="font-weight-bold">Link Report</label>
                                 <input type="url" name="link_report" class="form-control" value="{{ $d->link_report }}">
+                            </div>
+
+                            <div class="col-md-12 form-group">
+                                <label class="text-dark font-weight-bold small">
+                                    <i class="fas fa-link mr-1 text-primary"></i> Catatan Tambahan <span class="text-muted">(Optional)</span>
+                                </label>
+                                <textarea 
+                                    name="note" 
+                                    class="form-control shadow-sm" 
+                                    rows="4"
+                                    style="border-radius: 10px; border: 1px solid #d1d3e2; resize: none;"
+                                >{{ $d->note ?? '' }}</textarea>
+                                <small class="form-text text-muted italic">Pastikan link dapat diakses oleh tim terkait.</small>
                             </div>
                         </div>
                     </div>

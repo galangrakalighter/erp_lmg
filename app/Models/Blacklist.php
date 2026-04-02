@@ -13,6 +13,7 @@ class Blacklist extends Model
         'bulan',
         'job',
         'link_report',
-        'keterangan'
+        'keterangan',
+        'note'
     ];
 }

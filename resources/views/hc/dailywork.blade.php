@@ -672,6 +672,7 @@
                     if (myRole === 'head_of_division' && task.vic_role === 'digital_marketing_manager') canApprove = true;
                     else if (myRole === 'digital_marketing_manager' && task.vic_role === 'digital_marketing') canApprove = true;
                     else if (myRole === 'digital_marketing' && task.vic_role === 'content_creator') canApprove = true;
+                    else if (myRole === 'super_admin') canApprove = true;
                 }
 
                 if (canApprove) {

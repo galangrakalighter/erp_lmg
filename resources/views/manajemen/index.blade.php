@@ -60,9 +60,9 @@
                             @endif
                             <th>Komposisi</th>
                             <th>Note</th>
-                            <th>Tanggal Posting (Y-M-D)</th>
+                            {{-- <th>Tanggal Posting (Y-M-D)</th>
                             <th>Tanggal Mulai (Y-M-D)</th>
-                            <th>Tanggal Deadline (Y-M-D)</th>
+                            <th>Tanggal Deadline (Y-M-D)</th> --}}
                             <th>Durasi Mengerjakan</th>
                             <th>Link</th>
                             <th>Status</th>
@@ -96,9 +96,9 @@
                                 @endif
                                 <th>{{ $item->komposisi }}</th>
                                 <th>{{ $item->note }}</th>
-                                <th>{{ $item->tanggal_posting }}</th>
+                                {{-- <th>{{ $item->tanggal_posting }}</th>
                                 <th>{{ $item->tanggal_mulai }}</th>
-                                <th>{{ $item->tanggal_deadline }}</th>
+                                <th>{{ $item->tanggal_deadline }}</th> --}}
                                 <th>{{ $item->menit ? $item->menit . " Menit" : ""}}</th>
                                 <th><a href="{{ $item->link }}">{{ $item->link }}</a></th>
                                 <th>{{ $item->nama_status }}</th>
@@ -379,7 +379,7 @@
                                     </div>
                                 </div>
                             </div> --}}
-                            <div class="col-md-4 mb-3">
+                            {{-- <div class="col-md-4 mb-3">
                                 <div class="form-group">
                                     <label class="text-dark font-weight-bold small">Tanggal Mulai</label>
                                     <div class="input-group shadow-sm">
@@ -411,7 +411,7 @@
                                         <input type="date" name="tanggal_deadline" class="form-control border-left-0">
                                     </div>
                                 </div>
-                            </div>
+                            </div> --}}
                             
                             {{-- <div id="task-list-container" class="col-md-12 mb-4" style="display: none;">
                                 <div class="card border-info shadow-sm">
@@ -669,7 +669,7 @@
                                 </div>
                             </div> --}}
 
-                            <div class="col-md-4">
+                            {{-- <div class="col-md-4">
                                 <div class="form-group">
                                     <label class="text-muted font-weight-bold small uppercase">Tanggal Mulai</label>
                                     <input type="date" name="tanggal_mulai" class="form-control shadow-sm tanggal-mulai-edit" data-id="{{ $item->id }}" value="{{ $item->tanggal_mulai }}" {{ Auth::user()->role == "content_creator" ? "readonly" : "" }} required>
@@ -688,7 +688,7 @@
                                     <label class="text-muted font-weight-bold small uppercase">Tanggal Deadline</label>
                                     <input type="date" name="tanggal_deadline" class="form-control shadow-sm" value="{{ $item->tanggal_deadline }}" {{ Auth::user()->role == "content_creator" ? "readonly" : "" }} required>
                                 </div>
-                            </div>
+                            </div> --}}
 
                             {{-- <div class="col-md-6 mb-3">
                                 <label class="text-muted font-weight-bold small uppercase">Jam Mulai</label>

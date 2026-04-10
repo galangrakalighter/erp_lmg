@@ -140,61 +140,61 @@ class ManajemenKontenController extends Controller
                 'updated_at'       => now(),
             ]);
 
-            $BATAS_HARIAN = (int)$request->pic == 39 ? 480 : 420;
-            $existingJobs = DB::table('data_jasa')
-                        ->where('pic', $request->pic)
-                        ->get();
+            // $BATAS_HARIAN = (int)$request->pic == 39 ? 480 : 420;
+            // $existingJobs = DB::table('data_jasa')
+            //             ->where('pic', $request->pic)
+            //             ->get();
 
-            $dailyLoad = [];
-            foreach ($existingJobs as $job) {
-                if($job->tanggal_mulai != null){
-                    $period = CarbonPeriod::create($job->tanggal_mulai, $job->tanggal_deadline);
+            // $dailyLoad = [];
+            // foreach ($existingJobs as $job) {
+            //     if($job->tanggal_mulai != null){
+            //         $period = CarbonPeriod::create($job->tanggal_mulai, $job->tanggal_deadline);
                     
-                    foreach ($period as $date) {
-                        $tgl = $date->format('Y-m-d');
+            //         foreach ($period as $date) {
+            //             $tgl = $date->format('Y-m-d');
                         
-                        if (!isset($dailyLoad[$tgl])) {
-                            $dailyLoad[$tgl] = 0;
-                        }
+            //             if (!isset($dailyLoad[$tgl])) {
+            //                 $dailyLoad[$tgl] = 0;
+            //             }
                         
-                        $dailyLoad[$tgl] += $job->menit;
-                    }
-                }
-            }
+            //             $dailyLoad[$tgl] += $job->menit;
+            //         }
+            //     }
+            // }
             
-            $newPeriod = CarbonPeriod::create($request->tanggal_mulai, $request->tanggal_deadline);
-            $newMenit  = (int) $request->menit;
-            $overloadDates = [];
+            // $newPeriod = CarbonPeriod::create($request->tanggal_mulai, $request->tanggal_deadline);
+            // $newMenit  = (int) $request->menit;
+            // $overloadDates = [];
 
-            foreach ($newPeriod as $date) {
-                $tgl = $date->format('Y-m-d');
+            // foreach ($newPeriod as $date) {
+            //     $tgl = $date->format('Y-m-d');
 
-                $currentLoad = $dailyLoad[$tgl] ?? 0;
+            //     $currentLoad = $dailyLoad[$tgl] ?? 0;
 
-                $totalPrediksi = $currentLoad + $newMenit;
+            //     $totalPrediksi = $currentLoad + $newMenit;
 
-                if ($totalPrediksi > $BATAS_HARIAN) {
-                    $overloadDates[] = "$tgl (Total: $totalPrediksi menit)";
-                }
-            }
+            //     if ($totalPrediksi > $BATAS_HARIAN) {
+            //         $overloadDates[] = "$tgl (Total: $totalPrediksi menit)";
+            //     }
+            // }
 
-            if(!empty($overloadDates)){
-                $list_tanggal_string = implode(', ', $overloadDates);
-                return redirect()->back()->with('error', "Gagal! Durasi melebihi 7 Jam (420 Menit) pada tanggal: " . $list_tanggal_string);
-            }
+            // if(!empty($overloadDates)){
+            //     $list_tanggal_string = implode(', ', $overloadDates);
+            //     return redirect()->back()->with('error', "Gagal! Durasi melebihi 7 Jam (420 Menit) pada tanggal: " . $list_tanggal_string);
+            // }
 
-            $produk = ProdukClient::find((int)$id);
-            $divisi = 0;
-            switch ($produk->kategori_jasa_id) {
-                case 1:
-                    $divisi = 1;
-                    break;
-                case 2:
-                case 3:
-                    $divisi = 2;
-                    break;
-                default:
-            }
+            // $produk = ProdukClient::find((int)$id);
+            // $divisi = 0;
+            // switch ($produk->kategori_jasa_id) {
+            //     case 1:
+            //         $divisi = 1;
+            //         break;
+            //     case 2:
+            //     case 3:
+            //         $divisi = 2;
+            //         break;
+            //     default:
+            // }
 
             // foreach ($newPeriod as $date){
             //     DB::table("task")->insert([
@@ -329,47 +329,47 @@ class ManajemenKontenController extends Controller
                 'updated_at'       => now(),
             ]);
 
-            if(Auth::user()->role != "content_creator"){
-                $check = Task::where('id_manajement_konten', $id)->first();
-                if($check){
-                    // DB::table("task")->where('id_manajement_konten', $id)->update([
-                    //     "nama_task" => $request->judul,
-                    //     "pic" => $request->pic,
-                    //     "priority" => $request->prioritas,
-                    //     "menit" => $request->menit,
-                    //     "tanggal_mulai" => $request->tanggal_mulai,
-                    //     "tanggal_deadline" => $request->tanggal_deadline,
-                    //     "jam_mulai" => $request->jam_mulai,
-                    //     "note" => $request->note
-                    // ]);
-                }else{
-                    $produk = ProdukClient::find($data->produk_client_id);
-                    $divisi = 0;
-                    switch ($produk->kategori_jasa_id) {
-                        case 1:
-                            $divisi = 1;
-                            break;
-                        case 2:
-                        case 3:
-                            $divisi = 2;
-                            break;
-                        default:
-                    }
-                    // DB::table("task")->insert([
-                    //     "nama_task" => $request->judul,
-                    //     "divisi" => $divisi,
-                    //     "pic" => $request->pic,
-                    //     "priority" => $request->prioritas,
-                    //     "menit" => $request->menit,
-                    //     "id_manajement_konten" => $id,
-                    //     "tanggal_mulai" => $request->tanggal_mulai,
-                    //     "tanggal_deadline" => $request->tanggal_deadline,
-                    //     "note" => $request->note,
-                    //     "status" => 0,
-                    //     "project" => (int)$request->id_project
-                    // ]);
-                }
-            }
+            // if(Auth::user()->role != "content_creator"){
+            //     $check = Task::where('id_manajement_konten', $id)->first();
+            //     if($check){
+            //         // DB::table("task")->where('id_manajement_konten', $id)->update([
+            //         //     "nama_task" => $request->judul,
+            //         //     "pic" => $request->pic,
+            //         //     "priority" => $request->prioritas,
+            //         //     "menit" => $request->menit,
+            //         //     "tanggal_mulai" => $request->tanggal_mulai,
+            //         //     "tanggal_deadline" => $request->tanggal_deadline,
+            //         //     "jam_mulai" => $request->jam_mulai,
+            //         //     "note" => $request->note
+            //         // ]);
+            //     }else{
+            //         $produk = ProdukClient::find($data->produk_client_id);
+            //         $divisi = 0;
+            //         switch ($produk->kategori_jasa_id) {
+            //             case 1:
+            //                 $divisi = 1;
+            //                 break;
+            //             case 2:
+            //             case 3:
+            //                 $divisi = 2;
+            //                 break;
+            //             default:
+            //         }
+            //         // DB::table("task")->insert([
+            //         //     "nama_task" => $request->judul,
+            //         //     "divisi" => $divisi,
+            //         //     "pic" => $request->pic,
+            //         //     "priority" => $request->prioritas,
+            //         //     "menit" => $request->menit,
+            //         //     "id_manajement_konten" => $id,
+            //         //     "tanggal_mulai" => $request->tanggal_mulai,
+            //         //     "tanggal_deadline" => $request->tanggal_deadline,
+            //         //     "note" => $request->note,
+            //         //     "status" => 0,
+            //         //     "project" => (int)$request->id_project
+            //         // ]);
+            //     }
+            // }
 
             return redirect()->back()->with('success', 'Data berhasil diubah');
         } catch (\Exception $e) {

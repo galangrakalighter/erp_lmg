@@ -63,7 +63,7 @@
                             {{-- <th>Tanggal Posting (Y-M-D)</th>
                             <th>Tanggal Mulai (Y-M-D)</th>
                             <th>Tanggal Deadline (Y-M-D)</th> --}}
-                            <th>Durasi Mengerjakan</th>
+                            {{-- <th>Durasi Mengerjakan</th> --}}
                             <th>Link</th>
                             <th>Status</th>
                             <th>Action</th>
@@ -99,7 +99,7 @@
                                 {{-- <th>{{ $item->tanggal_posting }}</th>
                                 <th>{{ $item->tanggal_mulai }}</th>
                                 <th>{{ $item->tanggal_deadline }}</th> --}}
-                                <th>{{ $item->menit ? $item->menit . " Menit" : ""}}</th>
+                                {{-- <th>{{ $item->menit ? $item->menit . " Menit" : ""}}</th> --}}
                                 <th><a href="{{ $item->link }}">{{ $item->link }}</a></th>
                                 <th>{{ $item->nama_status }}</th>
                                 <th>

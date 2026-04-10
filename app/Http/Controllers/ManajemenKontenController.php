@@ -233,41 +233,41 @@ class ManajemenKontenController extends Controller
         $dailyLoad = [];
 
         // --- LOOP 1: Hitung Beban Job LAIN ---
-        foreach ($otherJobs as $job) {
-            $period = CarbonPeriod::create($job->tanggal_mulai, $job->tanggal_deadline);
-            foreach ($period as $date) {
-                $tgl = $date->format('Y-m-d');
+        // foreach ($otherJobs as $job) {
+        //     $period = CarbonPeriod::create($job->tanggal_mulai, $job->tanggal_deadline);
+        //     foreach ($period as $date) {
+        //         $tgl = $date->format('Y-m-d');
                 
-                if (!isset($dailyLoad[$tgl])) $dailyLoad[$tgl] = 0;
+        //         if (!isset($dailyLoad[$tgl])) $dailyLoad[$tgl] = 0;
                 
-                $dailyLoad[$tgl] += $job->menit;
-            }
-        }
+        //         $dailyLoad[$tgl] += $job->menit;
+        //     }
+        // }
 
         // --- LOOP 2: Masukkan Data EDITAN BARU (Simulasi) ---
         // Sekarang kita masukkan data baru dari form edit ke dalam wadah
-        $newPeriod = CarbonPeriod::create($request->tanggal_mulai, $request->tanggal_deadline);
-        $newMenit  = (int) $request->menit;
-        // dd($dailyLoad);
-        $overloadDates = [];
-        $arr_total = [];
-        foreach ($newPeriod as $date) {
-            $tgl = $date->format('Y-m-d');
-            // Ambil beban existing (dari job lain)
-            $currentLoad = $dailyLoad[$tgl] ?? 0;
-            // Hitung Total Prediksi
-            $totalPrediksi = $currentLoad + $newMenit;
-            array_push($arr_total, $totalPrediksi);
-            // Cek Validasi
-            if ($totalPrediksi > $BATAS_HARIAN) {
-                $overloadDates[] = "$tgl (Total: $totalPrediksi menit)";
-            }
-        }
+        // $newPeriod = CarbonPeriod::create($request->tanggal_mulai, $request->tanggal_deadline);
+        // $newMenit  = (int) $request->menit;
+        // // dd($dailyLoad);
+        // $overloadDates = [];
+        // $arr_total = [];
+        // foreach ($newPeriod as $date) {
+        //     $tgl = $date->format('Y-m-d');
+        //     // Ambil beban existing (dari job lain)
+        //     $currentLoad = $dailyLoad[$tgl] ?? 0;
+        //     // Hitung Total Prediksi
+        //     $totalPrediksi = $currentLoad + $newMenit;
+        //     array_push($arr_total, $totalPrediksi);
+        //     // Cek Validasi
+        //     if ($totalPrediksi > $BATAS_HARIAN) {
+        //         $overloadDates[] = "$tgl (Total: $totalPrediksi menit)";
+        //     }
+        // }
 
-        if (!empty($overloadDates)) {
-            $list_tanggal_string = implode(', ', $overloadDates);
-            return redirect()->back()->with('error', "Gagal! Durasi melebihi 7 Jam (420 Menit) pada tanggal: " . $list_tanggal_string);
-        }
+        // if (!empty($overloadDates)) {
+        //     $list_tanggal_string = implode(', ', $overloadDates);
+        //     return redirect()->back()->with('error', "Gagal! Durasi melebihi 7 Jam (420 Menit) pada tanggal: " . $list_tanggal_string);
+        // }
     
         $arr = ['type', 'strategy', 'pilar', 'hooks', 'status', 'jenis_body', 'jenis_cta'];
         $value = [];

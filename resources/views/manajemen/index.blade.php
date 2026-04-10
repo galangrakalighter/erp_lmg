@@ -342,7 +342,7 @@
                         </div>
 
                         <div class="row">
-                            <div class="col-md-12 mb-3">
+                            {{-- <div class="col-md-12 mb-3">
                                 <div class="form-group">
                                     <label class="text-dark font-weight-bold small">Estimasi Durasi (Menit) <span class="text-danger">*</span></label>
                                     <div class="input-group shadow-sm">
@@ -378,7 +378,7 @@
                                         <input type="time" name="jam_selesai" id="jam_selesai" class="form-control border-left-0">
                                     </div>
                                 </div>
-                            </div>
+                            </div> --}}
                             <div class="col-md-4 mb-3">
                                 <div class="form-group">
                                     <label class="text-dark font-weight-bold small">Tanggal Mulai</label>
@@ -413,7 +413,7 @@
                                 </div>
                             </div>
                             
-                            <div id="task-list-container" class="col-md-12 mb-4" style="display: none;">
+                            {{-- <div id="task-list-container" class="col-md-12 mb-4" style="display: none;">
                                 <div class="card border-info shadow-sm">
                                     <div class="card-header bg-info text-white py-2 px-3 d-flex justify-content-between align-items-center">
                                         <small class="font-weight-bold"><i class="fas fa-list-ul mr-1"></i> Jadwal Task PIC</small>
@@ -435,7 +435,7 @@
                                         </table>
                                     </div>
                                 </div>
-                            </div>
+                            </div> --}}
 
                             <div class="col-md-12 mb-3">
                                 <div class="form-group">
@@ -654,7 +654,7 @@
                         </div>
                         
                         <div class="row">
-                            <div class="col-md-12 mb-3">
+                            {{-- <div class="col-md-12 mb-3">
                                 <div class="form-group mb-0">
                                     <label class="text-muted font-weight-bold small uppercase">Estimasi Mengerjakan (Menit)</label>
                                     <div class="input-group shadow-sm">
@@ -667,7 +667,7 @@
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                            </div> --}}
 
                             <div class="col-md-4">
                                 <div class="form-group">
@@ -690,7 +690,7 @@
                                 </div>
                             </div>
 
-                            <div class="col-md-6 mb-3">
+                            {{-- <div class="col-md-6 mb-3">
                                 <label class="text-muted font-weight-bold small uppercase">Jam Mulai</label>
                                 <div class="input-group shadow-sm">
                                     <div class="input-group-prepend">
@@ -709,10 +709,10 @@
                                         class="form-control border-left-0" 
                                         onchange="hitungMenitEdit({{ $item->id }})" required>
                                 </div>
-                            </div>
+                            </div> --}}
 
                             <div class="col-md-12">
-                                <div id="task-list-container-edit-{{ $item->id }}" class="mb-4" style="display: none;">
+                                {{-- <div id="task-list-container-edit-{{ $item->id }}" class="mb-4" style="display: none;">
                                     <div class="card border-0 shadow-sm overflow-hidden" style="border-radius: 10px;">
                                         <div class="card-header bg-info text-white py-2 px-3 d-flex justify-content-between align-items-center">
                                             <small class="font-weight-bold"><i class="fas fa-calendar-alt mr-1"></i> Jadwal PIC di Tanggal Ini</small>
@@ -729,7 +729,7 @@
                                             </table>
                                         </div>
                                     </div>
-                                </div>
+                                </div> --}}
                             </div>
 
                             <div class="col-md-12 mt-2">

@@ -196,22 +196,22 @@ class ManajemenKontenController extends Controller
                 default:
             }
 
-            foreach ($newPeriod as $date){
-                DB::table("task")->insert([
-                    "nama_task"             => $request->judul,
-                    "divisi"                => (int)$divisi,
-                    "pic"                   => (int)$request->pic,
-                    "priority"              => (int)$request->prioritas,
-                    "menit"                 => (int)$request->menit,
-                    "id_manajement_konten"  => $data_jasa,
-                    "tanggal_mulai"         => $date->format('Y-m-d'),
-                    "tanggal_deadline"      => $date->format('Y-m-d'),
-                    "jam_mulai"             => $request->jam_mulai,
-                    "note"                  => $request->note,
-                    "status"                => 0,
-                    "project"               => (int)$id
-                ]);
-            }
+            // foreach ($newPeriod as $date){
+            //     DB::table("task")->insert([
+            //         "nama_task"             => $request->judul,
+            //         "divisi"                => (int)$divisi,
+            //         "pic"                   => (int)$request->pic,
+            //         "priority"              => (int)$request->prioritas,
+            //         "menit"                 => (int)$request->menit,
+            //         "id_manajement_konten"  => $data_jasa,
+            //         "tanggal_mulai"         => $date->format('Y-m-d'),
+            //         "tanggal_deadline"      => $date->format('Y-m-d'),
+            //         "jam_mulai"             => $request->jam_mulai,
+            //         "note"                  => $request->note,
+            //         "status"                => 0,
+            //         "project"               => (int)$id
+            //     ]);
+            // }
 
             return redirect()->back()->with('success', 'Data berhasil disimpan');
         } catch (\Exception $e) {
@@ -332,16 +332,16 @@ class ManajemenKontenController extends Controller
             if(Auth::user()->role != "content_creator"){
                 $check = Task::where('id_manajement_konten', $id)->first();
                 if($check){
-                    DB::table("task")->where('id_manajement_konten', $id)->update([
-                        "nama_task" => $request->judul,
-                        "pic" => $request->pic,
-                        "priority" => $request->prioritas,
-                        "menit" => $request->menit,
-                        "tanggal_mulai" => $request->tanggal_mulai,
-                        "tanggal_deadline" => $request->tanggal_deadline,
-                        "jam_mulai" => $request->jam_mulai,
-                        "note" => $request->note
-                    ]);
+                    // DB::table("task")->where('id_manajement_konten', $id)->update([
+                    //     "nama_task" => $request->judul,
+                    //     "pic" => $request->pic,
+                    //     "priority" => $request->prioritas,
+                    //     "menit" => $request->menit,
+                    //     "tanggal_mulai" => $request->tanggal_mulai,
+                    //     "tanggal_deadline" => $request->tanggal_deadline,
+                    //     "jam_mulai" => $request->jam_mulai,
+                    //     "note" => $request->note
+                    // ]);
                 }else{
                     $produk = ProdukClient::find($data->produk_client_id);
                     $divisi = 0;
@@ -355,20 +355,19 @@ class ManajemenKontenController extends Controller
                             break;
                         default:
                     }
-                    DB::table("task")->insert([
-                        "nama_task" => $request->judul,
-                        "divisi" => $divisi,
-                        "pic" => $request->pic,
-                        "priority" => $request->prioritas,
-                        "menit" => $request->menit,
-                        "id_manajement_konten" => $id,
-                        "tanggal_mulai" => $request->tanggal_mulai,
-                        "tanggal_deadline" => $request->tanggal_deadline,
-                        "note" => $request->note,
-                        "status" => 0,
-                        "project" => (int)$request->id_project
-                    ]);
-
+                    // DB::table("task")->insert([
+                    //     "nama_task" => $request->judul,
+                    //     "divisi" => $divisi,
+                    //     "pic" => $request->pic,
+                    //     "priority" => $request->prioritas,
+                    //     "menit" => $request->menit,
+                    //     "id_manajement_konten" => $id,
+                    //     "tanggal_mulai" => $request->tanggal_mulai,
+                    //     "tanggal_deadline" => $request->tanggal_deadline,
+                    //     "note" => $request->note,
+                    //     "status" => 0,
+                    //     "project" => (int)$request->id_project
+                    // ]);
                 }
             }
 

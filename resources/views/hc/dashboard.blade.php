@@ -526,7 +526,6 @@
                         <div class="text-dark small fw-bold">${t.tanggal_deadline}</div>
                     </td>
                     <td class="text-center px-4">
-                        <div class="text-dark small fw-bold">Approve</div>
                     </td>
                 </tr>
             `).join('') : '<tr><td colspan="3" class="p-4 text-center italic text-muted">No data available.</td></tr>';
@@ -591,6 +590,7 @@
         const startIndex = (page - 1) * itemsPerPage;
         const endIndex = startIndex + itemsPerPage;
         const paginatedItems = filteredTasks.slice(startIndex, endIndex);
+        const currentUserId = "{{ Auth::id() }}";
 
         // Isi HTML ke dalam tbody
         tableBody.innerHTML = paginatedItems.map(t => `
@@ -617,12 +617,15 @@
                 <td class="text-center">
                     <div class="text-dark small fw-bold">${t.tanggal_deadline   }</div>
                 </td>
-                ${(t.status == 3 || t.status == 9) 
+                ${(t.status == 3 && currentUserId != t.pic || t.status == 9 && currentUserId != t.pic) 
                 ? `<td class="text-center">
                         <button type="button" 
-                                class="btn btn-light btn-sm text-dark fw-bold border shadow-sm" 
-                                onclick="changeStatus(${t.id}, 'approve')">
-                            Approve
+                            class="btn btn-sm fw-bold shadow-sm px-3" 
+                            style="background-color: #1cc88a; color: white; border: none; transition: all 0.3s ease; border-radius: 6px; font-size: 11px;"
+                            onmouseover="this.style.backgroundColor='#17a673'; this.style.transform='translateY(-1px)'"
+                            onmouseout="this.style.backgroundColor='#1cc88a'; this.style.transform='translateY(0)'"
+                            onclick="changeStatus(${t.id}, 'approve')">
+                            <i class="fas fa-check-circle mr-1"></i> Approve
                         </button>
                     </td>` 
                 : `<td class="text-center">-</td>` 

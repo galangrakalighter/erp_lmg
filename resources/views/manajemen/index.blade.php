@@ -96,7 +96,7 @@
                                 @endif
                                 <th>{{ $item->komposisi }}</th>
                                 <th>{{ $item->note }}</th>
-                                <th>{{ $item->tanggal_posting }}</th>
+                                {{-- <th>{{ $item->tanggal_posting }}</th> --}}
                                 {{-- <th>{{ $item->tanggal_mulai }}</th>
                                 <th>{{ $item->tanggal_deadline }}</th> --}}
                                 {{-- <th>{{ $item->menit ? $item->menit . " Menit" : ""}}</th> --}}

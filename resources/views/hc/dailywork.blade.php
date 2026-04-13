@@ -492,6 +492,23 @@
         };
 
         function renderTaskCard(task, isMyTask) {
+            // --- TAMBAHKAN LOGIKA FILTER TANGGAL DI SINI ---
+            const isWaitingApproval = (task.status == 3);
+            
+            if (isWaitingApproval) {
+                const today = new Date();
+                const taskDate = new Date(task.tanggal_mulai);
+                
+                // Membandingkan Tahun, Bulan, dan Tanggal
+                const isToday = today.getFullYear() === taskDate.getFullYear() &&
+                                today.getMonth() === taskDate.getMonth() &&
+                                today.getDate() === taskDate.getDate();
+
+                // Jika status 3 tapi bukan hari ini, jangan tampilkan (return string kosong)
+                if (!isToday) {
+                    return; 
+                }
+            }
             const startHour = 8;
             let teks = "";
             if(task.id_manajement_konten != null){
@@ -534,7 +551,7 @@
             };
 
             const isRunning = (task.status == 1);
-            const isWaitingApproval = (task.status == 3);
+            // const isWaitingApproval sudah didefinisikan di atas
             const isDone = (task.status == 4 || task.status == 5);
             const isOverdue = (task.status == 7);
             const isEndsTime = (task.status == 8);
@@ -552,7 +569,7 @@
                 statusLabel = `<span class="badge badge-danger ml-1" style="font-size: 8px;"><i class="fas fa-stopwatch mr-1"></i>WAKTU HABIS</span>`;
             }
 
-            // FIX: Logika penentuan class (mengganti titik koma menjadi ternary yang benar)
+            // FIX: Logika penentuan class
             let statusClass = isRunning ? "bg-primary text-white" : 
                             isWaitingApproval ? "bg-info text-white" : 
                             isOverdue ? "bg-danger text-white" : 

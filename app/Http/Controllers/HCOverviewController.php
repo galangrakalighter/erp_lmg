@@ -398,6 +398,7 @@ class HCOverviewController extends Controller
             'on_progress'      => (clone $baseQuery)->where('status', 1)->count(),
             'revisi'           => (clone $baseQuery)->where('status', 2)->count(),
             'waiting_approval' => (clone $baseQuery)->where('status', 3)->count(),
+            'waiting_approval_overdue' => (clone $baseQuery)->where('status', 9)->count(),
             'approved'         => (clone $baseQuery)->where('status', 4)->count(),
             'overdue'          => (clone $baseQuery)->where('status', 7)->whereNull('tanggal_approve')->count(),
             'overdue_done'     => (clone $baseQuery)->where('status', 7)->whereNotNull('tanggal_approve')->count(),

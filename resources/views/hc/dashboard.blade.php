@@ -356,6 +356,7 @@
                             <th class="text-center">Jam Selesai</th>
                             <th class="text-center">Start Date</th>
                             <th class="text-center">Due Date</th>
+                            <th class="text-center">Action</th>
                         </tr>
                     </thead>
                     <tbody id="task-table">
@@ -366,6 +367,8 @@
         <div id="pagination-container"></div>
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
 <script>
     let barChart = null;
@@ -522,6 +525,9 @@
                     <td class="text-center px-4">
                         <div class="text-dark small fw-bold">${t.tanggal_deadline}</div>
                     </td>
+                    <td class="text-center px-4">
+                        <div class="text-dark small fw-bold">Approve</div>
+                    </td>
                 </tr>
             `).join('') : '<tr><td colspan="3" class="p-4 text-center italic text-muted">No data available.</td></tr>';
             updateTaskTable(data.recent_tasks, 1);
@@ -611,6 +617,16 @@
                 <td class="text-center">
                     <div class="text-dark small fw-bold">${t.tanggal_deadline   }</div>
                 </td>
+                ${(t.status == 3 || t.status == 9) 
+                ? `<td class="text-center">
+                        <button type="button" 
+                                class="btn btn-light btn-sm text-dark fw-bold border shadow-sm" 
+                                onclick="changeStatus(${t.id}, 'approve')">
+                            Approve
+                        </button>
+                    </td>` 
+                : `<td class="text-center">-</td>` 
+                }
             </tr>
         `).join('');
 
@@ -642,6 +658,10 @@
         itemsPerPage = parseInt(document.getElementById('per-page-select').value);
         currentPage = 1; // Reset ke halaman pertama
         updateTaskTable(null, 1);
+    }
+
+    function changeStatus(id, action){
+        axios.post("{{ route('hc.updateStatus') }}", { id: id, action: action, jam_mulai: null }).then(() => location.reload());
     }
 
     function renderPagination(totalItems) {
@@ -857,16 +877,18 @@
         donutChart = new Chart(ctxDonut, {
             type: 'doughnut',
             data: {
-                labels: ['Not Started', 'Progress', 'Overdue', 'Approved', 'Overdue (Done)'],
+                labels: ['Not Started', 'Progress', 'Overdue', 'Approved', 'Overdue (Done)', 'Waiting Approval', 'Waiting Approval (Overdue)'],
                 datasets: [{
                     data: [
                         data.status_count.pending,
                         data.status_count.on_progress,
                         data.status_count.overdue,
                         data.status_count.approved, // Sesuaikan urutan dengan label
-                        data.status_count.overdue_done
+                        data.status_count.overdue_done,
+                        data.status_count.waiting_approval,
+                        data.status_count.waiting_approval_overdue
                     ],
-                    backgroundColor: ['#f6c23e', '#4e73df', '#e74a3b', '#1cc88a', '#8b5cf6'],
+                    backgroundColor: ['#f6c23e', '#4e73df', '#e74a3b', '#1cc88a', '#8b5cf6', '#C5A059', '#7a2119'],
                     borderWidth: 4,
                     borderColor: '#ffffff',
                     hoverOffset: 10
@@ -887,6 +909,8 @@
                             'Not Started': 0,
                             'Progress': 1,
                             'Overdue': 7,
+                            'Waiting Approval': 3,
+                            'Waiting Approval (Overdue)': 9,
                             'Approved': 4,
                             'Overdue (Done)': '7_done'
                         };

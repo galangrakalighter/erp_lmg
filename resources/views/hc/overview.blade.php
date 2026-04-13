@@ -175,7 +175,7 @@
                                         @elseif($d->status == 7 && $d->tanggal_approve != null)
                                             <span class="badge badge-light border text-muted">Done</span>
                                         @elseif($d->status == 9 && $d->can_approve == true)
-                                            <button class="btn btn-sm btn-circle btn-primary" onclick="changeStatus({{ $d->id }}, 'approve')"><i class="fas fa-check"></i></button>
+                                            {{-- <button class="btn btn-sm btn-circle btn-primary" onclick="changeStatus({{ $d->id }}, 'approve')"><i class="fas fa-check"></i></button> --}}
                                         @else
                                             {{-- Task Belum Selesai: Boleh Edit & Hapus --}}
                                             <button class="btn btn-sm btn-circle btn-warning" data-toggle="modal" onclick="getDataEdit('{{ $d->id }}')" data-target="#editModal_{{ $d->id }}"><i class="fas fa-edit"></i></button>
@@ -186,7 +186,7 @@
                                         @if($d->status == 5)
                                             <span class="badge badge-light border text-muted">Task yang Di split</span>
                                         @elseif($d->status == 9 && $d->can_approve == true)
-                                            <button class="btn btn-sm btn-circle btn-primary" onclick="changeStatus({{ $d->id }}, 'approve')"><i class="fas fa-check"></i></button>
+                                            {{-- <button class="btn btn-sm btn-circle btn-primary" onclick="changeStatus({{ $d->id }}, 'approve')"><i class="fas fa-check"></i></button> --}}
                                         @elseif($d->status == 7 && $d->tanggal_approve != null)
                                             <span class="badge badge-light border text-muted">Done</span>
                                         @else

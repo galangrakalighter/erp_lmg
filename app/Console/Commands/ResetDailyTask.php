@@ -36,7 +36,7 @@ class ResetDailyTask extends Command
         foreach ($tasks as $task) {
             // Kita gunakan isi dari tanggal_mulai (format H:i:s) untuk menghitung deadline hari ini
             // Jika tanggal_mulai null, kita lewati untuk menghindari error parse
-            $deadlineTime = Carbon::parse($task->tanggal_deadline);
+            $deadlineTime = Carbon::parse($task->tanggal_deadline)->endOfDay();
 
             // LOGIKA RESET:
             // Jika waktu sekarang sudah melewati deadline tugas tersebut hari ini

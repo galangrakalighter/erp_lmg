@@ -164,6 +164,12 @@ class HCOverviewController extends Controller
     public function store(Request $request, $id_client)
     {   
         $data = Task::where('pic', (int)$request->pic)->get();
+
+        $newStart = Carbon::parse($request->tanggal_mulai . ' ' . $request->jam_mulai);
+
+        $newEnd = (clone $newStart)->addMinutes((int)$request->menit);
+
+        $conflict = [];
         
         $dailyLoad = [];
         foreach ($data as $job) {
@@ -179,8 +185,21 @@ class HCOverviewController extends Controller
                     
                     $dailyLoad[$tgl] += $job->menit;
                 }
+                $existingStart = Carbon::parse($job->tanggal_mulai . ' ' . $job->jam_mulai);
+    
+                $existingEnd = (clone $existingStart)->addMinutes((int)$job->menit);
+    
+                if ($newStart->lt($existingEnd) && $newEnd->gt($existingStart)) {
+                    $conflict[] = $job->nama_task . "|" . $job->tanggal_mulai . " jam " . $job->jam_mulai;
+                }
             }
         }
+
+        if(!empty($conflict)){
+            $list_jam = implode(', ', $conflict);
+            return redirect()->back()->with('error', "Gagal! Waktu Bentrok " . $list_jam);
+        }
+
         $newPeriod = CarbonPeriod::create($request->tanggal_mulai, $request->tanggal_deadline);
         $newMenit  = (int) $request->menit;
         $overloadDates = [];
@@ -234,6 +253,29 @@ class HCOverviewController extends Controller
 
         if (!$task) {
             return back()->with('error', 'Task tidak ditemukan!');
+        }
+
+        $newStart = Carbon::parse($request->tanggal_mulai . ' ' . $request->jam_mulai);
+
+        $newEnd = (clone $newStart)->addMinutes((int)$request->menit);
+
+        $allTask = Task::where('pic', (int)$request->pic)->get();
+
+        $conflict = [];
+
+        foreach($allTask as $job){
+            $existingStart = Carbon::parse($job->tanggal_mulai . ' ' . $job->jam_mulai);
+    
+            $existingEnd = (clone $existingStart)->addMinutes((int)$job->menit);
+
+            if ($newStart->lt($existingEnd) && $newEnd->gt($existingStart)) {
+                $conflict[] = $job->nama_task . " | " . $job->tanggal_mulai . " jam " . $job->jam_mulai;
+            }
+        }
+
+        if(!empty($conflict)){
+            $list_jam = implode(', ', $conflict);
+            return redirect()->back()->with('error', "Gagal! Waktu Bentrok " . $list_jam);
         }
 
         // Hitung akumulasi menit PIC (Kecuali task yang sedang diedit ini agar tidak double count)

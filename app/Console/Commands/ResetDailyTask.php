@@ -24,7 +24,7 @@ class ResetDailyTask extends Command
     public function handle()
     {
         // 1. Ambil waktu sekarang
-        $now = Carbon::now();
+        $now = Carbon::now('Asia/Jakarta');
 
         // 2. Ambil task yang sedang terjadwal (jam_mulai tidak null)
         // dan statusnya belum Done atau Waiting Approval
@@ -36,16 +36,14 @@ class ResetDailyTask extends Command
         foreach ($tasks as $task) {
             // Kita gunakan isi dari tanggal_mulai (format H:i:s) untuk menghitung deadline hari ini
             // Jika tanggal_mulai null, kita lewati untuk menghindari error parse
-            $deadlineTime = Carbon::parse($task->tanggal_deadline)->endOfDay();
+            $deadlineTime = Carbon::parse($task->tanggal_deadline, 'Asia/Jakarta')->endOfDay();
 
             // LOGIKA RESET:
             // Jika waktu sekarang sudah melewati deadline tugas tersebut hari ini
-            if ($now->greaterThan($deadlineTime)) {
-                    // JIKA STATUS LAIN (0,1,2,5): Ubah ke Overdue (7)
-                    // Jam mulai tetap ada agar tetap tampil di grid dengan warna merah
-                    $task->update([
-                        'status' => 7
-                    ]);
+            if ($now->greaterThan($deadlineTime)) {    
+                $task->update([
+                    'status' => 7
+                ]);
                 $resetCount++;
             }
         }

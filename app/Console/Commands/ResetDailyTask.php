@@ -44,8 +44,7 @@ class ResetDailyTask extends Command
                     // JIKA STATUS LAIN (0,1,2,5): Ubah ke Overdue (7)
                     // Jam mulai tetap ada agar tetap tampil di grid dengan warna merah
                     $task->update([
-                        'status' => 7,
-                        'jam_mulai' => null
+                        'status' => 7
                     ]);
                 $resetCount++;
             }

@@ -238,6 +238,7 @@ class HCOverviewController extends Controller
                 'jam_mulai'        => $request->jam_mulai,
                 'note'             => $request->note,
                 'status'           => 0, // Default ke Pool
+                'jira'             => $request->jira_input
             ]);
         }
 
@@ -343,7 +344,8 @@ class HCOverviewController extends Controller
             'tanggal_deadline' => $request->tanggal_deadline,
             'jam_mulai'        => $request->jam_mulai,
             'note' => $request->note,
-            'status' => 0
+            'status' => 0,
+            'jira' => $request->jira_input
         ]);
         
 

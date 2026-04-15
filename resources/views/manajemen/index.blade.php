@@ -811,27 +811,27 @@
 </div>
 
 <script>
-    function hitungJamSelesaiManual(jamMulai, durasiMenit) {
-        if (!jamMulai) return "00:00";
-        const [jam, menit] = jamMulai.split(':').map(Number);
-        const totalMenit = (jam * 60) + menit + parseInt(durasiMenit || 0);
-        console.log(totalMenit);
+    // function hitungJamSelesaiManual(jamMulai, durasiMenit) {
+    //     if (!jamMulai) return "00:00";
+    //     const [jam, menit] = jamMulai.split(':').map(Number);
+    //     const totalMenit = (jam * 60) + menit + parseInt(durasiMenit || 0);
+    //     console.log(totalMenit);
         
-        const h = Math.floor(totalMenit / 60);
-        const m = totalMenit % 60;
-        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-    }
+    //     const h = Math.floor(totalMenit / 60);
+    //     const m = totalMenit % 60;
+    //     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    // }
 
-    function formatDurasi(menit) {
-        if (!menit || menit <= 0) return "0 Menit";
-        let jam = Math.floor(menit / 60);
-        let sisaMenit = menit % 60;
-        if (jam > 0) {
-            return sisaMenit > 0 ? `${jam} Jam ${sisaMenit} Menit` : `${jam} Jam`;
-        } else {
-            return `${menit} Menit`;
-        }
-    }
+    // function formatDurasi(menit) {
+    //     if (!menit || menit <= 0) return "0 Menit";
+    //     let jam = Math.floor(menit / 60);
+    //     let sisaMenit = menit % 60;
+    //     if (jam > 0) {
+    //         return sisaMenit > 0 ? `${jam} Jam ${sisaMenit} Menit` : `${jam} Jam`;
+    //     } else {
+    //         return `${menit} Menit`;
+    //     }
+    // }
 
     function getDataEdit(id){
         const inputMulai = document.getElementById('jam_mulai_edit_' + id);

@@ -181,12 +181,19 @@ Route::middleware('auth')->group(function() {
     // Dashboard HC
     Route::get('dashboard_hc', [App\Http\Controllers\HCOverviewController::class, 'dashboard'])->name('overview.dashboard');
 
+    Route::post('hc_overview/daily_task', [App\Http\Controllers\HCDailyController::class, 'storeDaily'])->name('hc_daily.storeDaily');
     Route::get('hc_overview/{id_client}', [App\Http\Controllers\HCOverviewController::class, 'index'])->name('hc_overview.index');
     Route::post('hc_overview/{id_client}', [App\Http\Controllers\HCOverviewController::class, 'store'])->name('hc_overview.store');
     Route::put('hc_overview/{id_client}/{id}', [App\Http\Controllers\HCOverviewController::class, 'update'])->name('hc_overview.update');
     Route::delete('hc_overview/{id_client}/{id}', [App\Http\Controllers\HCOverviewController::class, 'destroy'])->name('hc_overview.destroy');
     Route::get('progress_client', [App\Http\Controllers\HCOverviewController::class, 'list_client'])->name('hc_overview.list');
     Route::get('hc_dailywork', [App\Http\Controllers\HCDailyController::class, 'index'])->name('hc_daily.index');
+    // Route::get('/payment', function(){
+    //     $title = "Payment - ";
+    //     return view('payment.index', compact('title'));
+    // })->name('payment.index');
+
+    // Route::post('/payment/get-token', [App\Http\Controllers\HCDailyController::class, 'getPaymentToken'])->name('payment.getToken');
 });
 
 Route::middleware('guest')->group(function() {

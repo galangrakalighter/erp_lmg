@@ -23,6 +23,7 @@ class Task extends Model
         'jam_mulai',
         'tanggal_approve',
         'tanggal_revisi',
-        'tanggal_split'
+        'tanggal_split',
+        'jira'
     ];
 }

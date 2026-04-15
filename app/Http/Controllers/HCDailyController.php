@@ -4,6 +4,12 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Task;
+use App\Models\User;
+use App\Models\ProdukClient;
+use Illuminate\Support\Facades\DB;
+// use Midtrans\Config;
+// use Midtrans\Snap;
+use Carbon\CarbonPeriod;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 class HCDailyController extends Controller
@@ -22,6 +28,8 @@ class HCDailyController extends Controller
             'digital_marketing_manager' => ['digital_marketing'],
             'head_of_division'          => ['digital_marketing_manager'],
         ];
+
+        $prioritas = [1 => 'Rendah', 2 => 'Sedang', 3 => 'Tinggi'];
 
         $atasan = '';
         switch($user->role){
@@ -173,8 +181,27 @@ class HCDailyController extends Controller
         $formatTotalPool = ($jam > 0 ? $jam . 'j ' : '') . $menitSisa . 'm';
 
         $priority_colors = [1 => 'info', 2 => 'warning', 3 => 'danger'];
+            
+        $divisi_list = [1 => 'Digital Marketing', 2 => 'Business Dev'];
 
-        return view('hc.dailywork', compact('title', 'unscheduled_tasks', 'scheduled_tasks', 'priority_colors', 'startHour','totalHours','formatTotalPool', 'subordinateTasks'));
+        $result = [];
+        if($user->role == "super_admin"){
+            $result = $divisi_list;
+        }
+        foreach($divisi_list as $divId => $nama) {
+            if(in_array($divId, (array)$user->divisi)) {
+                $result[$divId] = $nama;
+            }
+        }
+
+        if(Auth::user()->role == "super_admin"){
+            $produk = DB::table('produk_client')->get();
+        }else{
+            $handleClient = Auth::user()->client;
+            $produk = ProdukClient::select('id', 'nama')->whereIn('id', $handleClient)->get();
+        }
+
+        return view('hc.dailywork', compact('title', 'unscheduled_tasks', 'scheduled_tasks', 'priority_colors', 'startHour','totalHours','formatTotalPool', 'subordinateTasks', 'result', 'prioritas', 'produk'));
     }
 
     public function updateSchedule(Request $request)
@@ -368,4 +395,182 @@ class HCDailyController extends Controller
         }
         return response()->json(['success' => false], 404);
     }
+
+    public function getPic($id, $userId){
+        $user = User::where('id', $userId)->first();
+        $userQuery = User::whereJsonContains('client', (int)$id);
+        $arrRole = [];
+        if ($user->role == "super_admin") {
+            /**
+             * Super Admin: Tidak ada filter tambahan.
+             * Mengambil semua user (HOD, DMM, DM, CC) yang handle client ini.
+             */
+            $vic_list = $userQuery->get();
+
+        } else if ($user->role == "head_of_division") {
+            // Melihat diri sendiri + orang yang HOD-nya adalah dia
+            $vic_list = $userQuery->where(function($q) use ($user) {
+                $q->where('id', $user->id)->orWhere('hod', $user->id);
+            })->get();
+
+        } else if ($user->role == "digital_marketing_manager") {
+            // Melihat diri sendiri + orang yang DMM-nya adalah dia
+            $vic_list = $userQuery->where(function($q) use ($user) {
+                $q->where('id', $user->id)->orWhere('dmm', $user->id);
+            })->get();
+
+        } else if ($user->role == "digital_marketing") {
+            // Melihat diri sendiri + orang yang DM-nya adalah dia
+            $vic_list = $userQuery->where(function($q) use ($user) {
+                $q->where('id', $user->id)->orWhere('dm', $user->id);
+            })->get();
+
+        } else {
+            // Role lainnya (misal Content Creator) hanya melihat dirinya sendiri
+            $vic_list = $userQuery->where('id', $user->id)->get();
+        }
+
+        // 3. Mapping data untuk response JSON yang ringan dan aman
+        return response()->json($vic_list->map(function($u) {
+            return [
+                'id' => $u->id,
+                'email' => $u->email,
+                'role' => $u->role // Opsional: tambahkan role agar di JS bisa ditrack jika perlu
+            ];
+        }));
+        return $data;
+    }
+
+    public function storeDaily(Request $request){
+        $data = Task::where('pic', (int)$request->pic)->get();
+
+        $newStart = Carbon::parse($request->tanggal_mulai . ' ' . $request->jam_mulai);
+
+        $newEnd = (clone $newStart)->addMinutes((int)$request->menit);
+
+        $conflict = [];
+        
+        $dailyLoad = [];
+        foreach ($data as $job) {
+            if($job->tanggal_mulai != null){
+                $period = CarbonPeriod::create($job->tanggal_mulai, $job->tanggal_deadline);
+                
+                foreach ($period as $date) {
+                    $tgl = $date->format('Y-m-d');
+                    
+                    if (!isset($dailyLoad[$tgl])) {
+                        $dailyLoad[$tgl] = 0;
+                    }
+                    
+                    $dailyLoad[$tgl] += $job->menit;
+                }
+                $existingStart = Carbon::parse($job->tanggal_mulai . ' ' . $job->jam_mulai);
+    
+                $existingEnd = (clone $existingStart)->addMinutes((int)$job->menit);
+    
+                if ($newStart->lt($existingEnd) && $newEnd->gt($existingStart)) {
+                    $conflict[] = $job->nama_task . "|" . $job->tanggal_mulai . " jam " . $job->jam_mulai;
+                }
+            }
+        }
+
+        if(!empty($conflict)){
+            $list_jam = implode(', ', $conflict);
+            return redirect()->back()->with('error', "Gagal! Waktu Bentrok " . $list_jam);
+        }
+
+        $newPeriod = CarbonPeriod::create($request->tanggal_mulai, $request->tanggal_deadline);
+        $newMenit  = (int) $request->menit;
+        $overloadDates = [];
+        $batasWaktu = 420;
+        if((int)$request->pic == 39){
+            $batasWaktu = 480;
+        }
+
+        foreach ($newPeriod as $date) {
+            $tgl = $date->format('Y-m-d');
+
+            $currentLoad = $dailyLoad[$tgl] ?? 0;
+
+            $totalPrediksi = $currentLoad + $newMenit;
+
+            if ($totalPrediksi > $batasWaktu) {
+                $overloadDates[] = "$tgl (Total: $totalPrediksi menit)";
+            }
+        }
+        if(!empty($overloadDates)){
+            $list_tanggal_string = implode(', ', $overloadDates);
+            return redirect()->back()->with('error', "Gagal! Durasi melebihi 7 Jam (420 Menit) pada tanggal: " . $list_tanggal_string);
+        }
+
+        // 6. SIMPAN DATA
+        foreach ($newPeriod as $date) {
+            Task::create([
+                'project'          => (int)$request->client_id,
+                'nama_task'        => $request->nama_task,
+                'divisi'           => (int)$request->divisi,
+                'pic'              => (int)$request->pic,
+                'priority'         => (int)$request->priority,
+                'menit'            => (int)$request->menit,
+                'tanggal_mulai'    => $date->format('Y-m-d'),
+                'tanggal_deadline' => $date->format('Y-m-d'),
+                'jam_mulai'        => $request->jam_mulai,
+                'note'             => $request->note,
+                'status'           => 0,
+                'jira'             => $request->jira_input,
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Task berhasil ditambahkan ke project!');
+    }
+
+    // public function getPaymentToken(Request $request)
+    // {
+    //     // 1. Konfigurasi Midtrans (Ambil dari .env)
+    //     Config::$serverKey = env('MIDTRANS_SERVER_KEY');
+    //     Config::$isProduction = env('MIDTRANS_IS_PRODUCTION', false);
+    //     Config::$isSanitized = true;
+    //     Config::$is3ds = true;
+
+    //     // 2. Buat Unique Order ID (Sangat Penting)
+    //     // Gabungkan ID User atau Timestamp agar tidak pernah duplikat
+    //     $orderId = 'LMG-' . Auth::id() . '-' . time();
+
+    //     // 3. Siapkan Parameter Transaksi
+    //     $params = [
+    //         'transaction_details' => [
+    //             'order_id' => $orderId,
+    //             'gross_amount' => 1000, 
+    //         ],
+    //         'item_details' => [
+    //             [
+    //                 'id' => 'PROD-001',
+    //                 'price' => 1000,
+    //                 'quantity' => 1,
+    //                 'name' => 'Langganan CRM - 1 Bulan', // Ini yang akan muncul di rincian
+    //                 'brand' => 'Lighter Media Group',
+    //                 'category' => 'Software Service'
+    //             ]
+    //         ],
+    //         'customer_details' => [
+    //             'first_name' => Auth::user()->name,
+    //             'email' => Auth::user()->email,
+    //             'phone' => '08123456789', // Tambahkan HP jika perlu
+    //         ],
+    //     ];
+
+    //     try {
+    //         // 4. Minta Snap Token dari Midtrans
+    //         $snapToken = Snap::getSnapToken($params);
+
+    //         // 5. Kirim Token ke Frontend (Blade)
+    //         return response()->json([
+    //             'snap_token' => $snapToken,
+    //             'order_id' => $orderId
+    //         ]);
+
+    //     } catch (\Exception $e) {
+    //         return response()->json(['message' => $e->getMessage()], 500);
+    //     }
+    // }
 }

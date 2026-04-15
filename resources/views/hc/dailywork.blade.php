@@ -171,18 +171,21 @@
             <small class="text-muted"><i class="far fa-calendar-alt mr-1"></i> Shift: 09:00 - 17:00</small>
         </div>
         
-        @if(Auth::user()->role != "content_creator")
-            <div class="d-flex align-items-center flex-wrap" style="gap: 8px;">
+        {{-- Sisi Kanan: Grouping Filter & Tombol Tambah --}}
+        <div class="d-flex align-items-center" style="gap: 15px;">
+            
+            @if(Auth::user()->role != "content_creator")
+                {{-- Filter User (Hanya muncul di Desktop) --}}
                 <div class="d-none d-md-flex align-items-center flex-wrap" style="gap: 4px;">
                     
-                    {{-- 1. Tombol 'My Schedule' (Selalu Muncul) --}}
+                    {{-- 1. Tombol 'My Schedule' --}}
                     <button class="btn btn-primary active btn-xs rounded-pill px-3 btn-filter-grid" 
                             onclick="filterGrid('{{ Auth::id() }}', this)">
                         <i class="fas fa-circle mr-1" style="font-size: 7px; vertical-align: middle; color: #fff;"></i>
                         My Schedule
                     </button>
 
-                    {{-- 2. Tombol Bawahan (Hanya muncul jika user_id bukan milik saya) --}}
+                    {{-- 2. Tombol Bawahan --}}
                     @foreach($subordinateTasks->unique('user_id') as $sub)
                         @if($sub->user_id !== Auth::id())
                             <button class="btn btn-outline-secondary btn-xs rounded-pill px-3 btn-filter-grid" 
@@ -192,10 +195,17 @@
                             </button>
                         @endif
                     @endforeach
-
                 </div>
-            </div>
-        @endif
+
+                {{-- Garis pembatas kecil antara filter dan tombol tambah --}}
+                <div class="d-none d-md-block border-left" style="height: 24px; width: 1px;"></div>
+            @endif
+
+            {{-- Tombol Tambah Task (Selalu di paling kanan) --}}
+            <button type="button" class="btn btn-primary btn-sm shadow-sm rounded-pill px-3" data-toggle="modal" data-target="#tambahModal">
+                <i class="fas fa-plus fa-sm mr-1"></i> Tambah Task
+            </button>
+        </div>
     </div>
 
     {{-- TASK POOL SECTION --}}
@@ -399,6 +409,8 @@
                                                             @elseif(in_array($task->status, [0, 2, 7]))
                                                                 <button onclick="returnToPool({{ $task->id }})" class="btn btn-xs btn-light border mr-1" style="padding: 1px 3px;"><i class="fas fa-undo text-danger" style="font-size: 9px;"></i></button>
                                                                 <button onclick="changeStatus({{ $task->id }}, 'play')" class="btn btn-xs btn-success shadow-sm font-weight-bold" style="font-size: 9px; padding: 1px 8px;">START</button>
+                                                            @elseif($task->status == 8)
+                                                                <button onclick="changeStatus({{ $task->id }}, 'stop')" class="btn btn-xs btn-success font-weight-bold shadow-sm" style="font-size: 9px; padding: 1px 6px;">Kirim</button>
                                                             @endif
                                                         </div>
                                                     @endif
@@ -418,6 +430,185 @@
                         @endforeach
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="tambahModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-primary text-white" style="background: linear-gradient(45deg, #4e73df, #224abe);">
+                    <h5 class="modal-title font-weight-bold">
+                        <i class="fas fa-plus-circle mr-2"></i>Tambah Task Baru
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <form action="{{ route('hc_daily.storeDaily') }}" method="POST">
+                    @csrf
+                    <div class="modal-body p-4" style="background-color: #f8f9fc;">
+                        
+                        <h6 class="text-primary font-weight-bold uppercase small mb-3"><i class="fas fa-info-circle mr-1"></i> Informasi Utama</h6>
+                        <div class="form-group mb-4">
+                            <label class="font-weight-bold text-dark small text-uppercase">Nama Task</label>
+                            <div class="input-group shadow-sm">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-white border-right-0">
+                                        <i class="fas fa-tasks text-muted"></i>
+                                    </span>
+                                </div>
+                                <input type="text" 
+                                    name="nama_task" 
+                                    class="form-control border-left-0 pl-0" 
+                                    placeholder="Apa yang akan dikerjakan?" 
+                                    required>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-4">
+                            <label class="font-weight-bold text-dark small text-uppercase">Client</label>
+                            <div class="input-group shadow-sm">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-white border-right-0">
+                                        <i class="fas fa-user-tie text-muted"></i>
+                                    </span>
+                                </div>
+                                <select name="client_id" id="selectClient" class="form-control border-left-0 pl-0" onchange="handleClientChange(this)" required>
+                                    <option value="" selected disabled>-- Pilih Client --</option>
+                                    @foreach ($produk as $item)
+                                        <option value="{{ $item->id }}" data-nama="{{ $item->nama }}">
+                                            {{ $item->nama }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 form-group mb-4">
+                                <label class="font-weight-bold text-dark small">DIVISI</label>
+                                <select name="divisi" class="form-control custom-select shadow-sm border-0" required>
+                                    @foreach($result as $divId => $nama)
+                                        <option value="{{ $divId }}">{{ $nama }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-6 form-group mb-4">
+                                <label class="font-weight-bold text-dark small">PIC (PERSON IN CHARGE)</label>
+                                <select name="pic" id="pic_select" class="form-control custom-select shadow-sm border-0" required>
+                                    <option value="" selected disabled>-- Pilih PIC --</option>
+                                    {{-- @foreach($vic_list as $user)
+                                        <option value="{{ $user->id }}">{{ $user->email }}</option>
+                                    @endforeach --}}
+                                </select>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <h6 class="text-primary font-weight-bold uppercase small mb-3"><i class="fas fa-calendar-alt mr-1"></i> Penjadwalan & Waktu</h6>
+                        <div class="row">
+                            <div class="col-md-6 form-group mb-3">
+                                <label class="font-weight-bold text-dark small">TANGGAL MULAI</label>
+                                <input type="date" name="tanggal_mulai" id="tanggal_mulai" class="form-control shadow-sm border-0" required>
+                            </div>
+                            <div class="col-md-6 form-group mb-3">
+                                <label class="font-weight-bold text-dark small">TANGGAL DEADLINE</label>
+                                <input type="date" name="tanggal_deadline" class="form-control shadow-sm border-0" required>
+                            </div>
+                        </div>
+
+                        <div id="task-list-container" class="mb-4 animate__animated animate__fadeIn" style="display: none;">
+                            <div class="card border-0 shadow-sm" style="border-radius: 10px; overflow: hidden;">
+                                <div class="card-header bg-info text-white py-2 d-flex justify-content-between align-items-center">
+                                    <span class="small font-weight-bold"><i class="fas fa-user-clock mr-1"></i> Jadwal PIC di Tanggal Ini</span>
+                                    <span id="total-durasi-container" class="badge badge-light text-info shadow-sm">
+                                        Total: 0 Menit
+                                    </span>
+                                </div>
+                                <div class="table-responsive" style="max-height: 150px; overflow-y: auto;">
+                                    <table class="table table-sm table-hover mb-0 bg-white" style="font-size: 12px;">
+                                        <thead class="text-muted" style="background-color: #f1f3f5;">
+                                            <tr>
+                                                <th class="border-0 pl-3">Nama Task</th>
+                                                <th class="border-0">Project</th>
+                                                <th class="border-0">Waktu</th>
+                                                <th class="border-0">Durasi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="task-list-body"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 form-group mb-3">
+                                <label class="font-weight-bold text-dark small">JAM MULAI</label>
+                                <input type="time" name="jam_mulai" id="jam_mulai" class="form-control shadow-sm border-0" required>
+                            </div>
+                            <div class="col-md-4 form-group mb-3">
+                                <label class="font-weight-bold text-dark small">JAM SELESAI</label>
+                                <input type="time" name="jam_selesai" id="jam_selesai" class="form-control shadow-sm border-0" required>
+                            </div>
+                            <div class="col-md-4 form-group mb-3">
+                                <label class="font-weight-bold text-dark small">ESTIMASI</label>
+                                <div class="input-group shadow-sm">
+                                    <input type="number" name="menit" id="menit" class="form-control bg-white font-weight-bold text-primary border-0" readonly placeholder="0">
+                                    <div class="input-group-append">
+                                        <span class="input-group-text bg-white border-0 small">Min</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12 form-group mb-4">
+                                <label class="font-weight-bold text-dark small">PRIORITAS</label>
+                                <select name="priority" class="form-control custom-select shadow-sm border-0" required>
+                                    @foreach($prioritas as $pId => $pName)
+                                        <option value="{{ $pId }}">{{ $pName }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-4">
+                            <label class="font-weight-bold text-dark small text-uppercase">Link ke Jira</label>
+                            <div class="input-group shadow-sm">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-white border-right-0">
+                                        {{-- Mengganti ikon task menjadi ikon link/external --}}
+                                        <i class="fas fa-link text-muted"></i>
+                                    </span>
+                                </div>
+                                <input type="url" 
+                                    name="jira_input" 
+                                    class="form-control border-left-0 pl-0" 
+                                    placeholder="https://jira.atlassian.com/..." 
+                                    {{-- Pattern ini memastikan input diawali dengan http atau https --}}
+                                    pattern="https?://.*" 
+                                    title="Harap masukkan format URL yang valid (dimulai dengan http:// atau https://)"
+                                    required>
+                            </div>
+                            <small class="form-text text-muted">Pastikan menyertakan http:// atau https://</small>
+                        </div>
+
+                        <div class="form-group mb-0">
+                            <label class="font-weight-bold text-dark small">CATATAN</label>
+                            <textarea name="note" class="form-control shadow-sm border-0" rows="3" style="border-radius: 8px;" placeholder="Tambahkan rincian atau catatan khusus..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer bg-white border-0 px-4 pb-4">
+                        <button type="button" class="btn btn-light font-weight-bold px-4 text-muted" data-dismiss="modal">BATAL</button>
+                        <button type="submit" class="btn btn-primary shadow-lg px-5 font-weight-bold" style="border-radius: 8px; letter-spacing: 1px;">
+                            <i class="fas fa-save mr-2"></i>SIMPAN TASK
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -1054,6 +1245,158 @@
             jamMulaiStr = card.querySelector('.task-time-range').innerText.split(' - ')[0].trim();
         }
         axios.post("{{ route('hc.updateStatus') }}", { id: id, action: action, jam_mulai: jamMulaiStr }).then(() => location.reload());
+    }
+
+    const baseUrl = window.location.origin;
+
+    const inputPic = document.getElementById('pic_select');
+    const inputTanggal = document.getElementById('tanggal_mulai');
+    const inputMulai = document.getElementById('jam_mulai');
+    const inputSelesai = document.getElementById('jam_selesai');
+    const inputEstimasi = document.getElementById('menit');
+
+    function fetchTaskByPic() {
+        const tanggal = inputTanggal.value;
+        const pic = inputPic.value;
+        const container = document.getElementById('task-list-container');
+        const tableBody = document.getElementById('task-list-body');
+        if (tanggal && pic) {
+            tableBody.innerHTML = '<tr><td colspan="3" class="text-center p-2 text-muted small italic">Mengecek jadwal...</td></tr>';
+            container.style.display = 'block';
+
+            fetch(`${baseUrl}/api/get-tasks-by-date?tanggal=${tanggal}&pic=${pic}`)
+                .then(response => response.json())
+                .then(data => {
+                    const totalContainer = document.getElementById('total-durasi-container');
+                    
+                    tableBody.innerHTML = '';
+                    let totalMenitAkumulasi = 0; // Inisialisasi counter
+
+                    if (data.length > 0) {
+                        data.forEach(task => {
+                            // Tambahkan durasi ke total
+                            let durasiTask = parseInt(task.menit || 0);
+                            totalMenitAkumulasi += durasiTask;
+
+                            let jamM = task.jam_mulai ? task.jam_mulai.substring(0, 5) : "00:00";
+                            let jamS = (task.jam_selesai && task.jam_selesai !== "00:00:00") 
+                                    ? task.jam_selesai.substring(0, 5) 
+                                    : hitungJamSelesaiManual(jamM, durasiTask);
+
+                            tableBody.innerHTML += `
+                                <tr>
+                                    <td>${task.nama_task}</td>
+                                    <td>${task.nama}</td>
+                                    <td><span class="badge badge-secondary">${jamM} - ${jamS}</span></td>
+                                    <td>${formatDurasi(durasiTask)}</td>
+                                </tr>`;
+                        });
+
+                        // Tampilkan total di header
+                        if(totalContainer) {
+                            totalContainer.innerText = "Total: " + formatDurasi(totalMenitAkumulasi);
+                            totalContainer.classList.replace('badge-light', 'badge-warning'); // Ubah warna jadi kuning agar kontras
+                        }
+
+                    } else {
+                        tableBody.innerHTML = '<tr><td colspan="3" class="text-center p-2 text-success">Jadwal Kosong</td></tr>';
+                        if(totalContainer) totalContainer.innerText = "Total: 0 Menit";
+                    }
+                })
+                .catch(err => {
+                    console.error('Fetch error:', err);
+                    tableBody.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Gagal memuat data</td></tr>';
+                });
+        } else {
+            if(container) container.style.display = 'none';
+        }
+    }
+
+
+    function calculateMinutes() {
+        const picId = inputPic.value;
+        const mulai = inputMulai.value;
+        const selesai = inputSelesai.value;
+
+        if (mulai) {
+            const jamM = parseInt(mulai.split(':')[0]);
+            let limitMulai = (picId == "39") ? 8 : 9;
+            if (jamM < limitMulai) {
+                alert(`PIC ini minimal mulai jam 0${limitMulai}:00`);
+                inputMulai.value = ""; return;
+            }
+        }
+
+        if (selesai) {
+            const [jamS, menitS] = selesai.split(':').map(Number);
+            if (jamS > 17 || (jamS === 17 && menitS > 0)) {
+                alert("Jam selesai tidak boleh lebih dari jam 17:00");
+                inputSelesai.value = ""; return;
+            }
+        }
+
+        if (mulai && selesai) {
+            const [h1, m1] = mulai.split(':').map(Number);
+            const [h2, m2] = selesai.split(':').map(Number);
+            const diff = ((h2 * 60) + m2) - ((h1 * 60) + m1);
+            
+            if (diff < 0) {
+                alert("Jam selesai tidak boleh sebelum jam mulai!");
+                inputSelesai.value = ""; 
+                inputEstimasi.value = "";
+            } else {
+                inputEstimasi.value = diff;
+            }
+        }
+    }
+
+    if(inputPic) inputPic.addEventListener('change', () => { fetchTaskByPic(); calculateMinutes(); });
+    if(inputTanggal) inputTanggal.addEventListener('change', fetchTaskByPic);
+    if(inputMulai) inputMulai.addEventListener('change', calculateMinutes);
+    if(inputSelesai) inputSelesai.addEventListener('change', calculateMinutes);
+    
+    async function handleClientChange(el) {
+        const userId = {{ Auth::user()->id }}
+        
+        const clientId = el.value;
+        const picSelect = document.getElementById('pic_select');
+
+        if (!clientId) return;
+
+        // 1. Reset dropdown PIC dan tunjukkan status loading
+        picSelect.innerHTML = '<option value="" selected disabled>Sedang memuat...</option>';
+
+        try {
+            // 2. Panggil API (Sesuaikan URL API kamu)
+            // Contoh: /api/get-pic-by-client/5
+            const response = await fetch(`/api/client-pics/${clientId}/${userId}`);
+            
+            if (!response.ok) throw new Error('Gagal mengambil data PIC');
+
+            const data = await response.json();
+
+            console.log(data);
+
+            // 3. Bersihkan dropdown PIC kembali
+            picSelect.innerHTML = '<option value="" selected disabled>-- Pilih PIC --</option>';
+
+            // 4. Masukkan data dari API ke dalam Select
+            if (data.length > 0) {
+                data.forEach(pic => {
+                    let option = document.createElement('option');
+                    option.value = pic.id; // Sesuaikan dengan key ID dari API
+                    option.text = pic.email; // Menggunakan email sesuai request script kamu
+                    picSelect.appendChild(option);
+                });
+            } else {
+                picSelect.innerHTML = '<option value="" selected disabled>Tidak ada PIC ditemukan</option>';
+            }
+
+        } catch (error) {
+            console.error('Error:', error);
+            picSelect.innerHTML = '<option value="" selected disabled>Gagal memuat data</option>';
+            alert('Terjadi kesalahan saat mengambil data PIC.');
+        }
     }
 </script>
 

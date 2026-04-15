@@ -322,6 +322,26 @@
                         </div>
                     </div>
 
+                    <div class="form-group mb-4">
+                        <label class="font-weight-bold text-dark small text-uppercase">Link ke Jira</label>
+                        <div class="input-group shadow-sm">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text bg-white border-right-0">
+                                    {{-- Mengganti ikon task menjadi ikon link/external --}}
+                                    <i class="fas fa-link text-muted"></i>
+                                </span>
+                            </div>
+                            <input type="url" 
+                                name="jira_input" 
+                                class="form-control border-left-0 pl-0" 
+                                placeholder="https://jira.atlassian.com/..." 
+                                pattern="https?://.*" 
+                                title="Harap masukkan format URL yang valid (dimulai dengan http:// atau https://)"
+                                required>
+                        </div>
+                        <small class="form-text text-muted">Pastikan menyertakan http:// atau https://</small>
+                    </div>
+
                     <div class="form-group mb-0">
                         <label class="font-weight-bold text-dark small">CATATAN</label>
                         <textarea name="note" class="form-control shadow-sm border-0" rows="3" style="border-radius: 8px;" placeholder="Tambahkan rincian atau catatan khusus..."></textarea>
@@ -469,6 +489,26 @@
                             </div>
                         </div>
 
+                        <div class="form-group mb-4">
+                            <label class="font-weight-bold text-dark small text-uppercase">Link ke Jira</label>
+                            <div class="input-group shadow-sm">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-white border-right-0">
+                                        <i class="fas fa-link text-muted"></i>
+                                    </span>
+                                </div>
+                                <input type="url" 
+                                    name="jira_input" 
+                                    class="form-control border-left-0 pl-0" 
+                                    placeholder="https://jira.atlassian.com/..." 
+                                    pattern="https?://.*" 
+                                    title="Harap masukkan format URL yang valid (dimulai dengan http:// atau https://)"
+                                    value="{{ $d->jira }}"
+                                    required>
+                            </div>
+                            <small class="form-text text-muted">Pastikan menyertakan http:// atau https://</small>
+                        </div>
+
                         <div class="form-group mb-0">
                             <label class="font-weight-bold text-dark small">CATATAN</label>
                             <textarea name="note" class="form-control shadow-sm border-0" rows="3" style="border-radius: 8px;" placeholder="Tambahkan catatan khusus...">{{ $d->note }}</textarea>
@@ -513,27 +553,27 @@
 /**
  * Helper: Memformat menit ke format "X Jam X Menit"
  */
-function hitungJamSelesaiManual(jamMulai, durasiMenit) {
-    if (!jamMulai) return "00:00";
-    const [jam, menit] = jamMulai.split(':').map(Number);
-    const totalMenit = (jam * 60) + menit + parseInt(durasiMenit || 0);
-    console.log(totalMenit);
+// function hitungJamSelesaiManual(jamMulai, durasiMenit) {
+//     if (!jamMulai) return "00:00";
+//     const [jam, menit] = jamMulai.split(':').map(Number);
+//     const totalMenit = (jam * 60) + menit + parseInt(durasiMenit || 0);
+//     console.log(totalMenit);
     
-    const h = Math.floor(totalMenit / 60);
-    const m = totalMenit % 60;
-    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-}
+//     const h = Math.floor(totalMenit / 60);
+//     const m = totalMenit % 60;
+//     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+// }
 
-function formatDurasi(menit) {
-    if (!menit || menit <= 0) return "0 Menit";
-    let jam = Math.floor(menit / 60);
-    let sisaMenit = menit % 60;
-    if (jam > 0) {
-        return sisaMenit > 0 ? `${jam} Jam ${sisaMenit} Menit` : `${jam} Jam`;
-    } else {
-        return `${menit} Menit`;
-    }
-}
+// function formatDurasi(menit) {
+//     if (!menit || menit <= 0) return "0 Menit";
+//     let jam = Math.floor(menit / 60);
+//     let sisaMenit = menit % 60;
+//     if (jam > 0) {
+//         return sisaMenit > 0 ? `${jam} Jam ${sisaMenit} Menit` : `${jam} Jam`;
+//     } else {
+//         return `${menit} Menit`;
+//     }
+// }
 
 function changeStatus(id, action) {
     let jamMulaiStr = null;

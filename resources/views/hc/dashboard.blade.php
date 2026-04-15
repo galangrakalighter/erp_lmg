@@ -539,16 +539,16 @@
         }
     }
 
-    function hitungJamSelesaiManual(jamMulai, durasiMenit) {
-        if (!jamMulai) return "00:00";
-        const [jam, menit] = jamMulai.split(':').map(Number);
-        const totalMenit = (jam * 60) + menit + parseInt(durasiMenit || 0);
-        console.log(totalMenit);
+    // function hitungJamSelesaiManual(jamMulai, durasiMenit) {
+    //     if (!jamMulai) return "00:00";
+    //     const [jam, menit] = jamMulai.split(':').map(Number);
+    //     const totalMenit = (jam * 60) + menit + parseInt(durasiMenit || 0);
+    //     console.log(totalMenit);
         
-        const h = Math.floor(totalMenit / 60);
-        const m = totalMenit % 60;
-        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-    }
+    //     const h = Math.floor(totalMenit / 60);
+    //     const m = totalMenit % 60;
+    //     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    // }
 
     function parseChartLabelToDate(label) {
         const currentYear = new Date().getFullYear();

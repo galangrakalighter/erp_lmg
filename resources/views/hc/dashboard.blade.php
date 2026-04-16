@@ -617,7 +617,7 @@
                 <td class="text-center">
                     <div class="text-dark small fw-bold">${t.tanggal_deadline   }</div>
                 </td>
-                ${(t.status == 3 && currentUserId != t.pic || t.status == 9 && currentUserId != t.pic) 
+                ${(t.status == 3 && currentUserId != t.pic || t.status == 9 && currentUserId != t.pic || currentUserId == 1) 
                 ? `<td class="text-center">
                         <button type="button" 
                             class="btn btn-sm fw-bold shadow-sm px-3" 
@@ -626,6 +626,15 @@
                             onmouseout="this.style.backgroundColor='#1cc88a'; this.style.transform='translateY(0)'"
                             onclick="changeStatus(${t.id}, 'approve')">
                             <i class="fas fa-check-circle mr-1"></i> Approve
+                        </button>
+                        <button type="button" 
+                            class="btn btn-sm fw-bold shadow-sm px-3" 
+                            style="background-color: #e74a3b; color: white; border: none; transition: all 0.3s ease; border-radius: 6px; font-size: 11px;"
+                            onmouseover="this.style.backgroundColor='#c0392b'; this.style.transform='translateY(-1px)'"
+                            onmouseout="this.style.backgroundColor='#e74a3b'; this.style.transform='translateY(0)'"
+                            onclick="changeStatus(${t.id}, 'revisi')">
+                            
+                            <i class="fas fa-edit mr-1"></i> Revisi
                         </button>
                     </td>` 
                 : `<td class="text-center">-</td>` 

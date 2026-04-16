@@ -673,7 +673,7 @@
     }
 
     function changeStatus(id, action, userId){
-        axios.post("{{ route('hc.updateStatus') }}", { id: id, action: action, jam_mulai: null }).then(() => loadData(userId););
+        axios.post("{{ route('hc.updateStatus') }}", { id: id, action: action, jam_mulai: null }).then(() => loadData(userId));
     }
 
     function renderPagination(totalItems) {

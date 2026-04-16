@@ -336,8 +336,7 @@
                                 class="form-control border-left-0 pl-0" 
                                 placeholder="https://jira.atlassian.com/..." 
                                 pattern="https?://.*" 
-                                title="Harap masukkan format URL yang valid (dimulai dengan http:// atau https://)"
-                                required>
+                                title="Harap masukkan format URL yang valid (dimulai dengan http:// atau https://)">
                         </div>
                         <small class="form-text text-muted">Pastikan menyertakan http:// atau https://</small>
                     </div>
@@ -503,8 +502,7 @@
                                     placeholder="https://jira.atlassian.com/..." 
                                     pattern="https?://.*" 
                                     title="Harap masukkan format URL yang valid (dimulai dengan http:// atau https://)"
-                                    value="{{ $d->jira }}"
-                                    required>
+                                    value="{{ $d->jira }}">
                             </div>
                             <small class="form-text text-muted">Pastikan menyertakan http:// atau https://</small>
                         </div>

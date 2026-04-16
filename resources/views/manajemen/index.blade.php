@@ -60,10 +60,10 @@
                             @endif
                             <th>Komposisi</th>
                             <th>Note</th>
-                            {{-- <th>Tanggal Posting (Y-M-D)</th>
-                            <th>Tanggal Mulai (Y-M-D)</th>
-                            <th>Tanggal Deadline (Y-M-D)</th> --}}
-                            {{-- <th>Durasi Mengerjakan</th> --}}
+                            <th>Tanggal Posting (Y-M-D)</th>
+                            {{-- <th>Tanggal Mulai (Y-M-D)</th>
+                            <th>Tanggal Deadline (Y-M-D)</th>
+                            <th>Durasi Mengerjakan</th> --}}
                             <th>Link</th>
                             <th>Status</th>
                             <th>Action</th>
@@ -96,7 +96,7 @@
                                 @endif
                                 <th>{{ $item->komposisi }}</th>
                                 <th>{{ $item->note }}</th>
-                                {{-- <th>{{ $item->tanggal_posting }}</th> --}}
+                                <th>{{ $item->tanggal_posting }}</th>
                                 {{-- <th>{{ $item->tanggal_mulai }}</th>
                                 <th>{{ $item->tanggal_deadline }}</th> --}}
                                 {{-- <th>{{ $item->menit ? $item->menit . " Menit" : ""}}</th> --}}

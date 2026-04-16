@@ -7,16 +7,30 @@
 
 <style>
     :root { 
-        /* Karena 10 menit = 50px, maka 1 jam (60 menit) = 300px */
-        --grid-hour-height: 300px; 
-        --grid-minor-height: 50px; /* Jarak antar .10, .20, dll */
         --primary-color: #4e73df;
         --border-color: #e3e6f0;
     }
-    
-    .hour-sidebar { width: 85px; background: #f8f9fc; flex-shrink: 0; }
+
+    /* Container Utama untuk mengontrol Zoom */
+    #zoom-container {
+        display: flex;
+        --hour-height: 300px; 
+        /* Variabel ini akan otomatis terupdate saat --hour-height berubah via JS */
+        --grid-minor-height: calc(var(--hour-height) / 6);
+    }
+
+    .hour-sidebar { 
+        width: 85px; 
+        background: #f8f9fc; 
+        flex-shrink: 0; 
+        position: sticky;
+        left: 0;
+        z-index: 20;
+        border-right: 1px solid var(--border-color);
+    }
+
     .hour-major { 
-        height: var(--grid-minor-height); /* Tinggi label jam utama */
+        height: var(--grid-minor-height);
         font-size: 14px; 
         color: var(--primary-color); 
         font-weight: bold; 
@@ -24,10 +38,11 @@
         align-items: center; 
         justify-content: flex-end; 
         padding-right: 15px;
+        transition: height 0.1s ease-out;
     }
 
     .hour-minor {
-        height: var(--grid-minor-height); /* Jarak 50px */
+        height: var(--grid-minor-height);
         font-size: 11px; 
         color: #a1a1a1;
         display: flex; 
@@ -35,15 +50,15 @@
         justify-content: flex-end;
         padding-right: 15px;
         border-bottom: 1px dashed #f0f0f0;
+        transition: height 0.1s ease-out;
     }
 
     #daily-grid {
-        /* Total tinggi: 8 jam * 300px = 2400px */
-        height: 2700px; 
+        flex-grow: 1;
+        height: calc(9 * var(--hour-height)); 
         background-color: #fff; 
         position: relative;
         border: 1px solid var(--border-color);
-        /* Garis pandu visual setiap 50px (10 menit) */
         background-image: linear-gradient(var(--border-color) 1px, transparent 1px);
         background-size: 100% var(--grid-minor-height); 
     }
@@ -51,116 +66,61 @@
     .grid-line {
         position: absolute; 
         width: 100%; 
-        border-top: 
-        1px solid var(--border-color);
-        pointer-events: none; z-index: 1;
+        border-top: 1px solid var(--border-color);
+        pointer-events: none; 
+        z-index: 1;
+        transition: top 0.1s ease-out;
     }
 
     /* KARTU JADWAL */
     .task-card-scheduled { 
-        position: absolute; left: 0; width: 100%; margin: 0 !important; 
-        border-radius: 0; border-width: 0 0 0 6px !important; border-style: solid; 
-        background: white; z-index: 10; overflow: hidden;
-        transition: top 0.2s ease, height 0.1s ease; border-bottom: 1px solid rgba(0,0,0,0.1);
+        position: absolute; 
+        left: 0; 
+        width: 100%; 
+        z-index: 10; 
+        overflow: hidden;
+        border-radius: 8px;
+        border-left: 6px solid;
+        background: white;
         box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        transition: top 0.1s ease-out, height 0.1s ease-out;
     }
 
-    .task-subordinate {
-        border-left: 6px double #6c757d !important; /* Garis ganda untuk pembeda */
-        background-color: #fcfcfc;
-        opacity: 0.9;
+    .my-task { z-index: 11; }
+    .subordinate-task { opacity: 0.95; background-color: #fff9e6; }
+    .task-title { font-size: 12px; font-weight: 700; color: #1a202c; }
+
+    /* Status Colors */
+    .border-left-primary { border-left-color: #4e73df !important; }
+    .border-left-success { border-left-color: #1cc88a !important; }
+    .border-left-danger { border-left-color: #e74a3b !important; }
+    .border-left-warning { border-left-color: #f6c23e !important; }
+    .btn-filter-grid {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        letter-spacing: 0.2px;
     }
 
-    .task-subordinate .task-title {
-        color: #4a5568;
-        font-style: italic;
+    /* Saat Tombol Aktif (Diklik) */
+    .btn-filter-grid.active {
+        background-color: #4e73df !important; /* Warna Biru Utama */
+        border-color: #4e73df !important;
+        color: #ffffff !important; /* Teks Putih */
+        box-shadow: 0 2px 4px rgba(78, 115, 223, 0.25);
     }
 
-    /* Penanda teks Review untuk Bawahan */
-    .badge-subordinate-review {
-        background: #fff3cd;
-        color: #856404;
-        border: 1px solid #ffeeba;
-        font-size: 9px;
+    /* Memastikan Icon di dalam tombol aktif juga Putih */
+    .btn-filter-grid.active i {
+        color: #ffffff !important;
     }
 
-    /* Class untuk menyembunyikan task bawahan secara default */
-    .subordinate-hidden {
-        display: none !important;
-    }
-
-    .sortable-dragging * {
-        user-select: none !important;
-    }
-
-    /* Memberikan bayangan pada kartu yang sedang diangkat */
-    .sortable-ghost {
-        opacity: 0.4;
-        background-color: var(--primary-color) !important;
-    }
-
-    .task-card-scheduled[data-pic="{{ Auth::id() }}"][data-status="0"],
-    .task-card-scheduled[data-pic="{{ Auth::id() }}"][data-status="2"] { cursor: grab !important; }
-    .task-card-scheduled[data-pic="{{ Auth::id() }}"][data-status="7"] { cursor: grab !important; }
-    
-    .task-card-scheduled:active {
-        cursor: grabbing !important;
-    }
-    .task-title { font-size: 13px !important; font-weight: 800; color: #1a202c; line-height: 1.2; }
-    
-    .task-time-range { 
-        font-size: 11px !important; font-weight: 800; color: var(--primary-color); 
-        white-space: nowrap; cursor: pointer; padding: 2px 4px; border-radius: 4px;
-    }
-    .task-time-range:hover { background: rgba(78, 115, 223, 0.1); }
-    
-    .time-edit-input { 
-        font-size: 10px; width: 70px; border: 1px solid var(--primary-color); 
-        border-radius: 4px; display: none; 
-    }
-    
-    .action-container { position: absolute; bottom: 5px; right: 8px; display: flex; gap: 4px; z-index: 20; }
-    .btn-xs { padding: 0.1rem 0.4rem; font-size: 0.65rem; border-radius: 4px; font-weight: bold; }
-
-    .resize-handle {
-        position: absolute; bottom: 0; left: 0; width: 100%; height: 8px;
-        cursor: ns-resize; z-index: 30; background: transparent;
-    }
-    .resize-handle:hover { background: rgba(0,0,0,0.1); }
-
-    body.resizing { cursor: ns-resize !important; user-select: none; }
-    body.resizing .task-card-scheduled { transition: none !important; }
-
-    @keyframes pulse-red {
-        0% { transform: scale(1); opacity: 1; }
-        50% { transform: scale(1.02); opacity: 0.8; }
-        100% { transform: scale(1); opacity: 1; }
-    }
-    .animate-pulse { animation: pulse-red 2s infinite; }
-    
-    .badge-soft-primary { background: #eef2ff; color: #4e73df; }
-    .bg-light-danger {
-        background-color: #fff5f5;
-    }
-    /* Sembunyikan secara default untuk elemen yang tidak aktif */
-
-    /* Gaya khusus untuk membedakan tampilan review agar tidak bingung */
-    .type-subordinate {
-        border-left: 6px solid #f6c23e !important; /* Warna kuning khas review */
-        background-color: #fffaf0;
-    }
-    .bg-white-transparent {
-        background: rgba(255, 255, 255, 0.2);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-    }
-    .gap-1 { gap: 4px; }
-    .subordinate-task {
-        opacity: 0.95;
-        z-index: 5;
-        background-color: #fff9e6; /* Sedikit krem agar beda dengan putih */
-    }
-    .my-task {
-        z-index: 10;
+    /* Efek Hover untuk tombol yang tidak aktif */
+    .btn-filter-grid:not(.active):hover {
+        background-color: #f8f9fc;
+        border-color: #b7b9cc;
+        color: #2e59d9;
     }
 </style>
 
@@ -175,30 +135,30 @@
         <div class="d-flex align-items-center" style="gap: 15px;">
             
             @if(Auth::user()->role != "content_creator")
-                {{-- Filter User (Hanya muncul di Desktop) --}}
-                <div class="d-none d-md-flex align-items-center flex-wrap" style="gap: 4px;">
+                <div class="d-none d-md-flex align-items-center flex-wrap" style="gap: 5px;">
                     
-                    {{-- 1. Tombol 'My Schedule' --}}
-                    <button class="btn btn-primary active btn-xs rounded-pill px-3 btn-filter-grid" 
-                            onclick="filterGrid('{{ Auth::id() }}', this)">
-                        <i class="fas fa-circle mr-1" style="font-size: 7px; vertical-align: middle; color: #fff;"></i>
-                        My Schedule
+                    {{-- 1. Tombol 'ME' --}}
+                    <button class="btn btn-primary active btn-xs rounded-pill btn-filter-grid" 
+                            onclick="filterGrid('{{ Auth::id() }}', this)"
+                            style="font-size: 10.5px; height: 26px; padding: 0 12px; font-weight: 700;">
+                        <i class="fas fa-user mr-1" style="font-size: 9px;"></i> My Schedule
                     </button>
 
                     {{-- 2. Tombol Bawahan --}}
                     @foreach($subordinateTasks->unique('user_id') as $sub)
                         @if($sub->user_id !== Auth::id())
-                            <button class="btn btn-outline-secondary btn-xs rounded-pill px-3 btn-filter-grid" 
-                                    onclick="filterGrid('{{ $sub->user_id }}', this)">
-                                <i class="fas fa-circle mr-1" style="font-size: 7px; vertical-align: middle; color: #ffc107;"></i>
+                            <button class="btn btn-outline-secondary btn-xs rounded-pill btn-filter-grid" 
+                                    onclick="filterGrid('{{ $sub->user_id }}', this)"
+                                    style="font-size: 10.5px; height: 26px; padding: 0 12px; border-color: #d1d3e2; color: #5a5c69; font-weight: 600;">
+                                <i class="fas fa-circle mr-1" style="font-size: 6px; color: #ffc107;"></i>
                                 {{ $sub->email }}
                             </button>
                         @endif
                     @endforeach
                 </div>
 
-                {{-- Garis pembatas kecil antara filter dan tombol tambah --}}
-                <div class="d-none d-md-block border-left" style="height: 24px; width: 1px;"></div>
+                {{-- Pembatas vertikal --}}
+                <div class="d-none d-md-block border-left mx-2" style="height: 18px; opacity: 0.4; border-left: 1px solid #858796 !important;"></div>
             @endif
 
             {{-- Tombol Tambah Task (Selalu di paling kanan) --}}
@@ -270,63 +230,62 @@
 
     {{-- MAIN GRID SECTION --}}
     <div class="card shadow-sm border-0 mb-5" style="border-radius: 12px; overflow: hidden;">
-        <div class="card-body p-0">
-            <div class="row no-gutters">
+        <div class="card-body p-0" style="overflow-x: auto;"> {{-- Scrollbar horizontal jika layar kecil --}}
+            <div class="row no-gutters" id="zoom-container">
+                
                 {{-- Sidebar Jam --}}
-                <div class="col-auto hour-sidebar border-right">
+                <div class="col-auto hour-sidebar border-right bg-light">
                     @for($i = 8; $i <= 16; $i++)
-                        {{-- Label Jam Utama (09:00, 10:00, dst) --}}
-                        <div class="hour-major">{{ sprintf('%02d:00', $i) }}</div>
-                        
-                        {{-- Label Menit (Jarak 50px per item) --}}
-                        <div class="hour-minor">{{ sprintf('%02d:10', $i) }}</div>
-                        <div class="hour-minor">{{ sprintf('%02d:20', $i) }}</div>
-                        <div class="hour-minor">{{ sprintf('%02d:30', $i) }}</div>
-                        <div class="hour-minor">{{ sprintf('%02d:40', $i) }}</div>
-                        <div class="hour-minor">{{ sprintf('%02d:50', $i) }}</div>
+                        <div class="hour-major font-weight-bold px-2">{{ sprintf('%02d:00', $i) }}</div>
+                        <div class="hour-minor text-muted px-2">{{ sprintf('%02d:10', $i) }}</div>
+                        <div class="hour-minor text-muted px-2">{{ sprintf('%02d:20', $i) }}</div>
+                        <div class="hour-minor text-muted px-2">{{ sprintf('%02d:30', $i) }}</div>
+                        <div class="hour-minor text-muted px-2">{{ sprintf('%02d:40', $i) }}</div>
+                        <div class="hour-minor text-muted px-2">{{ sprintf('%02d:50', $i) }}</div>
                     @endfor
-                    <div class="hour-major">17:00</div>
+                    <div class="hour-major font-weight-bold px-2">17:00</div>
                 </div>
 
                 {{-- Area Drop Grid --}}
-                <div class="col position-relative">
+                <div class="col position-relative" style="overflow: hidden;"> {{-- Cegah garis keluar jalur --}}
                     <div id="daily-grid">
-                        {{-- Garis Grid per Jam --}}
-                        @for($i = 0; $i <= 8; $i++)
-                            <div class="grid-line" style="top: {{ $i * 300 }}px;"></div>
+                        {{-- Garis Grid per Jam (Utama) --}}
+                        @for($i = 0; $i <= 9; $i++)
+                            <div class="grid-line" style="top: calc({{ $i }} * var(--hour-height));"></div>
                         @endfor
-                        @for($i = 0; $i <= 48; $i++)
-                            @if($i % 6 != 0) {{-- Hindari double line dengan jam utama --}}
-                                <div class="grid-line" style="top: {{ $i * 50 }}px; border-top: 1px dashed #ebedf3; opacity: 0.5;"></div>
+
+                        {{-- Garis Grid per 10 Menit (Dashed) --}}
+                        @for($i = 0; $i <= 54; $i++)
+                            @if($i % 6 != 0)
+                                <div class="grid-line" style="position: absolute; width: 100%; border-top: 1px dashed #ebedf3; opacity: 0.5; top: calc({{ $i }} * var(--grid-minor-height)); z-index: 1;"></div>
                             @endif
                         @endfor
 
+                        {{-- Task Cards (Logika PHP Anda sudah benar) --}}
                         @foreach($scheduled_tasks as $task)
                             @php
-                                $startGrid = \Carbon\Carbon::createFromTime($startHour, 0, 0);
-                                $taskStart = \Carbon\Carbon::parse($task->jam_mulai);
-                                $taskEnd = $taskStart->copy()->addMinutes($task->menit);
-                                $email = $task->vic_email ?? '';
-                                
-                                // PERBAIKAN: Gunakan 300 (skala baru), bukan 80
-                                $topPx = ($startGrid->diffInMinutes($taskStart, false) / 60) * 300;
-                                $heightPx = ($task->menit / 60) * 300;
-                                
-                                $isMyTask = ($task->pic == Auth::id());
-                                $isRunning = ($task->status == 1);
-                                $isReview = ($task->status == 3);
-                                $cardTypeClass = $isMyTask ? 'my-task' : 'subordinate-task d-none';
-                                $borderStyle = !$isMyTask ? 'border-left: 4px solid #ffc107;' : '';
-                                $rentangWaktu = $taskStart->format('H.i') . ' - ' . $taskEnd->format('H.i');
+                            $gridStart = \Carbon\Carbon::parse($task->tanggal_mulai)->setTime(8, 0, 0);
+                            $taskStart = \Carbon\Carbon::parse($task->tanggal_mulai . ' ' . $task->jam_mulai);
+                            
+                            // Hitung rasio (bukan pixel statis)
+                            $diffMinutesFromStart = $gridStart->diffInMinutes($taskStart, false);
+                            $topRatio = $diffMinutesFromStart / 60;
+                            $heightRatio = $task->menit / 60;
+
+                            $taskEnd = $taskStart->copy()->addMinutes($task->menit);
+                            $email = $task->vic_email ?? '';
+                            $isMyTask = ($task->pic == Auth::id());
+                            $isRunning = ($task->status == 1);
+                            $isReview = ($task->status == 3);
+                            $rentangWaktu = $taskStart->format('H.i') . ' - ' . $taskEnd->format('H.i');
+                            $cardTypeClass = $isMyTask ? 'my-task' : 'subordinate-task d-none';
                             @endphp
 
                             <div class="task-card-scheduled card {{ $cardTypeClass }} {{ $isRunning ? 'bg-primary text-white' : '' }} {{ $task->status == 5 ? 'bg-light' : '' }} {{ $task->status == 7 ? 'bg-danger text-white' : '' }} {{ $task->status == 8 ? 'bg-warning text-white' : '' }} border-left-{{ $priority_colors[$task->priority] ?? 'secondary' }}"
-                                data-id="{{ $task->id }}" 
-                                data-email="{{ $email }}"
-                                data-status="{{ $task->status }}" 
-                                data-pic="{{ $task->pic }}" 
-                                data-menit="{{ $task->menit }}" 
-                                style="top: {{ $topPx }}px; height: {{ $heightPx }}px; min-height: 50px; border-radius: 8px; transition: all 0.3s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.05); position: absolute; width: 100%;">
+                            style="top: calc({{ $topRatio }} * var(--hour-height)); 
+                                height: calc({{ $heightRatio }} * var(--hour-height)); 
+                                min-height: 30px; 
+                                position: absolute; width: 100%; z-index: 5; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
 
                                 <div class="card-body p-2 position-relative h-100 d-flex flex-column justify-content-center">
                                     <div class="d-flex justify-content-between align-items-center w-100">
@@ -616,6 +575,35 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        const zoomContainer = document.getElementById('zoom-container');
+        let currentHourHeight = 300; // Tinggi awal jam (300px)
+        const minHeight = 150;  // Zoom out minimal
+        const maxHeight = 1500; // Zoom in maksimal (untuk melihat detail menit)
+
+        let ticking = false;
+
+        window.addEventListener('wheel', function(e) {
+            if (e.shiftKey) {
+                e.preventDefault();
+
+                if (!ticking) {
+                    window.requestAnimationFrame(function() {
+                        if (e.deltaY < 0) {
+                            currentHourHeight += 60;
+                        } else {
+                            currentHourHeight -= 60;
+                        }
+
+                        currentHourHeight = Math.min(Math.max(currentHourHeight, minHeight), maxHeight);
+                        zoomContainer.style.setProperty('--hour-height', currentHourHeight + 'px');
+                        
+                        ticking = false;
+                    });
+                    ticking = true;
+                }
+            }
+        }, { passive: false });
+
         const grid = document.getElementById('daily-grid');
         const pool = document.getElementById('unscheduled-pool');
         const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
@@ -715,8 +703,8 @@
             const validH = isNaN(h) ? 9 : h;
             const validM = isNaN(m) ? 0 : m;
 
-            const topPx = ((validH - startHour) * 300) + (validM / 60 * 300);
-            const heightPx = (durasiMenit / 60) * 300;
+            const topRatio = (validH - startHour) + (validM / 60);
+            const heightRatio = durasiMenit / 60;
 
             // 2. Perhitungan Jam Selesai
             let totalMenitSelesai = (validH * 60) + validM + durasiMenit;
@@ -776,7 +764,13 @@
                     data-status="${task.status}" 
                     data-pic="${task.pic}" 
                     data-menit="${durasiMenit}"
-                    style="top: ${topPx}px; height: ${heightPx}px; position: absolute; width: 100%; border-radius: 8px; z-index: ${isRunning ? 10 : 1}; ${!isMyTask ? 'cursor: default;' : 'cursor: grab;'}">
+                    style="top: calc(${topRatio} * var(--hour-height)); 
+                        height: calc(${heightRatio} * var(--hour-height)); 
+                        position: absolute; 
+                        width: 100%; 
+                        border-radius: 8px; 
+                        z-index: ${isRunning ? 10 : 1}; 
+                        ${!isMyTask ? 'cursor: default;' : 'cursor: grab;'}">
 
                     <div class="card-body p-2 d-flex flex-column h-100">
                         <div class="d-flex justify-content-between align-items-start w-100">

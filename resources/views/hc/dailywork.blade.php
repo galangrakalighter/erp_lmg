@@ -86,6 +86,12 @@
         transition: top 0.1s ease-out, height 0.1s ease-out;
     }
 
+    .task-card-scheduled[data-pic="{{ Auth::id() }}"][data-status="0"],
+    .task-card-scheduled[data-pic="{{ Auth::id() }}"][data-status="2"] { cursor: grab !important; }
+    .task-card-scheduled[data-pic="{{ Auth::id() }}"][data-status="7"] { cursor: grab !important; }
+    .task-card-scheduled:active {
+        cursor: grabbing !important;
+    }
     .my-task { z-index: 11; }
     .subordinate-task { opacity: 0.95; background-color: #fff9e6; }
     .task-title { font-size: 12px; font-weight: 700; color: #1a202c; }
@@ -214,7 +220,7 @@
                                     
                                     {{-- TOMBOL KIRIM / SEND --}}
                                     <button type="button" 
-                                        onclick="changeStatus({{ $task->id }}, 'stop')" 
+                                        onclick="changeStatus({{ $task->id }}, 'stop', 'cc')" 
                                         class="btn btn-xs btn-primary py-0 px-2" 
                                         style="font-size: 0.7rem; border-radius: 4px; background-color: #4e73df;">
                                         <i class="fas fa-paper-plane mr-1"></i> Kirim
@@ -282,6 +288,11 @@
                             @endphp
 
                             <div class="task-card-scheduled card {{ $cardTypeClass }} {{ $isRunning ? 'bg-primary text-white' : '' }} {{ $task->status == 5 ? 'bg-light' : '' }} {{ $task->status == 7 ? 'bg-danger text-white' : '' }} {{ $task->status == 8 ? 'bg-warning text-white' : '' }} border-left-{{ $priority_colors[$task->priority] ?? 'secondary' }}"
+                            data-id="{{ $task->id }}" 
+                            data-email="{{ $email }}"
+                            data-status="{{ $task->status }}" 
+                            data-pic="{{ $task->pic }}" 
+                            data-menit="{{ $task->menit }}"
                             style="top: calc({{ $topRatio }} * var(--hour-height)); 
                                 height: calc({{ $heightRatio }} * var(--hour-height)); 
                                 min-height: 30px; 
@@ -356,20 +367,20 @@
                                                     @if(!$isMyTask)
                                                         @if($isReview)
                                                             <div class="d-flex">
-                                                                <button onclick="changeStatus({{ $task->id }}, 'approve')" class="btn btn-xs btn-success mr-1 shadow-sm" style="font-size: 9px; padding: 1px 4px;"><i class="fas fa-check"></i></button>
-                                                                <button onclick="changeStatus({{ $task->id }}, 'revisi')" class="btn btn-xs btn-danger shadow-sm" style="font-size: 9px; padding: 1px 4px;"><i class="fas fa-times"></i></button>
+                                                                <button onclick="changeStatus({{ $task->id }}, 'approve', 'cc')" class="btn btn-xs btn-success mr-1 shadow-sm" style="font-size: 9px; padding: 1px 4px;"><i class="fas fa-check"></i></button>
+                                                                <button onclick="changeStatus({{ $task->id }}, 'revisi', 'cc')" class="btn btn-xs btn-danger shadow-sm" style="font-size: 9px; padding: 1px 4px;"><i class="fas fa-times"></i></button>
                                                             </div>
                                                         @endif
                                                     @else
                                                         <div class="d-flex">
                                                             @if($task->status == 1)
                                                                 <button onclick="splitTask({{ $task->id }})" class="btn btn-xs btn-outline-light mr-1" style="font-size: 9px; padding: 1px 4px;">Split</button>
-                                                                <button onclick="changeStatus({{ $task->id }}, 'stop')" class="btn btn-xs btn-success font-weight-bold shadow-sm" style="font-size: 9px; padding: 1px 6px;">Kirim</button>
+                                                                <button onclick="changeStatus({{ $task->id }}, 'stop', 'cc')" class="btn btn-xs btn-success font-weight-bold shadow-sm" style="font-size: 9px; padding: 1px 6px;">Kirim</button>
                                                             @elseif(in_array($task->status, [0, 2, 7]))
                                                                 <button onclick="returnToPool({{ $task->id }})" class="btn btn-xs btn-light border mr-1" style="padding: 1px 3px;"><i class="fas fa-undo text-danger" style="font-size: 9px;"></i></button>
-                                                                <button onclick="changeStatus({{ $task->id }}, 'play')" class="btn btn-xs btn-success shadow-sm font-weight-bold" style="font-size: 9px; padding: 1px 8px;">START</button>
+                                                                <button onclick="changeStatus({{ $task->id }}, 'play', 'cc')" class="btn btn-xs btn-success shadow-sm font-weight-bold" style="font-size: 9px; padding: 1px 8px;">START</button>
                                                             @elseif($task->status == 8)
-                                                                <button onclick="changeStatus({{ $task->id }}, 'stop')" class="btn btn-xs btn-success font-weight-bold shadow-sm" style="font-size: 9px; padding: 1px 6px;">Kirim</button>
+                                                                <button onclick="changeStatus({{ $task->id }}, 'stop', 'cc')" class="btn btn-xs btn-success font-weight-bold shadow-sm" style="font-size: 9px; padding: 1px 6px;">Kirim</button>
                                                             @endif
                                                         </div>
                                                     @endif
@@ -659,7 +670,7 @@
                     const isMyTask = (String(userId) === String(myId));
                     
                     // Masukkan parameter isMyTask dengan benar
-                    const cardHtml = renderTaskCard(task, isMyTask);
+                    const cardHtml = renderTaskCard(task, isMyTask, userId);
                     grid.insertAdjacentHTML('beforeend', cardHtml);
                 });
 
@@ -669,7 +680,7 @@
             }
         };
 
-        function renderTaskCard(task, isMyTask) {
+        function renderTaskCard(task, isMyTask, userId) {
             // --- TAMBAHKAN LOGIKA FILTER TANGGAL DI SINI ---
             const isWaitingApproval = (task.status == 3);
             
@@ -825,7 +836,7 @@
                                     </div>
                                     
                                     <div class="action-buttons-inline">
-                                        ${renderButtons(task, isMyTask, isRunning)}
+                                        ${renderButtons(task, isMyTask, userId, isRunning)}
                                     </div>
                                 </div>
                             </div>
@@ -837,7 +848,7 @@
             `;
         }
 
-        function renderButtons(task, isMyTask) {
+        function renderButtons(task, isMyTask, userId) {
             const status = parseInt(task.status);
             const approve = task.tanggal_approve;
             console.log(approve);
@@ -847,16 +858,16 @@
                 if (status === 1) {
                     return `<div class="d-flex">
                         <button onclick="splitTask(${task.id})" class="btn btn-xs btn-outline-light mr-1" style="font-size: 9px; padding: 1px 4px;">Split</button>
-                        <button onclick="changeStatus(${task.id}, 'stop')" class="${btnClass} btn-success" style="font-size: 9px; padding: 1px 6px;">Kirim</button>
+                        <button onclick="changeStatus(${task.id}, 'stop', 'notCC', ${userId}, ${task})" class="${btnClass} btn-success" style="font-size: 9px; padding: 1px 6px;">Kirim</button>
                     </div>`;
                 } else if(status === 8 || status === 7){
                     return `<div class="d-flex">
-                        <button onclick="changeStatus(${task.id}, 'stop')" class="${btnClass} btn-success" style="font-size: 9px; padding: 1px 6px;">Kirim</button>
+                        <button onclick="changeStatus(${task.id}, 'stop', 'notCC', ${userId}, ${task})" class="${btnClass} btn-success" style="font-size: 9px; padding: 1px 6px;">Kirim</button>
                     </div>`;
                 } else if ([0, 2].includes(status)) {
                     return `<div class="d-flex">
                         <button onclick="returnToPool(${task.id})" class="btn btn-xs btn-light border mr-1" style="padding: 1px 4px;"><i class="fas fa-undo text-danger" style="font-size: 9px;"></i></button>
-                        <button onclick="changeStatus(${task.id}, 'play')" class="${btnClass} btn-success" style="font-size: 9px; padding: 1px 8px;">START</button>
+                        <button onclick="changeStatus(${task.id}, 'play', 'notCC', ${userId}, ${task})" class="${btnClass} btn-success" style="font-size: 9px; padding: 1px 8px;">START</button>
                     </div>`;
                 } else if (status === 3) {
                     return `<span class="badge badge-warning" style="font-size: 9px; padding: 3px 5px;"><i class="fas fa-clock mr-1"></i>Review</span>`;
@@ -878,8 +889,8 @@
 
                 if (canApprove) {
                     return `<div class="d-flex">
-                        <button onclick="changeStatus(${task.id}, 'approve')" class="btn btn-xs btn-success mr-1 shadow-sm" style="font-size: 9px; padding: 1px 5px;"><i class="fas fa-check"></i></button>
-                        <button onclick="changeStatus(${task.id}, 'revisi')" class="btn btn-xs btn-danger shadow-sm" style="font-size: 9px; padding: 1px 5px;"><i class="fas fa-times"></i></button>
+                        <button onclick="changeStatus(${task.id}, 'approve', 'notCC', ${userId}, ${task})" class="btn btn-xs btn-success mr-1 shadow-sm" style="font-size: 9px; padding: 1px 5px;"><i class="fas fa-check"></i></button>
+                        <button onclick="changeStatus(${task.id}, 'revisi', 'notCC', ${userId}, ${task})" class="btn btn-xs btn-danger shadow-sm" style="font-size: 9px; padding: 1px 5px;"><i class="fas fa-times"></i></button>
                     </div>`;
                 }
             }
@@ -1231,13 +1242,15 @@
     function splitTask(id) {
         if(confirm('Split task ini? Sisa waktu akan dikembalikan ke Pool.')) axios.post("{{ route('hc.cancelRemaining') }}", { id: id }).then(() => location.reload());
     }
-    function changeStatus(id, action) {
+    function changeStatus(id, action, cc, userId, task) {
         let jamMulaiStr = null;
         if (action === 'play') {
             const card = document.querySelector(`.task-card-scheduled[data-id="${id}"]`);
             jamMulaiStr = card.querySelector('.task-time-range').innerText.split(' - ')[0].trim();
         }
-        axios.post("{{ route('hc.updateStatus') }}", { id: id, action: action, jam_mulai: jamMulaiStr }).then(() => location.reload());
+        axios.post("{{ route('hc.updateStatus') }}", { 
+            id: id, action: action, jam_mulai: jamMulaiStr 
+        }).then(() => location.reload() );
     }
 
     const baseUrl = window.location.origin;

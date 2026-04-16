@@ -670,7 +670,7 @@
                     const isMyTask = (String(userId) === String(myId));
                     
                     // Masukkan parameter isMyTask dengan benar
-                    const cardHtml = renderTaskCard(task, isMyTask, userId);
+                    const cardHtml = renderTaskCard(task, isMyTask);
                     grid.insertAdjacentHTML('beforeend', cardHtml);
                 });
 
@@ -680,7 +680,8 @@
             }
         };
 
-        function renderTaskCard(task, isMyTask, userId) {
+        function renderTaskCard(task, isMyTask) {
+            console.log(task);
             // --- TAMBAHKAN LOGIKA FILTER TANGGAL DI SINI ---
             const isWaitingApproval = (task.status == 3);
             
@@ -836,7 +837,7 @@
                                     </div>
                                     
                                     <div class="action-buttons-inline">
-                                        ${renderButtons(task, isMyTask, userId, isRunning)}
+                                        ${renderButtons(task, isMyTask, isRunning)}
                                     </div>
                                 </div>
                             </div>
@@ -848,7 +849,7 @@
             `;
         }
 
-        function renderButtons(task, isMyTask, userId) {
+        function renderButtons(task, isMyTask) {
             const status = parseInt(task.status);
             const approve = task.tanggal_approve;
             console.log(approve);
@@ -858,16 +859,16 @@
                 if (status === 1) {
                     return `<div class="d-flex">
                         <button onclick="splitTask(${task.id})" class="btn btn-xs btn-outline-light mr-1" style="font-size: 9px; padding: 1px 4px;">Split</button>
-                        <button onclick="changeStatus(${task.id}, 'stop', 'notCC', ${userId}, this)" class="${btnClass} btn-success" style="font-size: 9px; padding: 1px 6px;">Kirim</button>
+                        <button onclick="changeStatus(${task.id}, 'stop', 'notCC', ${task.pic}, this)" class="${btnClass} btn-success" style="font-size: 9px; padding: 1px 6px;">Kirim</button>
                     </div>`;
                 } else if(status === 8 || status === 7){
                     return `<div class="d-flex">
-                        <button onclick="changeStatus(${task.id}, 'stop', 'notCC', ${userId}, this)" class="${btnClass} btn-success" style="font-size: 9px; padding: 1px 6px;">Kirim</button>
+                        <button onclick="changeStatus(${task.id}, 'stop', 'notCC', ${task.pic}, this)" class="${btnClass} btn-success" style="font-size: 9px; padding: 1px 6px;">Kirim</button>
                     </div>`;
                 } else if ([0, 2].includes(status)) {
                     return `<div class="d-flex">
                         <button onclick="returnToPool(${task.id})" class="btn btn-xs btn-light border mr-1" style="padding: 1px 4px;"><i class="fas fa-undo text-danger" style="font-size: 9px;"></i></button>
-                        <button onclick="changeStatus(${task.id}, 'play', 'notCC', ${userId}, this)" class="${btnClass} btn-success" style="font-size: 9px; padding: 1px 8px;">START</button>
+                        <button onclick="changeStatus(${task.id}, 'play', 'notCC', ${task.pic}, this)" class="${btnClass} btn-success" style="font-size: 9px; padding: 1px 8px;">START</button>
                     </div>`;
                 } else if (status === 3) {
                     return `<span class="badge badge-warning" style="font-size: 9px; padding: 3px 5px;"><i class="fas fa-clock mr-1"></i>Review</span>`;
@@ -889,8 +890,8 @@
 
                 if (canApprove) {
                     return `<div class="d-flex">
-                        <button onclick="changeStatus(${task.id}, 'approve', 'notCC', ${userId}, this)" class="btn btn-xs btn-success mr-1 shadow-sm" style="font-size: 9px; padding: 1px 5px;"><i class="fas fa-check"></i></button>
-                        <button onclick="changeStatus(${task.id}, 'revisi', 'notCC', ${userId}, this)" class="btn btn-xs btn-danger shadow-sm" style="font-size: 9px; padding: 1px 5px;"><i class="fas fa-times"></i></button>
+                        <button onclick="changeStatus(${task.id}, 'approve', 'notCC', ${task.pic}, this)" class="btn btn-xs btn-success mr-1 shadow-sm" style="font-size: 9px; padding: 1px 5px;"><i class="fas fa-check"></i></button>
+                        <button onclick="changeStatus(${task.id}, 'revisi', 'notCC', ${task.pic}, this)" class="btn btn-xs btn-danger shadow-sm" style="font-size: 9px; padding: 1px 5px;"><i class="fas fa-times"></i></button>
                     </div>`;
                 }
             }

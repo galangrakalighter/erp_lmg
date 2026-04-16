@@ -131,10 +131,8 @@ class HCDailyController extends Controller
         $subordinateTasks = $tugas_bawahan->whereNotNull('jam_mulai')->whereDate('task.tanggal_mulai', $today)->get();
 
         $unscheduled_tasks = $all_tasks->filter(function ($task) use ($today) {
-            $noTime = is_null($task->jam_mulai);
-
             // 2. Cek status yang valid (Belum dikerjakan, Tertunda, atau Overdue)
-            $validStatus = in_array($task->status, [0, 2, 7]);
+            $validStatus = in_array($task->status, [7]);
 
             // 3. PERBAIKAN: Cek apakah $today berada di antara tanggal mulai dan deadline
             // Gunakan parse untuk memastikan objek Carbon, lalu bandingkan
@@ -151,7 +149,7 @@ class HCDailyController extends Controller
             }
             $dateCheck = ($task->status == 7) || $inRange;
 
-            return $noTime && $validStatus && $dateCheck && $checkApprove;
+            return $validStatus && $dateCheck && $checkApprove;
         });
 
         $scheduled_tasks = $all_tasks->filter(function ($task) use ($user, $today) {

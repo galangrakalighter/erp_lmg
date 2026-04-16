@@ -549,8 +549,7 @@
                                     placeholder="https://jira.atlassian.com/..." 
                                     {{-- Pattern ini memastikan input diawali dengan http atau https --}}
                                     pattern="https?://.*" 
-                                    title="Harap masukkan format URL yang valid (dimulai dengan http:// atau https://)"
-                                    required>
+                                    title="Harap masukkan format URL yang valid (dimulai dengan http:// atau https://)">
                             </div>
                             <small class="form-text text-muted">Pastikan menyertakan http:// atau https://</small>
                         </div>

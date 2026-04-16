@@ -858,16 +858,16 @@
                 if (status === 1) {
                     return `<div class="d-flex">
                         <button onclick="splitTask(${task.id})" class="btn btn-xs btn-outline-light mr-1" style="font-size: 9px; padding: 1px 4px;">Split</button>
-                        <button onclick="changeStatus(${task.id}, 'stop', 'notCC', ${userId}, ${task})" class="${btnClass} btn-success" style="font-size: 9px; padding: 1px 6px;">Kirim</button>
+                        <button onclick="changeStatus(${task.id}, 'stop')" class="${btnClass} btn-success" style="font-size: 9px; padding: 1px 6px;">Kirim</button>
                     </div>`;
                 } else if(status === 8 || status === 7){
                     return `<div class="d-flex">
-                        <button onclick="changeStatus(${task.id}, 'stop', 'notCC', ${userId}, ${task})" class="${btnClass} btn-success" style="font-size: 9px; padding: 1px 6px;">Kirim</button>
+                        <button onclick="changeStatus(${task.id}, 'stop')" class="${btnClass} btn-success" style="font-size: 9px; padding: 1px 6px;">Kirim</button>
                     </div>`;
                 } else if ([0, 2].includes(status)) {
                     return `<div class="d-flex">
                         <button onclick="returnToPool(${task.id})" class="btn btn-xs btn-light border mr-1" style="padding: 1px 4px;"><i class="fas fa-undo text-danger" style="font-size: 9px;"></i></button>
-                        <button onclick="changeStatus(${task.id}, 'play', 'notCC', ${userId}, ${task})" class="${btnClass} btn-success" style="font-size: 9px; padding: 1px 8px;">START</button>
+                        <button onclick="changeStatus(${task.id}, 'play')" class="${btnClass} btn-success" style="font-size: 9px; padding: 1px 8px;">START</button>
                     </div>`;
                 } else if (status === 3) {
                     return `<span class="badge badge-warning" style="font-size: 9px; padding: 3px 5px;"><i class="fas fa-clock mr-1"></i>Review</span>`;
@@ -889,8 +889,8 @@
 
                 if (canApprove) {
                     return `<div class="d-flex">
-                        <button onclick="changeStatus(${task.id}, 'approve', 'notCC', ${userId}, ${task})" class="btn btn-xs btn-success mr-1 shadow-sm" style="font-size: 9px; padding: 1px 5px;"><i class="fas fa-check"></i></button>
-                        <button onclick="changeStatus(${task.id}, 'revisi', 'notCC', ${userId}, ${task})" class="btn btn-xs btn-danger shadow-sm" style="font-size: 9px; padding: 1px 5px;"><i class="fas fa-times"></i></button>
+                        <button onclick="changeStatus(${task.id}, 'approve')" class="btn btn-xs btn-success mr-1 shadow-sm" style="font-size: 9px; padding: 1px 5px;"><i class="fas fa-check"></i></button>
+                        <button onclick="changeStatus(${task.id}, 'revisi')" class="btn btn-xs btn-danger shadow-sm" style="font-size: 9px; padding: 1px 5px;"><i class="fas fa-times"></i></button>
                     </div>`;
                 }
             }
@@ -1242,7 +1242,7 @@
     function splitTask(id) {
         if(confirm('Split task ini? Sisa waktu akan dikembalikan ke Pool.')) axios.post("{{ route('hc.cancelRemaining') }}", { id: id }).then(() => location.reload());
     }
-    function changeStatus(id, action, cc, userId, task) {
+    function changeStatus(id, action) {
         let jamMulaiStr = null;
         if (action === 'play') {
             const card = document.querySelector(`.task-card-scheduled[data-id="${id}"]`);
@@ -1252,6 +1252,53 @@
             id: id, action: action, jam_mulai: jamMulaiStr 
         }).then(() => location.reload() );
     }
+    // function changeStatus(id, action, cc, userId) {
+    //     const myId = "{{ Auth::id() }}";
+    //     let jamMulaiStr = null;
+    //     const oldCard = document.querySelector(`[data-id="${id}"]`);
+
+    //     if (action === 'play' && oldCard) {
+    //         const timeRange = oldCard.querySelector('.task-time-range');
+    //         if (timeRange) {
+    //             jamMulaiStr = timeRange.innerText.split(' - ')[0].trim();
+    //         }
+    //     }
+
+    //     // 1. Update Status melalui POST
+    //     axios.post("{{ route('hc.updateStatus') }}", { 
+    //         id: id, 
+    //         action: action, 
+    //         jam_mulai: jamMulaiStr 
+    //     })
+    //     .then(function(updateRes) {
+    //         if (cc == "cc") {
+    //             location.reload();
+    //         } else {
+    //             // 2. Jika sukses, ambil data terbaru melalui GET
+    //             // Gunakan return agar chain .then() berlanjut
+    //             return axios.get(`api/hc/get-tasks-json?user_id=${userId}`);
+    //         }
+    //     })
+    //     .then(function(res) {
+    //         // Cek jika res ada (tidak reload)
+    //         if (res && res.data) {
+    //             const tasks = res.data;
+                
+    //             // 3. Cari data task spesifik yang baru diupdate
+    //             const updatedTask = tasks.find(t => String(t.id) === String(id));
+    //             const isMyTask = String(userId) === String(myId);
+
+    //             if (oldCard && updatedTask) {
+    //                 // 4. Render ulang kartu tersebut menggunakan function Anda
+    //                 renderTaskCard(updatedTask, isMyTask, userId);
+    //             }
+    //         }
+    //     })
+    //     .catch(function(err) {
+    //         console.error("Error pada proses update/render:", err);
+    //         alert("Terjadi kesalahan saat memperbarui data.");
+    //     });
+    // }
 
     const baseUrl = window.location.origin;
 

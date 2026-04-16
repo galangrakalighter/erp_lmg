@@ -132,7 +132,7 @@ class HCDailyController extends Controller
 
         $unscheduled_tasks = $all_tasks->filter(function ($task) use ($today) {
             // 2. Cek status yang valid (Belum dikerjakan, Tertunda, atau Overdue)
-            $validStatus = in_array($task->status, [7]);
+            $validStatus = in_array($task->status, [2,7]);
 
             // 3. PERBAIKAN: Cek apakah $today berada di antara tanggal mulai dan deadline
             // Gunakan parse untuk memastikan objek Carbon, lalu bandingkan

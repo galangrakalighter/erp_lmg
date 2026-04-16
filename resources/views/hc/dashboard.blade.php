@@ -617,7 +617,7 @@
                 <td class="text-center">
                     <div class="text-dark small fw-bold">${t.tanggal_deadline   }</div>
                 </td>
-                ${(t.status == 3 && currentUserId != t.pic || t.status == 9 && currentUserId != t.pic || currentUserId == 1) 
+                ${(t.status == 3 && currentUserId != t.pic || t.status == 9 && currentUserId != t.pic || currentUserId == 1 || getStatusLabel(t.status,t.tanggal_approve) == "Waiting Approval" || getStatusLabel(t.status,t.tanggal_approve) == "Waiting Approval (Overdue)") 
                 ? `<td class="text-center">
                         <button type="button" 
                             class="btn btn-sm fw-bold shadow-sm px-3" 

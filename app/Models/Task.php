@@ -26,4 +26,8 @@ class Task extends Model
         'tanggal_split',
         'jira'
     ];
+
+    public function user(){
+        return $this->belongsTo(User::class, 'pic');
+    }
 }

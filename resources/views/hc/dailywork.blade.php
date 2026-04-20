@@ -88,6 +88,7 @@
 
     .task-card-scheduled[data-pic="{{ Auth::id() }}"][data-status="0"],
     .task-card-scheduled[data-pic="{{ Auth::id() }}"][data-status="2"] { cursor: grab !important; }
+    .task-card-scheduled[data-pic="{{ Auth::id() }}"][data-status="3"] { cursor: grab !important; }
     .task-card-scheduled[data-pic="{{ Auth::id() }}"][data-status="7"] { cursor: grab !important; }
     .task-card-scheduled:active {
         cursor: grabbing !important;
@@ -191,9 +192,10 @@
                     @php
                         // Logika penentuan warna border dan background jika overdue
                         $isOverdue = ($task->status == 7);
+                        $isWaitingApprove = ($task->status == 3);
                         $borderClass = $isOverdue ? 'border-danger' : 'border-left-' . ($priority_colors[$task->priority] ?? 'secondary');
                         $bgClass = $isOverdue ? 'bg-light-danger' : 'bg-white';
-                        $dragClass = $isOverdue ? 'no-drag' : 'task-card-source';
+                        $dragClass = $isOverdue || $isWaitingApprove ? 'no-drag' : 'task-card-source';
                     @endphp
 
                     <div class="{{ $dragClass }} card shadow-sm {{ $borderClass }} {{ $bgClass }}"
@@ -212,6 +214,13 @@
                                 </span>
                             </div>
 
+                            <div class="mb-1">
+                                <small class="text-muted" style="font-size: 0.75rem;">
+                                    <i class="fas fa-user mr-1"></i>
+                                    {{ $task->user->email ?? '-' }}
+                                </small>
+                            </div>
+
                             <div class="d-flex align-items-center justify-content-between mt-1">
                                 @if($isOverdue)
                                     <small class="text-danger font-italic" style="font-size: 0.75rem;">
@@ -228,6 +237,27 @@
                                 @endif
                             </div>
                         </div>
+                        @if($isWaitingApprove)
+                            <div class="d-flex justify-content-end mt-1 gap-1">
+
+                                {{-- APPROVE --}}
+                                <button type="button"
+                                    onclick="changeStatus({{ $task->id }}, 'approve', 'cc', null, this)"
+                                    class="btn btn-xs btn-success py-0 px-2"
+                                    style="font-size: 0.7rem; border-radius: 4px;">
+                                    <i class="fas fa-check"></i>
+                                </button>
+
+                                {{-- REVISI / TOLAK --}}
+                                <button type="button"
+                                    onclick="changeStatus({{ $task->id }}, 'revisi', 'cc', null, this)"
+                                    class="btn btn-xs btn-danger py-0 px-2"
+                                    style="font-size: 0.7rem; border-radius: 4px;">
+                                    <i class="fas fa-times"></i>
+                                </button>
+
+                            </div>
+                        @endif
                     </div>
                 @endforeach
             </div>

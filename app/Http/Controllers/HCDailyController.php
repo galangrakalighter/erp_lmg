@@ -129,25 +129,52 @@ class HCDailyController extends Controller
         $totalHours = 17 - $startHour;
 
         $subordinateTasks = $tugas_bawahan->whereNotNull('jam_mulai')->whereDate('task.tanggal_mulai', $today)->get();
+        $bawahanIds = collect();
 
-        $unscheduled_tasks = $all_tasks->filter(function ($task) use ($today) {
-            // 2. Cek status yang valid (Belum dikerjakan, Tertunda, atau Overdue)
-            $validStatus = in_array($task->status, [2,7]);
+        switch (Auth::user()->role) {
+            case "head_of_division":
+                $bawahanIds = User::where('hod', Auth::id())->pluck('id');
+                break;
 
-            // 3. PERBAIKAN: Cek apakah $today berada di antara tanggal mulai dan deadline
-            // Gunakan parse untuk memastikan objek Carbon, lalu bandingkan
+            case "digital_marketing_manager":
+                $bawahanIds = User::where('dmm', Auth::id())
+                    ->whereIn('role', ['digital_marketing', 'content_creator'])
+                    ->pluck('id');
+                break;
+
+            case "digital_marketing":
+                $bawahanIds = User::where('dm', Auth::id())
+                    ->whereIn('role', ['content_creator'])
+                    ->pluck('id');
+                break;
+
+            default:
+                $bawahanIds = collect();
+        }
+
+        $unscheduled_tasks = $all_tasks->filter(function ($task) use ($today, $bawahanIds) {
+
+            $validStatus = in_array($task->status, [2, 3, 7]);
+
             $tglMulai = \Carbon\Carbon::parse($task->tanggal_mulai)->startOfDay();
             $tglDeadline = \Carbon\Carbon::parse($task->tanggal_deadline)->endOfDay();
-            $currentDate = \Carbon\Carbon::parse($today);
-                
-            // Tugas muncul jika hari ini >= tanggal mulai DAN hari ini <= tanggal deadline
-            // Khusus status 7 (overdue), biasanya tetap ditampilkan agar user segera menjadwalkan
+            $currentDate = \Carbon\Carbon::parse($today)->startOfDay();
+
             $inRange = $currentDate->between($tglMulai, $tglDeadline);
+
             $checkApprove = true;
             if ($task->status == 7) {
                 $checkApprove = is_null($task->tanggal_approve);
             }
-            $dateCheck = ($task->status == 7) || $inRange;
+
+            if ($task->status == 3) {
+                
+                $isBawahanTask = $bawahanIds->contains($task->pic);
+                
+                $dateCheck = $isBawahanTask && $currentDate->gt($tglDeadline);
+            } else {
+                $dateCheck = ($task->status == 7) || $inRange;
+            }
 
             return $validStatus && $dateCheck && $checkApprove;
         });

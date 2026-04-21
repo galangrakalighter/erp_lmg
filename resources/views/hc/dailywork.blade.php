@@ -190,26 +190,52 @@
             <div id="unscheduled-pool" class="d-flex flex-wrap" style="gap: 12px; min-height: 60px;">
                 @foreach($unscheduled_tasks as $task)
                     @php
-                        // Logika penentuan warna border dan background jika overdue
                         $isOverdue = ($task->status == 7);
                         $isWaitingApprove = ($task->status == 3);
-                        $borderClass = $isOverdue ? 'border-danger' : 'border-left-' . ($priority_colors[$task->priority] ?? 'secondary');
-                        $bgClass = $isOverdue ? 'bg-light-danger' : 'bg-white';
-                        $dragClass = $isOverdue || $isWaitingApprove ? 'no-drag' : 'task-card-source';
+                        $isWaitingOverdue = ($task->status == 9); // Status Baru
+
+                        // Penentuan Border
+                        if ($isOverdue) {
+                            $borderClass = 'border-danger';
+                        } elseif ($isWaitingOverdue) {
+                            $borderClass = 'border-warning';
+                        } else {
+                            $borderClass = 'border-left-' . ($priority_colors[$task->priority] ?? 'secondary');
+                        }
+
+                        // Penentuan Background
+                        if ($isOverdue) {
+                            $bgClass = 'bg-light-danger';
+                        } elseif ($isWaitingOverdue) {
+                            $bgClass = 'bg-light-warning'; // Anda bisa definisikan di CSS atau gunakan #fff4e5
+                        } else {
+                            $bgClass = 'bg-white';
+                        }
+
+                        // Logika Drag & Drop
+                        $dragClass = ($isOverdue || $isWaitingApprove || $isWaitingOverdue) ? 'no-drag' : 'task-card-source';
+                        
+                        // Inline Style khusus untuk border tebal di kiri
+                        $customBorderStyle = "";
+                        if ($isOverdue) {
+                            $customBorderStyle = "border-left: 5px solid #e74a3b !important;";
+                        } elseif ($isWaitingOverdue) {
+                            $customBorderStyle = "border-left: 5px solid #f6c23e !important;";
+                        }
                     @endphp
 
                     <div class="{{ $dragClass }} card shadow-sm {{ $borderClass }} {{ $bgClass }}"
                         data-id="{{ $task->id }}" 
                         data-menit="{{ $task->menit }}" 
                         data-status="{{ $task->status }}" 
-                        style="width: 240px; cursor: {{ $isOverdue ? 'default' : 'grab' }}; border-radius: 8px; {{ $isOverdue ? 'border-left: 5px solid #e74a3b !important;' : '' }}">
+                        style="width: 240px; cursor: {{ ($isOverdue || $isWaitingOverdue) ? 'default' : 'grab' }}; border-radius: 8px; {{ $customBorderStyle }}">
                         
                         <div class="card-body p-2">
                             <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="task-title {{ $isOverdue ? 'text-danger font-weight-bold' : 'text-dark' }} text-truncate" style="max-width: 160px;">
+                                <span class="task-title {{ ($isOverdue || $isWaitingOverdue) ? 'font-weight-bold' : 'text-dark' }} {{ $isOverdue ? 'text-danger' : ($isWaitingOverdue ? 'text-warning' : '') }} text-truncate" style="max-width: 160px;">
                                     {{ $task->id_manajement_konten ? "Edit Konten" : "" }} {{ $task->nama_task }} ({{ Str::upper($task->nama) }})
                                 </span>
-                                <span class="badge {{ $isOverdue ? 'badge-danger' : 'badge-primary' }}">
+                                <span class="badge {{ $isOverdue ? 'badge-danger' : ($isWaitingOverdue ? 'badge-warning' : 'badge-primary') }}">
                                     {{ $task->menit }}m
                                 </span>
                             </div>
@@ -222,42 +248,49 @@
                             </div>
 
                             <div class="d-flex align-items-center justify-content-between mt-1">
+                                {{-- Label Status Khusus --}}
                                 @if($isOverdue)
                                     <small class="text-danger font-italic" style="font-size: 0.75rem;">
                                         <i class="fas fa-exclamation-triangle mr-1"></i> Overdue
                                     </small>
-                                    
-                                    {{-- TOMBOL KIRIM / SEND --}}
+                                @elseif($isWaitingOverdue)
+                                    <small class="text-warning font-italic" style="font-size: 0.75rem;">
+                                        <i class="fas fa-clock mr-1"></i> Waiting (Overdue)
+                                    </small>
+                                @endif
+
+                                {{-- Tombol Kirim untuk Overdue/Waiting Overdue --}}
+                                @if($isOverdue)
                                     <button type="button" 
                                         onclick="changeStatus({{ $task->id }}, 'stop', 'cc')" 
                                         class="btn btn-xs btn-primary py-0 px-2" 
-                                        style="font-size: 0.7rem; border-radius: 4px; background-color: #4e73df;">
+                                        style="font-size: 0.7rem; border-radius: 4px;">
                                         <i class="fas fa-paper-plane mr-1"></i> Kirim
                                     </button>
                                 @endif
                             </div>
+
+                            {{-- Tombol Approval (Muncul jika status 3 ATAU 9 jika 9 butuh tindakan atasan) --}}
+                            @if($isWaitingApprove || $isWaitingOverdue)
+                                <div class="d-flex justify-content-end mt-2" style="gap: 5px;">
+                                    {{-- APPROVE --}}
+                                    <button type="button"
+                                        onclick="changeStatus({{ $task->id }}, 'approve', 'cc', null, this)"
+                                        class="btn btn-xs btn-success py-0 px-2"
+                                        style="font-size: 0.7rem; border-radius: 4px;">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+
+                                    {{-- REVISI --}}
+                                    <button type="button"
+                                        onclick="changeStatus({{ $task->id }}, 'revisi', 'cc', null, this)"
+                                        class="btn btn-xs btn-danger py-0 px-2"
+                                        style="font-size: 0.7rem; border-radius: 4px;">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            @endif
                         </div>
-                        @if($isWaitingApprove)
-                            <div class="d-flex justify-content-end mt-1 gap-1">
-
-                                {{-- APPROVE --}}
-                                <button type="button"
-                                    onclick="changeStatus({{ $task->id }}, 'approve', 'cc', null, this)"
-                                    class="btn btn-xs btn-success py-0 px-2"
-                                    style="font-size: 0.7rem; border-radius: 4px;">
-                                    <i class="fas fa-check"></i>
-                                </button>
-
-                                {{-- REVISI / TOLAK --}}
-                                <button type="button"
-                                    onclick="changeStatus({{ $task->id }}, 'revisi', 'cc', null, this)"
-                                    class="btn btn-xs btn-danger py-0 px-2"
-                                    style="font-size: 0.7rem; border-radius: 4px;">
-                                    <i class="fas fa-times"></i>
-                                </button>
-
-                            </div>
-                        @endif
                     </div>
                 @endforeach
             </div>

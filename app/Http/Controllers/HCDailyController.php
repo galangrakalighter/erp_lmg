@@ -57,7 +57,7 @@ class HCDailyController extends Controller
                             ->whereDate('task.tanggal_mulai', $today) 
                             ->where(function($statusQ) use ($today) {
                                 // Status Aktif: 0, 1, 3, 7
-                                $statusQ->whereIn('task.status', [0, 1, 2, 3, 7, 8])
+                                $statusQ->whereIn('task.status', [0, 1, 2, 3, 7, 8, 9])
                                     // Status 5 (Split): Hanya jika tanggal_split hari ini
                                     ->orWhere(function($splitToday) use ($today) {
                                         $splitToday->where('task.status', 5)
@@ -84,7 +84,10 @@ class HCDailyController extends Controller
                 });
 
             // 2. DATA BAWAHAN (Approval)
-            if ($atasan != '' && isset($hierarchy[$user->role])) {
+           if ($user->role === 'super_admin') {
+                $q->orWhereIn('task.status', [2, 3, 7, 9]); 
+            } 
+            elseif ($atasan != '' && isset($hierarchy[$user->role])) {
                 $q->orWhere(function($bawahan) use ($atasan, $user) {
                     $bawahan->where('users.'.$atasan, $user->id)
                             ->where('task.status', 3);
@@ -147,14 +150,19 @@ class HCDailyController extends Controller
                     ->whereIn('role', ['content_creator'])
                     ->pluck('id');
                 break;
-
+            case "super_admin":
+                $bawahanIds = User::whereNot('role', 'super_admin')->pluck('id');
+                break;
             default:
                 $bawahanIds = collect();
         }
 
         $unscheduled_tasks = $all_tasks->filter(function ($task) use ($today, $bawahanIds) {
+            $validStatus = in_array($task->status, [2, 3, 7, 9]);
 
-            $validStatus = in_array($task->status, [2, 3, 7]);
+            if (Auth::user()->role === 'super_admin' && $task->status == 7) {
+                return false;
+            }
 
             $tglMulai = \Carbon\Carbon::parse($task->tanggal_mulai)->startOfDay();
             $tglDeadline = \Carbon\Carbon::parse($task->tanggal_deadline)->endOfDay();
@@ -167,11 +175,13 @@ class HCDailyController extends Controller
                 $checkApprove = is_null($task->tanggal_approve);
             }
 
-            if ($task->status == 3) {
-                
+            if ($task->status == 3 || $task->status == 9) {
                 $isBawahanTask = $bawahanIds->contains($task->pic);
-                
-                $dateCheck = $isBawahanTask && $currentDate->gt($tglDeadline);
+                if ($task->status == 9) {
+                    $dateCheck = $isBawahanTask; 
+                } else {
+                    $dateCheck = $isBawahanTask && $currentDate->gt($tglDeadline);
+                }
             } else {
                 $dateCheck = ($task->status == 7) || $inRange;
             }
@@ -369,31 +379,26 @@ class HCDailyController extends Controller
             ->select('task.*', 'users.email as vic_email', 'produk_client.nama as project_name', 'users.role as vic_role')
             ->where('task.pic', $userId)
             ->whereNotNull('task.jam_mulai')
-            ->where(function($query) use ($today, $userId) {
-                $status = $userId == Auth::id();
-                $query->where(function($q) use ($status, $today) {
-                    if ($status) {
-                        $q->where(function($sub) use ($today) {
-                            $sub->where('task.status', 3)
-                                ->where('task.tanggal_mulai', $today);
-                        });
-                    } else {
-                        // Jika orang lain (False): Tampilkan 3 dan 7 secara normal (logika lama Anda)
-                        $q->where('task.status', 3);
-                    }
+            ->where(function($query) use ($today) {
+                // 1. TUGAS BARU / BERJALAN (Status 0, 1, 2, 8)
+                // Hanya yang tanggal mulainya HARI INI
+                $query->where(function($q) use ($today) {
+                    $q->whereIn('task.status', [0, 1, 2, 8, 3])
+                    ->whereDate('task.tanggal_mulai', $today);
                 })
-                
-                // 2. JALUR GRID NORMAL (Hari Ini)
+
+                // 2. TUGAS SPLIT (Status 5)
+                // Hanya jika proses split dilakukan HARI INI
                 ->orWhere(function($q) use ($today) {
-                    $q->where('task.tanggal_mulai', '<=', $today)
-                    ->where('task.tanggal_deadline', '>=', $today)
-                    ->whereIn('task.status', [0, 1, 2, 8]);
+                    $q->where('task.status', 5)
+                    ->whereDate('task.tanggal_split', $today);
                 })
+
+                // 3. TUGAS SELESAI (Status 4)
+                // Hanya jika disetujui/selesai HARI INI
                 ->orWhere(function($q) use ($today) {
-                    $q->where('task.status', 5)->whereDate('task.tanggal_split', $today);
-                })
-                ->orWhere(function($q) use ($today) {
-                    $q->where('task.status', 4)->whereDate('task.tanggal_approve', $today);
+                    $q->where('task.status', 4)
+                    ->whereDate('task.tanggal_approve', $today);
                 });
             })
             ->get();

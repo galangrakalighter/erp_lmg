@@ -216,7 +216,7 @@
                                 </div>
                             </div>
 
-                            <div class="col-md-6">
+                            {{-- <div class="col-md-6">
                                 <div class="form-group">
                                     <label class="text-dark font-weight-bold small">Prioritas <span class="text-danger">*</span></label>
                                     <div class="input-group shadow-sm">
@@ -230,7 +230,7 @@
                                         </select>
                                     </div>
                                 </div>
-                            </div>
+                            </div> --}}
                         </div>
 
                         <div class="section-title mb-3 d-flex align-items-center mt-4">
@@ -307,12 +307,12 @@
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="col-md-3 col-6">
+                                    {{-- <div class="col-md-3 col-6">
                                         <div class="form-group mb-0">
                                             <label class="text-dark font-weight-bold small">Durasi</label>
                                             <input type="text" name="durasi" class="form-control bg-light border-0" placeholder="60s">
                                         </div>
-                                    </div>
+                                    </div> --}}
                                     <div class="col-md-3 col-6">
                                         <div class="form-group mb-0">
                                             <label class="text-dark font-weight-bold small">Komposisi</label>
@@ -552,7 +552,7 @@
                                 </div>
                             </div>
 
-                            <div class="col-md-6">
+                            {{-- <div class="col-md-6">
                                 <div class="form-group">
                                     <label class="text-muted font-weight-bold small uppercase">Prioritas <span class="text-danger">*</span></label>
                                     <div class="input-group shadow-sm">
@@ -566,7 +566,7 @@
                                         </select>
                                     </div>
                                 </div>
-                            </div>
+                            </div> --}}
                         </div>
 
                         <div class="section-title mb-3 d-flex align-items-center mt-4">
@@ -624,10 +624,10 @@
                                             @endforeach
                                         </select>
                                     </div>
-                                    <div class="col-md-3 col-6">
+                                    {{-- <div class="col-md-3 col-6">
                                         <label class="text-muted font-weight-bold small">Durasi</label>
                                         <input type="text" name="durasi" class="form-control bg-light border-0 shadow-none" value="{{ $item->durasi }}" {{ Auth::user()->role == "content_creator" ? "readonly" : "" }}>
-                                    </div>
+                                    </div> --}}
                                     <div class="col-md-3 col-6">
                                         <label class="text-muted font-weight-bold small">Komposisi</label>
                                         <input type="text" name="komposisi" class="form-control bg-light border-0 shadow-none" value="{{ $item->komposisi }}" {{ Auth::user()->role == "content_creator" ? "readonly" : "" }}>

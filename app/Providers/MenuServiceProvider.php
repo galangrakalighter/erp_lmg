@@ -50,13 +50,13 @@ class MenuServiceProvider extends ServiceProvider
             // }
 
             // Data yang bersifat umum (bisa diakses tanpa login)
-            // $mcnClient = DB::table('barang_client')->get();
+            $mcnClient = DB::table('barang_client')->get();
             $menus = KategoriJasa::with('clients')->get();
 
             $view->with([
                 'menus' => $menus,
                 'activeProductCode' => $currentProductCode,
-                // 'mcnClient' => $mcnClient,
+                'mcnClient' => $mcnClient,
                 // 'isSuperAdmin' => $isSuperAdmin,
                 // 'myDivision' => $myDivisions,
                 // 'myRoles' => $myRole,

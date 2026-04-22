@@ -47,14 +47,14 @@
                             <th>PIC</th>
                             <th>Judul</th>
                             <th>Inspirasi</th>
-                            <th>Prioritas</th>
+                            {{-- <th>Prioritas</th> --}}
                             <th>Type</th>
                             <th>Strategi</th>
                             <th>Pilar</th>
                             <th>Hook</th>
                             <th>Body</th>
                             <th>CTA</th>
-                            <th>Durasi</th>
+                            {{-- <th>Durasi</th> --}}
                             @if($kategory->id == 2)
                             <th>Warna</th>
                             @endif
@@ -83,14 +83,14 @@
                                         3 => ['class' => 'badge-danger', 'label' => 'Tinggi']
                                     ][$item->priority] ?? ['class' => 'badge-light', 'label' => 'N/A'];
                                 @endphp
-                                <th><span class="badge {{ $prioData['class'] }} shadow-sm px-3">{{ $prioData['label'] }}</span></th>
+                                {{-- <th><span class="badge {{ $prioData['class'] }} shadow-sm px-3">{{ $prioData['label'] }}</span></th> --}}
                                 <th>{{ $item->type }}</th>
                                 <th>{{ $item->strategy }}</th>
                                 <th>{{ $item->pilar }}</th>
                                 <th>{{ $item->hooks }}</th>
                                 <th>{{ $item->nama_body }}</th>
                                 <th>{{ $item->nama_cta }}</th>
-                                <th>{{ $item->durasi }}</th>
+                                {{-- <th>{{ $item->durasi }}</th> --}}
                                 @if($kategory->id == 2)
                                 <th>{{ $item->background }}</th>
                                 @endif

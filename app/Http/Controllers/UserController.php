@@ -3,39 +3,68 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Division;
+use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Yajra\DataTables\Facades\DataTables;
 
 class UserController extends Controller
 {
     public function index(){
-        $title = "Manejemen User";
-        $mapping = [
-            1 => 'Digital Marketing',
-            2 => 'Business Dev',
-        ];
-        $userDivisi = Auth::user()->divisi;
+        $title = "Manajemen User";
+        $currentUser = Auth::user();
 
-        $data = User::with(['many_dmm', 'many_dm', 'many_cc'])
-            ->whereNot('role', 'super_admin')
-            ->whereNot('id', Auth::user()->id)
-            ->where(function ($query) use ($userDivisi) {
-                foreach (collect($userDivisi) as $divisiId) {
-                    $query->orWhereJsonContains('divisi', $divisiId);
-                }
-            })
-            ->orderBy('id', 'ASC')
-            ->get()
-            ->map(function ($user) use ($mapping) {
-                $user->labels = collect($user->divisi)->map(function ($value) use ($mapping) {
-                    return $mapping[$value] ?? 'Unknown';
-                });
-                
-                return $user;
-            });
-        
-        return view('users.index', compact('title', 'data'));
+        // Ambil ID divisi milik user yang sedang login
+        // $myDivisionIds = $currentUser->userDivisions->pluck('division_id')->toArray();
+
+        $data = User::with([
+            'userDivisions.division', 
+            'userDivisions.role',    
+            'userDivisions.parent'
+        ])
+        ->where('isAdmin', 'f') // Tetap sembunyikan Super Admin utama jika perlu
+        ->orderBy('name', 'ASC')
+        ->get();
+
+        $divisions = Division::all();
+        $roles = Role::all();
+
+        return view('users.index', compact('title', 'data', 'divisions', 'roles'));
+    }
+
+    public function getUsersJson() 
+    {
+        $users = User::with(['userDivisions.division', 'userDivisions.role', 'userDivisions.parent', 'userClients.client'])
+            ->where('isAdmin', 'f')
+            ->get();
+
+        $result = $users->map(function($user) {
+            return [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'user_divisions' => $user->userDivisions->map(function($ud) {
+                    return [
+                        'division_id' => $ud->division_id,
+                        'division' => ['name' => $ud->division->name],
+                        'role' => ['name' => $ud->role->name],
+                        'parent' => $ud->parent ? [
+                            'name' => $ud->parent->name,
+                            'email' => $ud->parent->email,
+                            // Kita ambil nama role atasan dari relasi role si parent
+                            'role_name' => $ud->parent->userDivisions->where('division_id', $ud->division_id)->first()->role->name ?? '-'
+                        ] : null
+                    ];
+                }),
+                'user_clients' => $user->userClients->map(function($uc) {
+                    return ['client' => ['nama' => $uc->client->nama]];
+                })
+            ];
+        });
+
+        return response()->json($result);
     }
 
     public function store(Request $request){

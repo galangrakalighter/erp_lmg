@@ -30,26 +30,36 @@ class MenuServiceProvider extends ServiceProvider
                                     ? str_replace('cms_', '', $segment) 
                                     : null;
             
-            // Inisialisasi default agar View tidak error saat variabel dipanggil
+            // 1. Inisialisasi default dengan objek kosong agar Blade tidak crash
             $isSuperAdmin = false;
-            $myDivisions = collect(); // Koleksi kosong
-            $user = Auth::user();
-            $myRole = collect();
+            $myDivision = (object) ['name' => '-', 'id' => null];
+            $myRole = (object) ['name' => '-', 'id' => null];
             $myClientIds = [];
+            $user = Auth::user();
 
-            // Jalankan logika hanya jika user sudah terautentikasi
-            // if ($user) {
-            //     $isSuperAdmin = $user->isAdmin === 't';
+            if ($user) {
+                $isSuperAdmin = $user->isAdmin == 'true';
+                // Eager load relasi untuk menghindari N+1
+                $user->load(['userDivisions.division', 'userDivisions.role', 'userClients']);
                 
-            //     // Eager load relasi
-            //     $user->load(['userDivisions.division', 'userDivisions.role']);
-            //     $division = $user->userDivisions;
-            //     $myDivisions = $division->first()->division;
-            //     $myRole = $division->first()->role;
-            //     $myClientIds = $user->userClients->pluck('client_id')->toArray();
-            // }
+                $userDivisions = $user->userDivisions;
 
-            // Data yang bersifat umum (bisa diakses tanpa login)
+                // 2. Jika Super Admin, berikan identitas khusus
+                if ($isSuperAdmin) {
+                    $myDivision = (object) ['name' => 'All Divisions', 'id' => 0];
+                    $myRole = (object) ['name' => 'Super Admin', 'id' => 0];
+                    $myClientIds = $user->userClients->pluck('client_id')->toArray();
+                } 
+                // 3. Jika User biasa, cek apakah punya data di user_division
+                elseif ($userDivisions->isNotEmpty()) {
+                    $firstDivision = $userDivisions->first();
+                    $myDivision = $firstDivision->division; // Mengambil object division
+                    $myRole = $firstDivision->role;         // Mengambil object role
+                    $myClientIds = $user->userClients->pluck('client_id')->toArray();
+                }
+            }
+
+            // Data umum
             $mcnClient = DB::table('barang_client')->get();
             $menus = KategoriJasa::with('clients')->get();
 
@@ -57,10 +67,10 @@ class MenuServiceProvider extends ServiceProvider
                 'menus' => $menus,
                 'activeProductCode' => $currentProductCode,
                 'mcnClient' => $mcnClient,
-                // 'isSuperAdmin' => $isSuperAdmin,
-                // 'myDivision' => $myDivisions,
-                // 'myRoles' => $myRole,
-                // 'myClientIds' => $myClientIds
+                'isSuperAdmin' => $isSuperAdmin,
+                'myDivision' => $myDivision, // Mengirim object (bukan collection)
+                'myRole' => $myRole,         // Mengirim object (bukan collection)
+                'myClientIds' => $myClientIds
             ]);
         });
     }

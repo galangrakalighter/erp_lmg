@@ -36,7 +36,7 @@
                         <i class="fas fa-store mr-2"></i> MR. CREPE
                     </div>
 
-                    @if (Auth::user()->role == "super_admin" ||  Auth::user()->role != "content_creator" && in_array(1, auth()->user()->divisi))
+                    @if ($isSuperAdmin || $myDivision->name == "Digital Marketing" && $myRole->level < 4)
                         <div class="px-2 mb-3">
                             <a class="btn-cms-link" href="{{ route('cms.produk', 'LGTR') }}">
                                 <i class="fas fa-cog mr-1"></i> Dashboard CMS
@@ -45,50 +45,83 @@
                     @endif
 
                     @foreach ($menus as $group)
-                        @if($group->id == 1)
-                        <div class="group-wrapper mb-2">
-                            <a class="category-dropdown-link collapsed" data-toggle="collapse" data-target="#cat_lgtr_{{ $group->id }}">
-                                <span><i class="fas fa-folder-open mr-2 text-warning"></i>{{ $group->category }}</span>
-                                <i class="fas fa-chevron-down arrow-icon-xs"></i>
-                            </a>
+                        @if($myDivision->name == "Digital Marketing")
+                            @if($group->id == 1)
+                            <div class="group-wrapper mb-2">
+                                <a class="category-dropdown-link collapsed" data-toggle="collapse" data-target="#cat_lgtr_{{ $group->id }}">
+                                    <span><i class="fas fa-folder-open mr-2 text-warning"></i>{{ $group->category }}</span>
+                                    <i class="fas fa-chevron-down arrow-icon-xs"></i>
+                                </a>
 
-                            <div id="cat_lgtr_{{ $group->id }}" class="collapse ml-2 border-left-custom">
-                                @foreach ($group->clients as $client)
-                                    <div class="client-item-wrapper" style="width: 7vw">
-                                        @if( Auth::user()->role == "super_admin" || Auth::user()->role == "head_of_division" || in_array(1, Auth::user()->divisi) && in_array($client->id, Auth::user()->client))
-                                            <a class="client-dropdown-link collapsed" data-toggle="collapse" data-target="#client_lgtr_{{ $client->id }}">
-                                                <span><i class="far fa-user-circle mr-2"></i>{{ $client->nama }}</span>
-                                                <i class="fas fa-caret-right arrow-icon-xs"></i>
-                                            </a>
-                                        @else
-                                            <span><i class="far fa-user-circle mr-2"></i>{{ $client->nama }}</span>
-                                            <i class="fas fa-caret-right arrow-icon-xs"></i>
-                                        @endif
+                                <div id="cat_lgtr_{{ $group->id }}" class="collapse ml-2 border-left-custom">
+                                    @foreach ($group->clients as $client)
+                                        @php
+                                            // 1. Cek apakah user punya akses eksplisit ke client ini (dari tabel user_client)
+                                            $hasClientAccess = in_array($client->id, $myClientIds);
 
-                                        <div id="client_lgtr_{{ $client->id }}" class="collapse ml-3">
-                                            <div class="platform-sub-links">
-                                                @php
-                                                    $platforms = collect(data_get($client->access_token, 'platform'))->filter();
-                                                @endphp
-                                                @if($platforms->isNotEmpty())
-                                                    @foreach ($client->access_token['platform'] as $plt)
-                                                        <div class="platform-group">
-                                                            <div class="platform-label"><i class="fab fa-{{ strtolower($plt) }}"></i> {{ $plt }}</div>
-                                                            <a href="{{ route('manajemen', ['id_produk' => $client->id, 'platform' => $plt]) }}">Manajemen Konten {{ $plt }}</a>
-                                                            <a href="{{ route('analisis', ['id_produk' => $client->id, 'platform' => $plt]) }}">Analisis {{ $plt }}</a>
-                                                            <a href="{{ route('market_research', ['id_produk' => $client->id, 'platform' => $plt]) }}">Market {{ $plt }}</a>
-                                                            <a href="{{ route('branding', ['id_produk' => $client->id, 'platform' => $plt]) }}">Branding {{ $plt }}</a>
-                                                        </div>
-                                                    @endforeach
-                                                @else
-                                                    <span class="text-muted small p-2 d-block">Platform belum diset</span>
-                                                @endif
-                                            </div>
+                                            // 2. Tentukan Power User: Super Admin, Role Admin, atau Head of Division
+                                            // Mereka bisa melihat semua client tanpa harus terdaftar di tabel user_client
+                                            $isPowerUser = $isSuperAdmin || $myRole->role_name == "Digital Marketing Manager";
+
+                                            // 3. Syarat Utama Membuka Dropdown Client:
+                                            // Dia Power User ATAU (Berada di Divisi 1 DAN terdaftar di user_client)
+                                            $canOpen = $isPowerUser || (in_array(1, $myDivision->pluck('id')->toArray()) && $hasClientAccess);
+                                        @endphp
+
+                                        <div class="client-item-wrapper" style="width: 7vw">
+                                            {{-- Bagian Header Client --}}
+                                            @if($canOpen)
+                                                <a class="client-dropdown-link collapsed" data-toggle="collapse" data-target="#client_lgtr_{{ $client->id }}">
+                                                    <span><i class="far fa-user-circle mr-2"></i>{{ $client->nama }}</span>
+                                                    <i class="fas fa-caret-right arrow-icon-xs"></i>
+                                                </a>
+                                            @else
+                                                {{-- Tampilan untuk yang tidak punya akses: Nama muncul tapi tidak bisa diklik --}}
+                                                <div class="p-1 text-muted" style="opacity: 0.6; cursor: not-allowed;">
+                                                    <span><i class="far fa-user-circle mr-2"></i>{{ $client->nama }}</span>
+                                                    <i class="fas fa-caret-right arrow-icon-xs"></i>
+                                                </div>
+                                            @endif
+
+                                            {{-- Bagian Isi Platform (Hanya dirender jika punya akses) --}}
+                                            @if($canOpen)
+                                                <div id="client_lgtr_{{ $client->id }}" class="collapse ml-3">
+                                                    <div class="platform-sub-links">
+                                                        @php
+                                                            $platforms = collect(data_get($client->access_token, 'platform'))->filter();
+                                                        @endphp
+
+                                                        @if($platforms->isNotEmpty())
+                                                            @foreach ($platforms as $plt)
+                                                                <div class="platform-group">
+                                                                    <div class="platform-label">
+                                                                        <i class="fab fa-{{ strtolower($plt) }}"></i> {{ $plt }}
+                                                                    </div>
+                                                                    <a href="{{ route('manajemen', ['id_produk' => $client->id, 'platform' => $plt]) }}">
+                                                                        Manajemen Konten
+                                                                    </a>
+                                                                    <a href="{{ route('analisis', ['id_produk' => $client->id, 'platform' => $plt]) }}">
+                                                                        Analisis
+                                                                    </a>
+                                                                    <a href="{{ route('market_research', ['id_produk' => $client->id, 'platform' => $plt]) }}">
+                                                                        Market Research
+                                                                    </a>
+                                                                    <a href="{{ route('branding', ['id_produk' => $client->id, 'platform' => $plt]) }}">
+                                                                        Branding
+                                                                    </a>
+                                                                </div>
+                                                            @endforeach
+                                                        @else
+                                                            <span class="text-muted small p-2 d-block">Platform belum diset</span>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                            @endif
                                         </div>
-                                    </div>
-                                @endforeach
+                                    @endforeach
+                                </div>
                             </div>
-                        </div>
+                            @endif
                         @endif
                     @endforeach
                 </div>
@@ -109,7 +142,7 @@
                         <i class="fas fa-store mr-2"></i> MR. CREPE
                     </div>
 
-                    @if (Auth::user()->role == "super_admin" || Auth::user()->role != "content_creator" && in_array(2, auth()->user()->divisi))
+                    @if ($isSuperAdmin || $myDivision->name == "Digital Marketing" && $myRole->level < 4)
                         <div class="px-2 mb-3">
                             <a class="btn-cms-link" href="{{ route('cms.produk', 'BD') }}">
                                 <i class="fas fa-cog mr-1"></i> Dashboard CMS
@@ -127,9 +160,14 @@
 
                             <div id="cat_bd_{{ $group->id }}" class="collapse ml-2 border-left-custom">
                                 @foreach ($group->clients as $client)
+                                    @php
+                                        $hasClientAccess = in_array($client->id, $myClientIds);
+                                        
+                                        $canOpen = $isSuperAdmin || ($myDivision->name == "Digital Marketing" && $hasClientAccess);
+                                    @endphp
                                     <div class="client-item-wrapper" style="width:7vw">
                                         
-                                        @if( Auth::user()->role == "super_admin" || Auth::user()->role == "head_of_division" || in_array(2, Auth::user()->divisi) && in_array($client->id, Auth::user()->client))
+                                        @if( $isSuperAdmin || $myRole->level == 1 && $myDivision->name == "Digital Marketing" || $hasClientAccess)
                                         <a class="client-dropdown-link collapsed" data-toggle="collapse" data-target="#client_bd_{{ $client->id }}">
                                             <span>{{ $client->nama }}</span>
                                             <i class="fas fa-caret-right arrow-icon-xs"></i>
@@ -138,26 +176,43 @@
                                             <span>{{ $client->nama }}</span>
                                             <i class="fas fa-caret-right arrow-icon-xs"></i>
                                         @endif
-                                        <div id="client_bd_{{ $client->id }}" class="collapse ml-3">
-                                            <div class="platform-sub-links">
-                                                @php
-                                                    $platforms = collect(data_get($client->access_token, 'platform'))->filter();
-                                                @endphp
-                                                @if($platforms->isNotEmpty())
-                                                    @foreach ($client->access_token['platform'] as $plt)
-                                                        <div class="platform-group">
-                                                            <div class="platform-label"><i class="fab fa-{{ strtolower($plt) }}"></i> {{ $plt }}</div>
-                                                            <a href="{{ route('manajemen', ['id_produk' => $client->id, 'platform' => $plt]) }}">Manajemen {{ $plt }}</a>
-                                                            <a href="{{ route('analisis', ['id_produk' => $client->id, 'platform' => $plt]) }}">Analisis Konten {{ $plt }}</a>
-                                                            <a href="{{ route('market_research', ['id_produk' => $client->id, 'platform' => $plt]) }}">Market Research {{ $plt }}</a>
-                                                            <a href="{{ route('branding', ['id_produk' => $client->id, 'platform' => $plt]) }}">Branding {{ $plt }}</a>
-                                                        </div>
-                                                    @endforeach
-                                                @else
-                                                    <span class="text-muted small p-2 d-block">Platform belum diset</span>
-                                                @endif
+                                        <div class="client-item-wrapper" style="width:7vw">
+                                        @if($canOpen)
+                                            <a class="client-dropdown-link collapsed" data-toggle="collapse" data-target="#client_bd_{{ $client->id }}">
+                                                <span><i class="far fa-user-circle mr-2"></i>{{ $client->nama }}</span>
+                                                <i class="fas fa-caret-right arrow-icon-xs"></i>
+                                            </a>
+
+                                            <div id="client_bd_{{ $client->id }}" class="collapse ml-3">
+                                                <div class="platform-sub-links">
+                                                    @php
+                                                        $platforms = collect(data_get($client->access_token, 'platform'))->filter();
+                                                    @endphp
+
+                                                    @if($platforms->isNotEmpty())
+                                                        @foreach ($platforms as $plt)
+                                                            <div class="platform-group">
+                                                                <div class="platform-label">
+                                                                    <i class="fab fa-{{ strtolower($plt) }}"></i> {{ $plt }}
+                                                                </div>
+                                                                <a href="{{ route('manajemen', ['id_produk' => $client->id, 'platform' => $plt]) }}">Manajemen {{ $plt }}</a>
+                                                                <a href="{{ route('analisis', ['id_produk' => $client->id, 'platform' => $plt]) }}">Analisis Konten {{ $plt }}</a>
+                                                                <a href="{{ route('market_research', ['id_produk' => $client->id, 'platform' => $plt]) }}">Market Research {{ $plt }}</a>
+                                                                <a href="{{ route('branding', ['id_produk' => $client->id, 'platform' => $plt]) }}">Branding {{ $plt }}</a>
+                                                            </div>
+                                                        @endforeach
+                                                    @else
+                                                        <span class="text-muted small p-2 d-block">Platform belum diset</span>
+                                                    @endif
+                                                </div>
                                             </div>
-                                        </div>
+                                        @else
+                                            <div class="p-1 text-muted" style="opacity: 0.6; cursor: not-allowed;">
+                                                <span><i class="far fa-user-circle mr-2"></i>{{ $client->nama }}</span>
+                                                <i class="fas fa-caret-right arrow-icon-xs"></i>
+                                            </div>
+                                        @endif
+                                    </div>
                                     </div>
                                 @endforeach
                             </div>
@@ -272,7 +327,7 @@
         </li>
     @endif
 
-    @if(Auth::user()->role == "head_of_division" || Auth::user()->role == "super_admin")
+    @if($isSuperAdmin)
         <li class="nav-item">
             <a class="nav-link collapsed" href="{{ route('manajemen_user.index') }}">
                 <i class="fas fa-fw fa-users"></i>
@@ -287,6 +342,13 @@
             <span>Customer Relationship Management</span>
         </a>
     </li>
+
+    {{-- <li class="nav-item">
+        <a class="nav-link collapsed" href="{{ route('payment.index') }}">
+            <i class="fas fa-fw fa-users"></i>
+            <span>Payment</span>
+        </a>
+    </li> --}}
 
     @if(request()->routeIs('cms*'))
         <div class="sidebar-heading mt-3 text-warning">CMS MANAGEMENT</div>

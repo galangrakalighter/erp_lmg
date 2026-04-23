@@ -17,3 +17,4 @@ Route::post('hc/cancel-remaining', [App\Http\Controllers\HCDailyController::clas
 Route::delete('/hc/delete-task/{id}', [App\Http\Controllers\HCDailyController::class, 'destroy']);
 Route::post('/updateStatusChecked', [App\Http\Controllers\selectionController::class, 'updateStatus'])->name('selection.updateStatus');
 Route::get('/client-pics/{id}/{userId}', [App\Http\Controllers\HCDailyController::class, 'getPic']);
+Route::get('users/json', [App\Http\Controllers\UserController::class, 'getUsersJson'])->name('users.json');

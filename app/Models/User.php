@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\models\userDivision;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class User extends Authenticatable
@@ -23,17 +24,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
-        'hod',
-        'dmm',
-        'dm',
-        'cc',
-        'divisi',
-        'client',
-    ];
-    
-    protected $casts = [
-        'divisi' => 'array',
-        'client' => 'array',
+        'isAdmin'
     ];
 
     /**
@@ -59,32 +50,12 @@ class User extends Authenticatable
         ];
     }
 
-    public function many_dmm(): HasMany {
-        return $this->hasMany(User::class, 'hod');
+    public function userDivisions() {
+        return $this->hasMany(userDivision::class, 'user_id', 'id');
     }
 
-    public function many_dm(): HasMany {
-        return $this->hasMany(User::class, 'dmm');
-    }
-
-    public function many_cc(): HasMany {
-        return $this->hasMany(User::class, 'dm');
-    }
-
-    // --- Relasi ATASAN (BelongsTo) ---
-    public function as_hod(): BelongsTo {
-        return $this->belongsTo(User::class, 'hod');
-    }
-
-    public function as_dmm(): BelongsTo {
-        return $this->belongsTo(User::class, 'dmm');
-    }
-
-    public function as_dm(): BelongsTo {
-        return $this->belongsTo(User::class, 'dm');
-    }
-
-    public function as_cc(): BelongsTo {
-        return $this->belongsTo(User::class, 'cc');
+    public function userClients()
+    {
+        return $this->hasMany(UserClient::class, 'user_id');
     }
 }

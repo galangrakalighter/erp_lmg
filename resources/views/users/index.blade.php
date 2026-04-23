@@ -15,8 +15,9 @@
                     <label class="font-weight-bold small text-muted text-uppercase">Divisi</label>
                     <select id="filter_divisi" class="form-control form-control-sm border-primary">
                         <option value="">-- Semua Divisi --</option>
-                        <option value="Digital Marketing">Digital Marketing</option>
-                        <option value="Business Dev">Business Dev</option>
+                        @foreach($divisions as $div) {{-- Asumsi Anda mengirim data $divisions dari controller --}}
+                            <option value="{{ $div->name }}">{{ $div->name }}</option>
+                        @endforeach
                     </select>
                 </div>
 
@@ -24,12 +25,9 @@
                     <label class="font-weight-bold small text-muted text-uppercase">Role</label>
                     <select id="filter_role" class="form-control form-control-sm border-primary">
                         <option value="">-- Semua Role --</option>
-                        @if(Auth::user()->role == "super_admin")
-                        <option value="HEAD OF DIVISION">HOD</option>
-                        @endif
-                        <option value="DIGITAL MARKETING MANAGER">DMM</option>
-                        <option value="DIGITAL MARKETING">DM</option>
-                        <option value="CONTENT CREATOR">CC</option>
+                        @foreach($roles as $role) {{-- Asumsi Anda mengirim data $roles dari controller --}}
+                            <option value="{{ strtoupper($role->name) }}">{{ strtoupper(str_replace('_', ' ', $role->name)) }}</option>
+                        @endforeach
                     </select>
                 </div>
 
@@ -50,18 +48,31 @@
                 </div>
             </div>
 
-            <div class="table-responsive">
+            <ul class="nav nav-tabs mb-3" id="divisionTabs" role="tablist">
+                @foreach($divisions as $div)
+                <li class="nav-item">
+                    <a class="nav-link font-weight-bold" data-toggle="tab" href="#content" data-divisi="{{ $div->id }}" data-name="{{ $div->name }}">
+                        {{ $div->name }}
+                    </a>
+                </li>
+                @endforeach
+            </ul>
+
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="content">
+                    <div id="table-container" class="table-responsive">
+                        </div>
+                </div>
+            </div>
+
+            {{-- <div class="table-responsive">
                 <table class="table table-bordered table-hover" id="dataTable_baru" width="100%" cellspacing="0">
                     <thead class="bg-light text-center small font-weight-bold">
                         <tr>
                             <th width="5%">No</th>
                             <th>User (Email)</th>
-                            <th>Divisi</th>
-                            <th>Role</th>
-                            <th>HOD</th>
-                            <th>DMM</th>
-                            <th>DM</th>
-                            <th>CC</th>
+                            <th>Penempatan (Divisi & Role)</th>
+                            <th>Atasan Langsung</th>
                             <th width="10%">Aksi</th>
                         </tr>
                     </thead>
@@ -70,62 +81,33 @@
                         <tr class="small text-dark align-middle">
                             <td class="text-center">{{ $loop->iteration }}</td>
                             <td>
-                                <strong>{{ $item->email }}</strong>
-                                <div class="text-xs text-muted">{{ $item->name }}</div>
+                                <strong>{{ $item->name }}</strong>
+                                <div class="text-xs text-muted">{{ $item->email }}</div>
                             </td>
+                            
                             <td class="text-center">
-                                @foreach($item->labels as $label)
-                                    <span class="badge badge-outline-secondary border text-dark mb-1">{{ $label }}</span>
+                                @foreach($item->userDivisions as $ud)
+                                    <div class="mb-1">
+                                        <span class="badge badge-info">{{ $ud->division->name ?? '-' }}</span>
+                                        <span class="badge badge-outline-secondary border text-dark">
+                                            {{ strtoupper(str_replace('_', ' ', $ud->role->name ?? '-')) }}
+                                        </span>
+                                    </div>
                                 @endforeach
                             </td>
-                            <td class="text-center">
-                                {{-- Hidden text untuk membantu pencarian/filter DataTable --}}
-                                <span class="d-none">{{ strtoupper(str_replace('_', ' ', $item->role)) }}</span>
-                                <span class="badge {{ $item->role == 'head_of_division' ? 'badge-danger' : ($item->role == 'digital_marketing_manager' ? 'badge-warning' : ($item->role == 'digital_marketing' ? 'badge-success' : 'badge-info')) }}">
-                                    {{ strtoupper(str_replace('_', ' ', $item->role)) }}
-                                </span>
-                            </td>
-
-                            <td class="text-center font-weight-bold text-primary">{{ $item->as_hod->email ?? '-' }}</td>
-                            
-                            <td>
-                                @if($item->role == 'head_of_division')
-                                    @foreach($data->where('role', 'digital_marketing_manager')->where('hod', $item->id) as $dmm_sub) 
-                                        <div class="text-xs mb-1">• {{ $dmm_sub->email }}</div> 
-                                    @endforeach
-                                @else 
-                                    <span class="text-muted">{{ $item->as_dmm->email ?? '-' }}</span> 
-                                @endif
-                            </td>
 
                             <td>
-                                @if($item->role == 'head_of_division')
-                                    @foreach($data->where('role', 'digital_marketing')->where('hod', $item->id) as $dm_sub)     
-                                        <div class="text-xs mb-1">• {{ $dm_sub->email }}</div> 
-                                    @endforeach
-                                @elseif($item->role == 'digital_marketing_manager')
-                                    @foreach($data->where('role', 'digital_marketing')->where('dmm', $item->id) as $dm_sub)     
-                                        <div class="text-xs mb-1">• {{ $dm_sub->email }}</div> 
-                                    @endforeach
-                                @elseif($item->role == 'content_creator')
-                                    <span class="text-muted">{{ $item->as_dm->email ?? '-' }}</span>
-                                @else - @endif
-                            </td>
-
-                            <td>
-                                @if($item->role == 'head_of_division')
-                                    @foreach($data->where('role', 'content_creator')->where('hod', $item->id) as $cc_sub) 
-                                        <div class="text-xs mb-1">• {{ $cc_sub->email }}</div> 
-                                    @endforeach
-                                @elseif($item->role == 'digital_marketing_manager')
-                                    @foreach($data->where('role', 'content_creator')->where('dmm', $item->id) as $cc_sub) 
-                                        <div class="text-xs mb-1">• {{ $cc_sub->email }}</div> 
-                                    @endforeach
-                                @elseif($item->role == 'digital_marketing')
-                                    @foreach($data->where('role', 'content_creator')->where('dm', $item->id) as $cc_sub) 
-                                        <div class="text-xs mb-1">• {{ $cc_sub->email }}</div> 
-                                    @endforeach
-                                @else - @endif
+                                @foreach($item->userDivisions as $ud)
+                                    @if($ud->parent)
+                                        <div class="text-xs mb-1">
+                                            <i class="fas fa-chevron-right text-primary mr-1"></i>
+                                            <strong>{{ $ud->parent->email }}</strong>
+                                            <span class="text-muted">({{ $ud->division->name }})</span>
+                                        </div>
+                                    @else
+                                        <div class="text-xs text-muted mb-1">• Tanpa Atasan ({{ $ud->division->name }})</div>
+                                    @endif
+                                @endforeach
                             </td>
 
                             <td class="text-center">
@@ -133,7 +115,7 @@
                                     <button class="btn btn-sm btn-outline-warning" data-toggle="modal" data-target="#editModal_{{ $item->id }}" title="Edit">
                                         <i class="fas fa-edit"></i>
                                     </button>
-                                    @if(Auth::user()->role == "super_admin")
+                                    @if($isSuperAdmin)
                                     <button class="btn btn-sm btn-outline-danger" data-toggle="modal" data-target="#deleteModal_{{ $item->id }}" title="Hapus">
                                         <i class="fas fa-trash"></i>
                                     </button>
@@ -144,7 +126,7 @@
                         @endforeach
                     </tbody>
                 </table>
-            </div>
+            </div> --}}
         </div>
     </div>
 </div>
@@ -399,6 +381,21 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 $(document).ready(function() {
+    if ($.isFunction($.fn.select2)) {
+        $('.select2').select2({
+            theme: 'bootstrap4',
+            width: '100%'
+        });
+    }
+    
+    renderTable(1, "Digital Marketing");
+
+    // Listener saat ganti tab
+    $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+        let divisiId = $(e.target).data('divisi');
+        let divisiName = $(e.target).data('name');
+        renderTable(divisiId, divisiName);
+    });
     // 1. Inisialisasi DataTable + Fitur Filtering
     var table = $('#dataTable_baru').DataTable({
         "destroy": true,
@@ -465,73 +462,101 @@ $(document).ready(function() {
     });
 });
 
-// 3. Logic Hirarki Tambah
-function toggleHierarchy(role) {
-    const panel = $('#hierarchy_panel');
-    const secAtasan = $('#section_atasan');
-    const secBawahan = $('#section_bawahan');
+function renderTable(divisiId, divisiName) {
+    let container = $('#table-container');
+    container.empty();
 
-    panel.addClass('d-none');
-    secAtasan.addClass('d-none');
-    secBawahan.addClass('d-none');
-    $('#div_pilih_hod, #div_pilih_dmm, #div_pilih_dm, #div_bawahan_dm, #div_bawahan_cc').addClass('d-none');
-
-    if (role === 'digital_marketing_manager') {
-        console.log($('#div_pilih_hod'));
-        panel.removeClass('d-none');
-        secAtasan.removeClass('d-none').addClass('col-md-12');
-        secBawahan.removeClass('d-none').addClass('col-md-12');
-        $('#div_bawahan_dm, #div_pilih_hod').removeClass('d-none');
-    } else if (role === 'digital_marketing') {
-        panel.removeClass('d-none');
-        secAtasan.removeClass('d-none').addClass('col-md-6');
-        secBawahan.removeClass('d-none').addClass('col-md-6');
-        $('#div_pilih_dmm, #div_bawahan_cc').removeClass('d-none');
-    } else if (role === 'content_creator') {
-        panel.removeClass('d-none');
-        secAtasan.removeClass('d-none').addClass('col-md-12');
-        $('#div_pilih_dm').removeClass('d-none');
+    // 1. Tentukan Struktur Header (THEAD)
+    let thead = '';
+    if (divisiId === 'all') {
+        thead = `<tr>
+            <th width="5%">No</th>
+            <th>User (Email)</th>
+            <th>Penempatan (Divisi & Role)</th>
+            <th>Akses Produk</th>
+            <th>Atasan Langsung</th>
+            <th width="10%">Aksi</th>
+        </tr>`;
+    } else {
+        // Header Khusus Divisi dengan Hierarki Detail
+        thead = `<tr>
+            <th width="5%">No</th>
+            <th>User</th>
+            <th>Role</th>
+            <th>HOD</th>
+            <th>DMM</th>
+            <th>DM</th>
+            <th>SCC</th>
+            <th>CC</th>
+            <th width="5%">Aksi</th>
+        </tr>`;
     }
+
+    container.append(`<table class="table table-bordered table-hover w-100" id="mainDataTable">
+        <thead class="bg-light text-center small font-weight-bold">${thead}</thead>
+        <tbody class="small text-dark"></tbody>
+    </table>`);
+
+    // 2. Inisialisasi DataTable
+    $('#mainDataTable').DataTable({
+        ajax: {
+            url: "{{ route('users.json') }}", // Sesuaikan route API Anda
+            dataSrc: (json) => divisiId === 'all' ? json : json.filter(u => u.user_divisions.some(ud => ud.division_id == divisiId))
+        },
+        columns: getColumnsConfig(divisiId)
+    });
 }
 
-// 4. Logic Hirarki Edit
-function toggleHierarchyEdit(role, userId) {
-    const panel = $(`#hierarchy_panel_edit_${userId}`);
-    const secAtasan = $(`#section_atasan_edit_${userId}`);
-    const secBawahan = $(`#section_bawahan_edit_${userId}`);
+function getColumnsConfig(divisiId) {
+    let cols = [
+        { data: null, render: (d, t, r, meta) => meta.row + 1, className: 'text-center' },
+        { data: null, render: r => `<strong>${r.name}</strong><div class="text-xs text-muted">${r.email}</div>` }
+    ];
 
-    const inputMultiple = $(`#nothod_${userId}`);
-    const inputSingle = $(`#hod_${userId}`);
-    
-    // if (role === 'head_of_division') {
-    //     inputMultiple.hide().prop('disabled', true).attr('name', '');
-    //     inputSingle.show().prop('disabled', false).attr('name', 'divisi[]');
-    // } else {
-    //     inputSingle.hide().prop('disabled', true).attr('name', '');
-    //     inputMultiple.show().prop('disabled', false).attr('name', 'divisi[]');
-    //     inputMultiple.select2({ width: '100%' });
-    // }
-    
-    panel.addClass('d-none');
-    secAtasan.addClass('d-none').removeClass('col-md-6 col-md-12');
-    secBawahan.addClass('d-none').removeClass('col-md-6 col-md-12');
-    $(`#div_edit_hod_${userId}, #div_edit_dmm_${userId}, #div_edit_dm_${userId}`).addClass('d-none');
-
-    if (role === 'digital_marketing_manager') {
-        panel.removeClass('d-none');
-        secAtasan.removeClass('d-none').addClass('col-md-6');
-        secBawahan.removeClass('d-none').addClass('col-md-6');
-        $(`#div_edit_hod_${userId}`).removeClass('d-none');
-    } else if (role === 'digital_marketing') {
-        panel.removeClass('d-none');
-        secAtasan.removeClass('d-none').addClass('col-md-6');
-        secBawahan.removeClass('d-none').addClass('col-md-6');
-        $(`#div_edit_dmm_${userId}`).removeClass('d-none');
-    } else if (role === 'content_creator') {
-        panel.removeClass('d-none');
-        secAtasan.removeClass('d-none').addClass('col-md-12');
-        $(`#div_edit_dm_${userId}`).removeClass('d-none');
+    if (divisiId === 'all') {
+        cols.push(
+            { data: 'user_divisions', render: uds => uds.map(ud => `<span class="badge badge-info mb-1">${ud.division.name}</span>`).join(' ') },
+            { data: 'user_clients', render: ucs => ucs.map(uc => `<span class="badge badge-light border mb-1">${uc.client.nama}</span>`).join(' ') },
+            { data: 'user_divisions', render: uds => uds.map(ud => ud.parent ? `<div class="text-xs">• ${ud.parent.email}</div>` : '').join('') }
+        );
+    } else {
+        // Logika Hierarki untuk Tab Divisi Spesifik
+        cols.push(
+            { 
+                data: 'user_divisions', 
+                render: uds => {
+                    let current = uds.find(ud => ud.division_id == divisiId);
+                    return `<span class="badge badge-outline-secondary text-dark">${current.role.name.replace(/_/g, ' ')}</span>`;
+                }
+            },
+            { data: null, render: r => mapAtasan(r, divisiId, 'HEAD OF DIVISION') },
+            { data: null, render: r => mapAtasan(r, divisiId, 'DIGITAL MARKETING MANAGER') },
+            { data: null, render: r => mapAtasan(r, divisiId, 'DIGITAL MARKETING') },
+            { data: null, render: r => mapAtasan(r, divisiId, 'SCC') },
+            { data: null, render: r => mapAtasan(r, divisiId, 'CONTENT CREATOR') }
+        );
     }
+
+    cols.push({ data: 'id', render: id => `<button class="btn btn-sm btn-outline-warning"><i class="fas fa-edit"></i></button>`, className: 'text-center' });
+    return cols;
+}
+
+function mapAtasan(user, divisiId, roleName) {
+    let ud = user.user_divisions.find(item => item.division_id == divisiId);
+    if (!ud) return '-';
+
+    // Jika user itu sendiri yang jabatannya ini
+    if (ud.role.name.toUpperCase() === roleName) {
+        return '<span class="badge badge-success px-2">Self</span>';
+    }
+
+    // Jika user ini punya atasan (parent) dengan role tersebut
+    // Catatan: Anda perlu memastikan data 'parent' membawa info 'role' di JSON API
+    if (ud.parent && ud.parent.role_name === roleName) {
+        return `<span class="text-xs font-weight-bold text-primary">${ud.parent.email}</span>`;
+    }
+
+    return '<span class="text-muted">-</span>';
 }
 </script>
 

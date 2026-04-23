@@ -391,6 +391,7 @@ class HCDailyController extends Controller
                 // Hanya jika proses split dilakukan HARI INI
                 ->orWhere(function($q) use ($today) {
                     $q->where('task.status', 5)
+                    ->whereDate('task.tanggal_mulai', $today)
                     ->whereDate('task.tanggal_split', $today);
                 })
 
@@ -398,6 +399,7 @@ class HCDailyController extends Controller
                 // Hanya jika disetujui/selesai HARI INI
                 ->orWhere(function($q) use ($today) {
                     $q->where('task.status', 4)
+                    ->whereDate('task.tanggal_mulai', $today)
                     ->whereDate('task.tanggal_approve', $today);
                 });
             })

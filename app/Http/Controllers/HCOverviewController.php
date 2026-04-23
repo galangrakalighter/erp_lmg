@@ -260,7 +260,9 @@ class HCOverviewController extends Controller
 
         $newEnd = (clone $newStart)->addMinutes((int)$request->menit);
 
-        $allTask = Task::where('pic', (int)$request->pic)->get();
+        $allTask = Task::where('pic', (int)$request->pic)
+                ->where('id', '!=', $id) // <-- INI KUNCINYA
+                ->get();
 
         $conflict = [];
 

@@ -442,6 +442,7 @@
                                                             @elseif(in_array($task->status, [0, 2, 7]))
                                                                 <button onclick="returnToPool({{ $task->id }})" class="btn btn-xs btn-light border mr-1" style="padding: 1px 3px;"><i class="fas fa-undo text-danger" style="font-size: 9px;"></i></button>
                                                                 <button onclick="changeStatus({{ $task->id }}, 'play', 'cc', null, this)" class="btn btn-xs btn-success shadow-sm font-weight-bold" style="font-size: 9px; padding: 1px 8px;">START</button>
+                                                                <button onclick="EditData({{ $task->id }}" class="btn btn-xs btn-warning shadow-sm font-weight-bold" style="font-size: 9px; padding: 1px 8px;">Edit</button>
                                                             @elseif($task->status == 8)
                                                                 <button onclick="changeStatus({{ $task->id }}, 'stop', 'cc', null, this)" class="btn btn-xs btn-success font-weight-bold shadow-sm" style="font-size: 9px; padding: 1px 6px;">Kirim</button>
                                                             @endif
@@ -638,6 +639,164 @@
                         <button type="button" class="btn btn-light font-weight-bold px-4 text-muted" data-dismiss="modal">BATAL</button>
                         <button type="submit" class="btn btn-primary shadow-lg px-5 font-weight-bold" style="border-radius: 8px; letter-spacing: 1px;">
                             <i class="fas fa-save mr-2"></i>SIMPAN TASK
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="editModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-warning text-white" style="background: linear-gradient(45deg, #f6c23e, #f4b619);">
+                    <h5 class="modal-title font-weight-bold">
+                        <i class="fas fa-edit mr-2"></i>Edit Task
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <form id="editForm" method="POST">
+                    @csrf
+                    @method('PUT')
+                    <div class="modal-body p-4" style="background-color: #f8f9fc;">
+                        
+                        <h6 class="text-warning font-weight-bold uppercase small mb-3"><i class="fas fa-info-circle mr-1"></i> Informasi Utama</h6>
+                        
+                        <input type="hidden" name="id" id="edit_id">
+
+                        <div class="form-group mb-4">
+                            <label class="font-weight-bold text-dark small text-uppercase">Nama Task</label>
+                            <div class="input-group shadow-sm">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-white border-right-0">
+                                        <i class="fas fa-tasks text-muted"></i>
+                                    </span>
+                                </div>
+                                <input type="text" name="nama_task" id="edit_nama_task" class="form-control border-left-0 pl-0" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-4">
+                            <label class="font-weight-bold text-dark small text-uppercase">Client</label>
+                            <div class="input-group shadow-sm">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-white border-right-0">
+                                        <i class="fas fa-user-tie text-muted"></i>
+                                    </span>
+                                </div>
+                                <select name="client_id" id="edit_selectClient" class="form-control border-left-0 pl-0" onchange="handleClientChange(this)" required>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 form-group mb-4">
+                                <label class="font-weight-bold text-dark small">DIVISI</label>
+                                <select name="divisi" id="edit_divisi" class="form-control custom-select shadow-sm border-0" required>
+                                    @foreach($result as $divId => $nama)
+                                        <option value="{{ $divId }}">{{ $nama }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-6 form-group mb-4">
+                                <label class="font-weight-bold text-dark small">PIC (PERSON IN CHARGE)</label>
+                                <select name="pic" id="edit_pic_select" class="form-control custom-select shadow-sm border-0" required>
+                                    </select>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <h6 class="text-warning font-weight-bold uppercase small mb-3"><i class="fas fa-calendar-alt mr-1"></i> Penjadwalan & Waktu</h6>
+                        <div class="row">
+                            <div class="col-md-6 form-group mb-3">
+                                <label class="font-weight-bold text-dark small">TANGGAL MULAI</label>
+                                <input type="date" name="tanggal_mulai" id="edit_tanggal_mulai" class="form-control shadow-sm border-0" required>
+                            </div>
+                            <div class="col-md-6 form-group mb-3">
+                                <label class="font-weight-bold text-dark small">TANGGAL DEADLINE</label>
+                                <input type="date" name="tanggal_deadline" id="edit_tanggal_deadline" class="form-control shadow-sm border-0" required>
+                            </div>
+                        </div>
+
+                        <div id="task-list-container-edit" class="mb-4 animate__animated animate__fadeIn" style="display: none;">
+                            <div class="card border-0 shadow-sm" style="border-radius: 10px; overflow: hidden;">
+                                <div class="card-header bg-info text-white py-2 d-flex justify-content-between align-items-center">
+                                    <span class="small font-weight-bold"><i class="fas fa-user-clock mr-1"></i> Jadwal PIC di Tanggal Ini</span>
+                                    <span id="total-durasi-container-edit" class="badge badge-light text-info shadow-sm">
+                                        Total: 0 Menit
+                                    </span>
+                                </div>
+                                <div class="table-responsive" style="max-height: 150px; overflow-y: auto;">
+                                    <table class="table table-sm table-hover mb-0 bg-white" style="font-size: 12px;">
+                                        <thead class="text-muted" style="background-color: #f1f3f5;">
+                                            <tr>
+                                                <th class="border-0 pl-3">Nama Task</th>
+                                                <th class="border-0">Project</th>
+                                                <th class="border-0">Waktu</th>
+                                                <th class="border-0">Durasi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="task-list-body-edit"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 form-group mb-3">
+                                <label class="font-weight-bold text-dark small">JAM MULAI</label>
+                                <input type="time" name="jam_mulai" id="edit_jam_mulai" class="form-control shadow-sm border-0" required>
+                            </div>
+                            <div class="col-md-4 form-group mb-3">
+                                <label class="font-weight-bold text-dark small">JAM SELESAI</label>
+                                <input type="time" name="jam_selesai" id="edit_jam_selesai" class="form-control shadow-sm border-0" required>
+                            </div>
+                            <div class="col-md-4 form-group mb-3">
+                                <label class="font-weight-bold text-dark small">ESTIMASI</label>
+                                <div class="input-group shadow-sm">
+                                    <input type="number" name="menit" id="edit_menit" class="form-control bg-white font-weight-bold border-0" readonly>
+                                    <div class="input-group-append">
+                                        <span class="input-group-text bg-white border-0 small">Min</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-4">
+                            <label class="font-weight-bold text-dark small">PRIORITAS</label>
+                            <select name="priority" id="edit_priority" class="form-control custom-select shadow-sm border-0" required>
+                                @foreach($prioritas as $pId => $pName)
+                                    <option value="{{ $pId }}">{{ $pName }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="form-group mb-4">
+                            <label class="font-weight-bold text-dark small text-uppercase">Link ke Jira</label>
+                            <div class="input-group shadow-sm">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-white border-right-0">
+                                        <i class="fas fa-link text-muted"></i>
+                                    </span>
+                                </div>
+                                <input type="url" name="jira_input" id="edit_jira_input" class="form-control border-left-0 pl-0" pattern="https?://.*">
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-0">
+                            <label class="font-weight-bold text-dark small">CATATAN</label>
+                            <textarea name="note" id="edit_note" class="form-control shadow-sm border-0" rows="3" style="border-radius: 8px;"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer bg-white border-0 px-4 pb-4">
+                        <button type="button" class="btn btn-light font-weight-bold px-4 text-muted" data-dismiss="modal">BATAL</button>
+                        <button type="submit" class="btn btn-warning shadow-lg px-5 font-weight-bold text-white" style="border-radius: 8px; letter-spacing: 1px;">
+                            <i class="fas fa-sync-alt mr-2"></i>UPDATE TASK
                         </button>
                     </div>
                 </form>
@@ -932,6 +1091,7 @@
                     return `<div class="d-flex">
                         <button onclick="returnToPool(${task.id})" class="btn btn-xs btn-light border mr-1" style="padding: 1px 4px;"><i class="fas fa-undo text-danger" style="font-size: 9px;"></i></button>
                         <button onclick="changeStatus(${task.id}, 'play', 'notCC', ${task.pic}, this)" class="${btnClass} btn-success" style="font-size: 9px; padding: 1px 8px;">START</button>
+                        <button onclick="EditData(${task.id})" class="${btnClass} btn-warning" style="font-size: 9px; padding: 1px 8px;">Edit</button>
                     </div>`;
                 } else if (status === 3) {
                     return `<span class="badge badge-warning" style="font-size: 9px; padding: 3px 5px;"><i class="fas fa-clock mr-1"></i>Review</span>`;
@@ -1337,13 +1497,75 @@
         });
     }
 
-    const baseUrl = window.location.origin;
+    function EditData(id){
+        fetch(`api/hc-daily/get-data/${id}`).then(response => response.json())
+        .then(data => {
+            console.log(data);
+            document.getElementById('edit_id').value = data.task.id;
+            document.getElementById('edit_nama_task').value = data.task.nama_task;
+            document.getElementById('edit_tanggal_mulai').value = data.task.tanggal_mulai;
+            document.getElementById('edit_tanggal_deadline').value = data.task.tanggal_deadline;
+            document.getElementById('edit_jam_mulai').value = data.task.jam_mulai;
+            document.getElementById('edit_jam_selesai').value = tambahMenitKeJam(data.task.jam_mulai, data.task.menit);
+            document.getElementById('edit_menit').value = data.task.menit;
+            document.getElementById('edit_priority').value = data.task.priority;
+            
+            document.getElementById('editForm').action = `/hc_overview/${data.project}/${id}`;
 
+            const clientSelect = document.getElementById('edit_selectClient');
+            clientSelect.innerHTML = '<option value="" disabled>-- Pilih Client --</option>';
+
+            data.client.forEach(function(item) {
+                console.log(item);
+                let option = document.createElement('option');
+                option.value = item.id;
+                
+                option.text = item.nama; // pastikan 'nama' atau 'name' sesuai API
+                
+                if (item.id == data.task.project) {
+                    option.selected = true;
+                }
+
+                clientSelect.appendChild(option);
+            });
+
+            handleClientChange(clientSelect);
+
+            $('#editModal').modal('show');
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+    function tambahMenitKeJam(jamString, menitTambah) {
+        // 1. Pecah jam dan menit (asumsi format "HH:mm" atau "HH:mm:ss")
+        let [jam, menit] = jamString.split(':').map(Number);
+
+        // 2. Buat objek Date (tanggal bebas, kita hanya butuh jamnya)
+        let date = new Date();
+        date.setHours(jam);
+        date.setMinutes(menit + parseInt(menitTambah));
+
+        // 3. Format kembali ke HH:mm
+        let jamHasil = String(date.getHours()).padStart(2, '0');
+        let menitHasil = String(date.getMinutes()).padStart(2, '0');
+
+        return `${jamHasil}:${menitHasil}`;
+    }
+
+    const baseUrl = window.location.origin;
+    // Tambah
     const inputPic = document.getElementById('pic_select');
     const inputTanggal = document.getElementById('tanggal_mulai');
     const inputMulai = document.getElementById('jam_mulai');
     const inputSelesai = document.getElementById('jam_selesai');
     const inputEstimasi = document.getElementById('menit');
+    
+    // Edit
+    const inputMulaiEdit = document.getElementById('edit_jam_mulai');
+    const inputSelesaiEdit = document.getElementById('edit_jam_selesai');
+    const inputEstimasiEdit = document.getElementById('edit_menit');
+    const inputPicEdit = document.getElementById('edit_pic_select');
+    const inputTanggalEdit = document.getElementById('edit_tanggal_mulai');
 
     function fetchTaskByPic() {
         const tanggal = inputTanggal.value;
@@ -1358,6 +1580,63 @@
                 .then(response => response.json())
                 .then(data => {
                     const totalContainer = document.getElementById('total-durasi-container');
+                    
+                    tableBody.innerHTML = '';
+                    let totalMenitAkumulasi = 0; // Inisialisasi counter
+
+                    if (data.length > 0) {
+                        data.forEach(task => {
+                            // Tambahkan durasi ke total
+                            let durasiTask = parseInt(task.menit || 0);
+                            totalMenitAkumulasi += durasiTask;
+
+                            let jamM = task.jam_mulai ? task.jam_mulai.substring(0, 5) : "00:00";
+                            let jamS = (task.jam_selesai && task.jam_selesai !== "00:00:00") 
+                                    ? task.jam_selesai.substring(0, 5) 
+                                    : hitungJamSelesaiManual(jamM, durasiTask);
+
+                            tableBody.innerHTML += `
+                                <tr>
+                                    <td>${task.nama_task}</td>
+                                    <td>${task.nama}</td>
+                                    <td><span class="badge badge-secondary">${jamM} - ${jamS}</span></td>
+                                    <td>${formatDurasi(durasiTask)}</td>
+                                </tr>`;
+                        });
+
+                        // Tampilkan total di header
+                        if(totalContainer) {
+                            totalContainer.innerText = "Total: " + formatDurasi(totalMenitAkumulasi);
+                            totalContainer.classList.replace('badge-light', 'badge-warning'); // Ubah warna jadi kuning agar kontras
+                        }
+
+                    } else {
+                        tableBody.innerHTML = '<tr><td colspan="3" class="text-center p-2 text-success">Jadwal Kosong</td></tr>';
+                        if(totalContainer) totalContainer.innerText = "Total: 0 Menit";
+                    }
+                })
+                .catch(err => {
+                    console.error('Fetch error:', err);
+                    tableBody.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Gagal memuat data</td></tr>';
+                });
+        } else {
+            if(container) container.style.display = 'none';
+        }
+    }
+
+    function fetchTaskByPicEdit() {
+        const tanggal = inputTanggalEdit.value;
+        const pic = inputPicEdit.value;
+        const container = document.getElementById('task-list-container-edit');
+        const tableBody = document.getElementById('task-list-body-edit');
+        if (tanggal && pic) {
+            tableBody.innerHTML = '<tr><td colspan="3" class="text-center p-2 text-muted small italic">Mengecek jadwal...</td></tr>';
+            container.style.display = 'block';
+
+            fetch(`${baseUrl}/api/get-tasks-by-date?tanggal=${tanggal}&pic=${pic}`)
+                .then(response => response.json())
+                .then(data => {
+                    const totalContainer = document.getElementById('total-durasi-container-edit');
                     
                     tableBody.innerHTML = '';
                     let totalMenitAkumulasi = 0; // Inisialisasi counter
@@ -1440,16 +1719,61 @@
         }
     }
 
+    function calculateMinutesEdit() {
+        const picId = inputPicEdit.value;
+        const mulai = inputMulaiEdit.value;
+        const selesai = inputSelesaiEdit.value;
+
+        if (mulai) {
+            const jamM = parseInt(mulai.split(':')[0]);
+            let limitMulai = (picId == "39") ? 8 : 9;
+            if (jamM < limitMulai) {
+                alert(`PIC ini minimal mulai jam 0${limitMulai}:00`);
+                inputMulaiEdit.value = ""; return;
+            }
+        }
+
+        if (selesai) {
+            const [jamS, menitS] = selesai.split(':').map(Number);
+            if (jamS > 17 || (jamS === 17 && menitS > 0)) {
+                alert("Jam selesai tidak boleh lebih dari jam 17:00");
+                inputSelesaiEdit.value = ""; return;
+            }
+        }
+
+        if (mulai && selesai) {
+            const [h1, m1] = mulai.split(':').map(Number);
+            const [h2, m2] = selesai.split(':').map(Number);
+            const diff = ((h2 * 60) + m2) - ((h1 * 60) + m1);
+            
+            if (diff < 0) {
+                alert("Jam selesai tidak boleh sebelum jam mulai!");
+                inputSelesaiEdit.value = ""; 
+                inputEstimasiEdit.value = "";
+            } else {
+                inputEstimasiEdit.value = diff;
+            }
+        }
+    }
+
+    // Tambah
     if(inputPic) inputPic.addEventListener('change', () => { fetchTaskByPic(); calculateMinutes(); });
     if(inputTanggal) inputTanggal.addEventListener('change', fetchTaskByPic);
     if(inputMulai) inputMulai.addEventListener('change', calculateMinutes);
     if(inputSelesai) inputSelesai.addEventListener('change', calculateMinutes);
+    // Edit
+    if(inputPicEdit) inputPicEdit.addEventListener('change', () => { fetchTaskByPicEdit(); calculateMinutesEdit(); });
+    if(inputTanggalEdit) inputTanggalEdit.addEventListener('change', fetchTaskByPicEdit);
+    if(inputMulaiEdit) inputMulaiEdit.addEventListener('change', calculateMinutesEdit);
+    if(inputSelesaiEdit) inputSelesaiEdit.addEventListener('change', calculateMinutesEdit);
     
     async function handleClientChange(el) {
         const userId = {{ Auth::user()->id }}
-        
         const clientId = el.value;
-        const picSelect = document.getElementById('pic_select');
+        let picSelect = document.getElementById('pic_select');
+        if(el.id == "edit_selectClient"){
+            picSelect = document.getElementById('edit_pic_select');
+        }
 
         if (!clientId) return;
 

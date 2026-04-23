@@ -556,6 +556,25 @@ class HCDailyController extends Controller
         return redirect()->back()->with('success', 'Task berhasil ditambahkan ke project!');
     }
 
+    public function getTasksById($id){
+        $task = Task::find($id);
+        $handleClient = User::find($task->pic);
+        $client = [];
+        if ($handleClient && $handleClient->client) {
+            $clientIds = is_array($handleClient->client) 
+                        ? $handleClient->client 
+                        : json_decode($handleClient->cliepnt, true);
+
+            $client = ProdukClient::select('id', 'nama')
+                        ->whereIn('id', $clientIds)
+                        ->get();
+        }
+        return response()->json([
+            'task'   => $task,
+            'client' => $client
+        ]);
+    }
+
     // public function getPaymentToken(Request $request)
     // {
     //     // 1. Konfigurasi Midtrans (Ambil dari .env)

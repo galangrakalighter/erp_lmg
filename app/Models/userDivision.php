@@ -14,6 +14,10 @@ class userDivision extends Model
         'parent_id'
     ];
 
+    public $incrementing = false;
+    protected $primaryKey = null;
+    public $timestamps = false;
+
     public function role()
     {
         return $this->belongsTo(Role::class, 'role_id');

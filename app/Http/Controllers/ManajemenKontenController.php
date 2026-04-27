@@ -30,15 +30,33 @@ class ManajemenKontenController extends Controller
         })
         ->where('data_jasa.produk_client_id', $produk->id)
         ->where('data_jasa.platform', $platform)
-        ->select('data_jasa.*', 'type_produk.type', 'strategy.strategy', 'status.nama_status', 'pilar.pilar', 'hooks.hooks', 'jenis_body.nama_body', 'jenis_cta.nama_cta', 'users.id as users_id', 'users.email as vic_email', 'task.jam_mulai');
-        if ($request->filled('start_date')) {
-            $query->whereDate('data_jasa.tanggal_posting', '>=', $request->start_date);
-        }
+        ->select(
+            'data_jasa.*', 
+            'type_produk.type', 
+            'strategy.strategy', 
+            'status.nama_status', 
+            'pilar.pilar', 
+            'hooks.hooks', 
+            'jenis_body.nama_body', 
+            'jenis_cta.nama_cta', 
+            'users.id as users_id', 
+            'users.email as vic_email', 
+            'task.jam_mulai'
+        );
 
-        if ($request->filled('end_date')) {
-            $query->whereDate('data_jasa.tanggal_posting', '<=', $request->end_date);
-        }
-        $data = $query->orderBy('data_jasa.tanggal_posting', 'ASC')->get();
+    // --- PERBAIKAN DI SINI ---
+    if ($request->filled('start_date') && $request->filled('end_date')) {
+        // Jika user mencari berdasarkan range tanggal tertentu
+        $query->whereDate('data_jasa.tanggal_posting', '>=', $request->start_date)
+            ->whereDate('data_jasa.tanggal_posting', '<=', $request->end_date);
+    } else {
+        // Jika tidak ada input tanggal, tampilkan data bulan ini saja secara default
+        $query->whereMonth('data_jasa.tanggal_posting', date('m'))
+            ->whereYear('data_jasa.tanggal_posting', date('Y'));
+    }
+    // -------------------------
+
+    $data = $query->orderBy('data_jasa.tanggal_posting', 'ASC')->get();
 
         // LIST TABLE YANG AKAN DIKONDISIKAN
         $table = ['strategy', 'status', 'pilar', 'hooks', 'type_produk', 'jenis_body', 'jenis_cta'];

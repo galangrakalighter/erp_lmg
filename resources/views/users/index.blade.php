@@ -56,69 +56,6 @@
                         </div>
                 </div>
             </div>
-
-            {{-- <div class="table-responsive">
-                <table class="table table-bordered table-hover" id="dataTable_baru" width="100%" cellspacing="0">
-                    <thead class="bg-light text-center small font-weight-bold">
-                        <tr>
-                            <th width="5%">No</th>
-                            <th>User (Email)</th>
-                            <th>Penempatan (Divisi & Role)</th>
-                            <th>Atasan Langsung</th>
-                            <th width="10%">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($data as $item)
-                        <tr class="small text-dark align-middle">
-                            <td class="text-center">{{ $loop->iteration }}</td>
-                            <td>
-                                <strong>{{ $item->name }}</strong>
-                                <div class="text-xs text-muted">{{ $item->email }}</div>
-                            </td>
-                            
-                            <td class="text-center">
-                                @foreach($item->userDivisions as $ud)
-                                    <div class="mb-1">
-                                        <span class="badge badge-info">{{ $ud->division->name ?? '-' }}</span>
-                                        <span class="badge badge-outline-secondary border text-dark">
-                                            {{ strtoupper(str_replace('_', ' ', $ud->role->name ?? '-')) }}
-                                        </span>
-                                    </div>
-                                @endforeach
-                            </td>
-
-                            <td>
-                                @foreach($item->userDivisions as $ud)
-                                    @if($ud->parent)
-                                        <div class="text-xs mb-1">
-                                            <i class="fas fa-chevron-right text-primary mr-1"></i>
-                                            <strong>{{ $ud->parent->email }}</strong>
-                                            <span class="text-muted">({{ $ud->division->name }})</span>
-                                        </div>
-                                    @else
-                                        <div class="text-xs text-muted mb-1">• Tanpa Atasan ({{ $ud->division->name }})</div>
-                                    @endif
-                                @endforeach
-                            </td>
-
-                            <td class="text-center">
-                                <div class="btn-group">
-                                    <button class="btn btn-sm btn-outline-warning" data-toggle="modal" data-target="#editModal_{{ $item->id }}" title="Edit">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    @if($isSuperAdmin)
-                                    <button class="btn btn-sm btn-outline-danger" data-toggle="modal" data-target="#deleteModal_{{ $item->id }}" title="Hapus">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                    @endif
-                                </div>
-                            </td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div> --}}
         </div>
     </div>
 </div>

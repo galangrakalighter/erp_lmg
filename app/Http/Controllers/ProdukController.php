@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ProdukClient;
+use App\Models\KategoriJasa;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -12,128 +13,132 @@ use Illuminate\Support\Arr;
 
 class ProdukController extends Controller
 {
-    public function index($nama){
-        $kategoriQuery = DB::table('kategori_jasa');
-        if($nama == "LGTR"){
-            $kategoriQuery = $kategoriQuery->where('id', 1);
-        }else {
-            $kategoriQuery = $kategoriQuery->whereIn('id', [2,3]);
-        }
-        $kategori = $kategoriQuery->get();
+    public function index(Request $request, $nama)
+    {
+        $divisiId = ($nama == "LGTR") ? 1 : 2;
 
-        $userClients = is_array(Auth::user()->client) ? Auth::user()->client : json_decode(Auth::user()->client, true) ?? [];
-        $query = DB::table('produk_client')
-        ->join('kategori_jasa', 'kategori_jasa.id', '=', 'produk_client.kategori_jasa_id')
-        ->select('produk_client.*', 'kategori_jasa.category');
-        if ($nama == "LGTR") {
-            $query->where('produk_client.kategori_jasa_id', 1);
-        } else {
-            $query->whereIn('produk_client.kategori_jasa_id', [2, 3]);
+        $divisi = User::find(Auth::user()->id)->userDivisions;
+        $RoleSekarang = Auth::user()->isAdmin == false ? DB::table('roles')->where('id', $divisi[0]->role_id)->value('role_name') : "Super Admin";
+        if ($request->ajax()) {
+            $data = ProdukClient::with(['teams.userDivisions.role'])
+                ->join('kategori_jasa', 'kategori_jasa.id', '=', 'produk_client.kategori_jasa_id')
+                ->select('produk_client.*', 'kategori_jasa.category')
+                ->when($divisiId == 1, function($q) { $q->where('produk_client.kategori_jasa_id', 1); })
+                ->when($divisiId == 2, function($q) { $q->whereIn('produk_client.kategori_jasa_id', [2, 3]); })
+                ->get()
+                ->map(function($client) {
+                    $teams = $client->teams;
+                    
+                    return [
+                        'id'       => $client->id,
+                        'nama'     => $client->nama,
+                        'category' => $client->category,
+                        'status'   => $client->status,
+                        // Filter berdasarkan ID Role yang benar
+                        'dmm'      => $teams->filter(fn($u) => $u->userDivisions->first()?->role_id == 1)->pluck('email'),
+                        'dm'       => $teams->filter(fn($u) => $u->userDivisions->first()?->role_id == 3)->pluck('email'),
+                        'scc'      => $teams->filter(fn($u) => $u->userDivisions->first()?->role_id == 4)->pluck('email'),
+                        'cc'       => $teams->filter(fn($u) => $u->userDivisions->first()?->role_id == 5)->pluck('email'), 
+                        'team_ids' => $teams->pluck('id')->toArray(),
+                    ];
+                });
+            
+            return response()->json(['data' => $data]);
         }
 
-        if(Auth::user()->role != "head_of_division" && Auth::user()->role != "super_admin"){
-            $query->whereIn('produk_client.id', $userClients);
-        }
+        // Ambil semua user yang masuk di divisi ini (Eager Load user_divisions)
+        $usersInDivisi = User::with('userDivisions')->get();
         
-        $dataClient = $query->when(!in_array(Auth::user()->role, ['head_of_division', 'super_admin']), function($q) use ($userClients) {
-            return $q->whereIn('produk_client.id', $userClients);
-        })
-        ->get()->map(function($client) {
-            $client->teams = User::whereJsonContains('client', $client->id)->get();
-            return $client;
-        });
-
-        $divisi = 0;
-        switch ($nama) {
-            case "LGTR":
-                $divisi = 1;
-                break;
-            case "BD":
-                $divisi = 2;
-                break;
-            default:
-                //code block
-        }
-
-        $dmm = User::whereJsonContains('divisi', $divisi)->where('role', 'digital_marketing_manager')->get();
-        $dm = User::whereJsonContains('divisi', $divisi)->where('role', 'digital_marketing')->get();
-        $cc = User::whereJsonContains('divisi', $divisi)->where('role', 'content_creator')->get();
-
-        $title = "Produk";
-        return view('cms.produk.index', compact('kategori', 'dataClient', 'title', 'dm', 'cc', 'dmm', 'divisi'));
+        $kategori = KategoriJasa::where('id', $divisiId)->get();
+        // dd($usersInDivisi->filter(fn($u) => $u->userDivisions->role_id == 1));
+        // $divisions = $usersInDivisi->filter(fn($u) => $u->userDivisions->first()?->role_id == 3)->flatMap->userDivisions;
+        return view('cms.produk.index', [
+            'title' => "Produk & Client",
+            'dmm'   => $usersInDivisi->filter(fn($u) => $u->userDivisions->first()?->role_id == 1),
+            'dm'    => $usersInDivisi->filter(fn($u) => $u->userDivisions->first()?->role_id == 3),
+            'scc'   => $usersInDivisi->filter(fn($u) => $u->userDivisions->first()?->role_id == 4),
+            'cc'    => $usersInDivisi->filter(fn($u) => $u->userDivisions->first()?->role_id == 5),
+            'nama'  => $nama,
+            'role'  => $RoleSekarang,
+            'divisi' => $divisiId,
+            'kategori' => $kategori
+        ]);
     }
 
+
+
     public function store(Request $request){
-        $id = (int)$request->kategori_jasa_id;
-        $status = (int)$request->status;
-        $array = [
-            'platform' => $request->platform,
-            'access' => $request->access,
-        ];
+        dd($request->all());
+        // $id = (int)$request->kategori_jasa_id;
+        // $status = (int)$request->status;
+        // $array = [
+        //     'platform' => $request->platform,
+        //     'access' => $request->access,
+        // ];
 
-        $produk = ProdukClient::create([
-            "kategori_jasa_id" => $id,
-            "nama" => $request->client,
-            "status" => $status,
-            "access_token" => $array
-        ]);
+        // $produk = ProdukClient::create([
+        //     "kategori_jasa_id" => $id,
+        //     "nama" => $request->client,
+        //     "status" => $status,
+        //     "access_token" => $array
+        // ]);
             
-        foreach($request->dm as $dmId){
-            $user = User::find($dmId);
-            if($user) {
-                $clientLama = $user->client ?? []; 
+        // foreach($request->dm as $dmId){
+        //     $user = User::find($dmId);
+        //     if($user) {
+        //         $clientLama = $user->client ?? []; 
                 
-                $clientBaru = array_unique(array_merge($clientLama, [$produk->id]));
+        //         $clientBaru = array_unique(array_merge($clientLama, [$produk->id]));
                 
-                $user->update([
-                    'client' => array_values($clientBaru)
-                ]);
-            }
-        }
+        //         $user->update([
+        //             'client' => array_values($clientBaru)
+        //         ]);
+        //     }
+        // }
 
-        if($request->dmm){
-            $user = User::find($request->dmm);
-            if($user){
-                $clientLama = $user->client ?? []; 
+        // if($request->dmm){
+        //     $user = User::find($request->dmm);
+        //     if($user){
+        //         $clientLama = $user->client ?? []; 
                 
-                $clientBaru = array_unique(array_merge($clientLama, [$produk->id]));
+        //         $clientBaru = array_unique(array_merge($clientLama, [$produk->id]));
                 
-                $user->update([
-                    'client' => array_values($clientBaru)
-                ]);
-            }
-        }
+        //         $user->update([
+        //             'client' => array_values($clientBaru)
+        //         ]);
+        //     }
+        // }
 
         
-        if(Auth::user()->role != "super_admin"){
-            $client_baru = array_unique(array_merge(Auth::user()->client ?? [], [$produk->id]));
-            Auth::user()->update([
-                'client' => array_values($client_baru)
-            ]);
-        }
+        // if(Auth::user()->role != "super_admin"){
+        //     $client_baru = array_unique(array_merge(Auth::user()->client ?? [], [$produk->id]));
+        //     Auth::user()->update([
+        //         'client' => array_values($client_baru)
+        //     ]);
+        // }
 
-        foreach($request->cc as $ccId){
-            $user = User::find($ccId);
-            if($user) {
-                $clientLama = $user->client ?? [];
-                $clientBaru = array_unique(array_merge($clientLama, [$produk->id]));
+        // foreach($request->cc as $ccId){
+        //     $user = User::find($ccId);
+        //     if($user) {
+        //         $clientLama = $user->client ?? [];
+        //         $clientBaru = array_unique(array_merge($clientLama, [$produk->id]));
                 
-                $user->update([
-                    'client' => array_values($clientBaru)
-                ]);
-            }
-        }
+        //         $user->update([
+        //             'client' => array_values($clientBaru)
+        //         ]);
+        //     }
+        // }
 
-        $user = User::whereJsonContains('divisi', (int)$request->divisi)->where('role', 'head_of_division')->first();
-        if($user) {
-            $clientLama = $user->client ?? [];
-            $clientBaru = array_unique(array_merge($clientLama, [$produk->id]));
+        // $user = User::whereJsonContains('divisi', (int)$request->divisi)->where('role', 'head_of_division')->first();
+        // if($user) {
+        //     $clientLama = $user->client ?? [];
+        //     $clientBaru = array_unique(array_merge($clientLama, [$produk->id]));
             
-            $user->update([
-                'client' => array_values($clientBaru)
-            ]);
-        }
-        return redirect()->back();
+        //     $user->update([
+        //         'client' => array_values($clientBaru)
+        //     ]);
+        // }
+        // return redirect()->back();
     }
 
     public function update($id, Request $request){

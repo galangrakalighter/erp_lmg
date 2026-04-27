@@ -45,7 +45,7 @@
                     @endif
 
                     @foreach ($menus as $group)
-                        @if($myDivision->name == "Digital Marketing")
+                        @if($myDivision->name == "Digital Marketing" || $isSuperAdmin)
                             @if($group->id == 1)
                             <div class="group-wrapper mb-2">
                                 <a class="category-dropdown-link collapsed" data-toggle="collapse" data-target="#cat_lgtr_{{ $group->id }}">

@@ -38,7 +38,7 @@ class MenuServiceProvider extends ServiceProvider
             $user = Auth::user();
 
             if ($user) {
-                $isSuperAdmin = $user->isAdmin == 'true';
+                $isSuperAdmin = $user->isAdmin == true;
                 // Eager load relasi untuk menghindari N+1
                 $user->load(['userDivisions.division', 'userDivisions.role', 'userClients']);
                 

@@ -51,6 +51,7 @@ class ProdukController extends Controller
         $usersInDivisi = User::with('userDivisions')->get();
         
         $kategori = KategoriJasa::where('id', $divisiId)->get();
+        // dd($kategori);
         // dd($usersInDivisi->filter(fn($u) => $u->userDivisions->role_id == 1));
         // $divisions = $usersInDivisi->filter(fn($u) => $u->userDivisions->first()?->role_id == 3)->flatMap->userDivisions;
         return view('cms.produk.index', [
@@ -67,15 +68,21 @@ class ProdukController extends Controller
     }
 
 
-    public function getDetail($id)
+    public function getDetail($id, $id_user)
     {
         try {
             $produk = ProdukClient::findOrFail($id);
             $currentTeamIds = $produk->teams()->pluck('users.id')->toArray();
 
             // Mengambil Role Sekarang sesuai logika Anda
-            $user = Auth::user();
+            $user = User::find($id_user);
             $divisi = $user->userDivisions;
+
+            if ($user->isAdmin) {
+                $kategori = KategoriJasa::where('id', 1)->get();
+            } else {
+                $kategori = KategoriJasa::where('id', $divisi[0]->division_id)->get();
+            }
             
             // Cek apakah user punya divisi untuk menghindari error $divisi[0]
             $roleName = "Guest"; 
@@ -90,9 +97,15 @@ class ProdukController extends Controller
 
             $options = [
                 'dmm' => User::whereHas('userDivisions.role', fn($q) => $q->where('role_name', 'Digital Marketing Manager'))->get(['id', 'name']),
-                'dm'  => User::whereHas('userDivisions.role', fn($q) => $q->where('role_name', 'Digital Marketing'))->get(['id', 'name']),
-                'scc' => User::whereHas('userDivisions.role', fn($q) => $q->where('role_name', 'Senior Content Creator'))->get(['id', 'name']),
-                'cc'  => User::whereHas('userDivisions.role', fn($q) => $q->where('role_name', 'Content Creator'))->get(['id', 'name']),
+                'dm'  => User::with('userDivisions')->whereHas('userDivisions.role', fn($q) => $q->where('role_name', 'Digital Marketing'))->get()->map(function($u) {
+                    return ['id' => $u->id, 'name' => $u->name, 'parent' => $u->userDivisions->first()->parent_id ?? 0];
+                }),
+                'scc' => User::with('userDivisions')->whereHas('userDivisions.role', fn($q) => $q->where('role_name', 'Senior Content Creator'))->get()->map(function($u) {
+                    return ['id' => $u->id, 'name' => $u->name, 'parent' => $u->userDivisions->first()->parent_id ?? 0];
+                }),
+                'cc'  => User::with('userDivisions')->whereHas('userDivisions.role', fn($q) => $q->where('role_name', 'Content Creator'))->get()->map(function($u) {
+                    return ['id' => $u->id, 'name' => $u->name, 'parent' => $u->userDivisions->first()->parent_id ?? 0];
+                }),
             ];
 
             return response()->json([
@@ -101,6 +114,7 @@ class ProdukController extends Controller
                 'current_teams' => $currentTeamIds,
                 'options'       => $options,
                 'is_admin'      => $isUserAdmin,
+                'kategori'      => $kategori,
                 'my_role'       => $roleName // Tambahan untuk debugging jika perlu
             ]);
         } catch (\Exception $e) {
@@ -179,88 +193,90 @@ class ProdukController extends Controller
         }
     }
 
-    public function update($id, Request $request){
+    public function update($id, Request $request)
+    {
         $id = (int)$id;
-        $kategori = (int)$request->kategori_jasa_id;
-        $status = (int)$request->status;
+        
+        // Siapkan array access_token
+        $accessTokenArray = [
+            'platform' => $request->platform,
+            'access'   => $request->access,
+        ];
 
-        DB::transaction(function () use ($id, $kategori, $status, $request) {
-            $array = [
-                'platform' => $request->platform,
-                'access' => $request->access,
-            ];
+        try {
+            DB::beginTransaction();
 
-            DB::table('produk_client')->where('id', $id)->update([
-                "kategori_jasa_id" => $kategori,
+            // 1. Update Data Produk
+            $produk = ProdukClient::findOrFail($id);
+            $produk->update([
+                "kategori_jasa_id" => (int)$request->kategori_jasa_id,
                 "nama"             => $request->client,
-                "status"           => $status,
-                "access_token"     => json_encode($array),
+                "status"           => (int)$request->status,
+                "access_token"     => $accessTokenArray 
             ]);
 
-            User::whereJsonContains('client', $id)
-                ->get()
-                ->each(function($user) use ($id) {
-                    if($user->role != "super_admin"){
-                        $currentClients = is_array($user->client) ? $user->client : json_decode($user->client, true) ?? [];
-                        $cleaned = array_values(array_filter($currentClients, fn($val) => $val != $id));
-                        $user->update(['client' => $cleaned]);
-                    }
-                });
+            // 2. Kumpulkan semua ID User dari input modal edit
+            $allUserIds = collect([
+                $request->dmm_ids, 
+                $request->dm_ids,
+                $request->scc_ids,
+                $request->cc_ids
+            ])->flatten()->filter()->unique();
 
-            $allInvolvedIds = collect([$request->dmm])
-                ->merge($request->dm)
-                ->merge($request->cc)
-                ->filter()
-                ->unique()
-                ->all();
+            // 3. Tambahkan Head of Division (HOD) secara otomatis
+            // Kita ambil DMM pertama sebagai patokan divisi jika user login adalah Admin
+            $targetUserId = (Auth::user()->isAdmin == false) 
+                            ? Auth::user()->id 
+                            : ($request->dmm_ids[0] ?? null);
 
-            foreach($allInvolvedIds as $userId) {
-                $user = User::find($userId);
-                if($user) {
-                    $currentClients = is_array($user->client) ? $user->client : json_decode($user->client, true) ?? [];
-                    
-                    if (!in_array($id, $currentClients)) {
-                        $currentClients[] = $id;
-                    }
-                    
-                    $user->update([
-                        'client' => array_values(array_unique($currentClients))
-                    ]);
+            if ($targetUserId) {
+                $hod = UserDivision::where('user_id', $targetUserId)->first();
+                if ($hod) {
+                    // Tambahkan ID user dari HOD tersebut (asumsi HOD adalah user di divisi yang sama)
+                    // Jika logic HOD Anda adalah user tertentu, sesuaikan query-nya di sini
+                    $allUserIds->push($hod->user_id);
                 }
             }
-            
-            $user = User::whereJsonContains('divisi', (int)$request->divisi_edit)->where('role', 'head_of_division')->first();
-            if($user) {
-                $currentClients = is_array($user->client) ? $user->client : json_decode($user->client, true) ?? [];
-                    
-                if (!in_array($id, $currentClients)) {
-                    $currentClients[] = $id;
-                }
-                
-                $user->update([
-                    'client' => array_values(array_unique($currentClients))
-                ]);
-            }
-        });
 
-        return redirect()->back();
+            // 4. Pastikan pembuat/user login tetap punya akses jika bukan Admin
+            if (Auth::user()->isAdmin == false) {
+                $allUserIds->push(Auth::user()->id);
+            }
+
+            // 5. Sinkronisasi Tabel Pivot (User Client)
+            // sync() akan menghapus yang lama dan mengganti dengan daftar ID yang baru
+            $produk->teams()->sync($allUserIds->unique()->toArray());
+
+            DB::commit();
+            return redirect()->back()->with('success', 'Perubahan produk dan tim berhasil diperbarui!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
     }
 
-    public function destroy($id){
-        $id = (int)$id;
-        DB::table('produk_client')->where('id', $id)->delete($id);
-        Task::where('project', $id)->delete($id);
-        DB::transaction(function () use ($id) {
+    public function destroy($id)
+    {
+        try {
+            DB::beginTransaction();
 
-        User::whereIn('role', ['digital_marketing', 'content_creator', 'digital_marketing_manager', 'head_of_division'])
-            ->whereJsonContains('client', $id)
-            ->get()
-            ->each(function($user) use ($id) {
-                $cleaned = collect($user->client)->reject(fn($val) => $val == $id)->values()->all();
-                $user->update(['client' => $cleaned]);
-            });
-        });
-        return redirect()->back();
+            $produk = ProdukClient::findOrFail($id);
+
+            // Putus semua hubungan user dengan produk ini di tabel pivot
+            // (Opsional jika di migration sudah pakai onDelete('cascade'))
+            $produk->teams()->detach(); 
+
+            // Hapus produk
+            $produk->delete();
+
+            DB::commit();
+            return redirect()->back()->with('success', 'Produk berhasil dihapus!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Gagal menghapus data: ' . $e->getMessage());
+        }
     }
 
     public function docs(){

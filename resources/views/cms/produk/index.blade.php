@@ -44,6 +44,8 @@
         </div>
     </div>
 
+    <input type="hidden" id="user_id" value="{{ Auth::user()->id }}">
+
     {{-- MODAL TAMBAH --}}
     <div class="modal fade" id="tambahModal" tabindex="-1" role="dialog" aria-labelledby="tambahModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
@@ -185,61 +187,45 @@
             <div class="modal-content border-0 shadow-lg">
                 <form id="formEditProduk" method="POST">
                     @csrf
-                    <div class="modal-header bg-gradient-warning text-white">
-                        <h5 class="modal-title font-weight-bold">Edit Produk</h5>
-                        <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
-                    </div>
-                    <div class="modal-body p-4" id="modalEditContent">
-                        </div>
-                    <div class="modal-footer bg-light">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
-                        <button type="submit" class="btn btn-warning text-white font-weight-bold">Simpan Perubahan</button>
-                    </div>
+                    <div id="modalEditContent"></div>
                 </form>
             </div>
         </div>
     </div>
 
-    {{-- <div class="modal fade" id="deleteModal_{{ $item->id }}" tabindex="-1">
+    <div class="modal fade" id="modalDeleteGlobal" tabindex="-1">
         <div class="modal-dialog modal-md">
             <div class="modal-content">
-
-                <form action="{{ route('produk_delete', $item->id) }}" method="POST">
+                <form id="formDeleteProduk" method="POST">
                     @csrf
                     <div class="modal-header bg-danger text-white">
                         <h5 class="modal-title">Hapus Produk Jasa</h5>
-                        <button type="button" class="close text-white" data-dismiss="modal">
-                            &times;
-                        </button>
+                        <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
                     </div>
 
                     <div class="modal-body text-center">
-                        <p class="mb-2">
-                            Apakah kamu yakin ingin menghapus
-                        </p>
-                        <strong>{{ $item->nama }}</strong>?
-                        <p class="text-muted mt-2">
-                            Data yang dihapus tidak dapat dikembalikan.
+                        <p class="mb-2">Apakah kamu yakin ingin menghapus</p>
+                        <strong id="deleteTargetName"></strong>?
+                        <p class="text-muted mt-2 small">
+                            Data yang dihapus tidak dapat dikembalikan dan akses tim terkait akan otomatis diputus.
                         </p>
                     </div>
 
                     <div class="modal-footer justify-content-center">
-                        <button class="btn btn-secondary" data-dismiss="modal">
-                            Batal
-                        </button>
-                        <button class="btn btn-danger">
-                            Ya, Hapus
-                        </button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-danger">Ya, Hapus</button>
                     </div>
-
                 </form>
-
             </div>
         </div>
-    </div> --}}
+    </div>
     {{-- @endforeach --}}
 </div>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@1.5.2/dist/select2-bootstrap4.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 
 $(document).ready(function() {
@@ -635,86 +621,10 @@ function renderBadges(emails, badgeClass) {
     ).join('');
 }
 
-function editProduk(id) {
-    let $modal = $('#modalEditGlobal');
-    let $container = $('#modalEditContent');
-    
-    $modal.modal('show');
-    $container.html('<div class="text-center p-5"><div class="spinner-border text-warning"></div></div>');
-
-    // Sesuaikan URL jika Anda menggunakan prefix cms_LGTR
-    let urlUpdate = `{{ url('cms_LGTR/produk/update') }}/${id}`;
-    let urlDetail = "{{ url('api/produk/detail') }}/" + id;
-
-    $('#formEditProduk').attr('action', urlUpdate);
-
-    $.ajax({
-        url: urlDetail,
-        method: 'GET',
-        success: function(res) {
-            if(res.status === 'success') {
-                const p = res.produk;
-                const currentTeams = res.current_teams;
-                const opt = res.options;
-                
-                // Parsing Access Token (JSON)
-                let token = typeof p.access_token === 'string' ? JSON.parse(p.access_token) : p.access_token;
-                
-                let html = `
-                    <div class="row mb-3">
-                        <div class="col-md-6 form-group">
-                            <label class="small font-weight-bold">Nama Client</label>
-                            <input type="text" name="client" class="form-control" value="${p.nama}" required>
-                        </div>
-                        <div class="col-md-6 form-group">
-                            <label class="small font-weight-bold">Status</label>
-                            <select name="status" class="form-control">
-                                <option value="1" ${p.status == 1 ? 'selected' : ''}>Ditampilkan</option>
-                                <option value="2" ${p.status == 2 ? 'selected' : ''}>Disembunyikan</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="section-title mb-2 mt-4"><h6 class="text-danger font-weight-bold">Assign Tim</h6></div>
-                    
-                    <div class="form-group">
-                        <label class="small">Digital Marketing Manager (DMM)</label>
-                        <select name="dmm_ids[]" class="form-control select2-edit">
-                            <option value="">-- Pilih DMM --</option>
-                            ${opt.dmm.map(u => `<option value="${u.id}" ${currentTeams.includes(u.id) ? 'selected' : ''}>${u.name}</option>`).join('')}
-                        </select>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6 form-group">
-                            <label class="small">Digital Marketing (DM)</label>
-                            <select name="dm_ids[]" class="form-control select2-edit" multiple>
-                                ${opt.dm.map(u => `<option value="${u.id}" ${currentTeams.includes(u.id) ? 'selected' : ''}>${u.name}</option>`).join('')}
-                            </select>
-                        </div>
-                        <div class="col-md-6 form-group">
-                            <label class="small">Content Creator (CC)</label>
-                            <select name="cc_ids[]" class="form-control select2-edit" multiple>
-                                ${opt.cc.map(u => `<option value="${u.id}" ${currentTeams.includes(u.id) ? 'selected' : ''}>${u.name}</option>`).join('')}
-                            </select>
-                        </div>
-                    </div>
-                `;
-
-                $container.html(html);
-                
-                // Jika Anda menggunakan Select2, inisialisasi di sini
-                $('.select2-edit').select2({
-                    theme: 'bootstrap4',
-                    placeholder: "Pilih Personil"
-                });
-            }
-        },
-        error: function(xhr) {
-            $container.html(`<div class="alert alert-danger">Error: ${xhr.statusText}</div>`);
-        }
-    });
-}
+// Event Handler untuk perubahan dropdown
+$(document).on('change', '#edit-select-dmm, #edit-select-dm', function() {
+    applyHierarchyFilter();
+});
 
 function renderPlatformRowEdit(platform, access, isFirst, productId) {
     const listPlt = ['Instagram', 'Facebook', 'Tiktok'];

@@ -3,113 +3,69 @@
 {{-- NOTIFIKASI --}}
     <div class="card shadow">
         {{-- CARD HEADER --}}
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h6 class="m-0 font-weight-bold text-primary">Manajemen Konten {{ $produk->nama }}</h6>
-            {{-- <a href="{{ route('create_produk_jasa') }}" class="btn btn-sm btn-primary">
-                Tambah
-            </a> --}}
+        <div class="card-header d-flex justify-content-between align-items-center py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-tasks mr-2"></i>Manajemen Konten {{ $produk->nama }}
+            </h6>
             @if(Auth::user()->role != "content_creator")
-            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#tambahModal">
-                Tambah
+            <button type="button" class="btn btn-primary btn-sm shadow-sm" data-toggle="modal" data-target="#tambahModal">
+                <i class="fas fa-plus fa-sm text-white-50 mr-1"></i> Tambah Konten
             </button>
             @endif
         </div>
 
-        <div class="card-body">
-            <form action="{{ url()->current() }}" method="GET" class="mb-4">
+        {{-- FILTER TANGGAL --}}
+        <div class="card-body border-bottom">
+            <form action="{{ url()->current() }}" method="GET">
                 <div class="row align-items-end">
                     <div class="col-md-3">
-                        <label class="small font-weight-bold">Dari Tanggal:</label>
-                        <input type="date" name="start_date" class="form-control" value="{{ request('start_date') }}">
+                        <label class="small font-weight-bold text-uppercase">Dari Tanggal</label>
+                        <input type="date" name="start_date" class="form-control form-control-sm" value="{{ request('start_date') }}">
                     </div>
                     <div class="col-md-3">
-                        <label class="small font-weight-bold">Sampai Tanggal:</label>
-                        <input type="date" name="end_date" class="form-control" value="{{ request('end_date') }}">
+                        <label class="small font-weight-bold text-uppercase">Sampai Tanggal</label>
+                        <input type="date" name="end_date" class="form-control form-control-sm" value="{{ request('end_date') }}">
                     </div>
                     <div class="col-md-4">
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-primary btn-sm px-3">
                             <i class="fas fa-filter mr-1"></i> Filter
                         </button>
-                        <a href="{{ url()->current() }}" class="btn btn-secondary">
+                        <a href="{{ url()->current() }}" class="btn btn-secondary btn-sm px-3">
                             <i class="fas fa-undo mr-1"></i> Reset
                         </a>
                     </div>
                 </div>
             </form>
         </div>
-        {{-- CARD BODY --}}
-        <div class="card-body">
+
+        {{-- TABEL DATA --}}
+        <div class="table-container px-4">
             <div class="table-responsive">
-                <table class="table table-bordered table-hover text-center" id="dataTable">
-                    <thead class="thead-light text-nowrap">
+                <table class="table table-bordered table-hover text-center" id="tableManajemenKonten" width="100%">
+                    <thead class="thead-light small font-weight-bold">
                         <tr>
                             <th>No</th>
-                            <th>PIC</th>
                             <th>Judul</th>
                             <th>Inspirasi</th>
-                            {{-- <th>Prioritas</th> --}}
                             <th>Type</th>
                             <th>Strategi</th>
                             <th>Pilar</th>
                             <th>Hook</th>
                             <th>Body</th>
                             <th>CTA</th>
-                            {{-- <th>Durasi</th> --}}
                             @if($kategory->id == 2)
-                            <th>Warna</th>
+                                <th>Warna</th>
                             @endif
                             <th>Komposisi</th>
                             <th>Note</th>
-                            <th>Tanggal Posting (Y-M-D)</th>
-                            {{-- <th>Tanggal Mulai (Y-M-D)</th>
-                            <th>Tanggal Deadline (Y-M-D)</th>
-                            <th>Durasi Mengerjakan</th> --}}
+                            <th>Tgl Posting</th>
                             <th>Link</th>
                             <th>Status</th>
                             <th>Action</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        @foreach ($data as $item)
-                            <tr>
-                                <th>{{ $loop->iteration }}</th>
-                                <th>{{ $item->vic_email }}</th>
-                                <th>{{ $item->judul }}</th>
-                                <th><a href="{{ $item->inspirasi }}">{{ $item->inspirasi }}</a></th>
-                                @php
-                                    $prioData = [
-                                        1 => ['class' => 'badge-info', 'label' => 'Rendah'],
-                                        2 => ['class' => 'badge-warning text-dark', 'label' => 'Sedang'],
-                                        3 => ['class' => 'badge-danger', 'label' => 'Tinggi']
-                                    ][$item->priority] ?? ['class' => 'badge-light', 'label' => 'N/A'];
-                                @endphp
-                                {{-- <th><span class="badge {{ $prioData['class'] }} shadow-sm px-3">{{ $prioData['label'] }}</span></th> --}}
-                                <th>{{ $item->type }}</th>
-                                <th>{{ $item->strategy }}</th>
-                                <th>{{ $item->pilar }}</th>
-                                <th>{{ $item->hooks }}</th>
-                                <th>{{ $item->nama_body }}</th>
-                                <th>{{ $item->nama_cta }}</th>
-                                {{-- <th>{{ $item->durasi }}</th> --}}
-                                @if($kategory->id == 2)
-                                <th>{{ $item->background }}</th>
-                                @endif
-                                <th>{{ $item->komposisi }}</th>
-                                <th>{{ $item->note }}</th>
-                                <th>{{ $item->tanggal_posting }}</th>
-                                {{-- <th>{{ $item->tanggal_mulai }}</th>
-                                <th>{{ $item->tanggal_deadline }}</th> --}}
-                                {{-- <th>{{ $item->menit ? $item->menit . " Menit" : ""}}</th> --}}
-                                <th><a href="{{ $item->link }}">{{ $item->link }}</a></th>
-                                <th>{{ $item->nama_status }}</th>
-                                <th>
-                                    <button type="button" class="btn btn-warning" data-toggle="modal" onclick="getDataEdit('{{ $item->id }}')" data-target="#editModal_{{ $item->id }}"><i class="fas fa-edit"></i></button>
-                                    @if(Auth::user()->role != "content_creator")
-                                    <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#deleteModal_{{ $item->id }}"><i class="fas fa-trash"></i></button>
-                                    @endif
-                                </th>
-                            </tr>
-                        @endforeach
+                    <tbody class="small">
+                        {{-- Data diisi oleh DataTables --}}
                     </tbody>
                 </table>
             </div>
@@ -195,23 +151,6 @@
                                             <span class="input-group-text border-right-0"><i class="fas fa-link text-muted"></i></span>
                                         </div>
                                         <input type="text" name="inspirasi" class="form-control border-left-0">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label class="text-dark font-weight-bold small">PIC (Penanggung Jawab) <span class="text-danger">*</span></label>
-                                    <div class="input-group shadow-sm">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text border-right-0"><i class="fas fa-user-tag text-muted"></i></span>
-                                        </div>
-                                        <select name="pic" id="pic_select" class="form-control border-left-0" required>
-                                            <option value="" disabled selected>-- Pilih Penanggung Jawab --</option>
-                                            @foreach($users as $user)
-                                                <option value="{{ $user->id }}">{{ $user->email }}</option>
-                                            @endforeach
-                                        </select>
                                     </div>
                                 </div>
                             </div>
@@ -480,14 +419,15 @@
     </div>
 
     {{-- Modal Edit --}}
-    @foreach ($data as $item)
-    <div class="modal fade" id="editModal_{{ $item->id }}" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal fade" id="modalEditKonten" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
             <div class="modal-content border-0 shadow-lg" style="border-radius: 15px; overflow: hidden;">
-                <form action="{{ route('manajemen_update', $item->id) }}" method="POST">
+                <form id="formEditKonten" method="POST">
                     @csrf
+                    @method('POST')
+                    <input type="hidden" name="id" id="edit_id">
                     <input type="hidden" name="id_project" value="{{ $produk->id }}">
-                    <input type="hidden" name="platform" value="{{ $item->platform }}">
+                    <input type="hidden" name="platform" id="edit_platform">
 
                     <div class="modal-header bg-gradient-warning text-white py-3 border-0">
                         <div class="d-flex align-items-center">
@@ -496,7 +436,7 @@
                             </div>
                             <div>
                                 <h5 class="modal-title font-weight-bold mb-0">Edit Konten Jasa</h5>
-                                <small class="text-white-50">ID Konten: #{{ $item->id }}</small>
+                                <small class="text-white-50">ID Konten: #<span id="display_id"></span></small>
                             </div>
                         </div>
                         <button type="button" class="close text-white outline-none" data-dismiss="modal" aria-label="Close">
@@ -519,7 +459,7 @@
                                         <div class="input-group-prepend">
                                             <span class="input-group-text bg-white border-right-0"><i class="fas fa-heading text-muted"></i></span>
                                         </div>
-                                        <input type="text" name="judul" class="form-control border-left-0 pl-0 font-weight-bold" value="{{ $item->judul }}" {{ Auth::user()->role == "content_creator" ? "readonly" : "" }} required>
+                                        <input type="text" name="judul" id="edit_judul" class="form-control border-left-0 pl-0 font-weight-bold" {{ Auth::user()->role == "content_creator" ? "readonly" : "" }} required>
                                     </div>
                                 </div>
                             </div>
@@ -531,42 +471,10 @@
                                         <div class="input-group-prepend">
                                             <span class="input-group-text bg-white border-right-0"><i class="fas fa-link text-muted"></i></span>
                                         </div>
-                                        <input type="text" name="inspirasi" class="form-control border-left-0 pl-0" value="{{ $item->inspirasi }}" {{ Auth::user()->role == "content_creator" ? "readonly" : "" }}>
+                                        <input type="text" name="inspirasi" id="edit_inspirasi" class="form-control border-left-0 pl-0" {{ Auth::user()->role == "content_creator" ? "readonly" : "" }}>
                                     </div>
                                 </div>
                             </div>
-
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label class="text-muted font-weight-bold small uppercase">PIC (Person In Charge)</label>
-                                    <div class="input-group shadow-sm">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text bg-white border-right-0"><i class="fas fa-user-tag text-muted"></i></span>
-                                        </div>
-                                        <select name="pic" class="form-control border-left-0 pl-0 bg-white pic-select-edit" {{ Auth::user()->role == "content_creator" ? "disabled" : "" }} data-id="{{ $item->id }}">
-                                            @foreach($users as $user)
-                                                <option value="{{ $user->id }}" {{ $item->pic == $user->id ? 'selected' : '' }}>{{ $user->email }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {{-- <div class="col-md-6">
-                                <div class="form-group">
-                                    <label class="text-muted font-weight-bold small uppercase">Prioritas <span class="text-danger">*</span></label>
-                                    <div class="input-group shadow-sm">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text bg-white border-right-0"><i class="fas fa-exclamation-circle text-muted"></i></span>
-                                        </div>
-                                        <select name="prioritas" class="form-control border-left-0 pl-0 bg-white" {{ Auth::user()->role == "content_creator" ? "disabled" : "" }} required>
-                                            <option value="1" {{ $item->priority == 1 ? 'selected' : '' }}>🟢 Rendah</option>
-                                            <option value="2" {{ $item->priority == 2 ? 'selected' : '' }}>🟡 Sedang</option>
-                                            <option value="3" {{ $item->priority == 3 ? 'selected' : '' }}>🔴 Tinggi</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div> --}}
                         </div>
 
                         <div class="section-title mb-3 d-flex align-items-center mt-4">
@@ -578,59 +486,55 @@
                                 <div class="row">
                                     <div class="col-md-4 mb-3">
                                         <label class="text-muted font-weight-bold small">Tipe Produk</label>
-                                        <select name="type" class="form-control custom-select bg-light border-0 shadow-none" {{ Auth::user()->role == "content_creator" ? "disabled" : "" }}>
+                                        <select name="type" id="edit_type" class="form-control custom-select bg-light border-0 shadow-none" {{ Auth::user()->role == "content_creator" ? "disabled" : "" }}>
                                             @foreach ($option['type_produk'] as $type)
-                                                <option value="{{ $type->id }}" {{ $item->type_produk_id == $type->id ? 'selected' : '' }}>{{ $type->type }}</option>
+                                                <option value="{{ $type->id }}">{{ $type->type }}</option>
                                             @endforeach
                                         </select>
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <label class="text-muted font-weight-bold small">Strategi</label>
-                                        <select name="strategy" class="form-control custom-select bg-light border-0 shadow-none" {{ Auth::user()->role == "content_creator" ? "disabled" : "" }}>
+                                        <select name="strategy" id="edit_strategy" class="form-control custom-select bg-light border-0 shadow-none" {{ Auth::user()->role == "content_creator" ? "disabled" : "" }}>
                                             @foreach ($option['strategy'] as $strategy)
-                                                <option value="{{ $strategy->id }}" {{ $item->strategy_id == $strategy->id ? 'selected' : '' }}>{{ $strategy->strategy }}</option>
+                                                <option value="{{ $strategy->id }}">{{ $strategy->strategy }}</option>
                                             @endforeach
                                         </select>
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <label class="text-muted font-weight-bold small">Pilar</label>
-                                        <select name="pilar" class="form-control custom-select bg-light border-0 shadow-none" {{ Auth::user()->role == "content_creator" ? "disabled" : "" }}>
+                                        <select name="pilar" id="edit_pilar" class="form-control custom-select bg-light border-0 shadow-none" {{ Auth::user()->role == "content_creator" ? "disabled" : "" }}>
                                             @foreach ($option['pilar'] as $pilar)
-                                                <option value="{{ $pilar->id }}" {{ $item->pilar_id == $pilar->id ? 'selected' : '' }}>{{ $pilar->pilar }}</option>
+                                                <option value="{{ $pilar->id }}">{{ $pilar->pilar }}</option>
                                             @endforeach
                                         </select>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label class="text-muted font-weight-bold small">Hook</label>
-                                        <select name="hooks" class="form-control custom-select bg-light border-0 shadow-none" {{ Auth::user()->role == "content_creator" ? "disabled" : "" }}>
+                                        <select name="hooks" id="edit_hooks" class="form-control custom-select bg-light border-0 shadow-none" {{ Auth::user()->role == "content_creator" ? "disabled" : "" }}>
                                             @foreach ($option['hooks'] as $hooks)
-                                                <option value="{{ $hooks->id }}" {{ $item->hooks_id == $hooks->id ? 'selected' : '' }}>{{ $hooks->hooks }}</option>
+                                                <option value="{{ $hooks->id }}">{{ $hooks->hooks }}</option>
                                             @endforeach
                                         </select>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label class="text-muted font-weight-bold small">Jenis Body</label>
-                                        <select name="jenis_body" class="form-control custom-select bg-light border-0 shadow-none" {{ Auth::user()->role == "content_creator" ? "disabled" : "" }}>
+                                        <select name="jenis_body" id="edit_body" class="form-control custom-select bg-light border-0 shadow-none" {{ Auth::user()->role == "content_creator" ? "disabled" : "" }}>
                                             @foreach ($option['jenis_body'] as $jenis_body)
-                                                <option value="{{ $jenis_body->id }}" {{ $item->body_id == $jenis_body->id ? 'selected' : '' }}>{{ $jenis_body->nama_body }}</option>
+                                                <option value="{{ $jenis_body->id }}">{{ $jenis_body->nama_body }}</option>
                                             @endforeach
                                         </select>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="text-muted font-weight-bold small">Jenis CTA</label>
-                                        <select name="jenis_cta" class="form-control custom-select bg-light border-0 shadow-none" {{ Auth::user()->role == "content_creator" ? "disabled" : "" }}>
+                                        <select name="jenis_cta" id="edit_cta" class="form-control custom-select bg-light border-0 shadow-none" {{ Auth::user()->role == "content_creator" ? "disabled" : "" }}>
                                             @foreach ($option['jenis_cta'] as $jenis_cta)
-                                                <option value="{{ $jenis_cta->id }}" {{ $item->cta_id == $jenis_cta->id ? 'selected' : '' }}>{{ $jenis_cta->nama_cta }}</option>
+                                                <option value="{{ $jenis_cta->id }}">{{ $jenis_cta->nama_cta }}</option>
                                             @endforeach
                                         </select>
                                     </div>
-                                    {{-- <div class="col-md-3 col-6">
-                                        <label class="text-muted font-weight-bold small">Durasi</label>
-                                        <input type="text" name="durasi" class="form-control bg-light border-0 shadow-none" value="{{ $item->durasi }}" {{ Auth::user()->role == "content_creator" ? "readonly" : "" }}>
-                                    </div> --}}
                                     <div class="col-md-3 col-6">
                                         <label class="text-muted font-weight-bold small">Komposisi</label>
-                                        <input type="text" name="komposisi" class="form-control bg-light border-0 shadow-none" value="{{ $item->komposisi }}" {{ Auth::user()->role == "content_creator" ? "readonly" : "" }}>
+                                        <input type="text" name="komposisi" id="edit_komposisi" class="form-control bg-light border-0 shadow-none" {{ Auth::user()->role == "content_creator" ? "readonly" : "" }}>
                                     </div>
                                     
                                     @if($kategory->id == 2)
@@ -640,7 +544,7 @@
                                             <div class="input-group-prepend">
                                                 <span class="input-group-text bg-white border-right-0"><i class="fas fa-palette text-muted"></i></span>
                                             </div>
-                                            <input type="text" name="warna" class="form-control border-left-0 pl-0" value="{{ $item->background }}" {{ Auth::user()->role == "content_creator" ? "readonly" : "" }}>
+                                            <input type="text" name="warna" id="edit_warna" class="form-control border-left-0 pl-0" {{ Auth::user()->role == "content_creator" ? "readonly" : "" }}>
                                         </div>
                                     </div>
                                     @endif
@@ -654,82 +558,11 @@
                         </div>
                         
                         <div class="row">
-                            {{-- <div class="col-md-12 mb-3">
-                                <div class="form-group mb-0">
-                                    <label class="text-muted font-weight-bold small uppercase">Estimasi Mengerjakan (Menit)</label>
-                                    <div class="input-group shadow-sm">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text bg-white border-right-0"><i class="fas fa-stopwatch text-warning"></i></span>
-                                        </div>
-                                        <input type="number" name="menit" id="menit_edit_{{ $item->id }}" class="form-control border-left-0 border-right-0" value="{{ $item->menit ?? 0 }}" min="1" readonly>
-                                        <div class="input-group-append">
-                                            <span class="input-group-text bg-white">Menit</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div> --}}
-
-                            {{-- <div class="col-md-4">
-                                <div class="form-group">
-                                    <label class="text-muted font-weight-bold small uppercase">Tanggal Mulai</label>
-                                    <input type="date" name="tanggal_mulai" class="form-control shadow-sm tanggal-mulai-edit" data-id="{{ $item->id }}" value="{{ $item->tanggal_mulai }}" {{ Auth::user()->role == "content_creator" ? "readonly" : "" }} required>
-                                </div>
-                            </div> --}}
-
                             <div class="col-md-4">
                                 <div class="form-group">
                                     <label class="text-muted font-weight-bold small uppercase">Tanggal Posting</label>
-                                    <input type="date" name="tanggal_posting" class="form-control shadow-sm" value="{{ $item->tanggal_posting }}" {{ Auth::user()->role == "content_creator" ? "readonly" : "" }}>
+                                    <input type="date" name="tanggal_posting" id="edit_tanggal_posting" class="form-control shadow-sm" {{ Auth::user()->role == "content_creator" ? "readonly" : "" }}>
                                 </div>
-                            </div>
-
-                            {{-- <div class="col-md-4">
-                                <div class="form-group">
-                                    <label class="text-muted font-weight-bold small uppercase">Tanggal Deadline</label>
-                                    <input type="date" name="tanggal_deadline" class="form-control shadow-sm" value="{{ $item->tanggal_deadline }}" {{ Auth::user()->role == "content_creator" ? "readonly" : "" }} required>
-                                </div>
-                            </div> --}}
-
-                            {{-- <div class="col-md-6 mb-3">
-                                <label class="text-muted font-weight-bold small uppercase">Jam Mulai</label>
-                                <div class="input-group shadow-sm">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text bg-white border-right-0"><i class="far fa-clock text-muted"></i></span>
-                                    </div>
-                                    <input type="time" name="jam_mulai" id="jam_mulai_edit_{{ $item->id }}" class="form-control border-left-0" value="{{ $item->jam_mulai }}" onchange="hitungMenitEdit({{ $item->id }})" required>
-                                </div>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="text-muted font-weight-bold small uppercase">Jam Selesai (Otomatis/Manual)</label>
-                                <div class="input-group shadow-sm">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text bg-white border-right-0"><i class="fas fa-flag-checkered text-muted"></i></span>
-                                    </div>
-                                    <input type="time" name="jam_selesai" id="jam_selesai_edit_{{ $item->id }}" 
-                                        class="form-control border-left-0" 
-                                        onchange="hitungMenitEdit({{ $item->id }})" required>
-                                </div>
-                            </div> --}}
-
-                            <div class="col-md-12">
-                                {{-- <div id="task-list-container-edit-{{ $item->id }}" class="mb-4" style="display: none;">
-                                    <div class="card border-0 shadow-sm overflow-hidden" style="border-radius: 10px;">
-                                        <div class="card-header bg-info text-white py-2 px-3 d-flex justify-content-between align-items-center">
-                                            <small class="font-weight-bold"><i class="fas fa-calendar-alt mr-1"></i> Jadwal PIC di Tanggal Ini</small>
-                                            <span id="total-durasi-edit-{{ $item->id }}" class="badge badge-warning text-dark px-2">Total: 0 Menit</span>
-                                        </div>
-                                        <div class="table-responsive" style="max-height: 150px;">
-                                            <table class="table table-sm table-hover mb-0" style="font-size: 12px;">
-                                                <thead class="bg-light">
-                                                    <tr>
-                                                        <th>Task</th><th>Project</th><th>Waktu</th><th>Durasi</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody id="task-list-body-edit-{{ $item->id }}"></tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div> --}}
                             </div>
 
                             <div class="col-md-12 mt-2">
@@ -739,7 +572,7 @@
                                         <div class="input-group-prepend">
                                             <span class="input-group-text bg-white border-right-0"><i class="fas fa-external-link-alt text-muted"></i></span>
                                         </div>
-                                        <input type="text" name="link" class="form-control border-left-0 pl-0" placeholder="https://..." value="{{ $item->link }}">
+                                        <input type="text" name="link" id="edit_link" class="form-control border-left-0 pl-0" placeholder="https://...">
                                     </div>
                                 </div>
                             </div>
@@ -747,9 +580,9 @@
                             <div class="col-md-12">
                                 <div class="form-group">
                                     <label class="text-muted font-weight-bold small uppercase">Status Pengerjaan <span class="text-danger">*</span></label>
-                                    <select name="status" class="form-control shadow-sm" style="border: 2px solid #ffc107; border-radius: 8px;" {{ Auth::user()->role == "content_creator" ? "disabled" : "" }}>
+                                    <select name="status" id="edit_status" class="form-control shadow-sm" style="border: 2px solid #ffc107; border-radius: 8px;" {{ Auth::user()->role == "content_creator" ? "disabled" : "" }}>
                                         @foreach ($option['status'] as $status)
-                                            <option value="{{ $status->id }}" {{ $item->status_id == $status->id ? 'selected' : '' }}>{{ $status->nama_status }}</option>
+                                            <option value="{{ $status->id }}">{{ $status->nama_status }}</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -758,7 +591,7 @@
                             <div class="col-md-12">
                                 <div class="form-group mb-0">
                                     <label class="text-muted font-weight-bold small uppercase">Catatan Revisi / Tambahan</label>
-                                    <textarea name="note" class="form-control shadow-sm" rows="3" placeholder="Tulis catatan di sini..." style="border-radius: 10px;" {{ Auth::user()->role == "content_creator" ? "readonly" : "" }}>{{ $item->note }}</textarea>
+                                    <textarea name="note" id="edit_note" class="form-control shadow-sm" rows="3" placeholder="Tulis catatan di sini..." style="border-radius: 10px;" {{ Auth::user()->role == "content_creator" ? "readonly" : "" }}></textarea>
                                 </div>
                             </div>
                         </div>
@@ -776,13 +609,12 @@
     </div>
 
     {{-- Modal Hapus --}}
-    <div class="modal fade" id="deleteModal_{{ $item->id }}" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal fade" id="modalDeleteKonten" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
-                <form action="{{ route('manajemen_delete', $item->id) }}" method="POST">
+                <form id="formDeleteKonten" method="POST">
                     @csrf
-                    <div class="modal-body p-5 text-center">
-                        <!-- Icon Peringatan Besar -->
+                    @method('POST') <div class="modal-body p-5 text-center">
                         <div class="mb-4">
                             <div class="bg-light-danger d-inline-flex align-items-center justify-content-center rounded-circle" style="width: 80px; height: 80px; background-color: #fff5f5;">
                                 <i class="fas fa-exclamation-triangle text-danger fa-2x animate__animated animate__pulse animate__infinite"></i>
@@ -792,7 +624,7 @@
                         <h4 class="font-weight-bold text-dark">Hapus Konten?</h4>
                         <p class="text-muted">Apakah Anda yakin ingin menghapus konten:</p>
                         <div class="bg-light p-3 rounded-lg mb-4 border">
-                            <strong class="text-primary">{{ $item->judul }}</strong>
+                            <strong class="text-primary" id="delete_display_judul"></strong>
                         </div>
                         <p class="small text-danger italic"><i class="fas fa-info-circle mr-1"></i> Tindakan ini tidak dapat dibatalkan.</p>
                         
@@ -807,55 +639,146 @@
             </div>
         </div>
     </div>
-    @endforeach
 </div>
-
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    // function hitungJamSelesaiManual(jamMulai, durasiMenit) {
-    //     if (!jamMulai) return "00:00";
-    //     const [jam, menit] = jamMulai.split(':').map(Number);
-    //     const totalMenit = (jam * 60) + menit + parseInt(durasiMenit || 0);
-    //     console.log(totalMenit);
-        
-    //     const h = Math.floor(totalMenit / 60);
-    //     const m = totalMenit % 60;
-    //     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-    // }
+    const produkId = "{{ $produk->id }}";
+    const platform = "{{ $platform }}";
+    const isContentCreator = {{ $RoleSekarang == 'Content Creator' ? 'true' : 'false' }};
 
-    // function formatDurasi(menit) {
-    //     if (!menit || menit <= 0) return "0 Menit";
-    //     let jam = Math.floor(menit / 60);
-    //     let sisaMenit = menit % 60;
-    //     if (jam > 0) {
-    //         return sisaMenit > 0 ? `${jam} Jam ${sisaMenit} Menit` : `${jam} Jam`;
-    //     } else {
-    //         return `${menit} Menit`;
-    //     }
-    // }
+    $(document).ready(function() {
+        // Handle Filter Form
+        const kategoriId = "{{ $kategory->id }}";
 
-    function getDataEdit(id){
-        const inputMulai = document.getElementById('jam_mulai_edit_' + id);
-        const inputMenit = document.getElementById('menit_edit_' + id);
-        const inputSelesai = document.getElementById('jam_selesai_edit_' + id);
-
-        if (inputMulai && inputMenit && inputSelesai) {
-            const jamMulaiVal = inputMulai.value; // Contoh: "08:00"
-            const menitVal = parseInt(inputMenit.value) || 0;
-
-            if (jamMulaiVal && menitVal > 0) {
-                // Pecah jam dan menit secara manual (Lebih aman dari NaN)
-                let [hours, minutes] = jamMulaiVal.split(':').map(Number);
+        const table = $('#tableManajemenKonten').DataTable({
+            processing: true,
+            ajax: {
+                url: `/api/manajemen-konten/${produkId}/${platform}`,
+                type: 'GET',
+                data: function (d) {
+                    d.start_date = $('input[name="start_date"]').val();
+                    d.end_date = $('input[name="end_date"]').val();
+                },
+                dataSrc: 'data'
+            },
+            columns: [
+                { data: null, render: (data, type, row, meta) => meta.row + 1 }, // No
+                { data: 'judul', render: (data) => `<b>${data}</b>` }, // Judul
+                { 
+                    data: 'inspirasi', 
+                    render: (data) => data ? `<a href="${data}" target="_blank">Link</a>` : '-' 
+                }, // Inspirasi
+                { data: 'type' }, // Type
+                { data: 'strategy' }, // Strategi
+                { data: 'pilar' }, // Pilar
+                { data: 'hooks' }, // Hook
+                { data: 'nama_body' }, // Body
+                { data: 'nama_cta' }, // CTA
                 
-                let date = new Date();
-                date.setHours(hours);
-                date.setMinutes(minutes + menitVal);
+                // LOGIKA KOLOM WARNA (Hanya jika kategori == 2)
+                ...(kategoriId == 2 ? [{ data: 'background' }] : []),
+                
+                { data: 'komposisi' }, // Komposisi
+                { data: 'note', render: (data) => `<small class="text-muted">${data ?? '-'}</small>` }, // Note
+                { 
+                    data: 'tanggal_posting', 
+                    render: (data) => data ? new Date(data).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'}) : '-' 
+                }, // Tgl Posting
+                { 
+                    data: 'link', 
+                    render: (data) => data ? `<a href="${data}" target="_blank"><i class="fas fa-link"></i></a>` : '-' 
+                }, // Link
+                { 
+                    data: 'nama_status', 
+                    render: (data) => {
+                        let color = data === 'Selesai' ? 'success' : 'warning';
+                        return `<span class="badge badge-${color}">${data}</span>`;
+                    }
+                }, // Status
+                {
+                    data: 'id',
+                    render: (data, type, row) => {
+                        const safeTitle = row.judul.replace(/'/g, "\\'");
+                        return `
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-warning" onclick="getDataEdit(${data})"><i class="fas fa-edit"></i></button>
+                                ${!isContentCreator ? `
+                                    <button class="btn btn-sm btn-danger" onclick="confirmDelete(${data})" title="Hapus Konten">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        `;
+                    }
+                } // Action
+            ],
+            // Opsi tambahan agar tabel enak dilihat jika kolomnya banyak
+            columnDefs: [
+                { targets: '_all', className: 'text-nowrap' } 
+            ]
+        });
 
-                // Format kembali ke HH:mm
-                const h = String(date.getHours()).padStart(2, '0');
-                const m = String(date.getMinutes()).padStart(2, '0');
+        // Re-load tabel saat filter tanggal berubah
+        $('#filterForm').on('submit', function(e) {
+            e.preventDefault();
+            table.ajax.reload();
+        });
+    });
 
-                inputSelesai.value = `${h}:${m}`;
-            }
+    function confirmDelete(id) {
+        // 1. Ambil instance DataTables
+        var table = $('#tableManajemenKonten').DataTable();
+        
+        // 2. Cari data baris berdasarkan ID
+        var rowData = table.rows().data().toArray().find(x => x.id == id);
+
+        if (rowData) {
+            // 3. Masukkan judul ke dalam kotak peringatan di modal
+            $('#delete_display_judul').text(rowData.judul);
+
+            // 4. Update URL Action Form secara dinamis
+            // Pastikan route 'manajemen_delete' mengarah ke URL yang benar
+            $('#formDeleteKonten').attr('action', `/manajemen/${id}/delete`);
+
+            // 5. Tampilkan Modal
+            $('#modalDeleteKonten').modal('show');
+        } else {
+            console.error("Data dengan ID " + id + " tidak ditemukan di tabel.");
+        }
+    }
+    
+    function getDataEdit(id) {
+        // 1. Ambil data baris dari DataTables
+        var table = $('#tableManajemenKonten').DataTable();
+        var rowData = table.rows().data().toArray().find(x => x.id == id);
+
+        if (rowData) {
+            // 2. Isi nilai ke dalam input modal
+            $('#edit_id').val(rowData.id);
+            $('#display_id').text(rowData.id);
+            $('#edit_platform').val(rowData.platform);
+            $('#edit_judul').val(rowData.judul);
+            $('#edit_inspirasi').val(rowData.inspirasi);
+            $('#edit_type').val(rowData.type_produk_id);
+            $('#edit_strategy').val(rowData.strategy_id);
+            $('#edit_pilar').val(rowData.pilar_id);
+            $('#edit_hooks').val(rowData.hooks_id);
+            $('#edit_body').val(rowData.body_id);
+            $('#edit_cta').val(rowData.cta_id);
+            $('#edit_komposisi').val(rowData.komposisi);
+            $('#edit_warna').val(rowData.background);
+            $('#edit_tanggal_posting').val(rowData.tanggal_posting);
+            $('#edit_link').val(rowData.link);
+            $('#edit_status').val(rowData.status_id);
+            $('#edit_note').val(rowData.note);
+
+            // 3. Update URL Form Action secara dinamis
+            $('#formEditKonten').attr('action', `/manajemen/${id}/edit`);
+
+            // 4. Tampilkan Modal
+            $('#modalEditKonten').modal('show');
+        } else {
+            alert('Data tidak ditemukan!');
         }
     }
     

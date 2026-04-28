@@ -537,6 +537,7 @@ function findSubordinate(myId, divisiId, targetLevel, allData) {
 
 function updateRoleOptions(divisiId) {
     let $roleSelect = $('#modal_role');
+    console.log($roleSelect);
     let $parentPanel = $('#parent_panel');
     
     $roleSelect.val('').prop('disabled', !divisiId);
@@ -544,7 +545,11 @@ function updateRoleOptions(divisiId) {
 
     // Filter Role berdasarkan divisi yang dipilih
     $roleSelect.find('option').each(function() {
-        let roleDivId = $(this).data('divisi');
+        // console.log(this);
+        let roleDivId = $(this).data('data-divisi');
+        console.log($(this));
+        
+        // console.log(roleDivId);
         if (!roleDivId || roleDivId == divisiId) {
             $(this).show();
         } else {
@@ -588,9 +593,16 @@ function updateParentOptions() {
     // Contoh: Jika saya Lvl 3, maka bawahan adalah Lvl 4
     let htmlSub = '';
     let subordinates = allData.filter(u => {
+        // Cari data divisi yang cocok dengan divisiId yang dipilih
         let ud = (u.user_divisions ?? []).find(d => d.division_id == divisiId);
-        return ud && parseInt(ud.level) > selectedLevel;
+        
+        if (ud) {
+            let userLevel = parseInt(ud.level);
+            return userLevel === (selectedLevel + 1);
+        }
+        return false;
     });
+    console.log(subordinates);
     subordinates.forEach(s => {
         htmlSub += `<option value="${s.id}">${s.name} (${s.email})</option>`;
     });
@@ -690,6 +702,7 @@ function updateRoleOptionsEdit(divisiId) {
 function updateHierarchyPanelEdit() {
     let divisiId = $('#edit_divisi').val();
     let selectedLevel = parseInt($('#edit_role option:selected').data('level'));
+    let currentUserId = $('#formEditUser').attr('action').split('/').pop();
     
     let $parentSelect = $('#edit_parent');
     let $subSelect = $('#edit_subordinates');
@@ -723,9 +736,19 @@ function updateHierarchyPanelEdit() {
     // 2. FILTER CALON BAWAHAN (Level Angka > Level Sekarang, misal 4 > 3)
     let htmlSub = '';
     let potentialSubordinates = allData.filter(u => {
+        // 1. Cari data divisi user tersebut yang cocok dengan divisiId yang dipilih
         let ud = (u.user_divisions ?? []).find(d => d.division_id == divisiId);
-        // Pastikan bukan dirinya sendiri
-        return ud && parseInt(ud.level) > selectedLevel && u.id != $('#formEditUser').attr('action').split('/').pop();
+        
+        if (ud) {
+            let userLevel = parseInt(ud.level);
+            
+            // 2. Logika Filter:
+            // - Harus Level + 1 (Bawahan langsung)
+            // - Bukan dirinya sendiri (u.id != currentUserId)
+            return userLevel === (selectedLevel + 1) && u.id != currentUserId;
+        }
+        
+        return false;
     });
     potentialSubordinates.forEach(s => {
         htmlSub += `<option value="${s.id}">${s.name} (${s.email})</option>`;

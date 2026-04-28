@@ -44,7 +44,6 @@
                     <thead class="thead-light text-nowrap">
                         <tr>
                             <th>No</th>
-                            <th>PIC</th>
                             <th>Judul</th>
                             <th>Inspirasi</th>
                             {{-- <th>Prioritas</th> --}}
@@ -73,7 +72,6 @@
                         @foreach ($data as $item)
                             <tr>
                                 <th>{{ $loop->iteration }}</th>
-                                <th>{{ $item->vic_email }}</th>
                                 <th>{{ $item->judul }}</th>
                                 <th><a href="{{ $item->inspirasi }}">{{ $item->inspirasi }}</a></th>
                                 @php
@@ -195,23 +193,6 @@
                                             <span class="input-group-text border-right-0"><i class="fas fa-link text-muted"></i></span>
                                         </div>
                                         <input type="text" name="inspirasi" class="form-control border-left-0">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label class="text-dark font-weight-bold small">PIC (Penanggung Jawab) <span class="text-danger">*</span></label>
-                                    <div class="input-group shadow-sm">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text border-right-0"><i class="fas fa-user-tag text-muted"></i></span>
-                                        </div>
-                                        <select name="pic" id="pic_select" class="form-control border-left-0" required>
-                                            <option value="" disabled selected>-- Pilih Penanggung Jawab --</option>
-                                            @foreach($users as $user)
-                                                <option value="{{ $user->id }}">{{ $user->email }}</option>
-                                            @endforeach
-                                        </select>
                                     </div>
                                 </div>
                             </div>
@@ -532,22 +513,6 @@
                                             <span class="input-group-text bg-white border-right-0"><i class="fas fa-link text-muted"></i></span>
                                         </div>
                                         <input type="text" name="inspirasi" class="form-control border-left-0 pl-0" value="{{ $item->inspirasi }}" {{ Auth::user()->role == "content_creator" ? "readonly" : "" }}>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label class="text-muted font-weight-bold small uppercase">PIC (Person In Charge)</label>
-                                    <div class="input-group shadow-sm">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text bg-white border-right-0"><i class="fas fa-user-tag text-muted"></i></span>
-                                        </div>
-                                        <select name="pic" class="form-control border-left-0 pl-0 bg-white pic-select-edit" {{ Auth::user()->role == "content_creator" ? "disabled" : "" }} data-id="{{ $item->id }}">
-                                            @foreach($users as $user)
-                                                <option value="{{ $user->id }}" {{ $item->pic == $user->id ? 'selected' : '' }}>{{ $user->email }}</option>
-                                            @endforeach
-                                        </select>
                                     </div>
                                 </div>
                             </div>

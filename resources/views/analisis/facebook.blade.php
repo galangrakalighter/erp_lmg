@@ -202,24 +202,7 @@
                                 </tr>
                             </thead>
                             <tbody style="font-size: 0.875rem;">
-                                {{-- @php
-                                    $no = 1;
-                                @endphp
-                                @foreach ($data as $item)
-                                <tr>
-                                    <th>{{ $no }}</th>
-                                    <th><a href="{{ $item->link }}">{{ $item->link }}</a></th>
-                                    <th>{{ $item->tanggal_posting }}</th>
-                                    <th>{{ $item->type }}</th>
-                                    <th>{{ $item->strategy }}</th>
-                                    <th>{{ $item->pilar }}</th>
-                                    <th>{{ $item->hooks }}</th>
-                                    <th>{{ $item->komposisi }}</th>
-                                </tr>
-                                @php
-                                    $no++;
-                                @endphp
-                                @endforeach --}}
+                                
                             </tbody>
                         </table>
                     </div>
@@ -400,72 +383,6 @@
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0" id="dataTable">
                             <tbody style="font-size: 0.875rem;">
-                                {{-- <tr>
-                                    <th width="20%">No</th>
-                                    @foreach ($data as $item)
-                                        <td>
-                                            {{ $loop->iteration }}
-                                        </td>
-                                    @endforeach
-                                </tr>
-                                <tr>
-                                    <th width="20%">Link</th>
-                                    @foreach ($data as $item)
-                                        <td>
-                                            <a href="{{ $item->link }}" target="_blank">
-                                                {{ $item->link }}
-                                            </a>
-                                        </td>
-                                    @endforeach
-                                </tr>
-                                <tr>
-                                    <th width="20%">Tanggal</th>
-                                    @foreach ($data as $item)
-                                        <td>
-                                            {{ $item->tanggal_posting }}
-                                        </td>
-                                    @endforeach
-                                </tr>
-                                <tr>
-                                    <th width="20%">Type</th>
-                                    @foreach ($data as $item)
-                                        <td>
-                                            {{ $item->type }}
-                                        </td>
-                                    @endforeach
-                                </tr>
-                                <tr>
-                                    <th width="20%">Strategi</th>
-                                    @foreach ($data as $item)
-                                        <td>
-                                            {{ $item->strategy }}
-                                        </td>
-                                    @endforeach
-                                </tr>
-                                <tr>
-                                    <th width="20%">Pilar</th>
-                                    @foreach ($data as $item)
-                                        <td>
-                                            {{ $item->pilar }}
-                                        </td>
-                                    @endforeach
-                                </tr>
-                                <tr>
-                                    <th width="20%">Hooks</th>
-                                    @foreach ($data as $item)
-                                        <td>
-                                            {{ $item->hooks }}
-                                        </td>
-                                    @endforeach
-                                </tr>
-                                <tr>
-                                    <th width="20%">Komposisi</th>
-                                    @foreach ($data as $item)
-                                        <td>
-                                            {{ $item->komposisi }}
-                                        </td>
-                                    @endforeach
-                                </tr> --}}
                             </tbody>
                         </table>
                     </div>

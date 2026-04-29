@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Task;
 use App\Models\User;
+use App\Models\Role;
 use App\Models\ProdukClient;
+use App\Models\Division;
 use Illuminate\Support\Facades\DB;
 // use Midtrans\Config;
 // use Midtrans\Snap;
@@ -22,25 +24,52 @@ class HCDailyController extends Controller
         $title = "Daily Schedule";
         $today = Carbon::today();
         $user = Auth::user();
+        $hierarchy = [];
 
-        $hierarchy = [
-            'digital_marketing'         => ['content_creator'],
-            'digital_marketing_manager' => ['digital_marketing'],
-            'head_of_division'          => ['digital_marketing_manager'],
-        ];
+        if ($user->isAdmin) {
+            // LOGIKA SUPER ADMIN
+            $RoleSekarang = "Super Admin";
+            
+            // Super Admin bisa melihat SEMUA role yang ada di database
+            $hierarchy = DB::table('roles')->pluck('role_name')->toArray();
+            
+        } else {
+            // LOGIKA USER BIASA (Berdasarkan Divisi & Level)
+            $userDivisi = $user->userDivisions->first(); 
+
+            if ($userDivisi) {
+                $currentRole = DB::table('roles')->where('id', $userDivisi->role_id)->first();
+                
+                if ($currentRole) {
+                    $RoleSekarang = $currentRole->role_name;
+                    
+                    // Ambil role yang satu divisi DAN levelnya di bawah
+                    $hierarchy = DB::table('roles')
+                        ->where('division_id', $currentRole->division_id)
+                        ->where('level', '>', $currentRole->level)
+                        ->pluck('role_name')
+                        ->toArray();
+                }
+            }
+        }
+
+        $level = Role::where('role_name', $RoleSekarang)->first();
+        if($level == null){
+            $CurrentLevel = 0;
+            $role = "Super Admin";
+        }else{
+            $CurrentLevel = $level->level;
+            $role = $level->role_name;
+        }
 
         $prioritas = [1 => 'Rendah', 2 => 'Sedang', 3 => 'Tinggi'];
-
-        $atasan = '';
-        switch($user->role){
-            case 'head_of_division': $atasan = 'hod'; break;
-            case 'digital_marketing_manager': $atasan = 'dmm'; break;
-            case 'digital_marketing': $atasan = 'dm'; break;
-        }
+        $atasan = $role;
 
         $query = Task::leftJoin('users', 'users.id', '=', 'task.pic')
             ->join('produk_client', 'produk_client.id', '=', 'task.project')
-            ->select('task.*', 'users.email as vic_email', 'users.role as vic_role', 'produk_client.nama');
+            ->join('user_division', 'user_division.user_id', '=', 'users.id')
+            ->join('roles', 'roles.id', '=', 'user_division.role_id')
+            ->select('task.*', 'users.email as vic_email', 'roles.role_name as vic_role', 'produk_client.nama');
         
         $query->whereMonth('task.tanggal_mulai', $today->month)
               ->whereYear('task.tanggal_mulai', $today->year);
@@ -98,47 +127,33 @@ class HCDailyController extends Controller
         $all_tasks = $query->get();
         $user = Auth::user();
         $tugas_bawahan = Task::leftjoin('users', 'users.id', '=', 'task.pic')
-        ->select('task.*', 'users.id as user_id', 'users.hod', 'users.dmm', 'users.dm', 'users.cc', 'users.email');
-        switch($user->role) {
-            case "head_of_division":
-                $tugas_bawahan->where(function($q) use ($user) {
-                    $q->where('users.hod', $user->id)->orWhere('task.pic', $user->id);
-                });
-                break;
-            case "digital_marketing_manager":
-                $tugas_bawahan->where(function($q) use ($user) {
-                    $q->where('users.dmm', $user->id)->orWhere('task.pic', $user->id);
-                });
-                break;
-            case "digital_marketing":
-                $tugas_bawahan->where(function($q) use ($user) {
-                    $q->where('users.dm', $user->id)->orWhere('task.pic', $user->id);
-                });
-                break;
-            case "content_creator":
-                $tugas_bawahan->where(function($q) use ($user) {
-                    $q->where('task.pic', $user->id);
-                });
-                break;
-            case "super_admin":
-                $tugas_bawahan->where(function($q) use ($user) {
-                    $q->whereNot('role', 'super_admin');
-                });
-            default:
-                break;
+        ->leftjoin('user_division', 'user_division.user_id', '=', 'users.id')
+        ->select('task.*', 'users.id as user_id', 'user_division.parent_id','users.email');
+        if($CurrentLevel == 0){
+            $tugas_bawahan->where(function($q) use ($user) {
+                $q->whereNot('users.isAdmin', true);
+            });
+        }else{
+            $tugas_bawahan->where(function($q) use ($user) {
+                $q->where('user_division.parent_id', $user->id)->orWhere('task.pic', $user->id);
+            });
         }
 
         $startHour = (Auth::id() == 39) ? 8 : 9;
         $totalHours = 17 - $startHour;
 
         $subordinateTasks = $tugas_bawahan->whereNotNull('jam_mulai')->whereDate('task.tanggal_mulai', $today)->get();
-        $bawahanIds = collect();
+
+        if($CurrentLevel == 0){
+            $bawahanIds = User::whereNot('users.isAdmin', true)->pluck('id');
+        }else{
+            $bawahanIds = User::join('user_division', 'user_division.user_id', '=', 'users.id')->where('user_division.parent_id', Auth::id())->pluck('id');
+        }
 
         switch (Auth::user()->role) {
             case "head_of_division":
                 $bawahanIds = User::where('hod', Auth::id())->pluck('id');
                 break;
-
             case "digital_marketing_manager":
                 $bawahanIds = User::where('dmm', Auth::id())
                     ->whereIn('role', ['digital_marketing', 'content_creator'])
@@ -217,22 +232,24 @@ class HCDailyController extends Controller
 
         $priority_colors = [1 => 'info', 2 => 'warning', 3 => 'danger'];
             
-        $divisi_list = [1 => 'Digital Marketing', 2 => 'Business Dev'];
+        $divisi_list = Division::pluck('name', 'id');
+        $divisi = User::find(Auth::user()->id)->userDivisions;
 
         $result = [];
-        if($user->role == "super_admin"){
+        if($RoleSekarang == "Super Admin"){
             $result = $divisi_list;
-        }
-        foreach($divisi_list as $divId => $nama) {
-            if(in_array($divId, (array)$user->divisi)) {
-                $result[$divId] = $nama;
+        }else{
+            foreach($divisi_list as $divId => $nama) {
+                if($divId == $divisi[0]->division_id) {
+                    $result[$divId] = $nama;
+                }
             }
         }
 
-        if(Auth::user()->role == "super_admin"){
+        if(Auth::user()->isAdmin == true){
             $produk = DB::table('produk_client')->get();
         }else{
-            $handleClient = Auth::user()->client;
+            $handleClient = Auth::user()->clients->pluck('id')->toArray();
             $produk = ProdukClient::select('id', 'nama')->whereIn('id', $handleClient)->get();
         }
 
@@ -376,7 +393,9 @@ class HCDailyController extends Controller
 
         $tasks = Task::leftJoin('users', 'users.id', '=', 'task.pic')
             ->join('produk_client', 'produk_client.id', '=', 'task.project')
-            ->select('task.*', 'users.email as vic_email', 'produk_client.nama as project_name', 'users.role as vic_role')
+            ->join('user_division', 'user_division.user_id', '=', 'users.id')
+            ->join('roles', 'roles.id', '=', 'user_division.role_id')
+            ->select('task.*', 'users.email as vic_email', 'produk_client.nama as project_name', 'roles.role_name as vic_role', 'user_division.parent_id')
             ->where('task.pic', $userId)
             ->whereNotNull('task.jam_mulai')
             ->where(function($query) use ($today) {
@@ -429,45 +448,58 @@ class HCDailyController extends Controller
     }
 
     public function getPic($id, $userId){
-        $user = User::where('id', $userId)->first();
-        $userQuery = User::whereJsonContains('client', (int)$id);
-        $arrRole = [];
-        if ($user->role == "super_admin") {
-            /**
-             * Super Admin: Tidak ada filter tambahan.
-             * Mengambil semua user (HOD, DMM, DM, CC) yang handle client ini.
-             */
-            $vic_list = $userQuery->get();
-
-        } else if ($user->role == "head_of_division") {
-            // Melihat diri sendiri + orang yang HOD-nya adalah dia
-            $vic_list = $userQuery->where(function($q) use ($user) {
-                $q->where('id', $user->id)->orWhere('hod', $user->id);
-            })->get();
-
-        } else if ($user->role == "digital_marketing_manager") {
-            // Melihat diri sendiri + orang yang DMM-nya adalah dia
-            $vic_list = $userQuery->where(function($q) use ($user) {
-                $q->where('id', $user->id)->orWhere('dmm', $user->id);
-            })->get();
-
-        } else if ($user->role == "digital_marketing") {
-            // Melihat diri sendiri + orang yang DM-nya adalah dia
-            $vic_list = $userQuery->where(function($q) use ($user) {
-                $q->where('id', $user->id)->orWhere('dm', $user->id);
-            })->get();
-
-        } else {
-            // Role lainnya (misal Content Creator) hanya melihat dirinya sendiri
-            $vic_list = $userQuery->where('id', $user->id)->get();
+        $user = User::find($userId);
+        $userQuery = $user->join('user_division', 'user_division.user_id', '=', 'users.id')
+        ->join('user_client', 'user_client.user_id', '=', 'users.id')
+        ->join('roles', 'roles.id', '=', 'user_division.role_id')
+        ->select('users.id', 'users.email', 'roles.role_name')
+        ->distinct();
+        $RoleSekarang = $user->isAdmin == false ? DB::table('roles')->where('id', $user->userDivisions[0]->role_id)->value('role_name') : "Super Admin";
+        $level = Role::where('role_name', $RoleSekarang)->first();
+        if($level == null){
+            $CurrentLevel = 0;
+            $role = "Super Admin";
+        }else{
+            $CurrentLevel = $level->level;
+            $role = $level->role_name;
         }
+        $arrRole = [];
+        if ($CurrentLevel == 0) {
+            $vic_list = $userQuery->get();
+        }else{
+            $vic_list = $userQuery->where(function($q) use ($user) {
+                $q->where('users.id', $user->id)->orWhere('user_division.parent_id', $user->id);
+            })->get();
+        }
+        // } else if ($user->role == "head_of_division") {
+        //     // Melihat diri sendiri + orang yang HOD-nya adalah dia
+        //     $vic_list = $userQuery->where(function($q) use ($user) {
+        //         $q->where('id', $user->id)->orWhere('hod', $user->id);
+        //     })->get();
+
+        // } else if ($user->role == "digital_marketing_manager") {
+        //     // Melihat diri sendiri + orang yang DMM-nya adalah dia
+        //     $vic_list = $userQuery->where(function($q) use ($user) {
+        //         $q->where('id', $user->id)->orWhere('dmm', $user->id);
+        //     })->get();
+
+        // } else if ($user->role == "digital_marketing") {
+        //     // Melihat diri sendiri + orang yang DM-nya adalah dia
+        //     $vic_list = $userQuery->where(function($q) use ($user) {
+        //         $q->where('id', $user->id)->orWhere('dm', $user->id);
+        //     })->get();
+
+        // } else {
+        //     // Role lainnya (misal Content Creator) hanya melihat dirinya sendiri
+        //     $vic_list = $userQuery->where('id', $user->id)->get();
+        // }
 
         // 3. Mapping data untuk response JSON yang ringan dan aman
         return response()->json($vic_list->map(function($u) {
             return [
                 'id' => $u->id,
                 'email' => $u->email,
-                'role' => $u->role // Opsional: tambahkan role agar di JS bisa ditrack jika perlu
+                'role' => $u->role_name// Opsional: tambahkan role agar di JS bisa ditrack jika perlu
             ];
         }));
         return $data;

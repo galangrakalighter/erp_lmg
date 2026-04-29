@@ -23,4 +23,8 @@ class ProdukClient extends Model
     public function group(){
         return $this->belongsTo(KategoriJasa::class);
     }
+
+    public function teams() {
+        return $this->belongsToMany(User::class, 'user_client', 'client_id', 'user_id');
+    }
 }

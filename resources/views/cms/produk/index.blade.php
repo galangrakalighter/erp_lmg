@@ -20,79 +20,31 @@
         {{-- CARD BODY --}}
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered table-hover" id="dataTable">
+                <table class="table table-bordered table-hover" id="produkTable" style="width:100%">
                     <thead class="thead-light text-center">
                         <tr>
                             <th>No</th>
                             <th>Kategori Jasa</th>
                             <th>Client</th>
                             <th>Status</th>
-                            <th>HOD</th>
                             <th>DMM</th>
                             <th>DM</th>
+                            <th>SCC</th>
                             <th>CC</th>
-                            @if(Auth::user()->role != "digital_marketing")
+                            @if($role != "Senior Content Creator")
                             <th>Action</th>
                             @endif
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($dataClient as $item)
-                            <tr>
-                                <td class="text-center">{{ $loop->iteration }}</td>
-                                <td>{{ $item->category }}</td>
-                                <td class="font-weight-bold">{{ $item->nama }}</td>
-                                <td class="text-center">
-                                    <span class="badge {{ $item->status == 1 ? 'badge-success' : 'badge-secondary' }}">
-                                        {{ $item->status == 1 ? "Ditampilkan" : "Disembunyikan"}}
-                                    </span>
-                                </td>
-                                
-                                {{-- Kolom HOD --}}
-                                <td>
-                                    @foreach($item->teams->where('role', 'head_of_division') as $user)
-                                        <small class="badge badge-dark d-block mb-1">{{ $user->email }}</small>
-                                    @endforeach
-                                </td>
-
-                                {{-- Kolom DMM --}}
-                                <td>
-                                    @foreach($item->teams->where('role', 'digital_marketing_manager') as $user)
-                                        <small class="badge badge-primary d-block mb-1">{{ $user->email }}</small>
-                                    @endforeach
-                                </td>
-
-                                {{-- Kolom DM --}}
-                                <td>
-                                    @foreach($item->teams->where('role', 'digital_marketing') as $user)
-                                        <small class="badge badge-info d-block mb-1">{{ $user->email }}</small>
-                                    @endforeach
-                                </td>
-
-                                {{-- Kolom CC --}}
-                                <td>
-                                    @foreach($item->teams->where('role', 'content_creator') as $user)
-                                        <small class="badge badge-warning text-dark d-block mb-1">{{ $user->email }}</small>
-                                    @endforeach
-                                </td>
-
-                                @if(Auth::user()->role != "digital_marketing")
-                                <td class="text-center">
-                                    <button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#editModal_{{ $item->id }}">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#deleteModal_{{ $item->id }}">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </td>
-                                @endif
-                            </tr>
-                        @endforeach
+                        {{-- Kosong, akan diisi oleh AJAX DataTable --}}
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
+
+    <input type="hidden" id="user_id" value="{{ Auth::user()->id }}">
 
     {{-- MODAL TAMBAH --}}
     <div class="modal fade" id="tambahModal" tabindex="-1" role="dialog" aria-labelledby="tambahModalLabel" aria-hidden="true">
@@ -101,20 +53,15 @@
                 <form action="{{ route('produk_create') }}" method="POST">
                     @csrf
                     <input type="hidden" name="divisi" value="{{ $divisi }}">
-                    <div class="modal-header bg-gradient-primary text-white py-3">
-                        <div class="d-flex align-items-center">
-                            <div class="bg-white rounded-circle p-2 mr-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                <i class="fas fa-plus text-primary"></i>
-                            </div>
-                            <h5 class="modal-title font-weight-bold" id="tambahModalLabel">Tambah Produk Jasa Baru</h5>
-                        </div>
-                        <button type="button" class="close text-white outline-none" data-dismiss="modal" aria-label="Close">
+                    
+                    <div class="modal-header bg-primary text-white py-3">
+                        <h5 class="modal-title font-weight-bold"><i class="fas fa-plus-circle mr-2"></i>Tambah Produk Jasa Baru</h5>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
 
                     <div class="modal-body p-4" style="background-color: #f8f9fc;">
-                        
                         <div class="section-title mb-3 d-flex align-items-center">
                             <div class="bg-primary mr-2" style="width: 4px; height: 18px; border-radius: 2px;"></div>
                             <h6 class="text-primary font-weight-bold mb-0">Informasi Dasar</h6>
@@ -135,7 +82,7 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label class="text-dark font-weight-bold small">Nama Produk <span class="text-danger">*</span></label>
-                                    <input type="text" name="client" class="form-control" placeholder="Input Nama Produk" required>
+                                    <input type="text" name="client" class="form-control" placeholder="Contoh: Social Media Management" required>
                                 </div>
                             </div>
                             <div class="col-md-12">
@@ -158,7 +105,7 @@
                             <div class="card-body p-3" id="platform-container">
                                 <div class="platform-row mb-3">
                                     <div class="input-group">
-                                        <select name="platform[]" class="form-control platform-select">
+                                        <select name="platform[]" class="form-control col-md-4">
                                             <option value="">-- Pilih Platform --</option>
                                             <option value="Instagram">Instagram</option>
                                             <option value="Facebook">Facebook</option>
@@ -166,7 +113,7 @@
                                         </select>
                                         <input type="text" name="access[]" class="form-control" placeholder="Input Access Token">
                                         <div class="input-group-append">
-                                            <button type="button" class="btn btn-success add-platform" data-target="#platform-container">+</button>
+                                            <button type="button" class="btn btn-success add-platform">+</button>
                                         </div>
                                     </div>
                                 </div>
@@ -179,70 +126,55 @@
                         </div>
 
                         <div class="row">
-                            @if(Auth::user()->role == "super_admin" || Auth::user()->role == "head_of_division")
-                                <div class="col-md-12 form-group">
-                                    <label class="font-weight-bold small text-danger">Digital Marketing Manager</label>
-                                    <select name="dmm" id="dmm-select" class="form-control" required>
-                                        <option value="">-- Pilih DMM --</option>
-                                        @foreach ($dmm as $m)
-                                            <option value="{{ $m->id }}">{{ $m->email }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                            @elseif(Auth::user()->role == "digital_marketing_manager")
-                                {{-- Jika DMM, ID DMM langsung dikirim lewat hidden input --}}
-                                <input type="hidden" name="dmm" id="dmm-select" class="is-dmm" value="{{ Auth::user()->id }}">
+                            @if(Auth::user()->isAdmin == true)
+                            <div class="col-md-6 form-group">
+                                <label class="font-weight-bold small text-danger">Manager (DMM)</label>
+                                <select name="dmm_ids[]" id="select-dmm" class="form-control select2-multiple" multiple data-placeholder="Pilih DMM">
+                                    @foreach ($dmm as $m)
+                                        <option value="{{ $m->id }}">{{ $m->email }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            @else
+                                <input type="hidden" name="dmm_ids[]" id="select-dmm-hidden" value="{{ Auth::user()->id }}">
                             @endif
 
-                            {{-- BAGIAN DM (Staff) --}}
                             <div class="col-md-6 form-group">
-                                <label class="font-weight-bold small text-primary">Digital Marketing (Staff)</label>
-                                <div class="input-group mb-2">
-                                    <select name="dm[]" class="form-control dm-staff-select" required>
-                                        <option value="">-- Pilih DM --</option>
-                                        @if(Auth::user()->role == "digital_marketing_manager")
-                                            @foreach ($dm->where('dmm', Auth::user()->id) as $d)
-                                                <option value="{{ $d->id }}">{{ $d->email }}</option>
-                                            @endforeach
-                                        @endif
-                                    </select>
-                                    <div class="input-group-append">
-                                        <button type="button" class="btn btn-success add-dm-row">+</button>
-                                    </div>
-                                </div>
+                                <label class="font-weight-bold small text-primary">Digital Marketing (DM)</label>
+                                <select name="dm_ids[]" id="select-dm" class="form-control select2-multiple" multiple data-placeholder="Pilih DM" {{ Auth::user()->role == 'digital_marketing_manager' ? '' : 'disabled' }}>
+                                    @foreach ($dm as $d)
+                                        @php $parentIdDm = $d->userDivisions->first()->parent_id ?? 0; @endphp
+                                        <option value="{{ $d->id }}" data-parent="{{ $parentIdDm }}">{{ $d->email }}</option>
+                                    @endforeach
+                                </select>
                             </div>
 
-                            {{-- BAGIAN CC (Bawahan DM) --}}
                             <div class="col-md-6 form-group">
-                                <label class="font-weight-bold small text-warning">Content Creator (Bawahan DM)</label>
-                                <div class="input-group mb-2">
-                                    <select name="cc[]" class="form-control cc-staff-select">
-                                        <option value="">-- Pilih CC --</option>
-                                        @if(Auth::user()->role == "digital_marketing_manager")
-                                            @foreach ($cc as $c)
-                                                {{-- Opsional: Jika CC juga punya parent DMM --}}
-                                                <option value="{{ $c->id }}">{{ $c->email }}</option>
-                                            @endforeach
-                                        @endif
-                                    </select>
-                                    <div class="input-group-append">
-                                        <button type="button" class="btn btn-success add-cc-row">+</button>
-                                    </div>
-                                </div>
+                                <label class="font-weight-bold small text-dark">Senior Content Creator (SCC)</label>
+                                <select name="scc_ids[]" id="select-scc" class="form-control select2-multiple" multiple data-placeholder="Pilih SCC" disabled>
+                                    @foreach ($scc as $s)
+                                        @php $parentIScc = $s->userDivisions->first()->parent_id ?? 0; @endphp
+                                        <option value="{{ $s->id }}" data-parent="{{ $parentIScc }}">{{ $s->email }}</option>
+                                    @endforeach
+                                </select>
                             </div>
-                        </div>
 
-                        <div class="mt-3">
-                            <small class="form-text text-muted bg-light p-2 border rounded">
-                                <i class="fas fa-info-circle mr-1"></i> <a target="_blank" href="{{ route('docs') }}" class="font-weight-bold">Klik di sini</a> untuk panduan mendapatkan token platform.
-                            </small>
+                            <div class="col-md-6 form-group">
+                                <label class="font-weight-bold small text-warning">Content Creator (CC)</label>
+                                <select name="cc_ids[]" id="select-cc" class="form-control select2-multiple" multiple data-placeholder="Pilih CC" disabled>
+                                    @foreach ($cc as $c)
+                                        @php $parentICc = $c->userDivisions->first()->parent_id ?? 0; @endphp
+                                        <option value="{{ $c->id }}" data-parent="{{ $parentICc }}">{{ $c->email }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </div>
                     </div>
 
                     <div class="modal-footer bg-white border-0 py-3">
-                        <button type="button" class="btn btn-light text-dark px-4 font-weight-bold shadow-sm" data-dismiss="modal">Batal</button>
+                        <button type="button" class="btn btn-light text-dark px-4 font-weight-bold" data-dismiss="modal">Batal</button>
                         <button type="submit" class="btn btn-primary px-5 font-weight-bold shadow-sm">
-                            <i class="fas fa-save mr-2"></i> Simpan Produk
+                            <i class="fas fa-save mr-2"></i>Simpan Produk
                         </button>
                     </div>
                 </form>
@@ -250,244 +182,202 @@
         </div>
     </div>
 
-    @foreach ($dataClient as $item)
-    {{-- Modal Edit --}}
-    @php
-        // Ubah string JSON menjadi array PHP
-        $decoded_token = is_string($item->access_token) ? json_decode($item->access_token, true) : $item->access_token;
-    @endphp
-    <div class="modal fade" id="editModal_{{ $item->id }}" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal fade" id="modalEditGlobal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg">
-                <form action="{{ route('produk_edit', $item->id) }}" method="POST">
+                <form id="formEditProduk" method="POST">
                     @csrf
-                    <input type="hidden" name="divisi_edit" value="{{ $divisi }}">
-                    <div class="modal-header bg-gradient-warning text-white">
-                        <h5 class="modal-title font-weight-bold"><i class="fas fa-edit mr-2"></i>Edit Produk: {{ $item->nama }}</h5>
+                    <div id="modalEditContent"></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalDeleteGlobal" tabindex="-1">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <form id="formDeleteProduk" method="POST">
+                    @csrf
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title">Hapus Produk Jasa</h5>
                         <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
                     </div>
 
-                    <div class="modal-body p-4">
-                        {{-- DECODE DATA TOKEN DARI DATABASE --}}
-                        @php
-                            $decoded_token = is_string($item->access_token) ? json_decode($item->access_token, true) : $item->access_token;
-                        @endphp
-
-                        {{-- INFORMASI DASAR EDIT --}}
-                        <div class="row mb-3">
-                            <div class="col-md-6 form-group">
-                                <label class="font-weight-bold small">Kategori Jasa</label>
-                                <select name="kategori_jasa_id" class="form-control" required>
-                                    @foreach ($kategori as $k)
-                                        <option value="{{ $k->id }}" {{ $item->kategori_jasa_id == $k->id ? 'selected' : '' }}>{{ $k->category }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="col-md-6 form-group">
-                                <label class="font-weight-bold small">Nama Produk</label>
-                                <input type="text" name="client" class="form-control" value="{{ $item->nama }}" required>
-                            </div>
-                            <div class="col-md-12">
-                                <div class="form-group">
-                                    <label class="text-dark font-weight-bold small">Status <span class="text-danger">*</span></label>
-                                    <select name="status" class="form-control custom-select" required>
-                                        <option value="1" {{ $item->status == 1 ? "selected" : "" }}>Ditampilkan</option>
-                                        <option value="2" {{ $item->status == 2 ? "selected" : "" }}>Disembunyikan</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- SEKSI PLATFORM & ACCESS TOKEN --}}
-                        <hr>
-                        <div class="section-title mb-3 d-flex align-items-center">
-                            <div class="bg-warning mr-2" style="width: 4px; height: 18px; border-radius: 2px;"></div>
-                            <h6 class="text-warning font-weight-bold mb-0">Platform & Akses Token</h6>
-                        </div>
-
-                        <div id="platform-container-edit-{{ $item->id }}">
-                            @if(isset($decoded_token['platform']) && count($decoded_token['platform']) > 0)
-                                @foreach($decoded_token['platform'] as $index => $plt)
-                                    <div class="platform-row mb-3">
-                                        <div class="input-group">
-                                            <select name="platform[]" class="form-control platform-select" required>
-                                                <option value="Instagram" {{ $plt == 'Instagram' ? 'selected' : '' }}>Instagram</option>
-                                                <option value="Facebook" {{ $plt == 'Facebook' ? 'selected' : '' }}>Facebook</option>
-                                                <option value="Tiktok" {{ $plt == 'Tiktok' ? 'selected' : '' }}>Tiktok</option>
-                                            </select>
-                                            <input type="text" name="access[]" class="form-control" placeholder="Input Access Token" value="{{ $decoded_token['access'][$index] ?? '' }}">
-                                            <div class="input-group-append">
-                                                @if($loop->first)
-                                                    <button type="button" class="btn btn-success add-platform-edit" data-target="#platform-container-edit-{{ $item->id }}">+</button>
-                                                @else
-                                                    <button type="button" class="btn btn-danger remove-platform">x</button>
-                                                @endif
-                                            </div>
-                                        </div>
-                                    </div>
-                                @endforeach
-                            @else
-                                {{-- Jika data kosong, tampilkan satu baris input default --}}
-                                <div class="platform-row mb-3">
-                                    <div class="input-group">
-                                        <select name="platform[]" class="form-control platform-select">
-                                            <option value="">-- Pilih Platform --</option>
-                                            <option value="Instagram">Instagram</option>
-                                            <option value="Facebook">Facebook</option>
-                                            <option value="Tiktok">Tiktok</option>
-                                        </select>
-                                        <input type="text" name="access[]" class="form-control" placeholder="Input Access Token">
-                                        <div class="input-group-append">
-                                            <button type="button" class="btn btn-success add-platform-edit" data-target="#platform-container-edit-{{ $item->id }}">+</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            @endif
-                        </div>
-
-                        {{-- LOGIKA ROLE EDIT (ASSIGN TEAM) --}}
-                        <hr>
-                        <div class="row">
-                            @if(Auth::user()->role == "super_admin" || Auth::user()->role == "head_of_division")
-                                <div class="col-md-12 form-group">
-                                    <label class="font-weight-bold small text-danger">Digital Marketing Manager</label>
-                                    <select name="dmm" class="form-control dmm-select-edit" required>
-                                        <option value="">-- Pilih DMM --</option>
-                                        @foreach($dmm as $m)
-                                            <option value="{{ $m->id }}" {{ in_array($item->id, $m->client) ? 'selected' : '' }}>
-                                                {{ $m->email }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                            @else
-                                <input type="hidden" name="dmm" class="dmm-select-edit is-dmm" value="{{ $item->dmm_id ?? Auth::user()->id }}">
-                            @endif
-
-                            {{-- BAGIAN DM (EDIT) --}}
-                            <div class="col-md-6 form-group" id="dm-container-edit-{{ $item->id }}">
-                                <label class="font-weight-bold small text-primary">Digital Marketing (Staff)</label>
-                                
-                                @php $dm_teams = $item->teams->where('role', 'digital_marketing'); @endphp
-                                
-                                @foreach($dm_teams as $staff)
-                                <div class="input-group mb-2">
-                                    <select name="dm[]" class="form-control dm-staff-select-edit" data-selected="{{ $staff->id }}">
-                                        <option value="{{ $staff->id }}" {{ in_array($staff->id, $staff->client) ? 'selected' : '' }}>{{ $staff->email }}</option>
-                                    </select>
-                                    <div class="input-group-append">
-                                        @if($loop->first)
-                                            <button type="button" class="btn btn-success add-dm-row-edit" data-target="#dm-container-edit-{{ $item->id }}">+</button>
-                                        @else
-                                            <button type="button" class="btn btn-danger remove-row">-</button>
-                                        @endif
-                                    </div>
-                                </div>
-                                @endforeach
-
-                                @if($dm_teams->count() == 0)
-                                <div class="input-group mb-2">
-                                    <select name="dm[]" class="form-control dm-staff-select-edit">
-                                        <option value="">-- Pilih DM --</option>
-                                    </select>
-                                    <div class="input-group-append">
-                                        <button type="button" class="btn btn-success add-dm-row-edit" data-target="#dm-container-edit-{{ $item->id }}">+</button>
-                                    </div>
-                                </div>
-                                @endif
-                            </div>
-
-                            {{-- BAGIAN CC (EDIT) --}}
-                            <div class="col-md-6 form-group" id="cc-container-edit-{{ $item->id }}">
-                                <label class="font-weight-bold small text-warning">Content Creator (Bawahan DM)</label>
-                                
-                                @php $cc_teams = $item->teams->where('role', 'content_creator'); @endphp
-
-                                @foreach($cc_teams as $staff)
-                                <div class="input-group mb-2">
-                                    <select name="cc[]" class="form-control cc-staff-select-edit" data-selected="{{ $staff->id }}">
-                                        <option value="{{ $staff->id }}" {{ in_array($staff->id, $staff->client) ? 'selected' : '' }}</option>
-                                    </select>
-                                    <div class="input-group-append">
-                                        @if($loop->first)
-                                            <button type="button" class="btn btn-success add-cc-row-edit" data-target="#cc-container-edit-{{ $item->id }}">+</button>
-                                        @else
-                                            <button type="button" class="btn btn-danger remove-row">-</button>
-                                        @endif
-                                    </div>
-                                </div>
-                                @endforeach
-
-                                @if($cc_teams->count() == 0)
-                                <div class="input-group mb-2">
-                                    <select name="cc[]" class="form-control cc-staff-select-edit">
-                                        <option value="">-- Pilih CC --</option>
-                                    </select>
-                                    <div class="input-group-append">
-                                        <button type="button" class="btn btn-success add-cc-row-edit" data-target="#cc-container-edit-{{ $item->id }}">+</button>
-                                    </div>
-                                </div>
-                                @endif
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-light border" data-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-warning font-weight-bold text-white">Update Produk</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    {{-- Modal Hapus --}}
-    <div class="modal fade" id="deleteModal_{{ $item->id }}" tabindex="-1">
-        <div class="modal-dialog modal-md">
-            <div class="modal-content">
-
-                <form action="{{ route('produk_delete', $item->id) }}" method="POST">
-                    @csrf
-                    {{-- HEADER --}}
-                    <div class="modal-header bg-danger text-white">
-                        <h5 class="modal-title">Hapus Produk Jasa</h5>
-                        <button type="button" class="close text-white" data-dismiss="modal">
-                            &times;
-                        </button>
-                    </div>
-
-                    {{-- BODY --}}
                     <div class="modal-body text-center">
-                        <p class="mb-2">
-                            Apakah kamu yakin ingin menghapus
-                        </p>
-                        <strong>{{ $item->nama }}</strong>?
-                        <p class="text-muted mt-2">
-                            Data yang dihapus tidak dapat dikembalikan.
+                        <p class="mb-2">Apakah kamu yakin ingin menghapus</p>
+                        <strong id="deleteTargetName"></strong>?
+                        <p class="text-muted mt-2 small">
+                            Data yang dihapus tidak dapat dikembalikan dan akses tim terkait akan otomatis diputus.
                         </p>
                     </div>
 
-                    {{-- FOOTER --}}
                     <div class="modal-footer justify-content-center">
-                        <button class="btn btn-secondary" data-dismiss="modal">
-                            Batal
-                        </button>
-                        <button class="btn btn-danger">
-                            Ya, Hapus
-                        </button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-danger">Ya, Hapus</button>
                     </div>
-
                 </form>
-
             </div>
         </div>
     </div>
-    @endforeach
+    {{-- @endforeach --}}
 </div>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@1.5.2/dist/select2-bootstrap4.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 
 $(document).ready(function() {
+    $('#produkTable').DataTable({
+        processing: true,
+        ajax: window.location.href, // Mengambil data dari method index di Controller
+        columns: [
+            // 1. Kolom Nomor
+            { 
+                data: null, 
+                className: 'text-center', 
+                width: '5%',
+                render: (data, type, row, meta) => meta.row + 1 
+            },
+            
+            // 2. Kolom Kategori Jasa
+            { data: 'category', width: '10%' },
+            
+            // 3. Kolom Nama Client/Produk
+            { data: 'nama', className: 'font-weight-bold', width: '15%' },
+            
+            // 4. Kolom Status
+            { 
+                data: 'status', 
+                className: 'text-center',
+                width: '10%',
+                render: s => {
+                    let badge = s == 1 ? 'badge-success' : 'badge-secondary';
+                    let text = s == 1 ? 'Ditampilkan' : 'Disembunyikan';
+                    return `<span class="badge ${badge}">${text}</span>`;
+                }
+            },
+            
+            // 5. Kolom DMM
+            { 
+                data: 'dmm', 
+                width: '12%',
+                render: data => renderBadges(data, 'badge-primary') 
+            },
+            
+            // 6. Kolom DM
+            { 
+                data: 'dm', 
+                width: '12%',
+                render: data => renderBadges(data, 'badge-info') 
+            },
+            
+            // 7. Kolom SCC
+            { 
+                data: 'scc', 
+                width: '12%',
+                render: data => renderBadges(data, 'badge-dark') 
+            },
+            
+            // 8. Kolom CC
+            { 
+                data: 'cc', 
+                width: '12%',
+                render: data => renderBadges(data, 'badge-warning text-dark') 
+            },
+            
+            @if($role != "Senior Content Creator")
+            { 
+                data: null,
+                className: 'text-center',
+                width: '12%',
+                orderable: false,
+                searchable: false,
+                render: r => `
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-warning" onclick="editProduk(${r.id})" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteProduk(${r.id}, '${r.nama}')" title="Hapus">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>`
+            }
+            @endif
+        ]
+    });
+
+    const roleUser = "{{ $role }}";
+
+    // Fungsi untuk reset dropdown di bawahnya
+    function resetAndDisable(targetIds) {
+        targetIds.forEach(id => {
+            $(`#${id}`).val(null).trigger('change').prop('disabled', true);
+        });
+    }
+
+    function filterOptions(childId, selectedParentIds) {
+        const $childSelect = $(`#${childId}`);
+
+        console.log($childSelect);
+        
+        // Sembunyikan semua opsi terlebih dahulu
+        $childSelect.find('option').each(function() {
+            let parentId = $(this).data('parent');
+            console.log($(this));
+            
+            if (!parentId) return;
+
+            if (selectedParentIds && selectedParentIds.includes(parentId.toString())) {
+                $(this).show();
+            } else {
+                $(this).hide();
+                $(this).prop('selected', false); // Batalkan pilihan jika tersembunyi
+            }
+        });
+
+        // Trigger change untuk merantai reset ke level bawahnya
+        $childSelect.trigger('change');
+    }
+
+    // 1. Logika DMM ke DM
+    $('#select-dmm').on('change', function() {
+        let selectedDmm = $(this).val();
+        if (selectedDmm && selectedDmm.length > 0) {
+            $('#select-dm').prop('disabled', false);
+            filterOptions('select-dm', selectedDmm);
+        } else {
+            resetAndDisable(['select-dm', 'select-scc', 'select-cc']);
+        }
+    });
+
+    // 2. Logika DM ke SCC
+    $('#select-dm').on('change', function() {
+        let selectedDm = $(this).val();
+        if (selectedDm && selectedDm.length > 0) {
+            $('#select-scc').prop('disabled', false);
+            filterOptions('select-scc', selectedDm);
+        } else {
+            resetAndDisable(['select-scc', 'select-cc']);
+        }
+    });
+
+    // 3. Logika SCC ke CC
+    $('#select-scc').on('change', function() {
+        let selectedScc = $(this).val();
+        if (selectedScc && selectedScc.length > 0) {
+            $('#select-cc').prop('disabled', false);
+            filterOptions('select-cc', selectedScc);
+        } else {
+            resetAndDisable(['select-cc']);
+        }
+    });
+
+    // Inisialisasi awal jika login sebagai DMM
+    if (roleUser === 'Digital Marketing Manager') {
+        $('#select-dm').prop('disabled', false);
+    }
     const allPlatforms = ["Tiktok", "Instagram"];
 
     function updateOptions() {
@@ -525,27 +415,35 @@ $(document).ready(function() {
 
     // Event Klik Tombol Tambah (Dinamis untuk Tambah & Edit)
     $(document).on('click', '.add-platform, .add-platform-edit', function() {
-        // Ambil target container dari atribut data-target
-        // Jika tidak ada (untuk modal tambah), default ke #platform-container
+        // 1. Tentukan target container (untuk modal tambah atau edit)
         let targetSelector = $(this).data('target') || '#platform-container';
         let $container = $(targetSelector);
 
+        let platformOptions = allPlatforms.map(p => `<option value="${p}">${p}</option>`).join('');
+
         let newRow = `
-            <div class="platform-row mb-2 mt-2">
-                <div class="input-group">
-                    <select name="platform[]" class="form-control platform-select" required>
+            <div class="platform-row mb-3 mt-2">
+                <div class="input-group shadow-sm">
+                    <select name="platform[]" class="form-control platform-select col-md-4" required>
                         <option value="">-- Pilih Platform --</option>
-                        ${allPlatforms.map(p => `<option value="${p}">${p}</option>`).join('')}
+                        ${platformOptions}
                     </select>
                     <input type="text" name="access[]" class="form-control" placeholder="Input Access Token">
                     <div class="input-group-append">
-                        <button type="button" class="btn btn-danger remove-platform">-</button>
+                        <button type="button" class="btn btn-outline-danger remove-platform" title="Hapus baris">
+                            <i class="fas fa-minus"></i>
+                        </button>
                     </div>
                 </div>
             </div>`;
         
+        // 4. Masukkan ke dalam container
         $container.append(newRow);
-        updateOptions();
+
+        // 5. Jalankan fungsi filter agar pilihan yang sudah ada di baris lain tersembunyi
+        if (typeof updateOptions === "function") {
+            updateOptions();
+        }
     });
 
     $(document).on('click', '.add-dm-row, .add-dm-row-edit', function() {
@@ -593,8 +491,13 @@ $(document).ready(function() {
 
     // Event Klik Tombol Hapus
     $(document).on('click', '.remove-platform', function() {
-        $(this).closest('.platform-row').remove();
-        updateOptions();
+        let $row = $(this).closest('.platform-row');
+        $row.fadeOut(200, function() {
+            $(this).remove();
+            if (typeof updateOptions === "function") {
+                updateOptions();
+            }
+        });
     });
 
     $(document).on('click', '.remove-dm-row', function() {
@@ -710,5 +613,36 @@ $(document).ready(function() {
         });
     });
 });
+
+function renderBadges(emails, badgeClass) {
+    if (!emails || emails.length === 0) return '<span class="text-muted small">-</span>';
+    return emails.map(email => 
+        `<small class="badge ${badgeClass} d-block mb-1" style="font-size:10px">${email}</small>`
+    ).join('');
+}
+
+// Event Handler untuk perubahan dropdown
+$(document).on('change', '#edit-select-dmm, #edit-select-dm', function() {
+    applyHierarchyFilter();
+});
+
+function renderPlatformRowEdit(platform, access, isFirst, productId) {
+    const listPlt = ['Instagram', 'Facebook', 'Tiktok'];
+    let options = listPlt.map(plt => `<option value="${plt}" ${plt === platform ? 'selected' : ''}>${plt}</option>`).join('');
+    
+    return `
+        <div class="platform-row mb-2">
+            <div class="input-group shadow-sm">
+                <select name="platform[]" class="form-control col-md-4">${options}</select>
+                <input type="text" name="access[]" class="form-control" value="${access || ''}" placeholder="Access Token">
+                <div class="input-group-append">
+                    <button type="button" class="btn btn-${isFirst ? 'success add-platform-edit' : 'danger remove-platform'}" 
+                            data-target="#platform-container-edit-${productId}">
+                        <i class="fas fa-${isFirst ? 'plus' : 'minus'}"></i>
+                    </button>
+                </div>
+            </div>
+        </div>`;
+}
 </script>
 @include('partials.footer')

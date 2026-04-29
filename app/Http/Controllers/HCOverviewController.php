@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+use App\Models\UserDivision;
+use App\Models\Division;
 use App\Models\Task;
 use App\Models\ProdukClient;
 use Carbon\CarbonPeriod;
@@ -20,56 +22,54 @@ class HCOverviewController extends Controller
     {
         $title = "Project Overview";
         $user = Auth::user();
+        $divisi = User::find(Auth::user()->id)->userDivisions;
+        $RoleSekarang = $user->isAdmin == false ? DB::table('roles')->where('id', $divisi[0]->role_id)->value('role_name') : "Super Admin";
         $id_client = (int)$id;
         // 1. Definisi List
-        $divisi_list = [1 => 'Digital Marketing', 2 => 'Business Dev', 3 => 'Human Capital'];
+        $divisi_list = Division::pluck('name', 'id');
         $prioritas = [1 => 'Rendah', 2 => 'Sedang', 3 => 'Tinggi'];
 
         // 2. Query Utama Task
         $taskQuery = Task::leftjoin('data_jasa', 'data_jasa.id', '=', 'task.id_manajement_konten')
             ->leftjoin('produk_client', 'produk_client.id', '=', 'task.project')
             ->leftjoin('users', 'users.id', '=', 'task.pic')
+            ->join('user_division', 'user_division.user_id', '=', 'users.id')
+            ->join('roles', 'roles.id', '=', 'user_division.role_id')
             ->select(
                 'task.*',
                 'data_jasa.tanggal_mulai as tgl_mulai_jasa',
                 'data_jasa.tanggal_deadline as tgl_deadline_jasa',
                 'users.email as vic_email',
-                'users.role as role_pic', // Ambil role PIC
-                'users.hod as pic_hod',    // ID HOD si PIC
-                'users.dmm as pic_dmm',    // ID DMM si PIC
-                'users.dm as pic_dm',
-                'produk_client.nama as nama_client'
+                'produk_client.nama as nama_client',
+                'user_division.parent_id',
+                'roles.role_name as role_pic'
             )
             ->where('task.project', $id_client)
             ->whereNot('task.status', 5);
-
-            switch($user->role) {
-                case "digital_marketing_manager":
+            // ->get();
+            // dd($taskQuery);
+            switch($RoleSekarang) {
+                case "Digital Marketing":
                     $taskQuery->where(function($q) use ($user) {
                         // Melihat task milik sendiri OR task yang manager/bawahannya adalah dia
                         $q->where('task.pic', $user->id)
-                        ->orWhere('users.dmm', $user->id); // Pastikan nama kolom di tabel users benar (dmm atau dm)
+                        ->orWhere('user_division.parent_id', $user->id); // Pastikan nama kolom di tabel users benar (dmm atau dm)
                     });
                     break;
 
-                case "digital_marketing":
+                case "Senior Content Creator":
                     $taskQuery->where(function($q) use ($user) {
                         $q->where('task.pic', $user->id)
-                        ->orWhere('users.dm', $user->id);
+                        ->orWhere('user_division.parent_id', $user->id);
                     });
                     break;
 
-                case "content_creator":
+                case "Content Creator":
                     $taskQuery->where('task.pic', $user->id);
                     break;
-
-                case "head_of_division":
-                    // Biasanya HOD bisa melihat semua task di project tersebut
-                    // Jadi biarkan kosong agar tidak terfilter pic
+                case "Digital Marketing Manager":
                     break;
-                case "super_admin":
-                    // Biasanya HOD bisa melihat semua task di project tersebut
-                    // Jadi biarkan kosong agar tidak terfilter pic
+                case "Super Admin":
                     break;
                 default:
                     break;
@@ -85,67 +85,59 @@ class HCOverviewController extends Controller
         if ($request->filled('divisi'))   { $taskQuery->where('task.divisi', $request->divisi); }
 
         $data = $taskQuery->orderBy('task.tanggal_mulai', 'ASC')->get();
+        // $handed_client = UserClient::where('client_id', $id_client)->get();
+        
+        $handed_client = User::leftjoin('user_division', 'user_division.user_id', '=', 'users.id')
+            ->select('users.id', 'users.name', 'users.email')
+            ->distinct();
 
-        // 3. Ambil Daftar VIC untuk Dropdown Filter
-        $userQuery = User::whereIn("role", ["digital_marketing", "content_creator", "digital_marketing_manager"])
-                    ->whereJsonContains('client', $id_client)
-                    ->select('id', 'email', 'name');
-
-        if ($user->role == "head_of_division") {
-            $vic_list = $userQuery->where(function($q) use ($user) {
-                $q->where('id', $user->id)->orWhere('hod', $user->id);
-            })->get();
-        } else if ($user->role == "digital_marketing_manager") {
-            $vic_list = $userQuery->where(function($q) use ($user) {
-                $q->where('id', $user->id)->orWhere('dmm', $user->id);
-            })->get();
-        } else if ($user->role == "digital_marketing") {
-            $vic_list = $userQuery->where(function($q) use ($user) {
-                $q->where('id', $user->id)->orWhere('dm', $user->id);
-            })->get();
-        } else if ($user->role == "super_admin") {
-            $vic_list = $userQuery->where(function($q) use ($user) {
-                $q->whereNot('role', $user->role);
-            })->get();
+        if ($RoleSekarang == "Content Creator") {
+            $vic_list = $handed_client->where('users.id', $user->id)->get();
+        } else if ($RoleSekarang == "Super Admin") {
+            $vic_list = $handed_client->where('users.isAdmin', false)->get();
         } else {
-            $vic_list = $userQuery->where('id', $user->id)->get();
+            $vic_list = $handed_client->where(function($q) use ($user) {
+                $q->where('users.id', $user->id)
+                ->orWhere('user_division.parent_id', $user->id);
+            })->get();
         }
 
         // 4. Filter Divisi untuk UI
         $result = [];
-        if($user->role == "super_admin"){
+        if($RoleSekarang == "Super Admin"){
             $result = $divisi_list;
-        }
-        foreach($divisi_list as $divId => $nama) {
-            if(in_array($divId, (array)$user->divisi)) {
-                $result[$divId] = $nama;
+        }else{
+            foreach($divisi_list as $divId => $nama) {
+                if($divId == $divisi[0]->division_id) {
+                    $result[$divId] = $nama;
+                }
             }
         }
 
         $client = ProdukClient::where('id', $id_client)->first();
-        $data->transform(function ($item) use ($user) {
+        $data->transform(function ($item) use ($user, $RoleSekarang) {
             $canApprove = false;
 
             // Jika Status 7 dan Belum Di-approve
             if ($item->status == 9 && $item->tanggal_approve == null) {
                 // 1. Admin bisa semua
-                if ($user->role == "super_admin") {
+                if ($RoleSekarang == "Super Admin") {
                     $canApprove = true;
                 } 
                 else {
                     // Jika PIC-nya DM, maka HOD yang bisa kirim
-                    if ($item->role_pic == "digital_marketing_manager" && $item->pic_hod == $user->id) {
+                    if ($item->role_pic == "Digitam Marketing" && $item->pic == $user->id) {
                         $canApprove = true;
                     }
                         // Jika PIC-nya Content Creator, maka Manager (DMM) yang bisa kirim
-                    elseif ($item->role_pic == "digital_marketing" && $item->pic_dmm == $user->id) {
+                    elseif ($item->role_pic == "Senior Content Creator" && $item->pic == $user->id) {
                         $canApprove = true;
                     }
-                    elseif ($item->role_pic == "content_creator" && $item->pic_dm == $user->id) {
+                    elseif ($item->role_pic == "Content Creator" && $item->pic == $user->id) {
                         $canApprove = true;
                     }
                     // Jika PIC-nya DM/CC dan atasan teknisnya (DM) adalah user login
-                    elseif ($item->pic_dm == $user->id) {
+                    elseif ($item->pic == $user->id) {
                         $canApprove = true;
                     }
                 }
@@ -367,14 +359,16 @@ class HCOverviewController extends Controller
     public function list_client(){
         $title = "Client Progress Monitor";
 
-        $userHandledClients = Auth::user()->client; // Contoh isinya: [13, 14]
+        $userHandledClients = Auth::user()->clients->pluck('id')->toArray(); // Contoh isinya: [13, 14]
+
+        // $userHanded = ProdukClient::join('users', 'users.id', '=', )
         if (!is_array($userHandledClients)) {
             $userHandledClients = json_decode($userHandledClients, true) ?: [];
         }
 
         // 2. Query ProdukClient hanya untuk ID yang ada di array tersebut
         $project = ProdukClient::select('id', 'nama as nama_client');
-            if(Auth::user()->role != "super_admin"){
+            if(Auth::user()->isAdmin == false){
                 $projects = $project->whereIn('id', $userHandledClients); // Filter Utama
             }
             $projects = $project->get()
@@ -540,23 +534,11 @@ class HCOverviewController extends Controller
         $title = 'Dashboard';
         $user = Auth::user();
 
-        $karyawan = [];
-        switch ($user->role) {
-            case 'head_of_division':
-                $allUser = User::where('hod', $user->id)->orWhere('id', $user->id)->get();
-                break;
-            case 'digital_marketing_manager':
-                $allUser = User::where('dmm', $user->id)->orWhere('id', $user->id)->get();
-                break;
-            case 'digital_marketing':
-                $allUser = User::where('dm', $user->id)->orWhere('id', $user->id)->get();
-                break;
-            case 'conten_creator':
-                $allUser = User::where('id', $user->id)->get();
-                break;
-            default:
-                $allUser = User::whereNot('role', 'super_admin')->get();
-                break;
+        $divisi = User::find(Auth::user()->id)->userDivisions;
+        $RoleSekarang = Auth::user()->isAdmin == false ? DB::table('roles')->where('id', $divisi[0]->role_id)->value('role_name') : "Super Admin";
+        $allUser = UserDivision::where('parent_id', $user->id)->orWhere('user_id', $user->id)->get();
+        if($user->isAdmin == true){
+            $allUser = User::where('isAdmin', false)->get();
         }
 
         return view('hc.dashboard', compact('title', 'allUser'));

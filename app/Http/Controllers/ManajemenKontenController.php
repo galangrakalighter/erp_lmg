@@ -12,8 +12,11 @@ use App\Models\ProdukClient;
 
 class ManajemenKontenController extends Controller
 {
-    public function index(Request $request, $produk, $platform){
-        $produk = DB::table('produk_client')->where('id', $produk)->first();
+    public function index(Request $request, $produk_id, $platform) {
+        // 1. Ambil data Produk dan Kategori dengan cara yang lebih aman
+        $produk = DB::table('produk_client')->where('id', $produk_id)->first();
+        if (!$produk) return redirect()->back()->with('error', 'Produk tidak ditemukan');
+
         $kategory = DB::table("kategori_jasa")->where('id', $produk->kategori_jasa_id)->first();
         $query = DB::table("data_jasa")
         ->leftjoin('type_produk', 'type_produk.id', '=', 'data_jasa.type_produk_id')
@@ -57,41 +60,87 @@ class ManajemenKontenController extends Controller
     // -------------------------
 
     $data = $query->orderBy('data_jasa.tanggal_posting', 'ASC')->get();
+    dd($data);
 
-        // LIST TABLE YANG AKAN DIKONDISIKAN
-        $table = ['strategy', 'status', 'pilar', 'hooks', 'type_produk', 'jenis_body', 'jenis_cta'];
+        $divisi = User::find(Auth::user()->id)->userDivisions;
+        $RoleSekarang = Auth::user()->isAdmin == false ? DB::table('roles')->where('id', $divisi[0]->role_id)->value('role_name') : "Super Admin";
 
+        // 3. Opsi Dropdown berdasarkan Kategori Jasa (Optimized)
+        $tables = ['strategy', 'status', 'pilar', 'hooks', 'type_produk', 'jenis_body', 'jenis_cta'];
         $option = [];
+        foreach ($tables as $tab) {
+            $option[$tab] = DB::table($tab)
+                ->where('kategori_id', $kategory->id) // Filter kategori sesuai produk
+                ->where('status', 1)
+                ->get();
+        }
 
+        // Meta Tags
         $title = "Manajemen Konten " . $produk->nama;
-
         $halaman = "Manajemen Konten";
 
-        foreach($table as $tab){
-            $datatable = DB::table($tab);
-            if($kategory->id == 1){
-                $option[$tab] = $datatable->where('kategori_id', 1);
-            }else{
-                $option[$tab] = $datatable->where('kategori_id', 2);
-            }
-            $option[$tab] = $datatable->where('status', 1)->get();
-        }
-        $users = User::whereJsonContains('client', $produk->id)
-                ->leftJoin('data_jasa', function($join) use ($produk) {
-                    $join->on('data_jasa.pic', '=', 'users.id')
-                        // Pindahkan filter ke sini agar Left Join tidak rusak
-                        ->where('data_jasa.produk_client_id', $produk->id);
-                })
+        return view("manajemen.index", compact(
+            'produk', 'option', 'title', 'kategory', 
+            'platform', 'halaman', 'RoleSekarang'
+        ));
+    }
+
+    public function getApiData(Request $request, $produk_id, $platform)
+    {
+        try {
+            $query = DB::table("data_jasa")
+                ->leftJoin('type_produk', 'type_produk.id', '=', 'data_jasa.type_produk_id')
+                ->leftJoin('strategy', 'strategy.id', '=', 'data_jasa.strategy_id')
+                ->leftJoin('status', 'status.id', '=', 'data_jasa.status_id')
+                ->leftJoin('pilar', 'pilar.id', '=', 'data_jasa.pilar_id')
+                ->leftJoin('hooks', 'hooks.id', '=', 'data_jasa.hooks_id')
+                ->leftJoin('jenis_body', 'jenis_body.id', '=', 'data_jasa.body_id')
+                ->leftJoin('jenis_cta', 'jenis_cta.id', '=', 'data_jasa.cta_id')
+                ->leftJoin('users', 'users.id', '=', 'data_jasa.pic')
+                ->where('data_jasa.produk_client_id', $produk_id)
+                ->where('data_jasa.platform', $platform)
                 ->select(
-                    'users.id', 
-                    'users.email', 
-                    'users.name',
-                    DB::raw('SUM(COALESCE(data_jasa.menit, 0)) as total_beban')
-                )
-                ->where('users.role', '!=', 'head_of_division')
-                ->groupBy('users.id', 'users.email', 'users.name')
-                ->get();
-        return view("manajemen.index", compact('data', 'produk', 'option', 'title', 'kategory', 'platform', 'halaman', 'users'));
+                    'data_jasa.*', 
+                    'type_produk.type', 
+                    'strategy.strategy', 
+                    'status.nama_status', 
+                    'pilar.pilar', 
+                    'hooks.hooks', 
+                    'jenis_body.nama_body', 
+                    'jenis_cta.nama_cta', 
+                    'users.email as vic_email',
+                    'users.name as vic_name'
+                );
+
+            // LOGIKA FILTER TANGGAL
+            if ($request->filled('start_date') || $request->filled('end_date')) {
+                // Jika user memilih filter tanggal sendiri
+                if ($request->filled('start_date')) {
+                    $query->whereDate('data_jasa.tanggal_posting', '>=', $request->start_date);
+                }
+                if ($request->filled('end_date')) {
+                    $query->whereDate('data_jasa.tanggal_posting', '<=', $request->end_date);
+                }
+            } else {
+                // DEFAULT: Jika filter kosong, tampilkan bulan sekarang saja
+                $query->whereMonth('data_jasa.tanggal_posting', date('m'))
+                    ->whereYear('data_jasa.tanggal_posting', date('Y'));
+            }
+
+            $data = $query->orderBy('data_jasa.tanggal_posting', 'ASC')->get();
+            
+            return response()->json([
+                'status' => 'success',
+                'total'  => $data->count(),
+                'data'   => $data
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function store($id, Request $request){

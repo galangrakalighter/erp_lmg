@@ -3,7 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-
+use App\Models\Division;
+use App\Models\Role;
 class userDivision extends Model
 {
     protected $table = "user_division";

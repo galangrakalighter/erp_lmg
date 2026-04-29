@@ -60,7 +60,7 @@ class ManajemenKontenController extends Controller
     // -------------------------
 
     $data = $query->orderBy('data_jasa.tanggal_posting', 'ASC')->get();
-    dd($data);
+    // dd($data);
 
         $divisi = User::find(Auth::user()->id)->userDivisions;
         $RoleSekarang = Auth::user()->isAdmin == false ? DB::table('roles')->where('id', $divisi[0]->role_id)->value('role_name') : "Super Admin";

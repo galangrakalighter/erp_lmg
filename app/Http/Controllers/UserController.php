@@ -64,7 +64,9 @@ class UserController extends Controller
                     ];
                 }),
                 'user_clients' => $user->userClients->map(function($uc) {
-                    return ['client' => ['nama' => $uc->client->nama]];
+                    $client = $uc->client;
+                    $name = $client?->nama ?? 'Nama tidak ditemukan';
+                    return ['client' => ['nama' => $name]];
                 })
             ];
         });

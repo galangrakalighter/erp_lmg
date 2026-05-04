@@ -75,8 +75,13 @@
 
             $userId = "{{ Auth::user()->id }}"
 
+            const path = window.location.pathname; // Hasil: "/cms_BD/produk"
+            const segments = path.split('/').filter(Boolean); // ["cms_BD", "produk"]
+
+            // Ambil indeks ke-0 (segmen pertama)
+            const folderName = segments[0];
             // Ganti URL sesuai dengan route web.php Anda
-            let urlDetail = `{{ url('api/produk/detail') }}/${id}/${$userId}`;
+            let urlDetail = `{{ url('api/produk/detail') }}/${id}/${$userId}/${folderName}`;
             let urlUpdate = `{{ url('cms/produk/edit') }}/${id}`;
 
             $('#formEditProduk').attr('action', urlUpdate);
@@ -85,6 +90,7 @@
                 url: urlDetail,
                 method: 'GET',
                 success: function(res) {
+                    console.log(res);
                     if(res.status === 'success') {
                         const p = res.produk;
                         const currentTeams = res.current_teams;

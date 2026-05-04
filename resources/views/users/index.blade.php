@@ -378,7 +378,7 @@ function renderTable(divisiId, divisiName) {
     // 2. Inisialisasi DataTable
     $('#mainDataTable').DataTable({
         ajax: {
-            url: "{{ route('users.json', [], true) }}",
+            url: "https:/erp.lightermediagroup.com/users/json",
             dataSrc: (json) => divisiId === 'all' ? json : json.filter(u => u.user_divisions.some(ud => ud.division_id == divisiId))
         },
         columns: getColumnsConfig(divisiId)

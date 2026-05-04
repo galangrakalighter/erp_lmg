@@ -68,7 +68,7 @@ class ProdukController extends Controller
     }
 
 
-    public function getDetail($id, $id_user)
+    public function getDetail($id, $id_user, $folderName)
     {
         try {
             $produk = ProdukClient::findOrFail($id);
@@ -80,8 +80,14 @@ class ProdukController extends Controller
 
             if ($user->isAdmin) {
                 $kategori = KategoriJasa::where('id', 1)->get();
+                if($folderName == "cms_BD"){
+                    $kategori = KategoriJasa::where('id', 2)->get();
+                }
             } else {
                 $kategori = KategoriJasa::where('id', $divisi[0]->division_id)->get();
+                if($folderName == "cms_LGTR"){
+                    $kategori = KategoriJasa::where('id', 2)->get();
+                }
             }
             
             // Cek apakah user punya divisi untuk menghindari error $divisi[0]

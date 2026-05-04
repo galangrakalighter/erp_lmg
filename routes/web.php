@@ -34,6 +34,8 @@ Route::middleware('auth')->group(function() {
     Route::resource('gform_affiliate', App\Http\Controllers\gformAffiliateController::class);
     Route::resource('selection', App\Http\Controllers\selectionController::class);
     Route::resource('barang_client', App\Http\Controllers\BarangClientController::class);
+    Route::get('/tools', [App\Http\Controllers\BarangClientController::class, 'index_tools'])->name('tools.index');
+    Route::post('/n8n-trigger', [App\Http\Controllers\BarangClientController::class, 'trigger'])->name('n8n.trigger');
     Route::post('/import_creator', [App\Http\Controllers\SosialCreatorController::class, 'import'])->name('creator.import');
     // Route::get('/manajemen_user', [App\Http\Controllers\UserController::class, 'index'])->name('manajemen_user');
     Route::get('api/hc/get-tasks-json', [App\Http\Controllers\HCDailyController::class, 'getTaskJSON'])->name('getTaskJSON');

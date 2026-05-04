@@ -284,6 +284,11 @@
                             <span>Blacklist</span>
                         </a>
                     </div>
+                    <div class="client-item-wrapper mb-2">
+                        <a class="client-dropdown-link {{ request()->is('tools') ? 'active' : '' }}" href="{{ route('tools.index') }}">
+                            <span>Tools</span>
+                        </a>
+                    </div>
 
                     @foreach ($mcnClient as $item)
                     <a class="client-dropdown-link {{ request()->is('project/' . $item->id . '*') ? '' : 'collapsed' }}" 

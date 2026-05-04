@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 class BarangClientController extends Controller
 {
     /**
@@ -20,6 +22,43 @@ class BarangClientController extends Controller
             return $item;
         });
         return view('mcn.barang', compact('title', 'data'));
+    }
+
+    public function index_tools(){
+        $title = "Tools";
+        return view('mcn.tools', compact('title'));
+    }
+
+    public function trigger(Request $request)
+    {
+        // Ganti dengan URL Production Webhook n8n Anda
+        $n8nWebhookUrl = 'https://pentagonoid-karol-unpreclusive.ngrok-free.dev/webhook-test/02e158b3-fcaa-4859-941b-7a39203c51d1';
+
+        $request->validate([
+            'automation_type' => 'required',
+            'sheet_url'       => 'required|url',
+            'header_row'      => 'required|numeric',
+            'first_data_row'  => 'required|numeric',
+            'limit'           => 'nullable|numeric',
+        ]);
+
+        try {
+            $response = Http::timeout(20)->post($n8nWebhookUrl, [
+                'category'        => $request->automation_type,
+                'spreadsheet_url' => $request->sheet_url,
+                'header_row'      => $request->header_row,
+                'first_data_row'  => $request->first_data_row,
+                'limit'           => $request->limit ?? 100, // default 100 jika kosong
+                'triggered_at'    => now()->toDateTimeString(),
+            ]);
+
+            if ($response->successful()) {
+                return response()->json(['status' => 'success', 'message' => 'Data dikirim! n8n sedang memproses.']);
+            }
+            return response()->json(['status' => 'error', 'message' => 'Gagal: ' . $response->status()], $response->status());
+        } catch (\Exception $e) {
+            return response()->json(['status' => 'error', 'message' => 'Koneksi gagal.'], 500);
+        }
     }
 
     /**

@@ -113,7 +113,7 @@ class HCDailyController extends Controller
                 });
 
             // 2. DATA BAWAHAN (Approval)
-           if ($user->role === 'super_admin') {
+           if ($user->isAdmin == true) {
                 $q->orWhereIn('task.status', [2, 3, 7, 9]); 
             } 
             elseif ($atasan != '' && isset($hierarchy[$user->role])) {
@@ -150,34 +150,8 @@ class HCDailyController extends Controller
             $bawahanIds = User::join('user_division', 'user_division.user_id', '=', 'users.id')->where('user_division.parent_id', Auth::id())->pluck('id');
         }
 
-        switch (Auth::user()->role) {
-            case "head_of_division":
-                $bawahanIds = User::where('hod', Auth::id())->pluck('id');
-                break;
-            case "digital_marketing_manager":
-                $bawahanIds = User::where('dmm', Auth::id())
-                    ->whereIn('role', ['digital_marketing', 'content_creator'])
-                    ->pluck('id');
-                break;
-
-            case "digital_marketing":
-                $bawahanIds = User::where('dm', Auth::id())
-                    ->whereIn('role', ['content_creator'])
-                    ->pluck('id');
-                break;
-            case "super_admin":
-                $bawahanIds = User::whereNot('role', 'super_admin')->pluck('id');
-                break;
-            default:
-                $bawahanIds = collect();
-        }
-
         $unscheduled_tasks = $all_tasks->filter(function ($task) use ($today, $bawahanIds) {
             $validStatus = in_array($task->status, [2, 3, 7, 9]);
-
-            if (Auth::user()->role === 'super_admin' && $task->status == 7) {
-                return false;
-            }
 
             $tglMulai = \Carbon\Carbon::parse($task->tanggal_mulai)->startOfDay();
             $tglDeadline = \Carbon\Carbon::parse($task->tanggal_deadline)->endOfDay();

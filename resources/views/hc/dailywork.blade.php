@@ -1455,10 +1455,10 @@
 
     // --- AJAX ACTIONS ---
     function autoUpdateToOverdue(id) {
-        axios.post("{{ route('hc.updateStatus') }}", { id: id, action: 'set_overdue', status: 7 }).then(() => location.reload());
+        axios.post("{{ str_replace('http://', 'https://', route('hc.updateStatus')) }}", { id: id, action: 'set_overdue', status: 7 }).then(() => location.reload());
     }
     function autoUpdateToEndsTime(id) {
-        axios.post("{{ route('hc.updateStatus') }}", { id: id, action: 'habis', status: 8 }).then(() => location.reload());
+        axios.post("{{ str_replace('http://', 'https://', route('hc.updateStatus')) }}", { id: id, action: 'habis', status: 8 }).then(() => location.reload());
     }
     function returnToPool(id) {
         if(confirm('Kembalikan ke Pool?')) axios.post("{{ route('hc.updateSchedule') }}", { id: id, reset: true }).then(() => location.reload());
@@ -1479,7 +1479,7 @@
         }
 
         // 1. Update Status melalui POST
-        axios.post("{{ route('hc.updateStatus') }}", { 
+        axios.post("{{ str_replace('http://', 'https://', route('hc.updateStatus')) }}", { 
             id: id, 
             action: action, 
             jam_mulai: jamMulaiStr 

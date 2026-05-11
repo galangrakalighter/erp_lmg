@@ -575,7 +575,7 @@
 
 function changeStatus(id, action) {
     let jamMulaiStr = null;
-    axios.post("{{ route('hc.updateStatus') }}", { id: id, action: action, jam_mulai: jamMulaiStr }).then(() => location.reload());
+    axios.post("{{ str_replace('http://', 'https://', route('hc.updateStatus')) }}", { id: id, action: action, jam_mulai: jamMulaiStr }).then(() => location.reload());
 }
 
 function getDataEdit(id){

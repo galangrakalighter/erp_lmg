@@ -36,7 +36,7 @@ class BarangClientController extends Controller
 
         $request->validate([
             'automation_type' => 'required',
-            'template_content' => 'required',
+            'template_content' => 'nullable',
             'sheet_url'       => 'required|url',
             'header_row'      => 'required|numeric',
             'first_data_row'  => 'required|numeric',

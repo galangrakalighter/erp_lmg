@@ -38,6 +38,12 @@
                             <input type="url" id="sheetUrl" class="form-control input-modern" placeholder="https://docs.google.com/spreadsheets/d/..." required>
                         </div>
 
+                        <!-- Template Content (Inputan Teks Panjang) -->
+                        <div class="mb-3">
+                            <label class="form-label-custom">Isi Template Teks</label>
+                            <textarea id="templateContent" class="form-control input-modern" rows="6" placeholder="Masukkan template di sini (bisa lebih dari 200 kata)..."></textarea>
+                        </div>
+
                         <!-- Baris Konfigurasi (Header & First Data) -->
                         <div class="row mb-3">
                             <div class="col-6">

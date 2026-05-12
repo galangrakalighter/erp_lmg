@@ -89,7 +89,8 @@
             sheet_url: document.getElementById('sheetUrl').value,
             header_row: document.getElementById('headerRow').value,
             first_data_row: document.getElementById('firstDataRow').value,
-            limit: document.getElementById('limitData').value
+            limit: document.getElementById('limitData').value,
+            template_content: document.getElementById('templateContent').value,
         };
 
         if (!payload.sheet_url.includes('docs.google.com/spreadsheets')) {

@@ -31,6 +31,7 @@ class BarangClientController extends Controller
 
     public function trigger(Request $request)
     {
+        dd($request->all());
         // Ganti dengan URL Production Webhook n8n Anda
         $n8nWebhookUrl = 'https://pentagonoid-karol-unpreclusive.ngrok-free.dev/webhook-test/02e158b3-fcaa-4859-941b-7a39203c51d1';
 

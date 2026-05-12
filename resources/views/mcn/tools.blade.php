@@ -41,7 +41,7 @@
                         <!-- Template Content (Inputan Teks Panjang) -->
                         <div class="mb-3">
                             <label class="form-label-custom">Isi Template Teks</label>
-                            <textarea id="templateContent" class="form-control input-modern" rows="6" placeholder="Masukkan template di sini (bisa lebih dari 200 kata)..."></textarea>
+                            <textarea id="templateContent" name="template_content" class="form-control input-modern" rows="6" placeholder="Masukkan template di sini (bisa lebih dari 200 kata)..."></textarea>
                         </div>
 
                         <!-- Baris Konfigurasi (Header & First Data) -->

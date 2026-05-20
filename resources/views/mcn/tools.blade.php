@@ -105,7 +105,7 @@
         statusMessage.classList.add('d-none');
 
         try {
-            const response = await fetch("{{ route('n8n.trigger') }}", {
+            const response = await fetch("{{ secure_url(route('n8n.trigger', [], false)) }}", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

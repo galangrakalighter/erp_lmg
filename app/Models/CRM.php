@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class CRM extends Model
 {
+    protected $connection = 'pgsql_supabase';
     protected $table = "crm";
     protected $fillable = [
         "tanggal_chat",

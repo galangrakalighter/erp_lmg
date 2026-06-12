@@ -81,7 +81,7 @@
             // Ambil indeks ke-0 (segmen pertama)
             const folderName = segments[0];
             // Ganti URL sesuai dengan route web.php Anda
-            let urlDetail = `{{ url('api/produk/detail') }}/${id}/${$userId}/${folderName}`;
+            let urlDetail = `{{ secure_url('api/produk/detail') }}/${id}/${$userId}/${folderName}`;
             let urlUpdate = `{{ url('cms/produk/edit') }}/${id}`;
 
             $('#formEditProduk').attr('action', urlUpdate);

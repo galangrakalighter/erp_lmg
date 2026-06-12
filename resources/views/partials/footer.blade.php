@@ -93,11 +93,11 @@
                     console.log(res);
                     if(res.status === 'success') {
                         const p = res.produk;
-                        const currentTeams = res.current_teams;
+                        // Ambil array gabungan tim yang aktif saat ini
+                        const currentTeams = res.current_teams || []; 
                         const opt = res.options;
                         const isAdmin = res.is_admin;
 
-                        // Parsing Platform & Token (Asumsi data disimpan dalam JSON di DB)
                         let platformData = [];
                         try {
                             platformData = JSON.parse(p.access_token) || [];
@@ -130,7 +130,7 @@
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label class="text-dark font-weight-bold small">Nama Produk <span class="text-danger">*</span></label>
-                                            <input type="text" name="client" class="form-control" value="${p.nama}" placeholder="Contoh: Social Media Management" required>
+                                            <input type="text" name="nama" class="form-control" value="${p.nama || ''}" placeholder="Contoh: Social Media Management" required>
                                         </div>
                                     </div>
                                     <div class="col-md-12">
@@ -159,7 +159,7 @@
                                                         <option value="Facebook" ${item.platform == 'Facebook' ? 'selected' : ''}>Facebook</option>
                                                         <option value="Tiktok" ${item.platform == 'Tiktok' ? 'selected' : ''}>Tiktok</option>
                                                     </select>
-                                                    <input type="text" name="access[]" class="form-control" value="${item.access}" placeholder="Input Access Token">
+                                                    <input type="text" name="access[]" class="form-control" value="${item.access || ''}" placeholder="Input Access Token">
                                                     <div class="input-group-append">
                                                         ${index === 0 ? 
                                                             `<button type="button" class="btn btn-success add-platform-edit">+</button>` : 
@@ -196,31 +196,43 @@
                                         <label class="font-weight-bold small text-danger">Manager (DMM)</label>
                                         ${isAdmin ? `
                                             <select name="dmm_ids[]" id="edit-select-dmm" class="form-control select2-edit" multiple data-placeholder="Pilih DMM">
-                                                ${opt.dmm.map(u => `<option value="${u.id}" ${currentTeams.includes(u.id) ? 'selected' : ''}>${u.name}</option>`).join('')}
+                                                ${(opt.dmm || []).map(u => {
+                                                    const isSelected = currentTeams.some(t => (t.id || t) == u.id);
+                                                    return `<option value="${u.id}" ${isSelected ? 'selected' : ''}>${u.name}</option>`;
+                                                }).join('')}
                                             </select>
                                         ` : `
                                             <input type="hidden" name="dmm_ids[]" value="${p.user_id}">
                                             <div class="p-2 border rounded bg-white shadow-sm">
-                                                ${opt.dmm.filter(u => currentTeams.includes(u.id)).map(u => `<span class="badge badge-danger m-1">${u.name}</span>`).join('') || '<small class="text-muted">No DMM</small>'}
+                                                ${(opt.dmm || []).filter(u => currentTeams.some(t => (t.id || t) == u.id)).map(u => `<span class="badge badge-danger m-1">${u.name}</span>`).join('') || '<small class="text-muted">No DMM</small>'}
                                             </div>
                                         `}
                                     </div>
                                     <div class="col-md-6 form-group">
                                         <label class="font-weight-bold small text-warning">Digital Marketing (DM)</label>
                                         <select name="dm_ids[]" id="edit-select-dm" class="form-control select2-edit" multiple data-placeholder="Pilih DM">
-                                            ${opt.dm.map(u => `<option value="${u.id}" data-parent="${u.parent}" ${currentTeams.includes(u.id) ? 'selected' : ''}>${u.name}</option>`).join('')}
+                                            ${(opt.dm || []).map(u => {
+                                                const isSelected = currentTeams.some(t => (t.id || t) == u.id);
+                                                return `<option value="${u.id}" data-parent="${u.parent}" ${isSelected ? 'selected' : ''}>${u.name}</option>`;
+                                            }).join('')}
                                         </select>
                                     </div>
                                     <div class="col-md-6 form-group">
                                         <label class="font-weight-bold small text-dark">Senior Content Creator (SCC)</label>
                                         <select name="scc_ids[]" id="edit-select-scc" class="form-control select2-edit" multiple data-placeholder="Pilih SCC">
-                                            ${opt.scc.map(u => `<option value="${u.id}" data-parent="${u.parent}" ${currentTeams.includes(u.id) ? 'selected' : ''}>${u.name}</option>`).join('')}
+                                            ${(opt.scc || []).map(u => {
+                                                const isSelected = currentTeams.some(t => (t.id || t) == u.id);
+                                                return `<option value="${u.id}" data-parent="${u.parent}" ${isSelected ? 'selected' : ''}>${u.name}</option>`;
+                                            }).join('')}
                                         </select>
                                     </div>
                                     <div class="col-md-6 form-group">
                                         <label class="font-weight-bold small text-warning">Content Creator (CC)</label>
                                         <select name="cc_ids[]" id="edit-select-cc" class="form-control select2-edit" multiple data-placeholder="Pilih CC">
-                                            ${opt.cc.map(u => `<option value="${u.id}" data-parent="${u.parent}" ${currentTeams.includes(u.id) ? 'selected' : ''}>${u.name}</option>`).join('')}
+                                            ${(opt.cc || []).map(u => {
+                                                const isSelected = currentTeams.some(t => (t.id || t) == u.id);
+                                                return `<option value="${u.id}" data-parent="${u.parent}" ${isSelected ? 'selected' : ''}>${u.name}</option>`;
+                                            }).join('')}
                                         </select>
                                     </div>
                                 </div>
@@ -235,31 +247,44 @@
                         `;
 
                         $container.html(html);
-                        
-                        // Inisialisasi Select2
-                        $('.select2-edit').select2({
-                            theme: 'bootstrap4',
-                            width: '100%',
-                            placeholder: '-- Pilih --'
-                        });
 
-                        // Jalankan filter hierarki pertama kali
-                        applyHierarchyFilter();
+                        // Alur Inisialisasi Menggunakan Timeout agar Sinkronisasi Chaining Tidak Bentrok
+                        setTimeout(function() {
+                            // 1. Tampilkan semua opsi HTML bawaan (mencegah diculik fungsi filter lama)
+                            $('#edit-select-dm option, #edit-select-scc option, #edit-select-cc option').show().prop('disabled', false);
 
-                        setupEditChaining();
+                            // 2. Ambil nilai yang sudah otomatis bertanda 'selected' dari template HTML di atas
+                            let activeDmm = $('#edit-select-dmm').val() || [];
+                            let activeDm  = $('#edit-select-dm').val() || [];
+                            let activeScc = $('#edit-select-scc').val() || [];
+                            let activeCc  = $('#edit-select-cc').val() || [];
 
-                        let initialDmm = $('#edit-select-dmm').val() || [];
-                        let initialDm = $('#edit-select-dm').val() || [];
-                        let initialScc = $('#edit-select-scc').val() || [];
+                            // 3. Inisialisasi Select2 & Paksa merender nilai-nilai aktif di atas
+                            $('.select2-edit').select2({
+                                theme: 'bootstrap4',
+                                width: '100%',
+                                placeholder: '-- Pilih --'
+                            });
 
-                        if(initialDmm.length > 0) filterOptions('#edit-select-dm', initialDmm);
-                        if(initialDm.length > 0) filterOptions('#edit-select-scc', initialDm);
-                        if(initialScc.length > 0) filterOptions('#edit-select-cc', initialScc);
-                        
-                        // Kembalikan nilai lama yang mungkin ter-reset oleh filter manual tadi
-                        $('#edit-select-dm').val(res.current_dm).trigger('change.select2');
-                        $('#edit-select-scc').val(res.current_scc).trigger('change.select2');
-                        $('#edit-select-cc').val(res.current_cc).trigger('change.select2');
+                            // 4. Trigger perubahan awal agar Select2 menangkap datanya secara visual
+                            $('#edit-select-dmm').val(activeDmm).trigger('change.select2');
+                            $('#edit-select-dm').val(activeDm).trigger('change.select2');
+                            $('#edit-select-scc').val(activeScc).trigger('change.select2');
+                            $('#edit-select-cc').val(activeCc).trigger('change.select2');
+
+                            // 5. Jalankan filter hierarki berdasarkan data yang sudah terisi mantap
+                            if (typeof filterOptions === "function") {
+                                if(activeDmm.length > 0) filterOptions('#edit-select-dm', activeDmm);
+                                if(activeDm.length > 0)  filterOptions('#edit-select-scc', activeDm);
+                                if(activeScc.length > 0) filterOptions('#edit-select-cc', activeScc);
+                            } else if (typeof applyHierarchyFilter === "function") {
+                                applyHierarchyFilter();
+                            }
+
+                            // 6. Daftarkan event penanganan perubahan manual ketika user berinteraksi klik
+                            setupEditChaining();
+
+                        }, 150);
 
                         $('#modalEditGlobal').modal('show');
                     }

@@ -27,8 +27,8 @@
                         <div class="mb-3">
                             <label class="form-label-custom">Kategori Sistem</label>
                             <select id="automationType" class="form-select input-modern">
-                                <option value="minei">Minei Portal</option>
-                                <option value="eikyoo">Eikyoo Ecosystem</option>
+                                <option value="minei">+6287718588057</option>
+                                <option value="eikyoo">+628132279929</option>
                             </select>
                         </div>
 

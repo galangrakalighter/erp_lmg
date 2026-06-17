@@ -23,7 +23,6 @@
                     <p class="text-muted small mb-4">Konfigurasi pengambilan data Google Sheet</p>
 
                     <div class="text-start">
-                        <!-- Kategori -->
                         <div class="mb-3">
                             <label class="form-label-custom">Kategori Sistem</label>
                             <select id="automationType" class="form-select input-modern">
@@ -32,19 +31,21 @@
                             </select>
                         </div>
 
-                        <!-- URL -->
                         <div class="mb-3">
                             <label class="form-label-custom">Link Google Sheet</label>
                             <input type="url" id="sheetUrl" class="form-control input-modern" placeholder="https://docs.google.com/spreadsheets/d/..." required>
                         </div>
 
-                        <!-- Template Content (Inputan Teks Panjang) -->
                         <div class="mb-3">
-                            <label class="form-label-custom">Isi Template Teks</label>
-                            <textarea id="templateContent" name="template_content" class="form-control input-modern" rows="6" placeholder="Masukkan template di sini (bisa lebih dari 200 kata)..."></textarea>
+                            <label class="form-label-custom">Nama Sheet (Tab)</label>
+                            <input type="text" id="sheetName" class="form-control input-modern" placeholder="Contoh: Sheet1" required>
                         </div>
 
-                        <!-- Baris Konfigurasi (Header & First Data) -->
+                        <div class="mb-3">
+                            <label class="form-label-custom">Isi Template Teks</label>
+                            <textarea id="templateContent" name="template_content" class="form-control input-modern" rows="6" placeholder="Masukkan template di sini..."></textarea>
+                        </div>
+
                         <div class="row mb-3">
                             <div class="col-6">
                                 <label class="form-label-custom">Header Row</label>
@@ -56,7 +57,6 @@
                             </div>
                         </div>
 
-                        <!-- Limit -->
                         <div class="mb-4">
                             <label class="form-label-custom">Limit Data (Opsional)</label>
                             <input type="number" id="limitData" class="form-control input-modern" placeholder="Contoh: 100">
@@ -78,6 +78,7 @@
 
 <script>
     document.getElementById('triggerBtn').addEventListener('click', async function() {
+        // ... (seleksi elemen tetap sama)
         const btn = this;
         const btnText = document.getElementById('btnText');
         const btnIcon = document.getElementById('btnIcon');
@@ -87,14 +88,15 @@
         const payload = {
             automation_type: document.getElementById('automationType').value,
             sheet_url: document.getElementById('sheetUrl').value,
+            sheet_name: document.getElementById('sheetName').value, // TAMBAHAN: ambil value sheetName
             header_row: document.getElementById('headerRow').value,
             first_data_row: document.getElementById('firstDataRow').value,
             limit: document.getElementById('limitData').value,
             template_content: document.getElementById('templateContent').value,
         };
 
-        if (!payload.sheet_url.includes('docs.google.com/spreadsheets')) {
-            alert('Link Google Sheet tidak valid!');
+        if (!payload.sheet_url.includes('docs.google.com/spreadsheets') || !payload.sheet_name) {
+            alert('Mohon isi Link Google Sheet dan Nama Sheet dengan benar!');
             return;
         }
 
@@ -119,7 +121,11 @@
             statusMessage.innerText = result.message;
             statusMessage.className = `mt-4 alert alert-modern py-3 ${response.ok ? 'alert-success' : 'alert-danger'}`;
 
-            if (response.ok) document.getElementById('sheetUrl').value = '';
+            if (response.ok) {
+                // Opsional: Reset form
+                document.getElementById('sheetUrl').value = '';
+                document.getElementById('sheetName').value = '';
+            }
 
         } catch (error) {
             statusMessage.classList.remove('d-none');

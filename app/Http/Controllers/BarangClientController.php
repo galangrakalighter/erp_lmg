@@ -50,6 +50,7 @@ class BarangClientController extends Controller
                 'header_row'      => $request->header_row,
                 'first_data_row'  => $request->first_data_row,
                 'template_content' => $request->template_content,
+                'sheet_name'       => $request->sheet_name,
                 'limit'           => $request->limit ?? 100, // default 100 jika kosong
                 'triggered_at'    => now()->toDateTimeString(),
             ]);

@@ -17,17 +17,7 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->string('role')->nullable();
-            $table->unsignedBigInteger('hod')->nullable();
-            $table->unsignedBigInteger('dmm')->nullable();
-            $table->unsignedBigInteger('dm')->nullable();
-            $table->unsignedBigInteger('cc')->nullable();
-            $table->foreign('hod')->references('id')->on('users')->onDelete('set null');
-            $table->foreign('dmm')->references('id')->on('users')->onDelete('set null');
-            $table->foreign('dm')->references('id')->on('users')->onDelete('set null');
-            $table->foreign('cc')->references('id')->on('users')->onDelete('set null');
-            $table->json('divisi')->nullable();
-            $table->json('client')->nullable();
+            $table->boolean('siAdmin');
             $table->rememberToken();
             $table->timestamps();
         });

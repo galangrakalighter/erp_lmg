@@ -30,8 +30,11 @@ return new class extends Migration
             $table->date('tanggal_deadline')->nullable();
             $table->string('link')->nullable();
             $table->string('platform')->nullable();
-            $table->integer('status_id')->constrained("status")->cascadeOnDelete();;
+            $table->integer('status_id')->constrained("status")->cascadeOnDelete();
             $table->timestamps();
+            $table->foreignId('pic')->constrained("users")->cascadeOnDelete();
+            $table->integer('priority');
+            $table->integer('menit');
         });
     }
 

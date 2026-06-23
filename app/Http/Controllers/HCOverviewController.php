@@ -117,6 +117,9 @@ class HCOverviewController extends Controller
         $client = ProdukClient::where('id', $id_client)->first();
         $data->transform(function ($item) use ($user, $RoleSekarang) {
             $canApprove = false;
+            if ($RoleSekarang == "Super Admin") {
+                $canApprove = true;
+            } 
 
             // Jika Status 7 dan Belum Di-approve
             if ($item->status == 9 && $item->tanggal_approve == null) {

@@ -840,7 +840,8 @@
         const pool = document.getElementById('unscheduled-pool');
         const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
         axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken;
-        const myRole = "{{ Auth::user()->role }}";
+        const getRole = @json($myRole);
+        const myRole = getRole['level'];
         const myId = "{{ Auth::id() }}";
 
         // --- SORTABLE JS CONFIG ---
@@ -926,7 +927,8 @@
             if(task.id_manajement_konten != null){
                 teks = "Edit Konten";
             }
-            const myRole = "{{ Auth::user()->role }}";
+            const getRole = @json($myRole);
+            const myRole = getRole['role_name'];
             
             const jamMulai = task.jam_mulai || "09:00";
             const durasiMenit = parseInt(task.menit) || 0;
@@ -1075,6 +1077,7 @@
             const status = parseInt(task.status);
             const approve = task.tanggal_approve;
             console.log(approve);
+            console.log(getRole);
             const btnClass = "btn btn-xs shadow-sm font-weight-bold";
 
             if (isMyTask) {
@@ -1105,11 +1108,12 @@
             if (status === 3) {
                 let canApprove = false;
                 if (typeof myRole !== 'undefined') {
-                    if (myRole === 'head_of_division' && task.vic_role === 'digital_marketing_manager') canApprove = true;
-                    else if (myRole === 'digital_marketing_manager' && task.vic_role === 'digital_marketing') canApprove = true;
-                    else if (myRole === 'digital_marketing' && task.vic_role === 'content_creator') canApprove = true;
-                    else if (myRole === 'super_admin') canApprove = true;
+                    if (myRole === 1 && task.level === 2) canApprove = true;
+                    else if (myRole === 2 && task.level === 3) canApprove = true;
+                    else if (myRole === 3 && task.vic_role === 3) canApprove = true;
                 }
+                
+                if (getRole.name === 'Super Admin') canApprove = true;
 
                 if (canApprove) {
                     return `<div class="d-flex">

@@ -25,6 +25,7 @@ class HCDailyController extends Controller
         $today = Carbon::today();
         $user = Auth::user();
         $hierarchy = [];
+        $RoleSekarang = '';
 
         if ($user->isAdmin) {
             // LOGIKA SUPER ADMIN
@@ -147,7 +148,7 @@ class HCDailyController extends Controller
         if($CurrentLevel == 0){
             $bawahanIds = User::whereNot('users.isAdmin', true)->pluck('id');
         }else{
-            $bawahanIds = User::join('user_division', 'user_division.user_id', '=', 'users.id')->where('user_division.parent_id', Auth::id())->pluck('id');
+            $bawahanIds = User::join('user_division', 'user_division.user_id', '=', 'users.id')->where('user_division.parent_id', Auth::id())->pluck('users.id');
         }
 
         $unscheduled_tasks = $all_tasks->filter(function ($task) use ($today, $bawahanIds) {
@@ -208,6 +209,10 @@ class HCDailyController extends Controller
             
         $divisi_list = Division::pluck('name', 'id');
         $divisi = User::find(Auth::user()->id)->userDivisions;
+        $myRole = 1;
+        if(Auth::user()->isAdmin == false){
+            $myRole = $divisi->first()->role->role_name;
+        }
 
         $result = [];
         if($RoleSekarang == "Super Admin"){
@@ -227,7 +232,7 @@ class HCDailyController extends Controller
             $produk = ProdukClient::select('id', 'nama')->whereIn('id', $handleClient)->get();
         }
 
-        return view('hc.dailywork', compact('title', 'unscheduled_tasks', 'scheduled_tasks', 'priority_colors', 'startHour','totalHours','formatTotalPool', 'subordinateTasks', 'result', 'prioritas', 'produk'));
+        return view('hc.dailywork', compact('title', 'unscheduled_tasks', 'scheduled_tasks', 'myRole','priority_colors', 'startHour','totalHours','formatTotalPool', 'subordinateTasks', 'result', 'prioritas', 'produk'));
     }
 
     public function updateSchedule(Request $request)
@@ -369,7 +374,7 @@ class HCDailyController extends Controller
             ->join('produk_client', 'produk_client.id', '=', 'task.project')
             ->join('user_division', 'user_division.user_id', '=', 'users.id')
             ->join('roles', 'roles.id', '=', 'user_division.role_id')
-            ->select('task.*', 'users.email as vic_email', 'produk_client.nama as project_name', 'roles.role_name as vic_role', 'user_division.parent_id')
+            ->select('task.*', 'users.email as vic_email', 'produk_client.nama as project_name', 'roles.role_name as vic_role', 'user_division.parent_id', 'roles.level')
             ->where('task.pic', $userId)
             ->whereNotNull('task.jam_mulai')
             ->where(function($query) use ($today) {

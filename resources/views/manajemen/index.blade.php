@@ -7,7 +7,7 @@
             <h6 class="m-0 font-weight-bold text-primary">
                 <i class="fas fa-tasks mr-2"></i>Manajemen Konten {{ $produk->nama }}
             </h6>
-            @if($role == 'Content Creator Manager' || $role == 'Busines Unit Head')
+            @if($role == 'Content Creator Manager' || $role == 'Busines Unit Head' || $role == 'Super Admin')
             <button type="button" class="btn btn-primary btn-sm shadow-sm" data-toggle="modal" data-target="#tambahModal">
                 <i class="fas fa-plus fa-sm text-white-50 mr-1"></i> Tambah Konten
             </button>

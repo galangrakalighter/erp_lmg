@@ -9,7 +9,7 @@
             {{-- <a href="{{ route('create_produk_jasa') }}" class="btn btn-sm btn-primary">
                 Tambah
             </a> --}}
-            @if($role == 'Digital Marketer' || $role == 'Busines Unit Head')
+            @if($role == 'Digital Marketer' || $role == 'Busines Unit Head' || $role == 'Super Admin')
             <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#tambahModal">
                 Tambah
             </button>
@@ -32,7 +32,7 @@
                             <th scope="col">Advertising</th>
                             <th scope="col">Content Creator Manager</th>
 
-                            @if ($role == 'Digital Marketer' || $role == 'Busines Unit Head')
+                            @if ($role == 'Digital Marketer' || $role == 'Busines Unit Head' || $role == 'Super Admin')
                                 <th scope="col">Action</th>
                             @endif
                         </tr>
@@ -288,7 +288,7 @@ $(document).ready(function() {
                 render: data => renderBadges(data, 'badge-warning text-dark') 
             },
             
-            @if($role == 'Digital Marketer' || $role == 'Busines Unit Head')
+            @if($role == 'Digital Marketer' || $role == 'Busines Unit Head' || $role == 'Super Admin')
             { 
                 data: null,
                 className: 'text-center',

@@ -9,7 +9,7 @@
             {{-- <a href="{{ route('create_status_jasa') }}" class="btn btn-sm btn-primary">
                 Tambah
             </a> --}}
-            @if($role == 'Digital Marketer' || $role == 'Busines Unit Head')
+            @if($role == 'Digital Marketer' || $role == 'Busines Unit Head' || $role == 'Super Admin')
             <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#tambahModal">
                 Tambah
             </button>
@@ -26,7 +26,7 @@
                             <th>No</th>
                             <th>Nama</th>
                             <th>Status</th>
-                            @if($role == 'Digital Marketer' || $role == 'Busines Unit Head')
+                            @if($role == 'Digital Marketer' || $role == 'Busines Unit Head' || $role == 'Super Admin')
                             <th>Action</th>
                             @endif
                         </tr>
@@ -37,7 +37,7 @@
                                 <th>{{ $loop->iteration }}</th>
                                 <th>{{ $item->nama_status }}</th>
                                 <th>{{ $item->status == 1 ? "Ditampilkan" : "Disembunyikan"}}</th>
-                                @if($role == 'Digital Marketer' || $role == 'Busines Unit Head')
+                                @if($role == 'Digital Marketer' || $role == 'Busines Unit Head' || $role == 'Super Admin')
                                 <th>
                                     <button type="button" class="btn btn-warning" data-toggle="modal" data-target="#editModal_{{ $item->id }}">Edit</button>
                                     <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#deleteModal_{{ $item->id }}">Hapus</button>

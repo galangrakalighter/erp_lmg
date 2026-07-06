@@ -6,7 +6,7 @@
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
                     <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-fingerprint mr-2"></i>Brand Identify</h6>
-                    @if($role == 'Advertising' && !$identify || $role == 'Busines Unit Head' && !$identify)
+                    @if($role == 'Advertising' && !$identify || $role == 'Busines Unit Head' && !$identify || $role == 'Super Admin' && !$identify)
                     <button type="button" class="btn btn-sm btn-primary shadow-sm" data-toggle="modal" data-target="#tambahModalIdentify">
                         <i class="fas fa-plus fa-sm text-white-50 mr-1"></i> Tambah
                     </button>
@@ -31,7 +31,7 @@
                             @endif
 
                             {{-- Tombol Aksi melayang di pojok kanan atas --}}
-                            @if($role == 'Advertising' || $role == 'Busines Unit Head')
+                            @if($role == 'Advertising' || $role == 'Busines Unit Head' || $role == 'Super Admin')
                                 <div class="position-absolute" style="top: 10px; right: 10px;">
                                     <div class="btn-group shadow-sm">
                                         <button class="btn btn-warning btn-sm text-white" 
@@ -65,7 +65,7 @@
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
                     <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-image mr-2"></i>Brand Image</h6>
-                    @if($role == 'Advertising' || $role == 'Busines Unit Head')
+                    @if($role == 'Advertising' || $role == 'Busines Unit Head' || $role == 'Super Admin')
                     <button type="button" class="btn btn-sm btn-primary shadow-sm" data-toggle="modal" data-target="#tambahModalImage">
                         <i class="fas fa-plus fa-sm text-white-50 mr-1"></i> Tambah
                     </button>
@@ -78,7 +78,7 @@
                                 <tr style="font-size: 0.85rem;">
                                     <th>No</th>
                                     <th>Brand Image</th>
-                                    @if($role == 'Advertising' || $role == 'Busines Unit Head')
+                                    @if($role == 'Advertising' || $role == 'Busines Unit Head' || $role == 'Super Admin')
                                     <th class="text-center">Aksi</th>
                                     @endif
                                 </tr>
@@ -88,7 +88,7 @@
                                     <tr>
                                         <th>{{ $loop->iteration }}</th>
                                         <th>{{ $item->nama_image }}</th>
-                                        @if($role == 'Advertising' || $role == 'Busines Unit Head')
+                                        @if($role == 'Advertising' || $role == 'Busines Unit Head' || $role == 'Super Admin')
                                         <th>
                                             <button class="btn btn-warning btn-sm text-white" 
                                                     data-toggle="modal" 
@@ -121,7 +121,7 @@
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
                     <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-palette mr-2"></i>Moodboard</h6>
-                    @if($role == 'Advertising' && !$moodboard || $role == 'Busines Unit Head' && !$moodboard)
+                    @if($role == 'Advertising' && !$moodboard || $role == 'Busines Unit Head' && !$moodboard || $role == 'Super Admin' && !$moodboard)
                     <button type="button" class="btn btn-sm btn-primary shadow-sm" data-toggle="modal" data-target="#tambahModalMoodboard">
                         <i class="fas fa-plus fa-sm text-white-50 mr-1"></i> Tambah
                     </button>
@@ -146,7 +146,7 @@
                             @endif
 
                             {{-- Tombol Aksi melayang di pojok kanan atas --}}
-                            @if($role == 'Advertising' || $role == 'Busines Unit Head')
+                            @if($role == 'Advertising' || $role == 'Busines Unit Head' || $role == 'Super Admin')
                                 <div class="position-absolute" style="top: 10px; right: 10px;">
                                     <div class="btn-group shadow-sm">
                                         <button class="btn btn-warning btn-sm text-white" 
@@ -182,7 +182,7 @@
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
                     <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-users mr-2"></i>Tagline</h6>
-                    @if($role == 'Advertising' || $role == 'Busines Unit Head')
+                    @if($role == 'Advertising' || $role == 'Busines Unit Head' || $role == 'Super Admin')
                     <button type="button" class="btn btn-sm btn-primary shadow-sm" data-toggle="modal" data-target="#tambahModalTagline">
                         <i class="fas fa-plus fa-sm text-white-50 mr-1"></i> Tambah
                     </button>
@@ -196,7 +196,7 @@
                                     <th>No</th>
                                     <th>Tagline</th>
                                     <th>Hashtag</th>
-                                    @if($role == 'Advertising' || $role == 'Busines Unit Head')
+                                    @if($role == 'Advertising' || $role == 'Busines Unit Head' || $role == 'Super Admin')
                                     <th>Aksi</th>
                                     @endif
                                 </tr>
@@ -207,7 +207,7 @@
                                     <th>{{ $loop->iteration }}</th>
                                     <th>{{ $item->nama_tagline }}</th>
                                     <th>{{ $item->nama_hashtagline }}</th>
-                                    @if($role == 'Advertising' || $role == 'Busines Unit Head')
+                                    @if($role == 'Advertising' || $role == 'Busines Unit Head' || $role == 'Super Admin')
                                     <th>
                                         <button class="btn btn-warning btn-sm text-white" 
                                                 data-toggle="modal" 
@@ -238,7 +238,7 @@
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
                     <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-comments mr-2"></i>Gaya Komunikasi</h6>
-                    @if($role == 'Advertising' || $role == 'Busines Unit Head')
+                    @if($role == 'Advertising' || $role == 'Busines Unit Head' || $role == 'Super Admin')
                     <button type="button" class="btn btn-sm btn-primary shadow-sm" data-toggle="modal" data-target="#tambahModalKomunikasi">
                         <i class="fas fa-plus fa-sm text-white-50 mr-1"></i> Tambah
                     </button>
@@ -252,7 +252,7 @@
                                     <th>No</th>
                                     <th>Gaya Bicara</th>
                                     <th>Gaya Bahasa</th>
-                                    @if($role == 'Advertising' || $role == 'Busines Unit Head')
+                                    @if($role == 'Advertising' || $role == 'Busines Unit Head' || $role == 'Super Admin')
                                     <th>Aksi</th>
                                     @endif
                                 </tr>
@@ -263,7 +263,7 @@
                                         <th>{{ $loop->iteration }}</th>
                                         <th>{{ $item->gaya_bicara }}</th>
                                         <th>{{ $item->gaya_bahasa }}</th>
-                                        @if($role == 'Advertising' || $role == 'Busines Unit Head')
+                                        @if($role == 'Advertising' || $role == 'Busines Unit Head' || $role == 'Super Admin')
                                         <th>
                                             <button class="btn btn-warning btn-sm text-white" 
                                                     data-toggle="modal" 
@@ -296,7 +296,7 @@
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
                     <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-flask mr-2"></i>Komposisi</h6>
-                    @if($role == 'Advertising' || $role == 'Busines Unit Head')
+                    @if($role == 'Advertising' || $role == 'Busines Unit Head' || $role == 'Super Admin')
                     <button type="button" class="btn btn-sm btn-primary shadow-sm" data-toggle="modal" data-target="#tambahModalKomposisi">
                         <i class="fas fa-plus fa-sm text-white-50 mr-1"></i> Tambah
                     </button>
@@ -309,7 +309,7 @@
                                 <tr style="font-size: 0.85rem;">
                                     <th class="pl-4 border-right">No</th>
                                     <th colspan="2" class="text-center border">Komposisi</th>
-                                    @if($role == 'Advertising' || $role == 'Busines Unit Head')
+                                    @if($role == 'Advertising' || $role == 'Busines Unit Head' || $role == 'Super Admin')
                                     <th>Aksi</th>
                                     @endif
                                 </tr>
@@ -320,7 +320,7 @@
                                         <th>{{ $loop->iteration }}</th>
                                         <th class="border-right border-left text-center">{{ $item->type_komposisi }}</th>
                                         <th class="border-right text-center">{{ $item->komposisi }}</th>
-                                        @if($role == 'Advertising' || $role == 'Busines Unit Head')
+                                        @if($role == 'Advertising' || $role == 'Busines Unit Head' || $role == 'Super Admin')
                                         <th>
                                             <button class="btn btn-warning btn-sm text-white" 
                                                     data-toggle="modal" 
@@ -351,7 +351,7 @@
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
                     <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-volume-up mr-2"></i>Audio Branding</h6>
-                    @if($role == 'Advertising' || $role == 'Busines Unit Head')
+                    @if($role == 'Advertising' || $role == 'Busines Unit Head' || $role == 'Super Admin')
                     <button type="button" class="btn btn-sm btn-primary shadow-sm" data-toggle="modal" data-target="#tambahModalAudio">
                         <i class="fas fa-plus fa-sm text-white-50 mr-1"></i> Tambah
                     </button>
@@ -364,7 +364,7 @@
                                 <tr style="font-size: 0.85rem;">
                                     <th class="pl-4">No</th>
                                     <th>Audio Branding</th>
-                                    @if($role == 'Advertising' || $role == 'Busines Unit Head')
+                                    @if($role == 'Advertising' || $role == 'Busines Unit Head' || $role == 'Super Admin')
                                     <th>Aksi</th>
                                     @endif
                                 </tr>
@@ -374,7 +374,7 @@
                                     <tr>
                                         <th>{{ $loop->iteration }}</th>
                                         <th>{{ $item->nama_audio }}</th>
-                                        @if($role == 'Advertising' || $role == 'Busines Unit Head')
+                                        @if($role == 'Advertising' || $role == 'Busines Unit Head' || $role == 'Super Admin')
                                         <th>
                                             <button class="btn btn-warning btn-sm text-white" 
                                                     data-toggle="modal" 
@@ -407,7 +407,7 @@
             <div class="card shadow-sm">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
                     <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-star mr-2"></i>Brand Value</h6>
-                    @if($role == 'Advertising' || $role == 'Busines Unit Head')
+                    @if($role == 'Advertising' || $role == 'Busines Unit Head' || $role == 'Super Admin')
                     <button type="button" class="btn btn-sm btn-primary shadow-sm" data-toggle="modal" data-target="#tambahModalValue">
                         <i class="fas fa-plus fa-sm text-white-50 mr-1"></i> Tambah
                     </button>
@@ -420,7 +420,7 @@
                                 <tr style="font-size: 0.85rem;">
                                     <th>No</th>
                                     <th>Brand Value</th>
-                                    @if($role == 'Advertising' || $role == 'Busines Unit Head')
+                                    @if($role == 'Advertising' || $role == 'Busines Unit Head' || $role == 'Super Admin')
                                     <th class="text-center">Aksi</th>
                                     @endif
                                 </tr>
@@ -430,7 +430,7 @@
                                     <tr>
                                         <th>{{ $loop->iteration }}</th>
                                         <th>{{ $item->nama_value }}</th>
-                                        @if($role == 'Advertising' || $role == 'Busines Unit Head')
+                                        @if($role == 'Advertising' || $role == 'Busines Unit Head' || $role == 'Super Admin')
                                         <th>
                                             <button class="btn btn-warning btn-sm text-white" 
                                                     data-toggle="modal" 
@@ -460,7 +460,7 @@
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
                     <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-tools mr-2"></i>Alat Branding</h6>
-                    @if($role == 'Advertising' || $role == 'Busines Unit Head')
+                    @if($role == 'Advertising' || $role == 'Busines Unit Head' || $role == 'Super Admin')
                     <button type="button" class="btn btn-sm btn-primary shadow-sm" data-toggle="modal" data-target="#tambahModalAlat">
                         <i class="fas fa-plus fa-sm text-white-50 mr-1"></i> Tambah
                     </button>
@@ -472,7 +472,7 @@
                             <tr style="font-size: 0.85rem;">
                                 <th>No</th>
                                 <th>Alat Branding</th>
-                                @if($role == 'Advertising' || $role == 'Busines Unit Head')
+                                @if($role == 'Advertising' || $role == 'Busines Unit Head' || $role == 'Super Admin')
                                 <th>Aksi</th>
                                 @endif
                             </tr>
@@ -482,7 +482,7 @@
                                 <tr>
                                     <th>{{$loop->iteration}}</th>
                                     <th>{{ $item->nama_alat }}</th>
-                                    @if($role == 'Advertising' || $role == 'Busines Unit Head')
+                                    @if($role == 'Advertising' || $role == 'Busines Unit Head' || $role == 'Super Admin')
                                     <th>
                                         <button class="btn btn-warning btn-sm text-white" 
                                                 data-toggle="modal" 

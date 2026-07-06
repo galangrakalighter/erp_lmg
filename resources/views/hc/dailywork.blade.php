@@ -531,11 +531,22 @@
                             </div>
                             <div class="col-md-6 form-group mb-4">
                                 <label class="font-weight-bold text-dark small">PIC (PERSON IN CHARGE)</label>
-                                <select name="pic" id="pic_select" class="form-control custom-select shadow-sm border-0" required>
+                                <select name="pic" id="pic_select" class="form-control custom-select shadow-sm border-0" onchange="handleChangePIC(this)" required>
                                     <option value="" selected disabled>-- Pilih PIC --</option>
-                                    {{-- @foreach($vic_list as $user)
-                                        <option value="{{ $user->id }}">{{ $user->email }}</option>
-                                    @endforeach --}}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-4">
+                            <label class="font-weight-bold text-dark small text-uppercase">KPI</label>
+                            <div class="input-group shadow-sm">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-white border-right-0">
+                                        <i class="fas fa-user-tie text-muted"></i>
+                                    </span>
+                                </div>
+                                <select name="kpi_id" id="selectKPI" class="form-control border-left-0 pl-0" required>
+                                    <option value="" selected disabled>-- Pilih KPI --</option>
                                 </select>
                             </div>
                         </div>
@@ -703,8 +714,22 @@
                             </div>
                             <div class="col-md-6 form-group mb-4">
                                 <label class="font-weight-bold text-dark small">PIC (PERSON IN CHARGE)</label>
-                                <select name="pic" id="edit_pic_select" class="form-control custom-select shadow-sm border-0" required>
+                                <select name="pic" id="edit_pic_select" class="form-control custom-select shadow-sm border-0" onchange="handleChangePIC(this)" required>
                                     </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-4">
+                            <label class="font-weight-bold text-dark small text-uppercase">KPI</label>
+                            <div class="input-group shadow-sm">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-white border-right-0">
+                                        <i class="fas fa-user-tie text-muted"></i>
+                                    </span>
+                                </div>
+                                <select name="kpi_id" id="edit_selectKPI" class="form-control border-left-0 pl-0" required>
+                                    <option value="" selected disabled>-- Pilih KPI --</option>
+                                </select>
                             </div>
                         </div>
 
@@ -1016,7 +1041,7 @@
                                 
                                 <div class="d-flex align-items-center" style="gap: 8px;">
                                     <strong class="task-title text-truncate" style="font-size: 11px; line-height: 1.2; max-width: 70%;">
-                                    ${teks} ${task.nama_task} (${(task.project_name || 'PROJECT').toUpperCase()}) ${statusLabel}
+                                    ${teks} ${task.nama_task} (${(task.project_name || 'PROJECT').toUpperCase()}) (${task.nama_kpi}) ${statusLabel} 
                                     </strong>
 
                                     ${isRunning ? `
@@ -1514,13 +1539,13 @@
             document.getElementById('edit_menit').value = data.task.menit;
             document.getElementById('edit_priority').value = data.task.priority;
             
+            
             document.getElementById('editForm').action = `/hc_overview/${data.project}/${id}`;
 
             const clientSelect = document.getElementById('edit_selectClient');
             clientSelect.innerHTML = '<option value="" disabled>-- Pilih Client --</option>';
 
             data.client.forEach(function(item) {
-                console.log(item);
                 let option = document.createElement('option');
                 option.value = item.id;
                 
@@ -1533,7 +1558,8 @@
                 clientSelect.appendChild(option);
             });
 
-            handleClientChange(clientSelect);
+            
+            handleClientChange(clientSelect, data.task.pic, data.task.id_kpi);
 
             $('#editModal').modal('show');
         })
@@ -1770,8 +1796,48 @@
     if(inputTanggalEdit) inputTanggalEdit.addEventListener('change', fetchTaskByPicEdit);
     if(inputMulaiEdit) inputMulaiEdit.addEventListener('change', calculateMinutesEdit);
     if(inputSelesaiEdit) inputSelesaiEdit.addEventListener('change', calculateMinutesEdit);
+
+    async function handleChangePIC(el){
+        let selectClient = document.getElementById('selectClient').value;
+        const picId = el.value;
+        let kpiSelect = document.getElementById('selectKPI');
+        if(el.id == "edit_pic_select"){
+            kpiSelect = document.getElementById('edit_selectKPI');
+            selectClient = document.getElementById('edit_selectClient').value;
+        }
+
+        if (!picId) return;
+
+        kpiSelect.innerHTML = '<option value="" selected disabled>Sedang memuat...</option>';
+
+        try {
+            const response = await fetch(`/api/kpi-data-daily/${selectClient}/${picId}`);
+
+            if (!response.ok) throw new Error('Gagal mengambil data PIC');
+
+            const data = await response.json();
+
+            kpiSelect.innerHTML = '<option value="" selected disabled>-- Pilih KPI --</option>';
+            
+            if (data.data.length > 0) {
+                data.data.forEach(pic => {
+                    console.log(pic);
+                    let option = document.createElement('option');
+                    option.value = pic.id; // Sesuaikan dengan key ID dari API
+                    option.text = pic.nama_kpi; // Menggunakan email sesuai request script kamu
+                    kpiSelect.appendChild(option);
+                });
+            } else {
+                kpiSelect.innerHTML = '<option value="" selected disabled>Tidak ada KPI ditemukan</option>';
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            picSelect.innerHTML = '<option value="" selected disabled>Gagal memuat data</option>';
+            alert('Terjadi kesalahan saat mengambil data PIC.');
+        }
+    }
     
-    async function handleClientChange(el) {
+    async function handleClientChange(el, id = null, id_task = null) {
         const userId = {{ Auth::user()->id }}
         const clientId = el.value;
         let picSelect = document.getElementById('pic_select');
@@ -1787,13 +1853,12 @@
         try {
             // 2. Panggil API (Sesuaikan URL API kamu)
             // Contoh: /api/get-pic-by-client/5
+            // Ambil PIC
             const response = await fetch(`/api/client-pics/${clientId}/${userId}`);
             
             if (!response.ok) throw new Error('Gagal mengambil data PIC');
 
             const data = await response.json();
-
-            console.log(data);
 
             // 3. Bersihkan dropdown PIC kembali
             picSelect.innerHTML = '<option value="" selected disabled>-- Pilih PIC --</option>';
@@ -1804,10 +1869,16 @@
                     let option = document.createElement('option');
                     option.value = pic.id; // Sesuaikan dengan key ID dari API
                     option.text = pic.email; // Menggunakan email sesuai request script kamu
+                    if(el.id == "edit_selectClient"){
+                        option.selected = (pic.id == id) ? true : false;
+                    }
                     picSelect.appendChild(option);
                 });
             } else {
                 picSelect.innerHTML = '<option value="" selected disabled>Tidak ada PIC ditemukan</option>';
+            }
+            if(el.id == "edit_selectClient"){
+                handleChangePIC(picSelect);
             }
 
         } catch (error) {

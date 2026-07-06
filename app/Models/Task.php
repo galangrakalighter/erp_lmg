@@ -15,6 +15,7 @@ class Task extends Model
         'priority',
         'menit',
         'id_manajement_konten',
+        'id_kpi',
         'tanggal_mulai',
         'tanggal_deadline',
         'note',

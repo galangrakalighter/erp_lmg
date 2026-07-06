@@ -24,17 +24,20 @@
              1. DIGITAL MARKETING (ID 1)
         ========================================== --}}
         <li class="nav-item {{ (request()->is('*manajemen*') || request()->is('*analisis*')) && !request()->is('*BD*') ? 'active' : '' }}">
-            <a class="nav-link {{ (request()->is('*manajemen*') || request()->is('*analisis*')) ? '' : 'collapsed' }}" 
-               href="#" data-toggle="collapse" data-target="#collapseLGTR">
-                <i class="fas fa-fw fa-bullhorn"></i>
+            <a class="nav-link {{ (request()->is('*manajemen*') || request()->is('*analisis*')) ? '' : 'collapsed' }}" href="#" 
+            data-toggle="collapse" data-target="#collapseDM" 
+            aria-expanded="{{ request()->is('*manajemen*') ? 'true' : 'false' }}" aria-controls="collapseMCN">
                 <span>Digital Marketing</span>
             </a>
-
-            <div id="collapseLGTR" class="collapse {{ (request()->is('*manajemen*') || request()->is('*analisis*')) ? 'show' : '' }}" data-parent="#accordionSidebar">
+            
+            <div id="collapseDM" class="collapse {{ request()->is('*HC*') ? 'show' : '' }}" 
+                aria-labelledby="headingHC" data-parent="#accordionSidebar">
                 <div class="collapse-container">
+
                     <div class="brand-sub-header text-danger mb-3">
                         <i class="fas fa-store mr-2"></i> MR. CREPE
                     </div>
+                    
 
                     @if ($isSuperAdmin || $myDivision->name == "Digital Marketing" && $myRole->level < 4)
                         <div class="px-2 mb-3">
@@ -44,24 +47,21 @@
                         </div>
                     @endif
 
-                    @foreach ($menus as $group)
-                        @if($myDivision->name == "Digital Marketing" || $isSuperAdmin)
-                            @if($group->id == 1)
-                            <div class="group-wrapper mb-2">
-                                <a class="category-dropdown-link collapsed" data-toggle="collapse" data-target="#cat_lgtr_{{ $group->id }}">
-                                    <span><i class="fas fa-folder-open mr-2 text-warning"></i>{{ $group->category }}</span>
-                                    <i class="fas fa-chevron-down arrow-icon-xs"></i>
-                                </a>
+                    <a class="category-dropdown-link collapsed" data-toggle="collapse" data-target="#cat_dm">
+                        <span><i class="fas fa-folder-open mr-2 text-warning"></i>Client</span>
+                    </a>
 
-                                <div id="cat_lgtr_{{ $group->id }}" class="collapse ml-2 border-left-custom">
-                                    @foreach ($group->clients as $client)
+                    <div class="group-wrapper mb-2">
+                        <div id="cat_dm" class="collapse ml-2 border-left-custom">
+                            @foreach ($digitalMarketingProduk as $client)
+                                @if($myDivision->name == "Digital Marketing" || $isSuperAdmin)
                                         @php
                                             // 1. Cek apakah user punya akses eksplisit ke client ini (dari tabel user_client)
-                                            $hasClientAccess = in_array($client->id, $myClientIds);
+                                            $hasClientAccess = in_array($client->client_id, $myClientIds);
 
                                             // 2. Tentukan Power User: Super Admin, Role Admin, atau Head of Division
                                             // Mereka bisa melihat semua client tanpa harus terdaftar di tabel user_client
-                                            $isPowerUser = $isSuperAdmin || $myRole->role_name == "Digital Marketing Manager";
+                                            $isPowerUser = $isSuperAdmin || $myRole->role_name == "Performance & Reporting";
 
                                             // 3. Syarat Utama Membuka Dropdown Client:
                                             // Dia Power User ATAU (Berada di Divisi 1 DAN terdaftar di user_client)
@@ -71,7 +71,7 @@
                                         <div class="client-item-wrapper" style="width: 7vw">
                                             {{-- Bagian Header Client --}}
                                             @if($canOpen)
-                                                <a class="client-dropdown-link collapsed" data-toggle="collapse" data-target="#client_lgtr_{{ $client->id }}">
+                                                <a class="client-dropdown-link collapsed" data-toggle="collapse" data-target="#client_lgtr_{{ $client->client_id }}">
                                                     <span><i class="far fa-user-circle mr-2"></i>{{ $client->nama }}</span>
                                                     <i class="fas fa-caret-right arrow-icon-xs"></i>
                                                 </a>
@@ -85,10 +85,12 @@
 
                                             {{-- Bagian Isi Platform (Hanya dirender jika punya akses) --}}
                                             @if($canOpen)
-                                                <div id="client_lgtr_{{ $client->id }}" class="collapse ml-3">
+                                                <div id="client_lgtr_{{ $client->client_id }}" class="collapse ml-3">
                                                     <div class="platform-sub-links">
                                                         @php
-                                                            $platforms = collect(data_get($client->access_token, 'platform'))->filter();
+                                                            $accessToken = json_decode($client->access_token, true);
+
+                                                            $platforms = collect($accessToken['platform'] ?? [])->filter();
                                                         @endphp
 
                                                         @if($platforms->isNotEmpty())
@@ -97,17 +99,17 @@
                                                                     <div class="platform-label">
                                                                         <i class="fab fa-{{ strtolower($plt) }}"></i> {{ $plt }}
                                                                     </div>
-                                                                    <a href="{{ route('manajemen', ['id_produk' => $client->id, 'platform' => $plt]) }}">
-                                                                        Manajemen Konten
-                                                                    </a>
-                                                                    <a href="{{ route('analisis', ['id_produk' => $client->id, 'platform' => $plt]) }}">
-                                                                        Analisis
-                                                                    </a>
                                                                     <a href="{{ route('market_research', ['id_produk' => $client->id, 'platform' => $plt]) }}">
                                                                         Market Research
                                                                     </a>
                                                                     <a href="{{ route('branding', ['id_produk' => $client->id, 'platform' => $plt]) }}">
                                                                         Branding
+                                                                    </a>
+                                                                    <a href="{{ route('analisis', ['id_produk' => $client->id, 'platform' => $plt]) }}">
+                                                                        Analisis
+                                                                    </a>
+                                                                    <a href="{{ route('manajemen', ['id_produk' => $client->id, 'platform' => $plt]) }}">
+                                                                        Content Plan
                                                                     </a>
                                                                 </div>
                                                             @endforeach
@@ -118,29 +120,26 @@
                                                 </div>
                                             @endif
                                         </div>
-                                    @endforeach
-                                </div>
+                                    @endif
+                                @endforeach
                             </div>
-                            @endif
-                        @endif
-                    @endforeach
+                        </div>
                 </div>
             </div>
         </li>
-
-        {{-- ==========================================
-             2. BUSINESS DEVELOPMENT (ID NOT 1)
-        ========================================== --}}
         <li class="nav-item {{ request()->is('*BD*') ? 'active' : '' }}">
-            <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseBD">
-                <i class="fas fa-fw fa-briefcase"></i>
+            <a class="nav-link {{ request()->is('*BD*') ? '' : 'collapsed' }}" href="#" data-toggle="collapse" data-target="#collapseBD" aria-expanded="{{ request()->is('*BD*') ? 'true' : 'false' }}" aria-controls="collapseBD">
                 <span>Business Dev</span>
             </a>
-            <div id="collapseBD" class="collapse" data-parent="#accordionSidebar">
+            
+            <div id="collapseBD" class="collapse {{ request()->is('*HC*') ? 'show' : '' }}" 
+                aria-labelledby="headingBD" data-parent="#accordionSidebar">
                 <div class="collapse-container">
+
                     <div class="brand-sub-header text-primary mb-3">
                         <i class="fas fa-store mr-2"></i> MR. CREPE
                     </div>
+                    
 
                     @if ($isSuperAdmin || $myDivision->name == "Digital Marketing" && $myRole->level < 4)
                         <div class="px-2 mb-3">
@@ -150,74 +149,212 @@
                         </div>
                     @endif
 
-                    @foreach ($menus as $group)
-                        @if($group->id == 2 || $group->id == 3)
-                        <div class="group-wrapper mb-2">
-                            <a class="category-dropdown-link collapsed" data-toggle="collapse" data-target="#cat_bd_{{ $group->id }}">
-                                <span><i class="fas fa-folder-open mr-2 text-info"></i>{{ $group->category }}</span>
-                                <i class="fas fa-chevron-down arrow-icon-xs"></i>
-                            </a>
+                    {{-- <a class="category-dropdown-link collapsed" data-toggle="collapse" data-target="#cat_bd_jasa">
+                        <span><i class="fas fa-folder-open mr-2 text-info"></i>Internal Jasa</span>
+                    </a>
+                    <a class="category-dropdown-link collapsed" data-toggle="collapse" data-target="#cat_bd_barang">
+                        <span><i class="fas fa-folder-open mr-2 text-info"></i>Internal Barang</span>
+                    </a> --}}
 
-                            <div id="cat_bd_{{ $group->id }}" class="collapse ml-2 border-left-custom">
-                                @foreach ($group->clients as $client)
-                                    @php
-                                        $hasClientAccess = in_array($client->id, $myClientIds);
-                                        
-                                        $canOpen = $isSuperAdmin || ($myDivision->name == "Digital Marketing" && $hasClientAccess);
-                                    @endphp
-                                    <div class="client-item-wrapper" style="width:7vw">
-                                        
-                                        @if( $isSuperAdmin || $myRole->level == 1 && $myDivision->name == "Digital Marketing" || $hasClientAccess)
-                                        <a class="client-dropdown-link collapsed" data-toggle="collapse" data-target="#client_bd_{{ $client->id }}">
-                                            <span>{{ $client->nama }}</span>
+                    {{-- <div class="group-wrapper mb-2">
+                        <div id="cat_bd_jasa" class="collapse ml-2 border-left-custom">
+                            @foreach ($businessDevProduk as $client)
+                                @if($myDivision->name == "Digital Marketing" || $isSuperAdmin)
+                                        @if($client->kategori_jasa_id == 2)
+                                        @php
+                                            $hasClientAccess = in_array($client->client_id, $myClientIds);
+
+                                            $isPowerUser = $isSuperAdmin || $myRole->role_name == "Performance & Reporting";
+
+                                            $canOpen = $isPowerUser || (in_array(1, $myDivision->pluck('id')->toArray()) && $hasClientAccess);
+                                        @endphp
+
+                                        <div class="client-item-wrapper" style="width: 7vw">
+                                            @if($canOpen)
+                                                <a class="client-dropdown-link collapsed" data-toggle="collapse" data-target="#client_bd_jasa_{{ $client->client_id }}">
+                                                    <span><i class="far fa-user-circle mr-2"></i>{{ $client->nama }}</span>
+                                                    <i class="fas fa-caret-right arrow-icon-xs"></i>
+                                                </a>
+                                            @else
+                                                <div class="p-1 text-muted" style="opacity: 0.6; cursor: not-allowed;">
+                                                    <span><i class="far fa-user-circle mr-2"></i>{{ $client->nama }}</span>
+                                                    <i class="fas fa-caret-right arrow-icon-xs"></i>
+                                                </div>
+                                            @endif
+
+                                            @if($canOpen)
+                                                <div id="client_bd_jasa_{{ $client->client_id }}" class="collapse ml-3">
+                                                    <div class="platform-sub-links">
+                                                        @php
+                                                            $accessToken = json_decode($client->access_token, true);
+
+                                                            $platforms = collect($accessToken['platform'] ?? [])->filter();
+                                                        @endphp
+
+                                                        @if($platforms->isNotEmpty())
+                                                            @foreach ($platforms as $plt)
+                                                                <div class="platform-group">
+                                                                    <div class="platform-label">
+                                                                        <i class="fab fa-{{ strtolower($plt) }}"></i> {{ $plt }}
+                                                                    </div>
+                                                                    <a href="{{ route('market_research', ['id_produk' => $client->id, 'platform' => $plt]) }}">
+                                                                        Market Research
+                                                                    </a>
+                                                                    <a href="{{ route('branding', ['id_produk' => $client->id, 'platform' => $plt]) }}">
+                                                                        Branding
+                                                                    </a>
+                                                                    <a href="{{ route('analisis', ['id_produk' => $client->id, 'platform' => $plt]) }}">
+                                                                        Analisis
+                                                                    </a>
+                                                                    <a href="{{ route('manajemen', ['id_produk' => $client->id, 'platform' => $plt]) }}">
+                                                                        Content Plan
+                                                                    </a>
+                                                                </div>
+                                                            @endforeach
+                                                        @else
+                                                            <span class="text-muted small p-2 d-block">Platform belum diset</span>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                            @endif
+                                    </div>
+                                    @endif
+                                @endif
+                            @endforeach
+                        </div>
+
+                        <div id="cat_bd_barang" class="collapse ml-2 border-left-custom">
+                            @foreach ($businessDevProduk as $client)
+                                @if($myDivision->name == "Digital Marketing" || $isSuperAdmin)
+                                        @if($client->kategori_jasa_id == 3)
+                                        @php
+                                            $hasClientAccess = in_array($client->client_id, $myClientIds);
+
+                                            $isPowerUser = $isSuperAdmin || $myRole->role_name == "Performance & Reporting";
+
+                                            $canOpen = $isPowerUser || (in_array(1, $myDivision->pluck('id')->toArray()) && $hasClientAccess);
+                                        @endphp
+
+                                        <div class="client-item-wrapper" style="width: 7vw">
+                                            @if($canOpen)
+                                                <a class="client-dropdown-link collapsed" data-toggle="collapse" data-target="#client_bd_barang_{{ $client->client_id }}">
+                                                    <span><i class="far fa-user-circle mr-2"></i>{{ $client->nama }}</span>
+                                                    <i class="fas fa-caret-right arrow-icon-xs"></i>
+                                                </a>
+                                            @else
+                                                <div class="p-1 text-muted" style="opacity: 0.6; cursor: not-allowed;">
+                                                    <span><i class="far fa-user-circle mr-2"></i>{{ $client->nama }}</span>
+                                                    <i class="fas fa-caret-right arrow-icon-xs"></i>
+                                                </div>
+                                            @endif
+
+                                            @if($canOpen)
+                                                <div id="client_bd_barang_{{ $client->client_id }}" class="collapse ml-3">
+                                                    <div class="platform-sub-links">
+                                                        @php
+                                                            $accessToken = json_decode($client->access_token, true);
+
+                                                            $platforms = collect($accessToken['platform'] ?? [])->filter();
+                                                        @endphp
+
+                                                        @if($platforms->isNotEmpty())
+                                                            @foreach ($platforms as $plt)
+                                                                <div class="platform-group">
+                                                                    <div class="platform-label">
+                                                                        <i class="fab fa-{{ strtolower($plt) }}"></i> {{ $plt }}
+                                                                    </div>
+                                                                    <a href="{{ route('market_research', ['id_produk' => $client->id, 'platform' => $plt]) }}">
+                                                                        Market Research
+                                                                    </a>
+                                                                    <a href="{{ route('branding', ['id_produk' => $client->id, 'platform' => $plt]) }}">
+                                                                        Branding
+                                                                    </a>
+                                                                    <a href="{{ route('analisis', ['id_produk' => $client->id, 'platform' => $plt]) }}">
+                                                                        Analisis
+                                                                    </a>
+                                                                    <a href="{{ route('manajemen', ['id_produk' => $client->id, 'platform' => $plt]) }}">
+                                                                        Content Plan
+                                                                    </a>
+                                                                </div>
+                                                            @endforeach
+                                                        @else
+                                                            <span class="text-muted small p-2 d-block">Platform belum diset</span>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                            @endif
+                                    </div>
+                                    @endif
+                                @endif
+                            @endforeach
+                        </div>
+                    </div> --}}
+
+                    @php
+                        // Persiapan data di atas loop agar tidak membebani performa
+                        $isPowerUser = $isSuperAdmin || ($myRole->role_name ?? '') == "Performance & Reporting";
+                        $divisionIds = $myDivision instanceof \Illuminate\Support\Collection ? $myDivision->pluck('id')->toArray() : [];
+                        $isDigitalMarketing = ($myDivision->name ?? '') == "Digital Marketing";
+                        
+                        // Kelompokkan data produk berdasarkan kategori untuk meminimalisir loop
+                        $groupedProduk = $businessDevProduk->groupBy('kategori_jasa_id');
+                        
+                        // Fungsi bantuan untuk cek akses
+                        $checkAccess = function($client) use ($isPowerUser, $divisionIds, $myClientIds) {
+                            return $isPowerUser || (in_array(1, $divisionIds) && in_array($client->client_id, $myClientIds));
+                        };
+                    @endphp
+
+                    @foreach([2 => 'Jasa', 3 => 'Barang'] as $catId => $catLabel)
+                        <a class="category-dropdown-link collapsed mb-3 d-block" data-toggle="collapse" data-target="#cat_bd_{{ strtolower($catLabel) }}">
+                            <span><i class="fas fa-folder-open mr-2 text-info"></i>Internal {{ $catLabel }}</span>
+                        </a>
+
+                        <div id="cat_bd_{{ strtolower($catLabel) }}" class="collapse ml-2 border-left-custom mb-2">
+                            @php
+                                // Filter data yang hanya boleh dilihat user ini
+                                $filteredClients = $groupedProduk->get($catId, collect())->filter(function($client) use ($isDigitalMarketing, $isSuperAdmin) {
+                                    return $isDigitalMarketing || $isSuperAdmin;
+                                });
+                            @endphp
+
+                            @forelse ($filteredClients as $client)
+                                @php $canOpen = $checkAccess($client); @endphp
+
+                                <div class="client-item-wrapper" style="width: 7vw">
+                                    @if($canOpen)
+                                        <a class="client-dropdown-link collapsed" data-toggle="collapse" data-target="#client_bd_{{ $catLabel }}_{{ $client->client_id }}">
+                                            <span><i class="far fa-user-circle mr-2"></i>{{ $client->nama }}</span>
                                             <i class="fas fa-caret-right arrow-icon-xs"></i>
                                         </a>
-                                        @else
-                                            <span>{{ $client->nama }}</span>
-                                            <i class="fas fa-caret-right arrow-icon-xs"></i>
-                                        @endif
-                                        <div class="client-item-wrapper" style="width:7vw">
-                                        @if($canOpen)
-                                            <a class="client-dropdown-link collapsed" data-toggle="collapse" data-target="#client_bd_{{ $client->id }}">
-                                                <span><i class="far fa-user-circle mr-2"></i>{{ $client->nama }}</span>
-                                                <i class="fas fa-caret-right arrow-icon-xs"></i>
-                                            </a>
-
-                                            <div id="client_bd_{{ $client->id }}" class="collapse ml-3">
-                                                <div class="platform-sub-links">
-                                                    @php
-                                                        $platforms = collect(data_get($client->access_token, 'platform'))->filter();
-                                                    @endphp
-
-                                                    @if($platforms->isNotEmpty())
-                                                        @foreach ($platforms as $plt)
-                                                            <div class="platform-group">
-                                                                <div class="platform-label">
-                                                                    <i class="fab fa-{{ strtolower($plt) }}"></i> {{ $plt }}
-                                                                </div>
-                                                                <a href="{{ route('manajemen', ['id_produk' => $client->id, 'platform' => $plt]) }}">Manajemen {{ $plt }}</a>
-                                                                <a href="{{ route('analisis', ['id_produk' => $client->id, 'platform' => $plt]) }}">Analisis Konten {{ $plt }}</a>
-                                                                <a href="{{ route('market_research', ['id_produk' => $client->id, 'platform' => $plt]) }}">Market Research {{ $plt }}</a>
-                                                                <a href="{{ route('branding', ['id_produk' => $client->id, 'platform' => $plt]) }}">Branding {{ $plt }}</a>
-                                                            </div>
-                                                        @endforeach
-                                                    @else
-                                                        <span class="text-muted small p-2 d-block">Platform belum diset</span>
-                                                    @endif
-                                                </div>
+                                        <div id="client_bd_{{ $catLabel }}_{{ $client->client_id }}" class="collapse ml-3">
+                                            <div class="platform-sub-links">
+                                                @php $platforms = collect(json_decode($client->access_token, true)['platform'] ?? [])->filter(); @endphp
+                                                @forelse ($platforms as $plt)
+                                                    <div class="platform-group">
+                                                        <div class="platform-label"><i class="fab fa-{{ strtolower($plt) }}"></i> {{ $plt }}</div>
+                                                        <a href="{{ route('market_research', ['id_produk' => $client->id, 'platform' => $plt]) }}">Market Research</a>
+                                                        <a href="{{ route('branding', ['id_produk' => $client->id, 'platform' => $plt]) }}">Branding</a>
+                                                        <a href="{{ route('analisis', ['id_produk' => $client->id, 'platform' => $plt]) }}">Analisis</a>
+                                                        <a href="{{ route('manajemen', ['id_produk' => $client->id, 'platform' => $plt]) }}">Content Plan</a>
+                                                    </div>
+                                                @empty
+                                                    <span class="text-muted small p-2 d-block">Platform belum diset</span>
+                                                @endforelse
                                             </div>
-                                        @else
-                                            <div class="p-1 text-muted" style="opacity: 0.6; cursor: not-allowed;">
-                                                <span><i class="far fa-user-circle mr-2"></i>{{ $client->nama }}</span>
-                                                <i class="fas fa-caret-right arrow-icon-xs"></i>
-                                            </div>
-                                        @endif
-                                    </div>
-                                    </div>
-                                @endforeach
-                            </div>
+                                        </div>
+                                    @else
+                                        <div class="p-1 text-muted" style="opacity: 0.6; cursor: not-allowed;">
+                                            <span><i class="far fa-user-circle mr-2"></i>{{ $client->nama }}</span>
+                                        </div>
+                                    @endif
+                                </div>
+                            @empty
+                                <div class="p-2 text-muted small font-italic">
+                                    <i class="fas fa-info-circle mr-2"></i>Tidak ada data client tersedia.
+                                </div>
+                            @endforelse
                         </div>
-                        @endif
                     @endforeach
                 </div>
             </div>
@@ -227,7 +364,6 @@
             <a class="nav-link {{ request()->is('*HC*') ? '' : 'collapsed' }}" href="#" 
             data-toggle="collapse" data-target="#collapseHC" 
             aria-expanded="{{ request()->is('*HC*') ? 'true' : 'false' }}" aria-controls="collapseHC">
-                <i class="fas fa-fw fa-users"></i>
                 <span>Human Capital</span>
             </a>
             
@@ -260,13 +396,71 @@
             <a class="nav-link {{ request()->is('*HC*') ? '' : 'collapsed' }}" href="#" 
             data-toggle="collapse" data-target="#collapseMCN" 
             aria-expanded="{{ request()->is('*HC*') ? 'true' : 'false' }}" aria-controls="collapseMCN">
-                <i class="fas fa-fw fa-users"></i>
                 <span>MCN</span>
             </a>
             
             <div id="collapseMCN" class="collapse {{ request()->is('*HC*') ? 'show' : '' }}" 
                 aria-labelledby="headingHC" data-parent="#accordionSidebar">
                 <div class="collapse-container">
+                    
+
+                    @if ($isSuperAdmin || $myDivision->name == "MCN" && $myRole->level < 4)
+                        <div class="px-2 mb-3">
+                            <a class="btn-cms-link" href="{{ route('client.produk_divisi', 3) }}">
+                                <i class="fas fa-cog mr-1"></i> Dashboard CMS
+                            </a>
+                        </div>
+                    @endif
+
+                    <a class="category-dropdown-link collapsed" data-toggle="collapse" data-target="#cat_mcn">
+                        <span><i class="fas fa-folder-open mr-2 text-info"></i>Client</span>
+                        <i class="fas fa-chevron-down arrow-icon-xs"></i>
+                    </a>
+
+                    <div class="group-wrapper mb-2">
+                        <div id="cat_mcn" class="collapse ml-2 border-left-custom">
+                            @foreach ($mcnProduk as $client)
+                                @if($myDivision->name == "MCN" || $isSuperAdmin)
+                                        @php
+                                            // 1. Cek apakah user punya akses eksplisit ke client ini (dari tabel user_client)
+                                            $hasClientAccess = in_array($client->client_id, $myClientIds);
+
+                                            // 2. Tentukan Power User: Super Admin, Role Admin, atau Head of Division
+                                            // Mereka bisa melihat semua client tanpa harus terdaftar di tabel user_client
+                                            $isPowerUser = $isSuperAdmin || $myRole->role_name == "Busines Unit Head";
+
+                                            // 3. Syarat Utama Membuka Dropdown Client:
+                                            // Dia Power User ATAU (Berada di Divisi 1 DAN terdaftar di user_client)
+                                            $canOpen = $isPowerUser || (in_array(1, $myDivision->pluck('id')->toArray()) && $hasClientAccess);
+                                        @endphp
+
+                                        <div class="client-item-wrapper" style="width: 7vw">
+                                            {{-- Bagian Header Client --}}
+                                            @if($canOpen)
+                                                <a class="client-dropdown-link collapsed" data-toggle="collapse" data-target="#client_lgtr_{{ $client->id }}">
+                                                    <span><i class="far fa-user-circle mr-2"></i>{{ $client->nama }}</span>
+                                                    <i class="fas fa-caret-right arrow-icon-xs"></i>
+                                                </a>
+                                            @else
+                                                {{-- Tampilan untuk yang tidak punya akses: Nama muncul tapi tidak bisa diklik --}}
+                                                <div class="p-1 text-muted" style="opacity: 0.6; cursor: not-allowed;">
+                                                    <span><i class="far fa-user-circle mr-2"></i>{{ $client->nama }}</span>
+                                                    <i class="fas fa-caret-right arrow-icon-xs"></i>
+                                                </div>
+                                            @endif
+
+                                            {{-- Bagian Isi Platform (Hanya dirender jika punya akses) --}}
+                                            @if($canOpen)
+                                                <div id="client_mcn" class="collapse ml-3">
+                                                    <div class="platform-sub-links">
+                                                    </div>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    @endif
+                                @endforeach
+                            </div>
+                        </div>
                     <div class="client-item-wrapper mb-2">
                         <a class="client-dropdown-link {{ request()->is('barang_client') ? 'active' : '' }}" href="{{ route('barang_client.index') }}">
                             <span>Project MCN</span>
@@ -335,7 +529,6 @@
     @if($isSuperAdmin)
         <li class="nav-item">
             <a class="nav-link collapsed" href="{{ route('manajemen_user.index') }}">
-                <i class="fas fa-fw fa-users"></i>
                 <span>Manajemen User</span>
             </a>
         </li>
@@ -343,7 +536,6 @@
 
     <li class="nav-item">
         <a class="nav-link collapsed" href="{{ route('crm.index') }}">
-            <i class="fas fa-fw fa-users"></i>
             <span>Customer Relationship Management</span>
         </a>
     </li>

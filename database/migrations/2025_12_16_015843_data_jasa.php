@@ -28,6 +28,7 @@ return new class extends Migration
             $table->text('note')->nullable();
             $table->date('tanggal_posting')->nullable();
             $table->date('tanggal_deadline')->nullable();
+            $table->date('tanggal_mulai')->nullable();
             $table->string('link')->nullable();
             $table->string('platform')->nullable();
             $table->integer('status_id')->constrained("status")->cascadeOnDelete();

@@ -21,3 +21,11 @@ Route::get('/hc-daily/get-data/{id}', [App\Http\Controllers\HCDailyController::c
 Route::get('users/json', [App\Http\Controllers\UserController::class, 'getUsersJson'])->name('users.json');
 Route::get('/produk/detail/{id}/{id_user}/{folderName}', [App\Http\Controllers\ProdukController::class, 'getDetail']);
 Route::get('/manajemen-konten/{produkId}/{platform}', [App\Http\Controllers\ManajemenKontenController::class, 'getApiData'])->name('manajemen_konten.api_data');
+Route::get('kpi-data/{id}/{id_user}', [App\Http\Controllers\HCOverviewController::class, 'getKPIData'])->name('kpi.data');
+Route::get('kpi-data-daily/{id}/{id_user}', [App\Http\Controllers\HCOverviewController::class, 'getKPIDataDaily'])->name('kpi.data-daily');
+Route::get('get-users/{id}/{id_user}', [App\Http\Controllers\HCOverviewController::class, 'getUsers'])->name('kpi.getUser');
+Route::get('/get-data-division/{user}/{division}', [App\Http\Controllers\ProdukController::class, 'getDataDivision'])->name('client.getDataDivision');
+Route::post('/produk/{divisi}', [App\Http\Controllers\ProdukController::class, 'tambahDataClient'])->name('client.tambahDataClient');
+Route::PUT('/produk/{id}', [App\Http\Controllers\ProdukController::class, 'updateDataClient'])->name('client.updateDataClient');
+Route::DELETE('/produk/{id}', [App\Http\Controllers\ProdukController::class, 'hapusDataClient'])->name('client.hapusDataClient');
+Route::get('/produk-get/{id}', [App\Http\Controllers\ProdukController::class, 'getProduk']);

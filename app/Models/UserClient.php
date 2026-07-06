@@ -10,6 +10,7 @@ class UserClient extends Model
     protected $fillable = [
         'user_id',
         'client_id',
+        'assigned_at'
     ];
 
     public function client()

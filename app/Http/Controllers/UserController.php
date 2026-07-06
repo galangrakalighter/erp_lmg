@@ -77,6 +77,11 @@ class UserController extends Controller
     private function getRole($user, $divisionId)
     {
         $divInfo = $user->userDivisions->where('division_id', $divisionId)->first();
+    
+        if (!$divInfo || !$divInfo->role) {
+            return (object) ['id' => null, 'role_name' => '-', 'level' => 0];
+        }
+        
         $roleName = DB::table('roles')->where('id', $divInfo->role_id)->first();
         return $roleName;
     }

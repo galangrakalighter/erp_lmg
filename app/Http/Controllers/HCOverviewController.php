@@ -8,7 +8,9 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Models\UserDivision;
+use App\Models\Role;
 use App\Models\Division;
+use App\Models\KPI;
 use App\Models\Task;
 use App\Models\ProdukClient;
 use Carbon\CarbonPeriod;
@@ -21,79 +23,33 @@ class HCOverviewController extends Controller
     public function index(Request $request, $id)
     {
         $title = "Project Overview";
-        $user = Auth::user();
-        $divisi = User::find(Auth::user()->id)->userDivisions;
-        $RoleSekarang = $user->isAdmin == false ? DB::table('roles')->where('id', $divisi[0]->role_id)->value('role_name') : "Super Admin";
         $id_client = (int)$id;
-        // 1. Definisi List
         $divisi_list = Division::pluck('name', 'id');
-        $prioritas = [1 => 'Rendah', 2 => 'Sedang', 3 => 'Tinggi'];
+        $client = ProdukClient::where('id', $id_client)->first();
+        $user = Auth::user();
+        $divisi = User::find($user->id)->userDivisions[0] ?? "Super Admin";
+        $RoleSekarang = $user->isAdmin == false ? DB::table('roles')->where('id', $divisi['role_id'])->value('role_name') : "Super Admin";
+        // Label kesulitan tetap perlu dikirim ke view untuk filter select
+        $difficultyLabels = [
+            1 => 'Sangat Mudah', 2 => 'Mudah', 3 => 'Sedang', 4 => 'Sulit', 5 => 'Sangat Sulit'
+        ];
 
-        // 2. Query Utama Task
-        $taskQuery = Task::leftjoin('data_jasa', 'data_jasa.id', '=', 'task.id_manajement_konten')
-            ->leftjoin('produk_client', 'produk_client.id', '=', 'task.project')
-            ->leftjoin('users', 'users.id', '=', 'task.pic')
-            ->join('user_division', 'user_division.user_id', '=', 'users.id')
-            ->join('roles', 'roles.id', '=', 'user_division.role_id')
-            ->select(
-                'task.*',
-                'data_jasa.tanggal_mulai as tgl_mulai_jasa',
-                'data_jasa.tanggal_deadline as tgl_deadline_jasa',
-                'users.email as vic_email',
-                'produk_client.nama as nama_client',
-                'user_division.parent_id',
-                'roles.role_name as role_pic'
-            )
-            ->where('task.project', $id_client)
-            ->whereNot('task.status', 5);
-            // ->get();
-            // dd($taskQuery);
-            switch($RoleSekarang) {
-                case "Digital Marketing":
-                    $taskQuery->where(function($q) use ($user) {
-                        // Melihat task milik sendiri OR task yang manager/bawahannya adalah dia
-                        $q->where('task.pic', $user->id)
-                        ->orWhere('user_division.parent_id', $user->id); // Pastikan nama kolom di tabel users benar (dmm atau dm)
-                    });
-                    break;
-
-                case "Senior Content Creator":
-                    $taskQuery->where(function($q) use ($user) {
-                        $q->where('task.pic', $user->id)
-                        ->orWhere('user_division.parent_id', $user->id);
-                    });
-                    break;
-
-                case "Content Creator":
-                    $taskQuery->where('task.pic', $user->id);
-                    break;
-                case "Digital Marketing Manager":
-                    break;
-                case "Super Admin":
-                    break;
-                default:
-                    break;
+        $result = [];
+        if($RoleSekarang == "Super Admin"){
+            $result = $divisi_list;
+        }else{
+            foreach($divisi_list as $divId => $nama) {
+                if($divId == $divisi->division_id) {
+                    $result[$divId] = $nama;
+                }
             }
-
-        // --- LOGIKA FILTER DARI REQUEST ---
-        if ($request->filled('start_date') && $request->filled('end_date')) {
-            $taskQuery->whereBetween('task.tanggal_mulai', [$request->start_date, $request->end_date]);
         }
-        if ($request->filled('status')) {   $taskQuery->where('task.status', $request->status); }
-        if ($request->filled('pic'))   {    $taskQuery->where('task.pic', $request->pic); }
-        if ($request->filled('priority')) { $taskQuery->where('task.priority', $request->priority); }
-        if ($request->filled('divisi'))   { $taskQuery->where('task.divisi', $request->divisi); }
 
-        $data = $taskQuery->orderBy('task.tanggal_mulai', 'ASC')->get();
-        // $handed_client = UserClient::where('client_id', $id_client)->get();
-        
-        $handed_client = User::leftjoin('user_division', 'user_division.user_id', '=', 'users.id')
+         $handed_client = User::leftjoin('user_division', 'user_division.user_id', '=', 'users.id')
             ->select('users.id', 'users.name', 'users.email')
             ->distinct();
 
-        if ($RoleSekarang == "Content Creator") {
-            $vic_list = $handed_client->where('users.id', $user->id)->get();
-        } else if ($RoleSekarang == "Super Admin") {
+        if ($RoleSekarang == "Super Admin") {
             $vic_list = $handed_client->where('users.isAdmin', false)->get();
         } else {
             $vic_list = $handed_client->where(function($q) use ($user) {
@@ -102,55 +58,164 @@ class HCOverviewController extends Controller
             })->get();
         }
 
-        // 4. Filter Divisi untuk UI
-        $result = [];
-        if($RoleSekarang == "Super Admin"){
-            $result = $divisi_list;
-        }else{
-            foreach($divisi_list as $divId => $nama) {
-                if($divId == $divisi[0]->division_id) {
-                    $result[$divId] = $nama;
-                }
-            }
+        return view('hc.overview', compact('title', 'id', 'client', 'difficultyLabels', 'divisi_list', 'result', 'vic_list'));
+    }
+
+    public function tambahKPI(Request $request){
+        $request->validate([
+            'nama_kpi'         => 'required',
+            'divisi'           => 'required',
+            'pic'              => 'required|array', // Pastikan datang sebagai array
+            'point'            => 'required',
+            'tanggal_mulai'    => 'required',
+            'tanggal_deadline' => 'required',
+            'note'             => 'nullable'
+        ]);
+
+        // Ambil semua data kecuali 'pic'
+        $data = $request->except('pic');
+        $data['status'] = 0;
+
+        // Simpan KPI
+        $kpi = KPI::create($data);
+
+        // Hubungkan dengan PIC di tabel pivot
+        $kpi->pics()->sync($request->pic);
+
+        return redirect()->back()->with('success', 'KPI Berhasil Dibuat');
+    }
+
+    public function editKPI($id, Request $request){
+        $request->validate([
+            'nama_kpi'         => 'required',
+            'divisi'           => 'required',
+            'pic'              => 'required|array',
+            'point'            => 'required',
+            'tanggal_mulai'    => 'required',
+            'tanggal_deadline' => 'required',
+            'note'             => 'nullable'
+        ]);
+
+        $kpi = KPI::findOrFail($id);
+
+        // Update atribut utama
+        $kpi->update($request->except(['pic', '_token', '_method']));
+
+        // Update relasi PIC
+        $kpi->pics()->sync($request->pic);
+
+        return redirect()->back()->with('success', 'KPI Berhasil Di Update');
+    }
+
+    public function deleteKPI($id)
+    {
+        $kpi = KPI::findOrFail($id);
+        $kpi->delete();
+        return redirect()->back()->with('success', 'Berhasil Di Hapus');
+    }
+
+    public function getUsers($id, $id_user){
+        $user = User::find($id_user);
+        $userQuery = User::join('user_division', 'user_division.user_id', '=', 'users.id')
+                    ->where('user_division.division_id', $id)
+                    ->select('users.id', 'users.email')
+                    ->distinct();
+        $RoleSekarang = $user->isAdmin == false ? DB::table('roles')->where('id', $user->userDivisions[0]->role_id)->value('role_name') : "Super Admin";
+        $level = Role::where('role_name', $RoleSekarang)->first();
+        $currentLevel = 0;
+        if($level != null){
+            $currentLevel = $level->level;
         }
 
-        $client = ProdukClient::where('id', $id_client)->first();
-        $data->transform(function ($item) use ($user, $RoleSekarang) {
-            $canApprove = false;
-            if ($RoleSekarang == "Super Admin") {
-                $canApprove = true;
-            } 
+        if ($currentLevel == 0) {
+            $vic_list = $userQuery->get();
+        }else{
+            $vic_list = $userQuery->where(function($q) use ($user) {
+                $q->where('users.id', $user->id)->orWhere('user_division.parent_id', $user->id);
+            })->get();
+        }
 
-            // Jika Status 7 dan Belum Di-approve
-            if ($item->status == 9 && $item->tanggal_approve == null) {
-                // 1. Admin bisa semua
-                if ($RoleSekarang == "Super Admin") {
-                    $canApprove = true;
-                } 
-                else {
-                    // Jika PIC-nya DM, maka HOD yang bisa kirim
-                    if ($item->role_pic == "Digitam Marketing" && $item->pic == $user->id) {
-                        $canApprove = true;
-                    }
-                        // Jika PIC-nya Content Creator, maka Manager (DMM) yang bisa kirim
-                    elseif ($item->role_pic == "Senior Content Creator" && $item->pic == $user->id) {
-                        $canApprove = true;
-                    }
-                    elseif ($item->role_pic == "Content Creator" && $item->pic == $user->id) {
-                        $canApprove = true;
-                    }
-                    // Jika PIC-nya DM/CC dan atasan teknisnya (DM) adalah user login
-                    elseif ($item->pic == $user->id) {
-                        $canApprove = true;
-                    }
-                }
-            }
 
-            $item->can_approve = $canApprove;
-            return $item;
+        return response()->json($vic_list->map(function($u) {
+            return [
+                'id' => $u->id,
+                'email' => $u->email,
+            ];
+        }));
+        
+    }
+
+    public function getKPIData(Request $request, $id, $id_user){
+        $user = User::find($id_user);
+        
+        // Query data KPI dengan Eager Loading relasi pics
+        $data = KPI::with(['pics.userDivisions.role', 'pics.userDivisions.division'])
+            ->where('project', (int)$id)
+            // Logika akses untuk multi-PIC:
+            ->where(function($query) use ($user) {
+                $query->whereHas('pics', function($q) use ($user) {
+                    // Apakah user adalah salah satu dari daftar PIC KPI ini?
+                    $q->where('users.id', $user->id);
+                })->orWhereHas('pics.userDivisions', function($q) use ($user) {
+                    // Atau apakah user adalah atasan (parent) dari salah satu PIC?
+                    $q->where('parent_id', $user->id);
+                });
+            })
+            ->when($request->priority, function($query) use ($request) {
+                $query->where('priority', $request->priority);
+            })
+            ->get();
+
+        // Memetakan data agar kompatibel dengan tabel JS Anda
+        $result = $data->map(function($kpi) {
+            // Ambil semua email PIC dan gabungkan jadi string (contoh: "andi@mail.com, budi@mail.com")
+            $listEmail = $kpi->pics->pluck('email')->implode(', ');
+            
+            // Ambil data divisi dari PIC pertama yang terdaftar (sebagai perwakilan)
+            $firstPic = $kpi->pics->first();
+            $divisi = $firstPic ? ($firstPic->userDivisions->first()->division->name ?? '-') : '-';
+            $role = $firstPic ? ($firstPic->userDivisions->first()->role->role_name ?? '-') : '-';
+
+            return [
+                'id'               => $kpi->id,
+                'nama_kpi'         => $kpi->nama_kpi,
+                'point'            => $kpi->point,
+                'tanggal_mulai'    => $kpi->tanggal_mulai,
+                'tanggal_deadline' => $kpi->tanggal_deadline,
+                'status'           => $kpi->status,
+                'note'             => $kpi->note,
+                'vic_email'        => $listEmail, // Sekarang bisa menampung banyak email
+                'nama_divisi'      => $divisi,
+                'role_pic'         => $role,
+                'divisi'           => $firstPic->userDivisions->first()->division_id,
+                'pics'             => $kpi->pics 
+            ];
         });
 
-        return view('hc.overview', compact('title', 'data', 'vic_list', 'result', 'prioritas', 'id', 'client'));
+        return response()->json(['data' => $result]);
+    }
+
+    public function getKPIDataDaily(Request $request, $id, $id_user){
+        $kpis = KPI::with('pics')->where('project', $id)->get();
+
+        $result = $kpis->map(function($kpi) {
+            return [
+                'id'               => $kpi->id,
+                'nama_kpi'         => $kpi->nama_kpi,
+                'point'            => $kpi->point,
+                'tanggal_mulai'    => $kpi->tanggal_mulai,
+                'tanggal_deadline' => $kpi->tanggal_deadline,
+                'status'           => $kpi->status,
+                'note'             => $kpi->note,
+                'divisi'           => $kpi->divisi,
+                // Mengambil ID PIC untuk kebutuhan edit modal
+                'pic_ids'          => $kpi->pics->pluck('id')->toArray(),
+                // Mengambil email PIC untuk kebutuhan display tabel
+                'vic_email'        => $kpi->pics->pluck('email')->implode(', '),
+            ];
+        });
+
+        return response()->json(['data' => $result]);
     }
 
     /**
@@ -338,6 +403,7 @@ class HCOverviewController extends Controller
             'priority' => (int)$request->priority,
             'menit' => (int)$request->menit,
             'tanggal_mulai' => $request->tanggal_mulai,
+            'id_kpi' => $request->kpi_id,
             'tanggal_deadline' => $request->tanggal_deadline,
             'jam_mulai'        => $request->jam_mulai,
             'note' => $request->note,
@@ -377,6 +443,7 @@ class HCOverviewController extends Controller
             $projects = $project->get()
             ->map(function ($client) {
                 // Hitung total task milik client ini
+                $totalKPI = KPI::where('project', $client->id)->count();
                 $totalTask = Task::where('project', $client->id)->whereNot('status', 5)->count();
                 
                 // Hitung task yang sudah DONE (status 4)
@@ -384,16 +451,18 @@ class HCOverviewController extends Controller
                     ->where('status', 4)
                     ->count();
 
+                $doneKPI = KPI::where('project', $client->id)->where('status', 1)->count();
+
                 // Hitung persentase
-                $percentage = ($totalTask > 0) ? round(($doneTask / $totalTask) * 100) : 0;
+                $percentage = ($totalKPI > 0) ? round(($doneKPI / $totalKPI) * 100) : 0;
 
                 return [
                     'project_id'  => $client->id,
                     'nama_client' => $client->nama_client,
                     'percentage'  => $percentage,
-                    'total'       => $totalTask,
-                    'done'        => $doneTask,
-                    'color'       => ($totalTask == 0) ? 'secondary' : ($percentage == 100 ? 'success' : ($percentage > 50 ? 'primary' : 'warning'))
+                    'total'       => $totalKPI,
+                    'done'        => $doneKPI,
+                    'color'       => ($totalKPI == 0) ? 'secondary' : ($percentage == 100 ? 'success' : ($percentage > 50 ? 'primary' : 'warning'))
                 ];
             });
 

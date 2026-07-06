@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ProdukClient;
 use App\Models\KategoriJasa;
+use App\Models\UserClient;
 use App\Models\UserDivision;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -302,5 +303,252 @@ class ProdukController extends Controller
               ->where('dm', $id)
               ->get(['id', 'email']);
         return $cc;
+    }
+
+    public function indexDivision($divisi){
+        $title = "CMS Produk";
+        $user = Auth::user()->id;
+        $divisiName = User::find(Auth::user()->id)->userDivisions;
+        $RoleSekarang = Auth::user()->isAdmin == false ? DB::table('roles')->where('id', $divisiName[0]->role_id)->value('role_name') : "Super Admin";
+        $buh = User::join('user_division', 'user_division.user_id', '=', 'users.id')
+                ->join('roles', 'roles.id', '=', 'user_division.role_id')
+                ->where('roles.level', 1)
+                ->where('user_division.division_id', $divisi)
+                ->get();
+
+        $bawahan2 = User::join('user_division', 'user_division.user_id', '=', 'users.id')
+                ->join('roles', 'roles.id', '=', 'user_division.role_id')
+                ->where('roles.level', 2)
+                ->where('user_division.division_id', $divisi)
+                ->get();
+
+        $bawahan3 = User::join('user_division', 'user_division.user_id', '=', 'users.id')
+                ->join('roles', 'roles.id', '=', 'user_division.role_id')
+                ->where('roles.level', 3)
+                ->where('user_division.division_id', $divisi)
+                ->get();
+        
+        return view('cms.produk.division.index', [
+            'title' => $title,
+            'role' => $RoleSekarang,
+            'divisi' => $divisi,
+            'user' => $user,
+            'buh' => $buh,
+            'mcn' => $bawahan2,
+            'ms' => $bawahan3
+        ]);
+    }
+
+    public function getDataDivision($user, $divisi)
+    {
+        $user = User::findOrFail($user);
+
+        $query = ProdukClient::with(['teams.userDivisions.role'])
+            ->join('client_division', 'client_division.client_id', '=', 'produk_client.id')
+            ->where('client_division.division_id', $divisi)
+            ->select('produk_client.*');
+
+        // Jika bukan admin, hanya tampilkan client yang dimiliki user
+        if (!$user->isAdmin) {
+            $query->whereHas('teams', function ($q) use ($user) {
+                $q->where('users.id', $user->id);
+            });
+        }
+
+        $data = $query->get()->map(function ($client) {
+
+            $teams = $client->teams;
+
+            return [
+                'id'       => $client->id,
+                'nama'     => $client->nama,
+                'category' => $client->category,
+                'status'   => $client->status,
+
+                // Business Unit Head
+                'buh' => $teams
+                    ->filter(fn($u) => optional($u->userDivisions->first())->role_id == 6)
+                    ->pluck('email')
+                    ->values(),
+
+                // MCN Specialist Manager
+                'mcn' => $teams
+                    ->filter(fn($u) => optional($u->userDivisions->first())->role_id == 7)
+                    ->pluck('email')
+                    ->values(),
+
+                // MCN Specialist
+                'ms' => $teams
+                    ->filter(fn($u) => optional($u->userDivisions->first())->role_id == 8)
+                    ->pluck('email')
+                    ->values(),
+
+                'team_ids' => $teams->pluck('id')->toArray(),
+            ];
+        });
+
+        return response()->json([
+            'data' => $data
+        ]);
+    }
+
+
+
+    public function tambahDataClient(Request $request, $divisi){
+        $produk = ProdukClient::create([
+            'kategori_jasa_id' => null,
+            'nama' => $request->client,
+            'status' => $request->status,
+            'access_token' => null
+        ]);
+
+        $allId = [];
+
+        foreach($request->buh as $buh){
+            array_push($allId, $buh);
+        }
+
+        foreach($request->mcn as $mcn){
+            array_push($allId, $mcn);
+        }
+        foreach($request->ms as $ms){
+            array_push($allId, $ms);
+        }
+
+        foreach($allId as $id){
+            UserClient::insert([
+                'user_id' => $id,
+                'client_id' => $produk->id,
+                'assigned_at' => now()
+            ]);
+        }
+
+        DB::table('client_division')->insert([
+            'client_id' => $produk->id,
+            'division_id' => $divisi
+        ]);
+
+        return response()->json(['success' => 'Berhasil Dibuat']);
+    }
+
+    public function updateDataClient(Request $request, $id)
+    {
+        DB::beginTransaction();
+
+        try {
+
+            $produk = ProdukClient::findOrFail($id);
+
+            // Update data client
+            $produk->update([
+                'nama'   => $request->client,
+                'status' => $request->status,
+            ]);
+
+            // Hapus relasi user lama
+            UserClient::where('client_id', $produk->id)->delete();
+
+            // Gabungkan seluruh user yang dipilih
+            $allId = array_merge(
+                $request->buh ?? [],
+                $request->mcn ?? [],
+                $request->ms ?? []
+            );
+
+            // Hilangkan ID yang sama jika ada
+            $allId = array_unique($allId);
+
+            // Insert relasi baru
+            foreach ($allId as $userId) {
+
+                UserClient::create([
+                    'user_id'     => $userId,
+                    'client_id'   => $produk->id,
+                    'assigned_at' => now(),
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => 'Data berhasil diupdate'
+            ]);
+
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getProduk($id)
+    {
+        $produk = ProdukClient::with(['teams.userDivisions'])
+            ->findOrFail($id);
+
+        $teams = $produk->teams;
+
+        return response()->json([
+            'id'        => $produk->id,
+            'client_id' => $produk->nama,
+            'status'    => $produk->status,
+
+            'buh' => $teams
+                ->filter(fn($u) => $u->userDivisions->first()?->role_id == 6)
+                ->pluck('id')
+                ->values(),
+
+            'mcn' => $teams
+                ->filter(fn($u) => $u->userDivisions->first()?->role_id == 7)
+                ->pluck('id')
+                ->values(),
+
+            'ms' => $teams
+                ->filter(fn($u) => $u->userDivisions->first()?->role_id == 8)
+                ->pluck('id')
+                ->values(),
+        ]);
+    }
+
+    public function hapusDataClient($id)
+    {
+        DB::beginTransaction();
+
+        try {
+
+            $produk = ProdukClient::findOrFail($id);
+
+            // Hapus relasi user
+            UserClient::where('client_id', $id)->delete();
+
+            // Hapus relasi divisi
+            DB::table('client_division')
+                ->where('client_id', $id)
+                ->delete();
+
+            // Hapus client
+            $produk->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Client berhasil dihapus.'
+            ]);
+
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+
+        }
     }
 }

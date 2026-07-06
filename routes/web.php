@@ -53,6 +53,8 @@ Route::middleware('auth')->group(function() {
     Route::post('cms/produk/create', [App\Http\Controllers\ProdukController::class, 'store'])->name('produk_create');
     Route::post('cms/produk/edit/{id}', [App\Http\Controllers\ProdukController::class, 'update'])->name('produk_edit');
     Route::post('cms/produk/delete/{id}', [App\Http\Controllers\ProdukController::class, 'destroy'])->name('produk_delete');
+
+    Route::get('client/{division}', [App\Http\Controllers\ProdukController::class, 'indexDivision'])->name('client.produk_divisi');
     
     // Hook
     Route::get('cms_{nama}/hook', [App\Http\Controllers\HookController::class, 'index'])->name('cms.hook');
@@ -190,6 +192,9 @@ Route::middleware('auth')->group(function() {
     Route::delete('hc_overview/{id_client}/{id}', [App\Http\Controllers\HCOverviewController::class, 'destroy'])->name('hc_overview.destroy');
     Route::get('progress_client', [App\Http\Controllers\HCOverviewController::class, 'list_client'])->name('hc_overview.list');
     Route::get('hc_dailywork', [App\Http\Controllers\HCDailyController::class, 'index'])->name('hc_daily.index');
+    Route::post('kpi/store', [App\Http\Controllers\HCOverviewController::class, 'tambahKPI'])->name('kpi.store');
+    Route::put('kpi/{id}', [App\Http\Controllers\HCOverviewController::class, 'editKPI'])->name('kpi.update');
+    Route::delete('kpi/{id}', [App\Http\Controllers\HCOverviewController::class, 'deleteKPI'])->name('kpi.destroy');
     // Route::get('/payment', function(){
     //     $title = "Payment - ";
     //     return view('payment.index', compact('title'));

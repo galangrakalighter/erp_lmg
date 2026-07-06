@@ -62,4 +62,9 @@ class User extends Authenticatable
     public function clients() {
         return $this->belongsToMany(ProdukClient::class, 'user_client', 'user_id', 'client_id');
     }
+
+    public function kpis()
+    {
+        return $this->belongsToMany(KPI::class, 'kpi_user', 'user_id', 'kpi_id');
+    }
 }

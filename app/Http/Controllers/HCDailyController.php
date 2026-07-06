@@ -7,6 +7,7 @@ use App\Models\Task;
 use App\Models\User;
 use App\Models\Role;
 use App\Models\ProdukClient;
+use App\Models\KPI;
 use App\Models\Division;
 use Illuminate\Support\Facades\DB;
 // use Midtrans\Config;
@@ -374,7 +375,8 @@ class HCDailyController extends Controller
             ->join('produk_client', 'produk_client.id', '=', 'task.project')
             ->join('user_division', 'user_division.user_id', '=', 'users.id')
             ->join('roles', 'roles.id', '=', 'user_division.role_id')
-            ->select('task.*', 'users.email as vic_email', 'produk_client.nama as project_name', 'roles.role_name as vic_role', 'user_division.parent_id', 'roles.level')
+            ->join('kpi', 'kpi.id', '=', 'task.id_kpi')
+            ->select('task.*', 'users.email as vic_email', 'produk_client.nama as project_name', 'roles.role_name as vic_role', 'user_division.parent_id', 'roles.level', 'kpi.nama_kpi')
             ->where('task.pic', $userId)
             ->whereNotNull('task.jam_mulai')
             ->where(function($query) use ($today) {
@@ -481,7 +483,6 @@ class HCDailyController extends Controller
                 'role' => $u->role_name// Opsional: tambahkan role agar di JS bisa ditrack jika perlu
             ];
         }));
-        return $data;
     }
 
     public function storeDaily(Request $request){
@@ -555,6 +556,7 @@ class HCDailyController extends Controller
                 'pic'              => (int)$request->pic,
                 'priority'         => (int)$request->priority,
                 'menit'            => (int)$request->menit,
+                'id_kpi'           => (int)$request->kpi_id,
                 'tanggal_mulai'    => $date->format('Y-m-d'),
                 'tanggal_deadline' => $date->format('Y-m-d'),
                 'jam_mulai'        => $request->jam_mulai,
@@ -569,20 +571,18 @@ class HCDailyController extends Controller
 
     public function getTasksById($id){
         $task = Task::find($id);
-        $handleClient = User::find($task->pic);
+        $handleClient = User::find($task->pic); 
+        $kpi = $handleClient->kpis()->select('kpi.id', 'kpi.nama_kpi')->get();
+        
         $client = [];
-        if ($handleClient && $handleClient->client) {
-            $clientIds = is_array($handleClient->client) 
-                        ? $handleClient->client 
-                        : json_decode($handleClient->cliepnt, true);
-
-            $client = ProdukClient::select('id', 'nama')
-                        ->whereIn('id', $clientIds)
-                        ->get();
+        if ($handleClient) {
+            $client = $handleClient->clients()->select('produk_client.id', 'nama')->get();
         }
+
         return response()->json([
             'task'   => $task,
-            'client' => $client
+            'client' => $client,
+            'kpi'    => $kpi
         ]);
     }
 

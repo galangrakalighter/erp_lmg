@@ -11,7 +11,6 @@ class ProdukClient extends Model
     protected $fillable = [
         'kategori_jasa_id',
         'nama',
-        'link_excel',
         'status',
         'access_token'
     ];

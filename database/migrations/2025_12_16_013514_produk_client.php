@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('produk_client', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('kategori_jasa_id')->constrained("kategori_jasa")->cascadeOnDelete();
+            $table->foreignId('kategori_jasa_id')->nullable()->constrained("kategori_jasa")->cascadeOnDelete();
             $table->string('nama');
             $table->integer('status');
             $table->json('access_token')->nullable();

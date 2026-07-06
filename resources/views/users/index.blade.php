@@ -120,12 +120,20 @@
                                     <small class="text-muted">User ini akan melapor ke siapa?</small>
                                 </div>
 
-                                <div class="col-md-6">
-                                    <h6 class="font-weight-bold text-success small mb-2 text-uppercase">Tarik Bawahan</h6>
-                                    <select name="subordinate_ids[]" id="modal_subordinates" class="form-control form-control-sm bg-white select2-multiple" multiple="multiple">
-                                        {{-- Diisi via JS --}}
+                                <div class="col-md-6" id="subordinate_panel">
+                                    <h6 class="font-weight-bold text-success small mb-2 text-uppercase">
+                                        Tarik Bawahan
+                                    </h6>
+
+                                    <select name="subordinate_ids[]"
+                                            id="modal_subordinates"
+                                            class="form-control form-control-sm bg-white select2-multiple"
+                                            multiple>
                                     </select>
-                                    <small class="text-muted">Siapa saja yang akan melapor ke user baru ini?</small>
+
+                                    <small class="text-muted">
+                                        Siapa saja yang akan melapor ke user baru ini?
+                                    </small>
                                 </div>
                             </div>
                         </div>
@@ -537,35 +545,37 @@ function findSubordinate(myId, divisiId, targetLevel, allData) {
 
 function updateRoleOptions(divisiId) {
     let $roleSelect = $('#modal_role');
-    console.log($roleSelect);
     let $parentPanel = $('#parent_panel');
-    
+
+    // Reset role
     $roleSelect.val('').prop('disabled', !divisiId);
     $parentPanel.addClass('d-none');
 
-    // Filter Role berdasarkan divisi yang dipilih
-    $roleSelect.find('option').each(function() {
-        // console.log(this);
-        let roleDivId = $(this).data('data-divisi');
-        console.log($(this));
-        
-        // console.log(roleDivId);
+    $roleSelect.find('option').each(function () {
+
+        let roleDivId = $(this).data('divisi'); // <-- perbaikan
+
         if (!roleDivId || roleDivId == divisiId) {
             $(this).show();
         } else {
             $(this).hide();
         }
     });
+
+    // Refresh Select2 jika digunakan
+    $roleSelect.trigger('change.select2');
 }
 
 function updateParentOptions() {
     let divisiId = $('#modal_divisi').val();
     let roleId = $('#modal_role').val();
     let selectedLevel = parseInt($('#modal_role option:selected').data('level'));
-    
+
     let $parentSelect = $('#modal_parent');
     let $subSelect = $('#modal_subordinates');
+
     let $panel = $('#hierarchy_panel');
+    let $subPanel = $('#subordinate_panel'); // <-- panel bawahan
 
     if (!roleId) {
         $panel.addClass('d-none');
@@ -573,46 +583,67 @@ function updateParentOptions() {
     }
 
     $panel.removeClass('d-none');
-    
-    // Ambil data user dari tabel (AJAX JSON)
+
     const allData = $('#mainDataTable').DataTable().ajax.json();
 
-    // 1. FILTER CALON ATASAN (Level < Level Sekarang)
-    // Contoh: Jika saya Lvl 3, maka atasan adalah Lvl 1 & 2
+    // ============================
+    // Cari level terbesar pada divisi yang dipilih
+    // ============================
+    let maxLevel = 0;
+
+    $('#modal_role option').each(function () {
+        if ($(this).data('divisi') == divisiId) {
+            let level = parseInt($(this).data('level'));
+
+            if (level > maxLevel) {
+                maxLevel = level;
+            }
+        }
+    });
+
+    // ============================
+    // Atasan
+    // ============================
     let htmlParent = '<option value="">-- Tanpa Atasan --</option>';
+
     let parents = allData.filter(u => {
         let ud = (u.user_divisions ?? []).find(d => d.division_id == divisiId);
         return ud && parseInt(ud.level) < selectedLevel;
     });
+
     parents.forEach(p => {
         htmlParent += `<option value="${p.id}">${p.name} (${p.email})</option>`;
     });
+
     $parentSelect.html(htmlParent);
 
-    // 2. FILTER CALON BAWAHAN (Level > Level Sekarang)
-    // Contoh: Jika saya Lvl 3, maka bawahan adalah Lvl 4
+    // ============================
+    // Jika level terbesar, sembunyikan bawahan
+    // ============================
+    if (selectedLevel >= maxLevel) {
+        $subPanel.addClass('d-none');
+        $subSelect.html('').trigger('change');
+        return;
+    }
+
+    $subPanel.removeClass('d-none');
+
+    // ============================
+    // Bawahan
+    // ============================
     let htmlSub = '';
+
     let subordinates = allData.filter(u => {
-        // Cari data divisi yang cocok dengan divisiId yang dipilih
         let ud = (u.user_divisions ?? []).find(d => d.division_id == divisiId);
-        
-        if (ud) {
-            let userLevel = parseInt(ud.level);
-            return userLevel === (selectedLevel + 1);
-        }
-        return false;
+
+        return ud && parseInt(ud.level) === selectedLevel + 1;
     });
-    console.log(subordinates);
+
     subordinates.forEach(s => {
         htmlSub += `<option value="${s.id}">${s.name} (${s.email})</option>`;
     });
-    $subSelect.html(htmlSub);
 
-    // Refresh Select2 jika Anda menggunakannya
-    $('.select2-multiple').select2({
-        placeholder: "Pilih satu atau lebih bawahan",
-        allowClear: true
-    });
+    $subSelect.html(htmlSub).trigger('change');
 }
 
 function editUser(id) {

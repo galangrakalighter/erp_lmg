@@ -11,23 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('task', function (Blueprint $table) {
+        Schema::create('kpi', function (Blueprint $table) {
             $table->id();
-            $table->string('nama_task');
+            $table->string('nama_kpi');
             $table->foreignId('divisi')->constrained('divisions')->cascadeOnDelete();
-            $table->foreignId('pic')->constrained('users')->cascadeOnDelete();
-            $table->integer('priority');
-            $table->integer('menit');
-            $table->foreignId('id_manajement')->nullable()->constrained('data_jasa')->cascadeOnDelete();
+            $table->integer('point');
             $table->date('tanggal_mulai');
             $table->date('tanggal_deadline');
             $table->text('note')->nullable();
             $table->integer('status');
             $table->foreignId('project')->constrained('produk_client')->cascadeOnDelete();
-            $table->time('jam_mulai')->nullable();
-            $table->date('tanggal_approve');
-            $table->date('tanggal_revisi');
-            $table->date('tanggal_split');
             $table->timestamps();
         });
     }
@@ -37,6 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('task');
+        Schema::dropIfExists('kpi');
     }
 };

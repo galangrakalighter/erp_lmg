@@ -61,16 +61,41 @@ class MenuServiceProvider extends ServiceProvider
 
             // Data umum
             $mcnClient = DB::table('barang_client')->get();
+            
+            $digitalMarketingProduk =  DB::table('client_division')
+            ->join('divisions', 'divisions.id', '=', 'client_division.division_id')
+            ->join('produk_client', 'produk_client.id', '=', 'client_division.client_id')
+            ->where('client_division.division_id', 1)
+            ->where('produk_client.kategori_jasa_id', 1)
+            ->get();
+            
             $menus = KategoriJasa::with('clients')->get();
 
+
+            $businessDevProduk =  DB::table('client_division')
+            ->join('divisions', 'divisions.id', '=', 'client_division.division_id')
+            ->join('produk_client', 'produk_client.id', '=', 'client_division.client_id')
+            ->where('client_division.division_id', 1)
+            ->whereIn('produk_client.kategori_jasa_id', [2,3])
+            ->get();
+
+            $mcnProduk = DB::table('client_division')
+            ->join('divisions', 'divisions.id', '=', 'client_division.division_id')
+            ->join('produk_client', 'produk_client.id', '=', 'client_division.client_id')
+            ->where('client_division.division_id', 3)
+            ->get();
+
             $view->with([
+                'businessDevProduk' => $businessDevProduk,
+                'digitalMarketingProduk' => $digitalMarketingProduk,
                 'menus' => $menus,
                 'activeProductCode' => $currentProductCode,
                 'mcnClient' => $mcnClient,
                 'isSuperAdmin' => $isSuperAdmin,
                 'myDivision' => $myDivision, // Mengirim object (bukan collection)
                 'myRole' => $myRole,         // Mengirim object (bukan collection)
-                'myClientIds' => $myClientIds
+                'myClientIds' => $myClientIds,
+                'mcnProduk' => $mcnProduk
             ]);
         });
     }

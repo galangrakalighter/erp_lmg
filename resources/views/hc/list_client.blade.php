@@ -57,7 +57,7 @@
 
                         <div class="row no-gutters small text-muted font-italic">
                             <div class="col-6">
-                                <i class="fas fa-tasks mr-1"></i> {{ $p['total'] }} Total Task
+                                <i class="fas fa-tasks mr-1"></i> {{ $p['total'] }} Total KPI
                             </div>
                             <div class="col-6 text-right">
                                 <i class="fas fa-check-circle mr-1 text-success"></i> {{ $p['done'] }} Selesai
@@ -66,7 +66,7 @@
                     @else
                         <div class="alert alert-light border-0 py-3 mb-0 text-center small text-muted" style="background-color: #f8f9fc;">
                             <i class="fas fa-folder-open mb-2 d-block fa-2x opacity-5"></i>
-                            Belum ada task yang ditambahkan.
+                            Belum ada KPI yang ditambahkan.
                         </div>
                     @endif
                 </div>

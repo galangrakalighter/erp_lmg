@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use App\Models\User;
 use App\Services\MarketResearch\MarketResearchService;
 class marketResearchController extends Controller
 {
@@ -15,6 +17,8 @@ class marketResearchController extends Controller
 
     public function index($id, $platform){
         $data = $this->market->getMarket((int)$id, $platform);
+        $divisi = User::find(Auth::user()->id)->userDivisions;
+        $role = Auth::user()->isAdmin == false ? DB::table('roles')->where('id', $divisi[0]->role_id)->value('role_name') : "Super Admin";
         $title = "Market Research";
         // dd($data['data']);
         $arr=[];
@@ -23,6 +27,6 @@ class marketResearchController extends Controller
         }
         $produk = DB::table('produk_client')->where('id', $id)->first();
         $halaman = "Market Research";
-        return view('market.index', compact('data', 'title', 'produk', 'platform', 'halaman'));
+        return view('market.index', compact('data', 'title', 'produk', 'platform', 'halaman', 'role'));
     }
 }

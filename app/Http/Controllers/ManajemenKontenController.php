@@ -13,6 +13,8 @@ use App\Models\ProdukClient;
 class ManajemenKontenController extends Controller
 {
     public function index(Request $request, $produk_id, $platform) {
+        $divisi = User::find(Auth::user()->id)->userDivisions;
+        $role = Auth::user()->isAdmin == false ? DB::table('roles')->where('id', $divisi[0]->role_id)->value('role_name') : "Super Admin";
         // 1. Ambil data Produk dan Kategori dengan cara yang lebih aman
         $produk = DB::table('produk_client')->where('id', $produk_id)->first();
         if (!$produk) return redirect()->back()->with('error', 'Produk tidak ditemukan');
@@ -81,7 +83,7 @@ class ManajemenKontenController extends Controller
 
         return view("manajemen.index", compact(
             'produk', 'option', 'title', 'kategory', 
-            'platform', 'halaman', 'RoleSekarang'
+            'platform', 'halaman', 'RoleSekarang', 'role'
         ));
     }
 

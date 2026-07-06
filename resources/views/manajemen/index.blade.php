@@ -7,7 +7,7 @@
             <h6 class="m-0 font-weight-bold text-primary">
                 <i class="fas fa-tasks mr-2"></i>Manajemen Konten {{ $produk->nama }}
             </h6>
-            @if(Auth::user()->role != "content_creator")
+            @if($role == 'Content Creator Manager' || $role == 'Busines Unit Head')
             <button type="button" class="btn btn-primary btn-sm shadow-sm" data-toggle="modal" data-target="#tambahModal">
                 <i class="fas fa-plus fa-sm text-white-50 mr-1"></i> Tambah Konten
             </button>
@@ -459,7 +459,7 @@
                                         <div class="input-group-prepend">
                                             <span class="input-group-text bg-white border-right-0"><i class="fas fa-heading text-muted"></i></span>
                                         </div>
-                                        <input type="text" name="judul" id="edit_judul" class="form-control border-left-0 pl-0 font-weight-bold" {{ Auth::user()->role == "content_creator" ? "readonly" : "" }} required>
+                                        <input type="text" name="judul" id="edit_judul" class="form-control border-left-0 pl-0 font-weight-bold" {{ $role == "Content Creator" ? "readonly" : "" }} required>
                                     </div>
                                 </div>
                             </div>
@@ -471,7 +471,7 @@
                                         <div class="input-group-prepend">
                                             <span class="input-group-text bg-white border-right-0"><i class="fas fa-link text-muted"></i></span>
                                         </div>
-                                        <input type="text" name="inspirasi" id="edit_inspirasi" class="form-control border-left-0 pl-0" {{ Auth::user()->role == "content_creator" ? "readonly" : "" }}>
+                                        <input type="text" name="inspirasi" id="edit_inspirasi" class="form-control border-left-0 pl-0" {{ $role == "Content Creator" ? "readonly" : "" }}>
                                     </div>
                                 </div>
                             </div>
@@ -486,7 +486,7 @@
                                 <div class="row">
                                     <div class="col-md-4 mb-3">
                                         <label class="text-muted font-weight-bold small">Tipe Produk</label>
-                                        <select name="type" id="edit_type" class="form-control custom-select bg-light border-0 shadow-none" {{ Auth::user()->role == "content_creator" ? "disabled" : "" }}>
+                                        <select name="type" id="edit_type" class="form-control custom-select bg-light border-0 shadow-none" {{ $role == "Content Creator" ? "disabled" : "" }}>
                                             @foreach ($option['type_produk'] as $type)
                                                 <option value="{{ $type->id }}">{{ $type->type }}</option>
                                             @endforeach
@@ -494,7 +494,7 @@
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <label class="text-muted font-weight-bold small">Strategi</label>
-                                        <select name="strategy" id="edit_strategy" class="form-control custom-select bg-light border-0 shadow-none" {{ Auth::user()->role == "content_creator" ? "disabled" : "" }}>
+                                        <select name="strategy" id="edit_strategy" class="form-control custom-select bg-light border-0 shadow-none" {{ $role == "Content Creator" ? "disabled" : "" }}>
                                             @foreach ($option['strategy'] as $strategy)
                                                 <option value="{{ $strategy->id }}">{{ $strategy->strategy }}</option>
                                             @endforeach
@@ -502,7 +502,7 @@
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <label class="text-muted font-weight-bold small">Pilar</label>
-                                        <select name="pilar" id="edit_pilar" class="form-control custom-select bg-light border-0 shadow-none" {{ Auth::user()->role == "content_creator" ? "disabled" : "" }}>
+                                        <select name="pilar" id="edit_pilar" class="form-control custom-select bg-light border-0 shadow-none" {{ $role == "Content Creator" ? "disabled" : "" }}>
                                             @foreach ($option['pilar'] as $pilar)
                                                 <option value="{{ $pilar->id }}">{{ $pilar->pilar }}</option>
                                             @endforeach
@@ -510,7 +510,7 @@
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label class="text-muted font-weight-bold small">Hook</label>
-                                        <select name="hooks" id="edit_hooks" class="form-control custom-select bg-light border-0 shadow-none" {{ Auth::user()->role == "content_creator" ? "disabled" : "" }}>
+                                        <select name="hooks" id="edit_hooks" class="form-control custom-select bg-light border-0 shadow-none" {{ $role == "Content Creator" ? "disabled" : "" }}>
                                             @foreach ($option['hooks'] as $hooks)
                                                 <option value="{{ $hooks->id }}">{{ $hooks->hooks }}</option>
                                             @endforeach
@@ -518,7 +518,7 @@
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label class="text-muted font-weight-bold small">Jenis Body</label>
-                                        <select name="jenis_body" id="edit_body" class="form-control custom-select bg-light border-0 shadow-none" {{ Auth::user()->role == "content_creator" ? "disabled" : "" }}>
+                                        <select name="jenis_body" id="edit_body" class="form-control custom-select bg-light border-0 shadow-none" {{ $role == "Content Creator" ? "disabled" : "" }}>
                                             @foreach ($option['jenis_body'] as $jenis_body)
                                                 <option value="{{ $jenis_body->id }}">{{ $jenis_body->nama_body }}</option>
                                             @endforeach
@@ -526,7 +526,7 @@
                                     </div>
                                     <div class="col-md-6">
                                         <label class="text-muted font-weight-bold small">Jenis CTA</label>
-                                        <select name="jenis_cta" id="edit_cta" class="form-control custom-select bg-light border-0 shadow-none" {{ Auth::user()->role == "content_creator" ? "disabled" : "" }}>
+                                        <select name="jenis_cta" id="edit_cta" class="form-control custom-select bg-light border-0 shadow-none" {{ $role == "Content Creator" ? "disabled" : "" }}>
                                             @foreach ($option['jenis_cta'] as $jenis_cta)
                                                 <option value="{{ $jenis_cta->id }}">{{ $jenis_cta->nama_cta }}</option>
                                             @endforeach
@@ -534,7 +534,7 @@
                                     </div>
                                     <div class="col-md-3 col-6">
                                         <label class="text-muted font-weight-bold small">Komposisi</label>
-                                        <input type="text" name="komposisi" id="edit_komposisi" class="form-control bg-light border-0 shadow-none" {{ Auth::user()->role == "content_creator" ? "readonly" : "" }}>
+                                        <input type="text" name="komposisi" id="edit_komposisi" class="form-control bg-light border-0 shadow-none" {{ $role == "Content Creator" ? "readonly" : "" }}>
                                     </div>
                                     
                                     @if($kategory->id == 2)
@@ -544,7 +544,7 @@
                                             <div class="input-group-prepend">
                                                 <span class="input-group-text bg-white border-right-0"><i class="fas fa-palette text-muted"></i></span>
                                             </div>
-                                            <input type="text" name="warna" id="edit_warna" class="form-control border-left-0 pl-0" {{ Auth::user()->role == "content_creator" ? "readonly" : "" }}>
+                                            <input type="text" name="warna" id="edit_warna" class="form-control border-left-0 pl-0" {{ $role == "Content Creator" ? "readonly" : "" }}>
                                         </div>
                                     </div>
                                     @endif
@@ -561,7 +561,7 @@
                             <div class="col-md-4">
                                 <div class="form-group">
                                     <label class="text-muted font-weight-bold small uppercase">Tanggal Posting</label>
-                                    <input type="date" name="tanggal_posting" id="edit_tanggal_posting" class="form-control shadow-sm" {{ Auth::user()->role == "content_creator" ? "readonly" : "" }}>
+                                    <input type="date" name="tanggal_posting" id="edit_tanggal_posting" class="form-control shadow-sm" {{ $role == "Content Creator" ? "readonly" : "" }}>
                                 </div>
                             </div>
 
@@ -580,7 +580,7 @@
                             <div class="col-md-12">
                                 <div class="form-group">
                                     <label class="text-muted font-weight-bold small uppercase">Status Pengerjaan <span class="text-danger">*</span></label>
-                                    <select name="status" id="edit_status" class="form-control shadow-sm" style="border: 2px solid #ffc107; border-radius: 8px;" {{ Auth::user()->role == "content_creator" ? "disabled" : "" }}>
+                                    <select name="status" id="edit_status" class="form-control shadow-sm" style="border: 2px solid #ffc107; border-radius: 8px;" {{ $role == "Content Creator" ? "disabled" : "" }}>
                                         @foreach ($option['status'] as $status)
                                             <option value="{{ $status->id }}">{{ $status->nama_status }}</option>
                                         @endforeach
@@ -591,7 +591,7 @@
                             <div class="col-md-12">
                                 <div class="form-group mb-0">
                                     <label class="text-muted font-weight-bold small uppercase">Catatan Revisi / Tambahan</label>
-                                    <textarea name="note" id="edit_note" class="form-control shadow-sm" rows="3" placeholder="Tulis catatan di sini..." style="border-radius: 10px;" {{ Auth::user()->role == "content_creator" ? "readonly" : "" }}></textarea>
+                                    <textarea name="note" id="edit_note" class="form-control shadow-sm" rows="3" placeholder="Tulis catatan di sini..." style="border-radius: 10px;" {{ $role == "Content Creator" ? "readonly" : "" }}></textarea>
                                 </div>
                             </div>
                         </div>

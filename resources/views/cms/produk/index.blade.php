@@ -9,7 +9,7 @@
             {{-- <a href="{{ route('create_produk_jasa') }}" class="btn btn-sm btn-primary">
                 Tambah
             </a> --}}
-            @if(Auth::user()->role != "digital_marketing")
+            @if($role == 'Digital Marketer' || $role == 'Busines Unit Head')
             <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#tambahModal">
                 Tambah
             </button>
@@ -23,16 +23,17 @@
                 <table class="table table-bordered table-hover" id="produkTable" style="width:100%">
                     <thead class="thead-light text-center">
                         <tr>
-                            <th>No</th>
-                            <th>Kategori Jasa</th>
-                            <th>Client</th>
-                            <th>Status</th>
-                            <th>DMM</th>
-                            <th>DM</th>
-                            <th>SCC</th>
-                            <th>CC</th>
-                            @if($role != "Senior Content Creator")
-                            <th>Action</th>
+                            <th scope="col">No</th>
+                            <th scope="col">Kategori Jasa</th>
+                            <th scope="col">Client</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">BUH</th>
+                            <th scope="col">Digital Marketer</th>
+                            <th scope="col">Advertising</th>
+                            <th scope="col">Content Creator Manager</th>
+
+                            @if ($role == 'Digital Marketer' || $role == 'Busines Unit Head')
+                                <th scope="col">Action</th>
                             @endif
                         </tr>
                     </thead>
@@ -287,7 +288,7 @@ $(document).ready(function() {
                 render: data => renderBadges(data, 'badge-warning text-dark') 
             },
             
-            @if($role != "Senior Content Creator")
+            @if($role == 'Digital Marketer' || $role == 'Busines Unit Head')
             { 
                 data: null,
                 className: 'text-center',

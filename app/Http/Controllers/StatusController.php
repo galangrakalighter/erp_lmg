@@ -4,10 +4,13 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-
+use Illuminate\Support\Facades\Auth;
+use App\Models\User;
 class StatusController extends Controller
 {
     public function index($name){
+        $divisi = User::find(Auth::user()->id)->userDivisions;
+        $role = Auth::user()->isAdmin == false ? DB::table('roles')->where('id', $divisi[0]->role_id)->value('role_name') : "Super Admin";
         $datatable = DB::table('status');
         if($name == "LGTR"){
             $data = $datatable->where("kategori_id", 1);
@@ -16,7 +19,7 @@ class StatusController extends Controller
         }
         $data = $datatable->get();
         $title = "Status";
-        return view('cms.status.index', compact('data', 'title'));
+        return view('cms.status.index', compact('data', 'title', 'role'));
     }
 
     public function store(Request $request, $name){

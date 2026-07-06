@@ -4,11 +4,15 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use App\Models\User;
 class brandingController extends Controller
 {
     public function index($id, $platform){
         $title = 'Branding';
         $produk = DB::table("produk_client")->where("id", $id)->first();
+        $divisi = User::find(Auth::user()->id)->userDivisions;
+        $role = Auth::user()->isAdmin == false ? DB::table('roles')->where('id', $divisi[0]->role_id)->value('role_name') : "Super Admin";
         
         $identify = DB::table('brand_identify')
                 ->join('produk_client', 'produk_client.id', '=', 'brand_identify.produk_client_id')
@@ -87,7 +91,8 @@ class brandingController extends Controller
                 'moodboard',
                 'alat',
                 'platform',
-                'halaman'
+                'halaman',
+                'role'
         ));
     }
 }

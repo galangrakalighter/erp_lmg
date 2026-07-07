@@ -545,7 +545,7 @@
                                         <i class="fas fa-user-tie text-muted"></i>
                                     </span>
                                 </div>
-                                <select name="kpi_id" id="selectKPI" class="form-control border-left-0 pl-0" required>
+                                <select name="kpi_id" id="selectKPI" class="form-control border-left-0 pl-0">
                                     <option value="" selected disabled>-- Pilih KPI --</option>
                                 </select>
                             </div>
@@ -727,7 +727,7 @@
                                         <i class="fas fa-user-tie text-muted"></i>
                                     </span>
                                 </div>
-                                <select name="kpi_id" id="edit_selectKPI" class="form-control border-left-0 pl-0" required>
+                                <select name="kpi_id" id="edit_selectKPI" class="form-control border-left-0 pl-0">
                                     <option value="" selected disabled>-- Pilih KPI --</option>
                                 </select>
                             </div>
@@ -1817,7 +1817,7 @@
 
             const data = await response.json();
 
-            kpiSelect.innerHTML = '<option value="" selected disabled>-- Pilih KPI --</option>';
+            kpiSelect.innerHTML = '<option value="" selected>-- Pilih KPI --</option>';
             
             if (data.data.length > 0) {
                 data.data.forEach(pic => {

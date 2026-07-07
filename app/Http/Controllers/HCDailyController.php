@@ -375,8 +375,8 @@ class HCDailyController extends Controller
             ->join('produk_client', 'produk_client.id', '=', 'task.project')
             ->join('user_division', 'user_division.user_id', '=', 'users.id')
             ->join('roles', 'roles.id', '=', 'user_division.role_id')
-            ->join('kpi', 'kpi.id', '=', 'task.id_kpi')
-            ->select('task.*', 'users.email as vic_email', 'produk_client.nama as project_name', 'roles.role_name as vic_role', 'user_division.parent_id', 'roles.level', 'kpi.nama_kpi')
+            ->leftJoin('kpi', 'kpi.id', '=', 'task.id_kpi')
+            ->select('task.*', 'users.email as vic_email', 'produk_client.nama as project_name', 'roles.role_name as vic_role', 'user_division.parent_id', 'roles.level', DB::raw("COALESCE(kpi.nama_kpi, '-') as nama_kpi"))
             ->where('task.pic', $userId)
             ->whereNotNull('task.jam_mulai')
             ->where(function($query) use ($today) {
@@ -556,7 +556,7 @@ class HCDailyController extends Controller
                 'pic'              => (int)$request->pic,
                 'priority'         => (int)$request->priority,
                 'menit'            => (int)$request->menit,
-                'id_kpi'           => (int)$request->kpi_id,
+                'id_kpi'           => !empty($request->kpi_id) ? (int) $request->kpi_id : null,
                 'tanggal_mulai'    => $date->format('Y-m-d'),
                 'tanggal_deadline' => $date->format('Y-m-d'),
                 'jam_mulai'        => $request->jam_mulai,

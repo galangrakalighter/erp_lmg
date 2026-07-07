@@ -47,19 +47,20 @@ class UserController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'user_divisions' => $user->userDivisions->map(function($ud) {
+                    $role = $this->getRole(User::find($ud->user_id), $ud->division_id);
                     return [
                         'division_id' => $ud->division_id,
                         'division' => ['name' => $ud->division->name],
-                        'role_id' => $this->getRole(User::find($ud->user_id), $ud->division_id)->id,
-                        'role' => $this->getRole(User::find($ud->user_id), $ud->division_id)->role_name,
-                        'level' => $this->getRole(User::find($ud->user_id), $ud->division_id)->level,
+                        'role_id' => $role->id,
+                        'role' => $role->role_name,
+                        'level' => $role->level,
                         'parent_id' => $ud->parent_id,
                         'parent' => $ud->parent ? [
                             'name' => $ud->parent->name,
                             'email' => $ud->parent->email,
                             // Kita ambil nama role atasan dari relasi role si parent
-                            'role_name' => $this->getRole($ud->parent, $ud->division_id)->role_name,
-                            'role_level' => $this->getRole($ud->parent, $ud->division_id)->level
+                            'role_name' => $role->role_name,
+                            'role_level' => $role->level
                         ] : null
                     ];
                 }),

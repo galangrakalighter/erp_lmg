@@ -259,7 +259,63 @@
 <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
+const divisionHierarchy = {
+    "Digital Marketing": [
+        {
+            role: "Busines Unit Head",
+            label: "Business Unit Head"
+        },
+        {
+            role: "Digital Marketer",
+            label: "Digital Marketer"
+        },
+        {
+            role: "Advertising",
+            label: "Advertising"
+        },
+        {
+            role: "Content Creator Manager",
+            label: "Content Creator Manager"
+        },
+        {
+            role: "Content Creator",
+            label: "Content Creator"
+        }
+    ],
+
+    "Business Dev": [
+        {
+            role: "Busines Unit Head",
+            label: "Busines Unit Head"
+        },
+        {
+            role: "Busines Development Manager",
+            label: "Busines Development Manager"
+        },
+        {
+            role: "Busines Development Specialist",
+            label: "Busines Development Specialist"
+        }
+    ],
+
+    "MCN": [
+        {
+            role: "Busines Unit Head",
+            label: "Busines Unit Head"
+        },
+        {
+            role: "MCN Specialis Manager",
+            label: "MCN Specialis Manager"
+        },
+        {
+            role: "MCN Specialis",
+            label: "MCN Specialis"
+        }
+    ]
+};
+let organization = {};  
 $(document).ready(function() {
+
     if ($.isFunction($.fn.select2)) {
         $('.select2').select2({
             theme: 'bootstrap4',
@@ -366,14 +422,17 @@ function renderTable(divisiId, divisiName) {
         </tr>`;
     } else {
         // Header Khusus Divisi dengan Hierarki Detail
+        let hierarchy = divisionHierarchy[divisiName] || [];
+
+        let hierarchyHeaders = hierarchy
+            .map(h => `<th>${h.label}</th>`)
+            .join('');
+
         thead = `<tr>
             <th width="5%">No</th>
             <th>User</th>
             <th>Role</th>
-            <th>DMM</th>
-            <th>DM</th>
-            <th>SCC</th>
-            <th>CC</th>
+            ${hierarchyHeaders}
             <th width="5%">Aksi</th>
         </tr>`;
     }
@@ -385,15 +444,34 @@ function renderTable(divisiId, divisiName) {
 
     // 2. Inisialisasi DataTable
     $('#mainDataTable').DataTable({
-        ajax: {
-            url: "api/users/json",
-            dataSrc: (json) => divisiId === 'all' ? json : json.filter(u => u.user_divisions.some(ud => ud.division_id == divisiId))
+
+        ajax:{
+
+            url:"api/users/json",
+
+            dataSrc:function(json){
+
+                let filtered = divisiId === 'all'
+                    ? json
+                    : json.filter(u =>
+                        u.user_divisions.some(
+                            d => d.division_id == divisiId
+                        )
+                    );
+
+                buildOrganization(filtered, divisiId);
+
+                return filtered;
+            }
+
         },
-        columns: getColumnsConfig(divisiId)
+
+        columns:getColumnsConfig(divisiId, divisiName)
+
     });
 }
 
-function getColumnsConfig(divisiId) {
+function getColumnsConfig(divisiId, divisiName) {
     let cols = [
         { data: null, render: (d, t, r, meta) => meta.row + 1, className: 'text-center' },
         { data: null, render: r => `<strong>${r.name ?? '-'}</strong><div class="text-xs text-muted">${r.email ?? '-'}</div>` }
@@ -415,22 +493,66 @@ function getColumnsConfig(divisiId) {
             }
         );
     } else {
-        cols.push(
-            { 
-                data: 'user_divisions', 
-                render: uds => {
-                    let current = (uds ?? []).find(ud => ud.division_id == divisiId);
-                    // Menampilkan role USER SENDIRI
-                    let roleDisplay = current?.role ?? '-';
-                    return `<span class="badge badge-outline-secondary text-dark">${roleDisplay.replace(/_/g, ' ').toUpperCase()}</span>`;
+       let hierarchy = divisionHierarchy[divisiName] || [];
+
+        cols.push({
+            data: 'user_divisions',
+            render: uds => {
+                let current = (uds ?? []).find(
+                    ud => ud.division_id == divisiId
+                );
+
+                let roleDisplay = current?.role ?? '-';
+
+                return `
+                    <span class="badge badge-outline-secondary text-dark">
+                        ${roleDisplay.replace(/_/g, ' ').toUpperCase()}
+                    </span>
+                `;
+            }
+        });
+
+        hierarchy.forEach(item => {
+            cols.push({
+                data: null,
+                render:function(data,type,row){
+
+                    let targets = getHierarchyUser(
+                        row,
+                        divisiId,
+                        item.role
+                    );
+
+                    if (!targets.length)
+                        return "-";
+
+                    return targets.map(target => {
+
+                        if (
+                            target.email &&
+                            row.email &&
+                            target.email.toLowerCase() === row.email.toLowerCase()
+                        ) {
+                            return `
+                                <div class="text-center">
+                                    <span class="badge badge-success">
+                                        Self
+                                    </span>
+                                </div>
+                            `;
+                        }
+
+                        return `
+                            <div class="text-xs font-weight-bold text-primary text-center">
+                                ${target.email}
+                            </div>
+                        `;
+
+                    }).join('');
                 }
-            },
-            // Kolom Hierarki: Sekarang akan otomatis mencari ke atas
-            { data: null, render: r => mapAtasan(r, divisiId, 1) },
-            { data: null, render: r => mapAtasan(r, divisiId, 2) },
-            { data: null, render: r => mapAtasan(r, divisiId, 3) },
-            { data: null, render: r => mapAtasan(r, divisiId, 4) }
-        );
+                
+            });
+        });
     }
 
     cols.push({ 
@@ -456,91 +578,103 @@ function getColumnsConfig(divisiId) {
     return cols;
 }
 
-function mapAtasan(user, divisiId, targetLevel) {
-    const allData = $('#mainDataTable').DataTable().ajax.json();
-    let currentUd = (user.user_divisions ?? []).find(ud => ud.division_id == divisiId);
+function buildOrganization(allUsers, divisiId) {
 
-    if (!currentUd || !currentUd.level) return '-';
+    organization = {};
 
-    let myLevel = parseInt(currentUd.level); 
+    // Ambil seluruh user pada divisi aktif
+    const users = allUsers.filter(u =>
+        (u.user_divisions || []).some(d => d.division_id == divisiId)
+    );
 
-    // 1. Jika level user PAS dengan level kolom
-    if (myLevel === targetLevel) {
-        return `<div class="d-flex justify-content-center">
-                    <span class="badge badge-success px-2">Self</span>
-                </div>`;
-    }
+    users.forEach(user => {
 
-    // 2. JIKA TARGET DI ATAS (Cari Atasan - Rekursif Ke Atas)
-    if (myLevel > targetLevel) {
-        return traceHierarchy(currentUd.parent_id, divisiId, targetLevel, allData);
-    }
+        const current = user.user_divisions.find(
+            d => d.division_id == divisiId
+        );
 
-    // 3. JIKA TARGET DI BAWAH (Cari Bawahan - Filter ke Bawah)
-    if (myLevel < targetLevel) {
-        return findSubordinate(user.id, divisiId, targetLevel, allData);
-    }
+        if (!current) return;
 
-    return '<span class="text-muted">-</span>';
-}
+        // Cari root (Business Unit Head)
+        let root = user;
+        let parentId = current.parent_id;
 
-function traceHierarchy(parentId, divisiId, targetLevel, allData) {
-    if (!parentId || !allData) return '-';
+        while (parentId) {
 
-    // Cari user yang menjadi parent (atasan langsung)
-    let superior = allData.find(u => u.id == parentId);
-    if (!superior) return '-';
+            const parentUser = users.find(u => u.id == parentId);
 
-    let supUd = (superior.user_divisions ?? []).find(ud => ud.division_id == divisiId);
-    if (!supUd || !supUd.level) return '-';
+            if (!parentUser)
+                break;
 
-    let supLevel = parseInt(supUd.level);
+            const parentDivision = parentUser.user_divisions.find(
+                d => d.division_id == divisiId
+            );
 
-    // CEK: Apakah level atasan ini cocok dengan kolom yang kita cari?
-    if (supLevel === targetLevel) {
-        return `<div class="text-xs font-weight-bold text-primary">${superior.email}</div>`;
-    }
+            if (!parentDivision)
+                break;
 
-    // REKURSIF: Jika level atasan ini masih lebih besar (misal Level 3) 
-    // sedangkan kita mencari Level 1, maka tanya lagi: "Siapa parent dari si Level 3 ini?"
-    if (supLevel > targetLevel && supUd.parent_id) {
-        return traceHierarchy(supUd.parent_id, divisiId, targetLevel, allData);
-    }
-
-    return '-';
-}
-
-function findSubordinate(myId, divisiId, targetLevel, allData) {
-    if (!myId || !allData) return '-';
-
-    // Cari semua orang yang melapor ke myId dalam divisi ini
-    let subordinates = allData.filter(u => {
-        let ud = (u.user_divisions ?? []).find(d => d.division_id == divisiId);
-        return ud && ud.parent_id == myId;
-    });
-
-    if (subordinates.length === 0) return '-';
-
-    let results = [];
-
-    subordinates.forEach(sub => {
-        let subUd = sub.user_divisions.find(d => d.division_id == divisiId);
-        let subLevel = parseInt(subUd.level);
-
-        // Jika levelnya cocok, ambil emailnya
-        if (subLevel === targetLevel) {
-            results.push(`<div class="text-xs text-info font-weight-bold">${sub.email}</div>`);
-        } 
-        // Jika levelnya masih di atas target, cari lagi di bawah orang ini (Rekursif ke bawah)
-        else if (subLevel < targetLevel) {
-            let nested = findSubordinate(sub.id, divisiId, targetLevel, allData);
-            if (nested !== '-') results.push(nested);
+            root = parentUser;
+            parentId = parentDivision.parent_id;
         }
+
+        if (!organization[root.id])
+            organization[root.id] = {};
+
+        if (!organization[root.id][current.role]) {
+            organization[root.id][current.role] = [];
+        }
+
+        organization[root.id][current.role].push({
+            id: user.id,
+            email: user.email,
+            name: user.name
+        });
+
+        console.log(organization);
     });
 
-    // Hilangkan duplikat dan gabungkan
-    let uniqueResults = [...new Set(results)];
-    return uniqueResults.length > 0 ? uniqueResults.join('') : '-';
+}
+
+function getHierarchyUser(row, divisiId, roleName) {
+
+    const current = row.user_divisions.find(
+        d => d.division_id == divisiId
+    );
+
+    if (!current)
+        return null;
+
+    // Cari root
+    let root = row;
+    let parentId = current.parent_id;
+
+    const allUsers = $('#mainDataTable').DataTable().ajax.json();
+
+    while (parentId) {
+
+        const parentUser = allUsers.find(
+            u => u.id == parentId
+        );
+
+        if (!parentUser)
+            break;
+
+        const parentDivision = parentUser.user_divisions.find(
+            d => d.division_id == divisiId
+        );
+
+        if (!parentDivision)
+            break;
+
+        root = parentUser;
+        parentId = parentDivision.parent_id;
+    }
+
+    if (!organization[root.id])
+        return null;
+
+    return organization[root.id][roleName] ?? [];
+
 }
 
 function updateRoleOptions(divisiId) {

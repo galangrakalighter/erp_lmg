@@ -24,9 +24,9 @@
                         <th>No</th>
                         <th>Client</th>
                         <th>Status</th>
-                        <th>Head</th>
-                        <th>Specialist Manager</th>
-                        <th>Specialist</th>
+                        <th>Busines Unit Head</th>
+                        <th>MCN Specialis Manager</th>
+                        <th>MCN Specialis</th>
 
                         @if($role != "MCN Specialis")
                             <th>Action</th>

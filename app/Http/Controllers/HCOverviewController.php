@@ -145,36 +145,38 @@ class HCOverviewController extends Controller
         
     }
 
-    public function getKPIData(Request $request, $id, $id_user){
-        $user = User::find($id_user);
-        
-        // Query data KPI dengan Eager Loading relasi pics
-        $data = KPI::with(['pics.userDivisions.role', 'pics.userDivisions.division'])
-            ->where('project', (int)$id)
-            // Logika akses untuk multi-PIC:
-            ->where(function($query) use ($user) {
-                $query->whereHas('pics', function($q) use ($user) {
-                    // Apakah user adalah salah satu dari daftar PIC KPI ini?
+    public function getKPIData(Request $request, $id, $id_user)
+    {
+        $user = User::findOrFail($id_user);
+
+        $query = KPI::with(['pics.userDivisions.role', 'pics.userDivisions.division'])
+            ->where('project', (int)$id);
+
+        // Jika bukan admin, batasi data
+        if (!$user->isAdmin) {
+            $query->where(function ($query) use ($user) {
+                $query->whereHas('pics', function ($q) use ($user) {
+                    // KPI yang dimiliki user
                     $q->where('users.id', $user->id);
-                })->orWhereHas('pics.userDivisions', function($q) use ($user) {
-                    // Atau apakah user adalah atasan (parent) dari salah satu PIC?
+                })->orWhereHas('pics.userDivisions', function ($q) use ($user) {
+                    // KPI milik bawahan
                     $q->where('parent_id', $user->id);
                 });
-            })
-            ->when($request->priority, function($query) use ($request) {
-                $query->where('priority', $request->priority);
-            })
-            ->get();
+            });
+        }
 
-        // Memetakan data agar kompatibel dengan tabel JS Anda
-        $result = $data->map(function($kpi) {
-            // Ambil semua email PIC dan gabungkan jadi string (contoh: "andi@mail.com, budi@mail.com")
+        // Filter priority jika ada
+        $query->when($request->priority, function ($query) use ($request) {
+            $query->where('priority', $request->priority);
+        });
+
+        $data = $query->get();
+
+        $result = $data->map(function ($kpi) {
             $listEmail = $kpi->pics->pluck('email')->implode(', ');
-            
-            // Ambil data divisi dari PIC pertama yang terdaftar (sebagai perwakilan)
+
             $firstPic = $kpi->pics->first();
-            $divisi = $firstPic ? ($firstPic->userDivisions->first()->division->name ?? '-') : '-';
-            $role = $firstPic ? ($firstPic->userDivisions->first()->role->role_name ?? '-') : '-';
+            $division = $firstPic?->userDivisions->first();
 
             return [
                 'id'               => $kpi->id,
@@ -184,15 +186,17 @@ class HCOverviewController extends Controller
                 'tanggal_deadline' => $kpi->tanggal_deadline,
                 'status'           => $kpi->status,
                 'note'             => $kpi->note,
-                'vic_email'        => $listEmail, // Sekarang bisa menampung banyak email
-                'nama_divisi'      => $divisi,
-                'role_pic'         => $role,
-                'divisi'           => $firstPic->userDivisions->first()->division_id,
-                'pics'             => $kpi->pics 
+                'vic_email'        => $listEmail,
+                'nama_divisi'      => $division->division->name ?? '-',
+                'role_pic'         => $division->role->role_name ?? '-',
+                'divisi'           => $division->division_id ?? null,
+                'pics'             => $kpi->pics,
             ];
         });
 
-        return response()->json(['data' => $result]);
+        return response()->json([
+            'data' => $result
+        ]);
     }
 
     public function getKPIDataDaily(Request $request, $id, $id_user){

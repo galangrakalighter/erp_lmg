@@ -29,3 +29,4 @@ Route::post('/produk/{divisi}', [App\Http\Controllers\ProdukController::class, '
 Route::PUT('/produk/{id}', [App\Http\Controllers\ProdukController::class, 'updateDataClient'])->name('client.updateDataClient');
 Route::DELETE('/produk/{id}', [App\Http\Controllers\ProdukController::class, 'hapusDataClient'])->name('client.hapusDataClient');
 Route::get('/produk-get/{id}', [App\Http\Controllers\ProdukController::class, 'getProduk']);
+Route::get('/invoices', [App\Http\Controllers\InvoiceController::class, 'getInvoiceData'])->name('api.invoices.data');

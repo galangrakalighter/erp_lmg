@@ -52,15 +52,17 @@ class ProdukController extends Controller
         $usersInDivisi = User::with('userDivisions')->get();
         
         $kategori = KategoriJasa::where('id', $divisiId)->get();
+        // dd($usersInDivisi->filter(fn($u) => $u->userDivisions->first()?->role_id == 1));
         // dd($kategori);
         // dd($usersInDivisi->filter(fn($u) => $u->userDivisions->role_id == 1));
         // $divisions = $usersInDivisi->filter(fn($u) => $u->userDivisions->first()?->role_id == 3)->flatMap->userDivisions;
         return view('cms.produk.index', [
             'title' => "Produk & Client",
-            'dmm'   => $usersInDivisi->filter(fn($u) => $u->userDivisions->first()?->role_id == 1),
+            'buh'   => $usersInDivisi->filter(fn($u) => $u->userDivisions->first()?->role_id == 1),
             'dm'    => $usersInDivisi->filter(fn($u) => $u->userDivisions->first()?->role_id == 3),
-            'scc'   => $usersInDivisi->filter(fn($u) => $u->userDivisions->first()?->role_id == 4),
-            'cc'    => $usersInDivisi->filter(fn($u) => $u->userDivisions->first()?->role_id == 5),
+            'ads'   => $usersInDivisi->filter(fn($u) => $u->userDivisions->first()?->role_id == 4),
+            'ccm'    => $usersInDivisi->filter(fn($u) => $u->userDivisions->first()?->role_id == 5),
+            'cc'    => $usersInDivisi->filter(fn($u) => $u->userDivisions->first()?->role_id == 9),
             'nama'  => $nama,
             'role'  => $RoleSekarang,
             'divisi' => $divisiId,
@@ -103,14 +105,14 @@ class ProdukController extends Controller
             $isUserAdmin = $user->isAdmin == true;
 
             $options = [
-                'dmm' => User::whereHas('userDivisions.role', fn($q) => $q->where('role_name', 'Digital Marketing Manager'))->get(['id', 'name']),
-                'dm'  => User::with('userDivisions')->whereHas('userDivisions.role', fn($q) => $q->where('role_name', 'Digital Marketing'))->get()->map(function($u) {
+                'buh' => User::whereHas('userDivisions.role', fn($q) => $q->where('role_name', 'Busines Unit Head'))->get(['id', 'name']),
+                'dm'  => User::with('userDivisions')->whereHas('userDivisions.role', fn($q) => $q->where('role_name', 'Digital Marketer'))->get()->map(function($u) {
                     return ['id' => $u->id, 'name' => $u->name, 'parent' => $u->userDivisions->first()->parent_id ?? 0];
                 }),
-                'scc' => User::with('userDivisions')->whereHas('userDivisions.role', fn($q) => $q->where('role_name', 'Senior Content Creator'))->get()->map(function($u) {
+                'ads' => User::with('userDivisions')->whereHas('userDivisions.role', fn($q) => $q->where('role_name', 'Advertising'))->get()->map(function($u) {
                     return ['id' => $u->id, 'name' => $u->name, 'parent' => $u->userDivisions->first()->parent_id ?? 0];
                 }),
-                'cc'  => User::with('userDivisions')->whereHas('userDivisions.role', fn($q) => $q->where('role_name', 'Content Creator'))->get()->map(function($u) {
+                'ccm'  => User::with('userDivisions')->whereHas('userDivisions.role', fn($q) => $q->where('role_name', 'Content Creator Manager'))->get()->map(function($u) {
                     return ['id' => $u->id, 'name' => $u->name, 'parent' => $u->userDivisions->first()->parent_id ?? 0];
                 }),
             ];
@@ -131,7 +133,6 @@ class ProdukController extends Controller
 
 
     public function store(Request $request){
-        // dd($request->all());
         $accessTokenArray = [
             'platform' => $request->platform,
             'access'   => $request->access,
@@ -217,7 +218,7 @@ class ProdukController extends Controller
             $produk = ProdukClient::findOrFail($id);
             $produk->update([
                 "kategori_jasa_id" => (int)$request->kategori_jasa_id,
-                "nama"             => $request->client,
+                "nama"             => $request->nama,
                 "status"           => (int)$request->status,
                 "access_token"     => $accessTokenArray 
             ]);
@@ -436,7 +437,6 @@ class ProdukController extends Controller
         DB::beginTransaction();
 
         try {
-
             $produk = ProdukClient::findOrFail($id);
 
             // Update data client

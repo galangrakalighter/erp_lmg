@@ -81,7 +81,7 @@
             // Ambil indeks ke-0 (segmen pertama)
             const folderName = segments[0];
             // Ganti URL sesuai dengan route web.php Anda
-            let urlDetail = `{{ secure_url('api/produk/detail') }}/${id}/${$userId}/${folderName}`;
+            let urlDetail = `{{ url('api/produk/detail') }}/${id}/${$userId}/${folderName}`;
             let urlUpdate = `{{ url('cms/produk/edit') }}/${id}`;
 
             $('#formEditProduk').attr('action', urlUpdate);
@@ -196,7 +196,7 @@
                                         <label class="font-weight-bold small text-danger">Manager (DMM)</label>
                                         ${isAdmin ? `
                                             <select name="dmm_ids[]" id="edit-select-dmm" class="form-control select2-edit" multiple data-placeholder="Pilih DMM">
-                                                ${(opt.dmm || []).map(u => {
+                                                ${(opt.buh || []).map(u => {
                                                     const isSelected = currentTeams.some(t => (t.id || t) == u.id);
                                                     return `<option value="${u.id}" ${isSelected ? 'selected' : ''}>${u.name}</option>`;
                                                 }).join('')}
@@ -204,7 +204,7 @@
                                         ` : `
                                             <input type="hidden" name="dmm_ids[]" value="${p.user_id}">
                                             <div class="p-2 border rounded bg-white shadow-sm">
-                                                ${(opt.dmm || []).filter(u => currentTeams.some(t => (t.id || t) == u.id)).map(u => `<span class="badge badge-danger m-1">${u.name}</span>`).join('') || '<small class="text-muted">No DMM</small>'}
+                                                ${(opt.buh || []).filter(u => currentTeams.some(t => (t.id || t) == u.id)).map(u => `<span class="badge badge-danger m-1">${u.name}</span>`).join('') || '<small class="text-muted">No DMM</small>'}
                                             </div>
                                         `}
                                     </div>
@@ -220,7 +220,7 @@
                                     <div class="col-md-6 form-group">
                                         <label class="font-weight-bold small text-dark">Senior Content Creator (SCC)</label>
                                         <select name="scc_ids[]" id="edit-select-scc" class="form-control select2-edit" multiple data-placeholder="Pilih SCC">
-                                            ${(opt.scc || []).map(u => {
+                                            ${(opt.ads || []).map(u => {
                                                 const isSelected = currentTeams.some(t => (t.id || t) == u.id);
                                                 return `<option value="${u.id}" data-parent="${u.parent}" ${isSelected ? 'selected' : ''}>${u.name}</option>`;
                                             }).join('')}
@@ -229,7 +229,7 @@
                                     <div class="col-md-6 form-group">
                                         <label class="font-weight-bold small text-warning">Content Creator (CC)</label>
                                         <select name="cc_ids[]" id="edit-select-cc" class="form-control select2-edit" multiple data-placeholder="Pilih CC">
-                                            ${(opt.cc || []).map(u => {
+                                            ${(opt.ccm || []).map(u => {
                                                 const isSelected = currentTeams.some(t => (t.id || t) == u.id);
                                                 return `<option value="${u.id}" data-parent="${u.parent}" ${isSelected ? 'selected' : ''}>${u.name}</option>`;
                                             }).join('')}
@@ -458,6 +458,39 @@
                 return `${menit} Menit`;
             }
         }
+        function openPaymentModal(invoiceId, noInvoice) {
+            // 1. Set title modal
+            $('#modalNoInvoice').text(noInvoice);
+            
+            // 2. Set action form ke route pembayaran
+            // Sesuaikan route dengan route yang ada di web.php Anda
+            $('#paymentForm').attr('action', '/invoice/payment/' + invoiceId);
+            
+            // 3. Tampilkan modal
+            $('#paymentModal').modal('show');
+        }
+        function editInvoice(data) {
+            // 1. Tampilkan modal
+            $('#invoiceModal').modal('show');
+            
+            // 2. Ubah URL form agar mengarah ke route UPDATE
+            $('#invoiceForm').attr('action', '/invoice/' + data.id);
+            
+            // 3. Tambahkan hidden method PUT untuk spoofing
+            $('#methodField').html('@method("PUT")');
+            
+            // 4. Isi field modal dengan data dari baris tabel
+            $('#customer_id').val(data.customer_id); // Pastikan ada ID ini di modal
+            $('#no_invoice').val(data.no_invoice);
+            $('#total_amount').val(data.total_amount.replace(/\./g, '')); // Bersihkan format angka
+            $('#due_date').val(data.due_date_raw); // Pastikan data JSON Anda mengirim tanggal format Y-m-d
+        }
+        function resetForm() {
+            $('#invoiceForm').attr('action', '{{ route("invoice.store") }}');
+            $('#methodContainer').html('');
+            $('#no_invoice').val('');
+            $('#total_amount').val('');
+        }
         $(document).ready(function() {
             var tableId = '#target_audience';
 
@@ -489,6 +522,70 @@
                     }
                 ],
                 dom: '<"d-flex justify-content-between align-items-center mb-3"lf>rt<"d-flex justify-content-between align-items-center mt-3"ip>'
+            });
+
+            $('#invoiceTable').DataTable({
+                processing: true,
+                serverSide: false, // Opsional: gunakan jika data ribuan
+                ajax: '{{ route('api.invoices.data') }}',
+                columns: [
+                    { data: 'customer_name', name: 'customer_name' },
+                    { data: 'no_invoice', name: 'no_invoice' },
+                    { data: 'due_date', name: 'due_date' },
+                    { data: 'total_amount', name: 'total_amount', className: 'text-right' },
+                    { data: 'remaining', name: 'remaining', className: 'text-right font-weight-bold' },
+                    { 
+                        data: 'status', 
+                        name: 'status',
+                        render: function(data) {
+                            let color = data === 'paid' ? 'success' : (data === 'partial' ? 'warning' : 'danger');
+                            return `<span class="badge badge-${color}">${data.toUpperCase()}</span>`;
+                        }
+                    },
+                    { 
+                        data: 'id', 
+                        name: 'action',
+                        orderable: false, 
+                        searchable: false,
+                        className: 'text-center',
+                        render: function(data, type, row) {
+                            let actions = '';
+
+                            // 1. Tombol Bayar (Hanya muncul jika belum lunas)
+                            if (row.status !== 'paid') {
+                                actions += `<button type="button" class="btn btn-sm btn-primary mr-1" 
+                                    onclick="openPaymentModal(${row.id}, '${row.no_invoice}')">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                </button>`;
+                            }
+
+                            // 2. Tombol PDF (Selalu muncul)
+                            actions += `<a href="/invoice/pdf/${row.id}" target="_blank" class="btn btn-sm btn-warning mr-1">
+                                            <i class="fas fa-file-pdf"></i>
+                                        </a>`;
+
+                            // 3. Tombol Edit (Selalu muncul)
+                            actions += `<button type="button" class="btn btn-sm btn-info mr-1" 
+                                onclick="editInvoice(${JSON.stringify(row).replace(/"/g, '&quot;')})">
+                                <i class="fas fa-edit"></i>
+                            </button>`;
+
+                            // 4. Tombol Hapus (Selalu muncul)
+                            actions += `<form action="/invoice/${row.id}" method="POST" style="display:inline;" onsubmit="return confirm('Yakin ingin menghapus?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-danger">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>`;
+
+                            return actions;
+                        }
+                    }
+                ],
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.10.21/i18n/Indonesian.json'
+                }
             });
         });
     </script>

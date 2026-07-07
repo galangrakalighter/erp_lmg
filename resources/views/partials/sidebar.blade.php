@@ -39,7 +39,7 @@
                     </div>
                     
 
-                    @if ($isSuperAdmin || $myDivision->name == "Digital Marketing" && $myRole->level < 4)
+                    @if ($isSuperAdmin || $myDivision->name == "Digital Marketing" && $myRole->level < 3)
                         <div class="px-2 mb-3">
                             <a class="btn-cms-link" href="{{ route('cms.produk', 'LGTR') }}">
                                 <i class="fas fa-cog mr-1"></i> Dashboard CMS
@@ -524,6 +524,97 @@
                 </div>
             </div>
         </li>
+        @if(Auth::user()->isAdmin == true)
+        <li class="nav-item {{ request()->is('*HC*') ? 'active' : '' }}">
+            <a class="nav-link {{ request()->is('*HC*') ? '' : 'collapsed' }}" href="#" 
+            data-toggle="collapse" data-target="#collapseTech" 
+            aria-expanded="{{ request()->is('*HC*') ? 'true' : 'false' }}" aria-controls="collapseTech">
+                <span>Tech</span>
+            </a>
+            
+            <div id="collapseTech" class="collapse {{ request()->is('*HC*') ? 'show' : '' }}" 
+                aria-labelledby="headingHC" data-parent="#accordionSidebar">
+                <div class="collapse-container">
+                    <div class="client-item-wrapper mb-2">
+                        <a class="client-dropdown-link {{ request()->is('finance_coa') ? 'active' : '' }}" href="#">
+                            <span>Overview</span>
+                        </a>
+                    </div>
+                    <div class="client-item-wrapper mb-2">
+                        <a class="client-dropdown-link {{ request()->is('finance_coa') ? 'active' : '' }}" href="#">
+                            <span>Github</span>
+                        </a>
+                    </div>
+                    <div class="client-item-wrapper mb-2">
+                        <a class="client-dropdown-link {{ request()->is('finance_coa') ? 'active' : '' }}" href="#">
+                            <span>Monitoring</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </li>
+        @endif
+        @if(Auth::user()->isAdmin == true || $myDivision->name == 'Finance')
+        <li class="nav-item {{ request()->is('*HC*') ? 'active' : '' }}">
+            <a class="nav-link {{ request()->is('*HC*') ? '' : 'collapsed' }}" href="#" 
+            data-toggle="collapse" data-target="#collapseFinance" 
+            aria-expanded="{{ request()->is('*HC*') ? 'true' : 'false' }}" aria-controls="collapseMCN">
+                <span>Finance</span>
+            </a>
+            
+            <div id="collapseFinance" class="collapse {{ request()->is('*HC*') ? 'show' : '' }}" 
+                aria-labelledby="headingHC" data-parent="#accordionSidebar">
+                <div class="collapse-container">
+                    <div class="client-item-wrapper mb-2">
+                        <a class="client-dropdown-link {{ request()->is('finance_coa') ? 'active' : '' }}" href="{{ route('finance_coa.index') }}">
+                            <span>Daftar Akun</span>
+                        </a>
+                    </div>
+                    <div class="client-item-wrapper mb-2">
+                        <a class="client-dropdown-link {{ request()->is('general_journal') ? 'active' : '' }}" href="{{ route('general_journal.index') }}">
+                            <span>Jurnal Umum</span>
+                        </a>
+                    </div>
+                    <div class="client-item-wrapper mb-2">
+                        <a class="client-dropdown-link {{ request()->is('finance_ledger') ? 'active' : '' }}" href="{{ route('finance_ledger.list_account') }}">
+                            <span>Buku Besar</span>
+                        </a>
+                    </div>
+                    <div class="client-item-wrapper mb-2">
+                        <a class="client-dropdown-link {{ request()->is('Ledger.neraca_saldo') ? 'active' : '' }}" href="{{ route('Ledger.neraca_saldo') }}">
+                            <span>Neraca Saldo</span>
+                        </a>
+                    </div>
+                    <div class="client-item-wrapper mb-2">
+                        <a class="client-dropdown-link {{ request()->is('adjustment_journal') ? 'active' : '' }}" href="{{ route('adjustment_journal.index') }}">
+                            <span>Jurnal Penyesuaian</span>
+                        </a>
+                    </div>
+
+                    <div class="client-item-wrapper mb-2">
+                        <a class="client-dropdown-link {{ request()->is('Ledger.neraca_lajur') ? 'active' : '' }}" href="{{ route('Ledger.neraca_lajur') }}">
+                            <span>Neraca Lajur</span>
+                        </a>
+                    </div>
+                    <div class="client-item-wrapper mb-2">
+                        <a class="client-dropdown-link {{ request()->is('Ledger.arus_kas') ? 'active' : '' }}" href="{{ route('Ledger.arus_kas') }}">
+                            <span>Laporan Arus Kas</span>
+                        </a>
+                    </div>
+                    <div class="client-item-wrapper mb-2">
+                        <a class="client-dropdown-link {{ request()->is('Ledger.jurnal_penutup') ? 'active' : '' }}" href="{{ route('Ledger.jurnal_penutup') }}">
+                            <span>Jurnal Penutup</span>
+                        </a>
+                    </div>
+                    {{-- <div class="client-item-wrapper mb-2">
+                        <a class="client-dropdown-link {{ request()->is('invoice') ? 'active' : '' }}" href="{{ route('invoice.index') }}">
+                            <span>Pembayaran</span>
+                        </a>
+                    </div> --}}
+                </div>
+            </div>
+        </li>
+        @endif
     @endif
 
     @if($isSuperAdmin)

@@ -311,7 +311,31 @@ const divisionHierarchy = {
             role: "MCN Specialis",
             label: "MCN Specialis"
         }
-    ]
+    ],
+
+    "Tech": [
+        {
+            role: "Busines Unit Head",
+            label: "Busines Unit Head"
+        },
+        {
+            role: "Project Manager",
+            label: "Project Manager"
+        },
+        {
+            role: "Developer",
+            label: "Developer"
+        }
+    ],
+
+    "Finance": [
+        {
+            role: "Busines Unit Head",
+            label: "Busines Unit Head"
+        }
+    ],
+
+
 };
 let organization = {};  
 $(document).ready(function() {

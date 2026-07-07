@@ -31,6 +31,7 @@
                             <th scope="col">Digital Marketer</th>
                             <th scope="col">Advertising</th>
                             <th scope="col">Content Creator Manager</th>
+                            <th scope="col">Content Creator</th>
 
                             @if ($role == 'Digital Marketer' || $role == 'Busines Unit Head' || $role == 'Super Admin')
                                 <th scope="col">Action</th>
@@ -131,7 +132,7 @@
                             <div class="col-md-6 form-group">
                                 <label class="font-weight-bold small text-danger">Manager (DMM)</label>
                                 <select name="dmm_ids[]" id="select-dmm" class="form-control select2-multiple" multiple data-placeholder="Pilih DMM">
-                                    @foreach ($dmm as $m)
+                                    @foreach ($buh as $m)
                                         <option value="{{ $m->id }}">{{ $m->email }}</option>
                                     @endforeach
                                 </select>
@@ -153,13 +154,22 @@
                             <div class="col-md-6 form-group">
                                 <label class="font-weight-bold small text-dark">Senior Content Creator (SCC)</label>
                                 <select name="scc_ids[]" id="select-scc" class="form-control select2-multiple" multiple data-placeholder="Pilih SCC" disabled>
-                                    @foreach ($scc as $s)
+                                    @foreach ($ads as $s)
                                         @php $parentIScc = $s->userDivisions->first()->parent_id ?? 0; @endphp
                                         <option value="{{ $s->id }}" data-parent="{{ $parentIScc }}">{{ $s->email }}</option>
                                     @endforeach
                                 </select>
                             </div>
 
+                            <div class="col-md-6 form-group">
+                                <label class="font-weight-bold small text-warning">Content Creator (CC)</label>
+                                <select name="cc_ids[]" id="select-cc" class="form-control select2-multiple" multiple data-placeholder="Pilih CC" disabled>
+                                    @foreach ($ccm as $c)
+                                        @php $parentICc = $c->userDivisions->first()->parent_id ?? 0; @endphp
+                                        <option value="{{ $c->id }}" data-parent="{{ $parentICc }}">{{ $c->email }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
                             <div class="col-md-6 form-group">
                                 <label class="font-weight-bold small text-warning">Content Creator (CC)</label>
                                 <select name="cc_ids[]" id="select-cc" class="form-control select2-multiple" multiple data-placeholder="Pilih CC" disabled>
@@ -262,7 +272,7 @@ $(document).ready(function() {
             
             // 5. Kolom DMM
             { 
-                data: 'dmm', 
+                data: 'buh', 
                 width: '12%',
                 render: data => renderBadges(data, 'badge-primary') 
             },
@@ -276,12 +286,17 @@ $(document).ready(function() {
             
             // 7. Kolom SCC
             { 
-                data: 'scc', 
+                data: 'ads', 
                 width: '12%',
                 render: data => renderBadges(data, 'badge-dark') 
             },
             
             // 8. Kolom CC
+            { 
+                data: 'ccm', 
+                width: '12%',
+                render: data => renderBadges(data, 'badge-warning text-dark') 
+            },
             { 
                 data: 'cc', 
                 width: '12%',

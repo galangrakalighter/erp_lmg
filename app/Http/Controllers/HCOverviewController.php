@@ -492,7 +492,7 @@ class HCOverviewController extends Controller
 
         // Filter Global (Mempengaruhi Summary & Recent Tasks)
         if ($startDate && $endDate) {
-            $baseQuery->whereBetween('tanggal_mulai', [$startDate, $endDate]);
+            $baseQuery->whereBetween('task.tanggal_mulai', [$startDate, $endDate]);
         }
 
         // 1. Statistik Utama (Summary)
@@ -522,16 +522,16 @@ class HCOverviewController extends Controller
         $queryChart = clone $baseQuery; // Clone dari base yang bersih
         
         if (!$startDate && !$endDate) {
-            $queryChart->whereYear('tanggal_mulai', $currentYear);
+            $queryChart->whereYear('task.tanggal_mulai', $currentYear);
         }
 
         // --- FIX UNTUK LOGIKA KLIK CHART ---
         // Logika klik diletakkan di sini agar Chart dan Tabel tersinkronisasi
         if ($clickedDate) {
-            $queryChart->whereDate('tanggal_mulai', $clickedDate);
+            $queryChart->whereDate('task.tanggal_mulai', $clickedDate);
         } elseif ($clickedMonth) {
-            $queryChart->whereRaw('EXTRACT(MONTH FROM tanggal_mulai) = ?', [$clickedMonth])
-                       ->whereRaw('EXTRACT(YEAR FROM tanggal_mulai) = ?', [$currentYear]);
+            $queryChart->whereRaw('EXTRACT(MONTH FROM task.tanggal_mulai) = ?', [$clickedMonth])
+                       ->whereRaw('EXTRACT(YEAR FROM task.tanggal_mulai) = ?', [$currentYear]);
         }
 
         if ($clickedStatus !== null) {
@@ -550,9 +550,9 @@ class HCOverviewController extends Controller
         }
 
         if ($type == 'daily') {
-            $data = (clone $queryChart)->selectRaw('tanggal_mulai, SUM(menit) as total')
-                ->groupBy('tanggal_mulai')
-                ->orderBy('tanggal_mulai')
+            $data = (clone $queryChart)->selectRaw('task.tanggal_mulai, SUM(menit) as total')
+                ->groupBy('task.tanggal_mulai')
+                ->orderBy('task.tanggal_mulai')
                 ->get();
             foreach ($data as $item) {
                 $labels[] = \Carbon\Carbon::parse($item->tanggal_mulai)->translatedFormat('d M');
@@ -560,7 +560,7 @@ class HCOverviewController extends Controller
             }
         } elseif ($type == 'weekly') {
             // Gunakan GROUP BY RAW untuk PGSQL agar tidak error alias
-            $data = (clone $queryChart)->selectRaw('EXTRACT(WEEK FROM tanggal_mulai) as week, EXTRACT(YEAR FROM tanggal_mulai) as year, SUM(menit) as total')
+            $data = (clone $queryChart)->selectRaw('EXTRACT(WEEK FROM task.tanggal_mulai) as week, EXTRACT(YEAR FROM tanggal_mulai) as year, SUM(menit) as total')
                 ->groupByRaw('year, week') 
                 ->orderByRaw('year ASC, week ASC')
                 ->get();
@@ -569,7 +569,7 @@ class HCOverviewController extends Controller
                 $chartData[] = (int) $item->total;
             }
         } else {
-            $data = (clone $queryChart)->selectRaw('EXTRACT(MONTH FROM tanggal_mulai) as month, SUM(menit) as total')
+            $data = (clone $queryChart)->selectRaw('EXTRACT(MONTH FROM task.tanggal_mulai) as month, SUM(menit) as total')
                 ->groupByRaw('month')
                 ->orderByRaw('month ASC')
                 ->get()
@@ -589,7 +589,8 @@ class HCOverviewController extends Controller
         // Gunakan $queryChart yang sudah difilter Klik, tapi TANPA selectRaw/groupBy
         $recentTasks = $queryChart
             ->join('produk_client', 'produk_client.id', '=', 'task.project')
-            ->select('task.*', 'produk_client.nama')
+            ->leftJoin('kpi', 'kpi.id', '=', 'task.id_kpi')
+            ->select('task.*', 'produk_client.nama', 'kpi.nama_kpi')
             ->latest('task.tanggal_deadline')
             ->get();
 
@@ -607,13 +608,13 @@ class HCOverviewController extends Controller
         $user = Auth::user();
 
         $divisi = User::find(Auth::user()->id)->userDivisions;
-        $RoleSekarang = Auth::user()->isAdmin == false ? DB::table('roles')->where('id', $divisi[0]->role_id)->value('role_name') : "Super Admin";
-        $allUser = UserDivision::where('parent_id', $user->id)->orWhere('user_id', $user->id)->get();
+        $role = DB::table('roles')->where('id', $divisi[0]->role_id)->first();
+        $allUser = UserDivision::join('users', 'users.id', '=', 'user_division.user_id')->where('user_division.parent_id', $user->id)->orWhere('user_division.user_id', $user->id)->select('users.id', 'users.email')->get();
         if($user->isAdmin == true){
             $allUser = User::where('isAdmin', false)->get();
         }
 
-        return view('hc.dashboard', compact('title', 'allUser'));
+        return view('hc.dashboard', compact('title', 'allUser', 'role'));
     }
 
     public function getTasksByDate(Request $request)

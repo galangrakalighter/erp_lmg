@@ -32,7 +32,7 @@ class BarangClientController extends Controller
     public function trigger(Request $request)
     {
         // Ganti dengan URL Production Webhook n8n Anda
-        $n8nWebhookUrl = 'https://bmglbl3.n8n.bocindonesia.com/webhook/02e158b3-fcaa-4859-941b-7a39203c51d1';
+        $n8nWebhookUrl = 'https://bmglbl3.n8n.bocindonesia.com/webhook-test/02e158b3-fcaa-4859-941b-7a39203c51d1';
 
         $request->validate([
             'automation_type' => 'required',

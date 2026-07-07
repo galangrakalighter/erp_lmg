@@ -47,7 +47,7 @@ class MenuServiceProvider extends ServiceProvider
                 // 2. Jika Super Admin, berikan identitas khusus
                 if ($isSuperAdmin) {
                     $myDivision = (object) ['name' => 'All Divisions', 'id' => 0];
-                    $myRole = (object) ['name' => 'Super Admin', 'id' => 0];
+                    $myRole = (object) ['role_name' => 'Super Admin', 'id' => 0];
                     $myClientIds = $user->userClients->pluck('client_id')->toArray();
                 } 
                 // 3. Jika User biasa, cek apakah punya data di user_division

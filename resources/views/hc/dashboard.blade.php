@@ -197,7 +197,7 @@
                 <div class="d-flex align-items-center gap-2 ps-2" style="min-width: 180px;">
                     <i class="far fa-user-circle text-primary small"></i>
                     <select id="user-filter" class="form-select border-0 fw-bold text-muted small bg-transparent cursor-pointer p-0 outline-none">
-                        @if(Auth::user()->role != 'conten_creator')
+                        @if(Auth::user()->isAdmin == true || $role->level < 3)
                             @foreach($allUser as $emp)
                                 <option value="{{ $emp->id }}" {{ $emp->id == Auth::id() ? 'selected' : '' }}>
                                     {{ $emp->email }} {{ $emp->id == Auth::id() ? '(Saya)' : '' }}
@@ -354,6 +354,7 @@
                             <th>Status</th>
                             <th class="text-center">Jam Mulai</th>
                             <th class="text-center">Jam Selesai</th>
+                            <th class="text-center">KPI</th>
                             <th class="text-center">Start Date</th>
                             <th class="text-center">Due Date</th>
                             <th class="text-center">Action</th>
@@ -520,6 +521,9 @@
                         <div class="text-dark small fw-bold">${t.jam_mulai ? hitungJamSelesaiManual(t.jam_mulai, t.menit) : '-'}</div>
                     </td>
                     <td class="text-center px-4">
+                        <div class="text-dark small fw-bold">${t.nama_kpi ?? '-'}</div>
+                    </td>
+                    <td class="text-center px-4">
                         <div class="text-dark small fw-bold">${t.tanggal_mulai}</div>
                     </td>
                     <td class="text-center px-4">
@@ -609,6 +613,9 @@
                 </td>
                 <td class="text-center px-4">
                     <div class="text-dark small fw-bold">${t.jam_mulai ? hitungJamSelesaiManual(t.jam_mulai, t.menit) : '-'}</div>
+                </td>
+                <td class="text-center px-4">
+                    <div class="text-dark small fw-bold">${t.nama_kpi ?? '-'}</div>
                 </td>
                 <td class="text-center">
                     <div class="text-dark small fw-bold">${t.tanggal_mulai}</div>

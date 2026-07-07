@@ -201,6 +201,28 @@ Route::middleware('auth')->group(function() {
     // })->name('payment.index');
 
     // Route::post('/payment/get-token', [App\Http\Controllers\HCDailyController::class, 'getPaymentToken'])->name('payment.getToken');
+
+    Route::get('/finance_coa/data/akun', [App\Http\Controllers\COAController::class, 'getCoaData'])->name('finance_coa.data');
+    Route::get('/general_journal/data/jurnal', [App\Http\Controllers\GeneralJournalController::class, 'getGeneralJournalData'])->name('general_journal.data');
+    Route::resource('finance_coa', App\Http\Controllers\COAController::class);
+    Route::resource('general_journal', App\Http\Controllers\GeneralJournalController::class);
+    Route::resource('adjustment_journal', App\Http\Controllers\AdjustmentJournalController::class);
+    Route::get('/neraca-saldo', [App\Http\Controllers\LedgerController::class, 'neracaSaldo'])->name('Ledger.neraca_saldo');
+    Route::get('/neraca-saldo/export', [App\Http\Controllers\LedgerController::class, 'exportExcel'])->name('Ledger.export_neraca_saldo');
+    Route::get('/opening-balance', [App\Http\Controllers\OpeningBalanceController::class, 'index'])->name('opening-balance.index');
+    Route::get('/neraca-lajur', [App\Http\Controllers\LedgerController::class, 'neracaLajur'])->name('Ledger.neraca_lajur');
+    Route::get('/arus-kas', [App\Http\Controllers\LedgerController::class, 'arus_kas'])->name('Ledger.arus_kas');
+    Route::get('/jurnal-penutup', [App\Http\Controllers\LedgerController::class, 'jurnal_penutup'])->name('Ledger.jurnal_penutup');
+    Route::post('/jurnal-tutup', [App\Http\Controllers\LedgerController::class, 'lockPeriode'])->name('Ledger.lock_periode');
+    Route::get('finance/report/worksheet/export-laba-rugi', [App\Http\Controllers\LedgerController::class, 'export_laba_rugi']);
+    Route::get('finance/report/worksheet/export-neraca', [App\Http\Controllers\LedgerController::class, 'export_neraca']);
+    Route::get('finance/report/cash-flow/export', [App\Http\Controllers\LedgerController::class, 'export_cash_flow']);
+    Route::post('/invoice/payment/{id}', [App\Http\Controllers\InvoiceController::class, 'payment'])->name('invoices.payment');
+    Route::get('/invoice/pdf/{id}', [App\Http\Controllers\InvoiceController::class, 'generatePdf'])->name('invoices.generate_pdf');
+    Route::get('finance_ledger/list_account', [App\Http\Controllers\LedgerController::class, 'pilih_akun'])->name('finance_ledger.list_account');
+    Route::resource('finance_ledger', App\Http\Controllers\LedgerController::class);
+    Route::resource('invoice', App\Http\Controllers\InvoiceController::class);
+    Route::post('/opening-balance/save', [App\Http\Controllers\OpeningBalanceController::class, 'save'])->name('opening-balance.save');
 });
 
 Route::middleware('guest')->group(function() {

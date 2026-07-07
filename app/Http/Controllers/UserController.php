@@ -108,7 +108,7 @@ class UserController extends Controller
                 'user_id' => $newUser->id,
                 'division_id' => (int)$request->divisi_id,
                 'role_id' => (int)$request->role_id,
-                'parent_id' => (int)$request->parent_id
+                'parent_id' => $request->filled('parent_id') ? $request->parent_id : null
             ]);
 
             if ($request->has('subordinate_ids') && is_array($request->subordinate_ids)) {

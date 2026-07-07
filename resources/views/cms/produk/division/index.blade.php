@@ -165,6 +165,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
+    let isEditing = false;
     $(document).ready(function () {
 
         $('.select2-multiple').select2({
@@ -311,55 +312,42 @@
 
         try {
 
+            isEditing = true;
+
             const response = await fetch(`{{ url('api/produk-get') }}/${id}`);
             const data = await response.json();
-
-            console.log(data);
 
             $('#modalTitle').text('Edit Produk');
 
             $('#produk_id').val(data.id);
 
+            console.log(data);
+
             $('#client').val(data.client_id);
 
             $('#status').val(data.status);
 
-            // reset semua
             $('.select2-multiple').val(null).trigger('change');
 
-            // tampilkan semua option
             $('#mcn option').prop('hidden', false);
             $('#ms option').prop('hidden', false);
 
+            // Head
+            $('#buh').val(data.buh.map(String)).trigger('change');
+
+            // Manager
+            $('#mcn').val(data.mcn.map(String)).trigger('change');
+
+            // Specialist
+            $('#ms').val(data.ms.map(String)).trigger('change');
+
             $('#produkModal').modal('show');
 
-            // pilih HEAD
-            $('#buh')
-                .val(data.buh.map(String))
-                .trigger('change');
+            isEditing = false;
 
-            // setelah Manager muncul
-            setTimeout(function () {
-
-                $('#mcn')
-                    .val(data.mcn.map(String))
-                    .trigger('change');
-
-                // setelah Specialist muncul
-                setTimeout(function () {
-
-                    $('#ms')
-                        .val(data.ms.map(String))
-                        .trigger('change');
-
-                }, 150);
-
-            }, 150);
-
-        } catch (err) {
-
-            console.error(err);
-
+        } catch(err) {
+            console.log(err);
+            isEditing = false;
         }
 
     }
@@ -463,16 +451,14 @@
         let head = $(this).val() || [];
 
         $('#mcn option').each(function () {
-
             let parent = $(this).data('parent');
-
             $(this).prop('hidden', !head.includes(parent.toString()));
-
         });
 
-        $('#mcn').val(null).trigger('change');
-
-        $('#ms').val(null).trigger('change');
+        if (!isEditing) {
+            $('#mcn').val(null).trigger('change');
+            $('#ms').val(null).trigger('change');
+        }
 
     });
 
@@ -487,14 +473,13 @@
         let manager = $(this).val() || [];
 
         $('#ms option').each(function () {
-
             let parent = $(this).data('parent');
-
             $(this).prop('hidden', !manager.includes(parent.toString()));
-
         });
 
-        $('#ms').val(null).trigger('change');
+        if (!isEditing) {
+            $('#ms').val(null).trigger('change');
+        }
 
     });
 </script>

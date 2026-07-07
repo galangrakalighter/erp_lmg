@@ -182,7 +182,7 @@
         const user = "{{ $user }}";
         const divisi = "{{ $divisi }}";
 
-        const url = `{{ route('client.getDataDivision', ['user' => $user, 'division' => $divisi]) }}`;
+        const url = `{{ secure_url(route('client.getDataDivision', ['user' => $user, 'division' => $divisi])) }}`;
 
         try {
 

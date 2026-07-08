@@ -76,7 +76,7 @@ class MenuServiceProvider extends ServiceProvider
             $businessDevProduk =  DB::table('client_division')
             ->join('divisions', 'divisions.id', '=', 'client_division.division_id')
             ->join('produk_client', 'produk_client.id', '=', 'client_division.client_id')
-            ->where('client_division.division_id', 1)
+            ->where('client_division.division_id', 2)
             ->where('produk_client.status', 1)
             ->whereIn('produk_client.kategori_jasa_id', [2,3])
             ->get();

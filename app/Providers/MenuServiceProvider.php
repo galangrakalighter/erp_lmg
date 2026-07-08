@@ -88,6 +88,13 @@ class MenuServiceProvider extends ServiceProvider
             ->where('produk_client.status', 1)
             ->get();
 
+            $techProduk = DB::table('client_division')
+            ->join('divisions', 'divisions.id', '=', 'client_division.division_id')
+            ->join('produk_client', 'produk_client.id', '=', 'client_division.client_id')
+            ->where('client_division.division_id', 5)
+            ->where('produk_client.status', 1)
+            ->get();
+
             $view->with([
                 'businessDevProduk' => $businessDevProduk,
                 'digitalMarketingProduk' => $digitalMarketingProduk,
@@ -98,7 +105,8 @@ class MenuServiceProvider extends ServiceProvider
                 'myDivision' => $myDivision, // Mengirim object (bukan collection)
                 'myRole' => $myRole,         // Mengirim object (bukan collection)
                 'myClientIds' => $myClientIds,
-                'mcnProduk' => $mcnProduk
+                'mcnProduk' => $mcnProduk,
+                'techProduk' => $techProduk
             ]);
         });
     }

@@ -25,8 +25,8 @@
                         <th>Client</th>
                         <th>Status</th>
                         <th>Busines Unit Head</th>
-                        <th>MCN Specialis Manager</th>
-                        <th>MCN Specialis</th>
+                        <th>Project Manager</th>
+                        <th>Developer</th>
 
                         @if($role != "MCN Specialis")
                             <th>Action</th>
@@ -74,7 +74,7 @@
                         
                         <!-- Head (Penuh 1 baris) -->
                         <div class="col-12 form-group">
-                            <label class="font-weight-bold text-danger">Head</label>
+                            <label class="font-weight-bold text-danger">Busines Unit Head</label>
                             <select id="buh" class="form-control select2-multiple" multiple>
                                 @foreach($buh as $u)
                                     <option value="{{ $u->user_id }}">{{ $u->email }}</option>
@@ -84,9 +84,9 @@
 
                         <!-- Specialist Manager (Setengah lebar) -->
                         <div class="col-md-6 form-group">
-                            <label class="font-weight-bold text-primary">Specialist Manager</label>
-                            <select id="mcn" class="form-control select2-multiple" multiple>
-                                @foreach($mcn as $u)
+                            <label class="font-weight-bold text-primary">Project Manager</label>
+                            <select id="bawahan2" class="form-control select2-multiple" multiple>
+                                @foreach($bawahan2 as $u)
                                     @php $parent = $u->userDivisions->first()->parent_id ?? 0; @endphp
                                     <option value="{{ $u->user_id }}" data-parent="{{ $parent }}">{{ $u->email }}</option>
                                 @endforeach
@@ -95,9 +95,9 @@
 
                         <!-- Specialist (Setengah lebar) -->
                         <div class="col-md-6 form-group">
-                            <label class="font-weight-bold text-info">Specialist</label>
-                            <select id="ms" class="form-control select2-multiple" multiple>
-                                @foreach($ms as $u)
+                            <label class="font-weight-bold text-info">Developer</label>
+                            <select id="bawahan3" class="form-control select2-multiple" multiple>
+                                @foreach($bawahan3 as $u)
                                     @php $parent = $u->userDivisions->first()->parent_id ?? 0; @endphp
                                     <option value="{{ $u->user_id }}" data-parent="{{ $parent }}">{{ $u->email }}</option>
                                 @endforeach
@@ -225,14 +225,14 @@
                     },
 
                     {
-                        data: 'mcn',
+                        data: 'bawahan2',
                         render: function (data) {
                             return renderBadges(data, 'badge-primary');
                         }
                     },
 
                     {
-                        data: 'ms',
+                        data: 'bawahan3',
                         render: function (data) {
                             return renderBadges(data, 'badge-info');
                         }
@@ -300,9 +300,9 @@
 
         $('.select2-multiple').val(null).trigger('change');
 
-        $('#mcn option').prop('hidden', false);
+        $('#bawahan2 option').prop('hidden', false);
 
-        $('#ms option').prop('hidden', false);
+        $('#bawahan3 option').prop('hidden', false);
 
         $('#produkModal').modal('show');
 
@@ -317,6 +317,8 @@
             const response = await fetch(`{{ url('api/produk-get') }}/${id}`);
             const data = await response.json();
 
+            console.log(data);
+
             $('#modalTitle').text('Edit Produk');
 
             $('#produk_id').val(data.id);
@@ -329,17 +331,17 @@
 
             $('.select2-multiple').val(null).trigger('change');
 
-            $('#mcn option').prop('hidden', false);
-            $('#ms option').prop('hidden', false);
+            $('#bawahan2 option').prop('hidden', false);
+            $('#bawahan3 option').prop('hidden', false);
 
             // Head
             $('#buh').val(data.buh.map(String)).trigger('change');
 
             // Manager
-            $('#mcn').val(data.mcn.map(String)).trigger('change');
+            $('#bawahan2').val(data.bawahan2.map(String)).trigger('change');
 
             // Specialist
-            $('#ms').val(data.ms.map(String)).trigger('change');
+            $('#bawahan3').val(data.bawahan3.map(String)).trigger('change');
 
             $('#produkModal').modal('show');
 
@@ -395,8 +397,8 @@
                 client: $('#client').val(),
                 status: $('#status').val(),
                 buh: $('#buh').val(),
-                mcn: $('#mcn').val(),
-                ms: $('#ms').val()
+                mcn: $('#bawahan2').val(),
+                ms: $('#bawahan3').val()
 
             })
 
@@ -450,14 +452,14 @@
 
         let head = $(this).val() || [];
 
-        $('#mcn option').each(function () {
+        $('#bawahan2 option').each(function () {
             let parent = $(this).data('parent');
             $(this).prop('hidden', !head.includes(parent.toString()));
         });
 
         if (!isEditing) {
-            $('#mcn').val(null).trigger('change');
-            $('#ms').val(null).trigger('change');
+            $('#bawahan2').val(null).trigger('change');
+            $('#bawahan3').val(null).trigger('change');
         }
 
     });
@@ -468,17 +470,17 @@
     |--------------------------------------------------------------------------
     */
 
-    $('#mcn').on('change', function () {
+    $('#bawahan2').on('change', function () {
 
         let manager = $(this).val() || [];
 
-        $('#ms option').each(function () {
+        $('#bawahan3 option').each(function () {
             let parent = $(this).data('parent');
             $(this).prop('hidden', !manager.includes(parent.toString()));
         });
 
         if (!isEditing) {
-            $('#ms').val(null).trigger('change');
+            $('#bawahan3').val(null).trigger('change');
         }
 
     });

@@ -322,33 +322,35 @@ class ProdukController extends Controller
         $user = Auth::user()->id;
         $divisiName = User::find(Auth::user()->id)->userDivisions;
         $RoleSekarang = Auth::user()->isAdmin == false ? DB::table('roles')->where('id', $divisiName[0]->role_id)->value('role_name') : "Super Admin";
-        $buh = User::join('user_division', 'user_division.user_id', '=', 'users.id')
-                ->join('roles', 'roles.id', '=', 'user_division.role_id')
-                ->where('roles.level', 1)
-                ->where('user_division.division_id', $divisi)
-                ->get();
+        $bawahanSemua = User::join('user_division', 'user_division.user_id', '=', 'users.id')
+            ->join('roles', 'roles.id', '=', 'user_division.role_id')
+            ->where('user_division.division_id', $divisi)
+            ->whereIn('roles.level', [1, 2, 3])
+            ->get();
 
-        $bawahan2 = User::join('user_division', 'user_division.user_id', '=', 'users.id')
-                ->join('roles', 'roles.id', '=', 'user_division.role_id')
-                ->where('roles.level', 2)
-                ->where('user_division.division_id', $divisi)
-                ->get();
+        // Lalu pisahkan di controller atau langsung kirim semua ke view
+        $buh = $bawahanSemua->where('level', 1);
+        $bawahan2 = $bawahanSemua->where('level', 2);
+        $bawahan3 = $bawahanSemua->where('level', 3);
 
-        $bawahan3 = User::join('user_division', 'user_division.user_id', '=', 'users.id')
-                ->join('roles', 'roles.id', '=', 'user_division.role_id')
-                ->where('roles.level', 3)
-                ->where('user_division.division_id', $divisi)
-                ->get();
-        
-        return view('cms.produk.division.index', [
+        $return = [
             'title' => $title,
             'role' => $RoleSekarang,
             'divisi' => $divisi,
             'user' => $user,
             'buh' => $buh,
-            'mcn' => $bawahan2,
-            'ms' => $bawahan3
-        ]);
+            'bawahan2' => $bawahan2,
+            'bawahan3' => $bawahan3
+        ];
+        switch($divisi){
+            case 3:
+                return view('cms.produk.division.mcn', $return);
+                break;
+            case 5:
+                return view('cms.produk.division.mcn', $return);
+                break;
+            default:
+        }
     }
 
     public function getDataDivision($user, $divisi)
@@ -379,19 +381,19 @@ class ProdukController extends Controller
 
                 // Business Unit Head
                 'buh' => $teams
-                    ->filter(fn($u) => optional($u->userDivisions->first())->role_id == 6)
+                    ->filter(fn($u) => optional($u->userDivisions->first())->role->level == 1)
                     ->pluck('email')
                     ->values(),
 
                 // MCN Specialist Manager
-                'mcn' => $teams
-                    ->filter(fn($u) => optional($u->userDivisions->first())->role_id == 7)
+                'bawahan2' => $teams
+                    ->filter(fn($u) => optional($u->userDivisions->first())->role->level == 2)
                     ->pluck('email')
                     ->values(),
 
                 // MCN Specialist
-                'ms' => $teams
-                    ->filter(fn($u) => optional($u->userDivisions->first())->role_id == 8)
+                'bawahan3' => $teams
+                    ->filter(fn($u) => optional($u->userDivisions->first())->role->level == 3)
                     ->pluck('email')
                     ->values(),
 
@@ -498,7 +500,7 @@ class ProdukController extends Controller
 
     public function getProduk($id)
     {
-        $produk = ProdukClient::with(['teams.userDivisions'])
+        $produk = ProdukClient::with(['teams.userDivisions.role'])
             ->findOrFail($id);
 
         $teams = $produk->teams;
@@ -509,17 +511,17 @@ class ProdukController extends Controller
             'status'    => $produk->status,
 
             'buh' => $teams
-                ->filter(fn($u) => $u->userDivisions->first()?->role_id == 6)
+                ->filter(fn($u) => $u->userDivisions->first()?->role?->level == 1)
                 ->pluck('id')
                 ->values(),
 
-            'mcn' => $teams
-                ->filter(fn($u) => $u->userDivisions->first()?->role_id == 7)
+            'bawahan2' => $teams
+                ->filter(fn($u) => $u->userDivisions->first()?->role?->level == 2)
                 ->pluck('id')
                 ->values(),
 
-            'ms' => $teams
-                ->filter(fn($u) => $u->userDivisions->first()?->role_id == 8)
+            'bawahan3' => $teams
+                ->filter(fn($u) => $u->userDivisions->first()?->role?->level == 3)
                 ->pluck('id')
                 ->values(),
         ]);

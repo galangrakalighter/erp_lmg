@@ -189,13 +189,20 @@ class ProdukController extends Controller
 
             // 5. Simpan ke Tabel Pivot user_client menggunakan relasi
             // Ini akan otomatis mengisi tabel user_client dengan user_id dan client_id
-           foreach($allUserIds as $id){
+            foreach($allUserIds as $id){
                 UserClient::insert([
                     'user_id' => (int)$id,
                     'client_id' => (int)$produk->id,
                     'assigned_at' => now()
                 ]);
             }
+
+            DB::table('client_division')->insert([
+                'client_id' => $produk->id,
+                'division_id' => $request->divisi,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
 
             DB::commit();
             return redirect()->back()->with('success', 'Produk dan Tim berhasil disimpan!');

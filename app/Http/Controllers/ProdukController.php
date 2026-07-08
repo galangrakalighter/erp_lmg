@@ -37,10 +37,11 @@ class ProdukController extends Controller
                         'category' => $client->category,
                         'status'   => $client->status,
                         // Filter berdasarkan ID Role yang benar
-                        'dmm'      => $teams->filter(fn($u) => $u->userDivisions->first()?->role_id == 1)->pluck('email'),
-                        'dm'       => $teams->filter(fn($u) => $u->userDivisions->first()?->role_id == 3)->pluck('email'),
-                        'scc'      => $teams->filter(fn($u) => $u->userDivisions->first()?->role_id == 4)->pluck('email'),
-                        'cc'       => $teams->filter(fn($u) => $u->userDivisions->first()?->role_id == 5)->pluck('email'), 
+                        'buh'      => $teams->filter(fn($u) => $u->userDivisions->first()?->role_id == 1)->pluck('email'),
+                        'ads'       => $teams->filter(fn($u) => $u->userDivisions->first()?->role_id == 4)->pluck('email'),
+                        'dm'      => $teams->filter(fn($u) => $u->userDivisions->first()?->role_id == 3)->pluck('email'),
+                        'ccm'       => $teams->filter(fn($u) => $u->userDivisions->first()?->role_id == 5)->pluck('email'), 
+                        'cc'       => $teams->filter(fn($u) => $u->userDivisions->first()?->role_id == 9)->pluck('email'), 
                         'team_ids' => $teams->pluck('id')->toArray(),
                     ];
                 });
@@ -150,21 +151,20 @@ class ProdukController extends Controller
             ]);
 
             // 2. Kumpulkan semu    a ID User dari input modal
-            // Gunakan nama input sesuai yang ada di modal (dmm_ids, dm_ids, dll)
             $allUserIds = collect([
-                $request->dmm_ids, 
+                $request->buh_ids, 
                 $request->dm_ids,
-                $request->scc_ids,
+                $request->ads_ids,
+                $request->ccm_ids,
                 $request->cc_ids
             ])->flatten()->filter()->unique();
 
             // 3. Tambahkan Head of Division (HOD) secara otomatis berdasarkan divisi
             $currentUserDivision = Auth::user()->userDivisions->first();
 
-            // Tentukan ID user yang akan dicari divisinya (prioritas user login, lalu dmm_ids)
             $targetUserId = ($currentUserDivision && $currentUserDivision->role_id != null) 
                             ? Auth::user()->id 
-                            : ($request->dmm_ids[0] ?? null);
+                            : ($request->buh_ids[0] ?? null);
 
             $hod = null;
             if ($targetUserId) {
@@ -175,11 +175,11 @@ class ProdukController extends Controller
 
             if ($hod) {
                 // Pastikan yang di-push adalah ID USER, bukan ID dari tabel user_division
-                $allUserIds->push($hod->user_id); 
+                $allUserIds->push((int)$hod->user_id); 
             }
             
             if ($hod) {
-                $allUserIds->push($hod->id);
+                $allUserIds->push((int)$hod->id);
             }
 
             // 4. Tambahkan Auth User jika bukan Super Admin (agar pembuat punya akses)
@@ -189,8 +189,13 @@ class ProdukController extends Controller
 
             // 5. Simpan ke Tabel Pivot user_client menggunakan relasi
             // Ini akan otomatis mengisi tabel user_client dengan user_id dan client_id
-            $uniqueUserIds = $allUserIds->unique()->toArray();
-            $produk->teams()->sync($uniqueUserIds);
+           foreach($allUserIds as $id){
+                UserClient::insert([
+                    'user_id' => (int)$id,
+                    'client_id' => (int)$produk->id,
+                    'assigned_at' => now()
+                ]);
+            }
 
             DB::commit();
             return redirect()->back()->with('success', 'Produk dan Tim berhasil disimpan!');
@@ -225,17 +230,17 @@ class ProdukController extends Controller
 
             // 2. Kumpulkan semua ID User dari input modal edit
             $allUserIds = collect([
-                $request->dmm_ids, 
+                $request->buh_ids, 
                 $request->dm_ids,
-                $request->scc_ids,
+                $request->ads_ids,
+                $request->ccm_ids,
                 $request->cc_ids
             ])->flatten()->filter()->unique();
 
             // 3. Tambahkan Head of Division (HOD) secara otomatis
-            // Kita ambil DMM pertama sebagai patokan divisi jika user login adalah Admin
             $targetUserId = (Auth::user()->isAdmin == false) 
                             ? Auth::user()->id 
-                            : ($request->dmm_ids[0] ?? null);
+                            : ($request->buh_ids[0] ?? null);
 
             if ($targetUserId) {
                 $hod = UserDivision::where('user_id', $targetUserId)->first();
@@ -292,20 +297,19 @@ class ProdukController extends Controller
         return view('cms.produk.access_token', compact("title"));
     }
 
-    public function getBawahanDM($id){
-        $dm = User::where('role', 'digital_marketing')
-              ->where('dmm', $id)
-              ->get(['id', 'email']);
-        return $dm;
-    }
+    // public function getBawahanDM($id){
+    //     $dm = User::where('role', 'digital_marketing')
+    //           ->where('dmm', $id)
+    //           ->get(['id', 'email']);
+    //     return $dm;
+    // }
 
-    public function getBawahanCC($id){
-        $cc = User::where('role', 'content_creator')
-              ->where('dm', $id)
-              ->get(['id', 'email']);
-        return $cc;
-    }
-
+    // public function getBawahanCC($id){
+    //     $cc = User::where('role', 'content_creator')
+    //           ->where('dm', $id)
+    //           ->get(['id', 'email']);
+    //     return $cc;
+    // }
     public function indexDivision($divisi){
         $title = "CMS Produk";
         $user = Auth::user()->id;

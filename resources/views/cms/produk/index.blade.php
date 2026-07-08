@@ -107,7 +107,7 @@
                             <div class="card-body p-3" id="platform-container">
                                 <div class="platform-row mb-3">
                                     <div class="input-group">
-                                        <select name="platform[]" class="form-control col-md-4">
+                                        <select name="platform[]" class="form-control col-md-4 platform-select">
                                             <option value="">-- Pilih Platform --</option>
                                             <option value="Instagram">Instagram</option>
                                             <option value="Facebook">Facebook</option>
@@ -130,19 +130,19 @@
                         <div class="row">
                             @if(Auth::user()->isAdmin == true)
                             <div class="col-md-6 form-group">
-                                <label class="font-weight-bold small text-danger">Manager (DMM)</label>
-                                <select name="dmm_ids[]" id="select-dmm" class="form-control select2-multiple" multiple data-placeholder="Pilih DMM">
+                                <label class="font-weight-bold small text-danger">Busines Unit Head (BUH)</label>
+                                <select name="buh_ids[]" id="select-buh" class="form-control select2-multiple" multiple data-placeholder="Pilih BUH">
                                     @foreach ($buh as $m)
                                         <option value="{{ $m->id }}">{{ $m->email }}</option>
                                     @endforeach
                                 </select>
                             </div>
                             @else
-                                <input type="hidden" name="dmm_ids[]" id="select-dmm-hidden" value="{{ Auth::user()->id }}">
+                                <input type="hidden" name="buh_ids[]" id="select-buh-hidden" value="{{ Auth::user()->id }}">
                             @endif
 
                             <div class="col-md-6 form-group">
-                                <label class="font-weight-bold small text-primary">Digital Marketing (DM)</label>
+                                <label class="font-weight-bold small text-primary">Digital Marketer (DM)</label>
                                 <select name="dm_ids[]" id="select-dm" class="form-control select2-multiple" multiple data-placeholder="Pilih DM" {{ Auth::user()->role == 'digital_marketing_manager' ? '' : 'disabled' }}>
                                     @foreach ($dm as $d)
                                         @php $parentIdDm = $d->userDivisions->first()->parent_id ?? 0; @endphp
@@ -152,8 +152,8 @@
                             </div>
 
                             <div class="col-md-6 form-group">
-                                <label class="font-weight-bold small text-dark">Senior Content Creator (SCC)</label>
-                                <select name="scc_ids[]" id="select-scc" class="form-control select2-multiple" multiple data-placeholder="Pilih SCC" disabled>
+                                <label class="font-weight-bold small text-dark">Advertising (ADS)</label>
+                                <select name="ads_ids[]" id="select-ads" class="form-control select2-multiple" multiple data-placeholder="Pilih ADS" disabled>
                                     @foreach ($ads as $s)
                                         @php $parentIScc = $s->userDivisions->first()->parent_id ?? 0; @endphp
                                         <option value="{{ $s->id }}" data-parent="{{ $parentIScc }}">{{ $s->email }}</option>
@@ -162,8 +162,8 @@
                             </div>
 
                             <div class="col-md-6 form-group">
-                                <label class="font-weight-bold small text-warning">Content Creator (CC)</label>
-                                <select name="cc_ids[]" id="select-cc" class="form-control select2-multiple" multiple data-placeholder="Pilih CC" disabled>
+                                <label class="font-weight-bold small text-warning">Conten Creator Manage (CCM)</label>
+                                <select name="ccm_ids[]" id="select-ccm" class="form-control select2-multiple" multiple data-placeholder="Pilih CCM" disabled>
                                     @foreach ($ccm as $c)
                                         @php $parentICc = $c->userDivisions->first()->parent_id ?? 0; @endphp
                                         <option value="{{ $c->id }}" data-parent="{{ $parentICc }}">{{ $c->email }}</option>
@@ -232,433 +232,40 @@
     </div>
     {{-- @endforeach --}}
 </div>
+<script>
+    window.produkConfig = {
+        userId: "{{ Auth::id() }}",
+        role: @json($role),
+
+        detailUrl: "{{ url('api/produk/detail') }}",
+        updateUrl: "{{ url('cms/produk/edit') }}",
+        deleteUrl: "{{ url('cms/produk/delete') }}"
+    };
+
+    const Produk = {
+        config: window.produkConfig,
+
+        get userId() {
+            return this.config.userId;
+        },
+
+        get role() {
+            return this.config.role;
+        }
+    };
+</script>
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@1.5.2/dist/select2-bootstrap4.min.css">
 
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<script>
 
-$(document).ready(function() {
-    $('#produkTable').DataTable({
-        processing: true,
-        ajax: window.location.href, // Mengambil data dari method index di Controller
-        columns: [
-            // 1. Kolom Nomor
-            { 
-                data: null, 
-                className: 'text-center', 
-                width: '5%',
-                render: (data, type, row, meta) => meta.row + 1 
-            },
-            
-            // 2. Kolom Kategori Jasa
-            { data: 'category', width: '10%' },
-            
-            // 3. Kolom Nama Client/Produk
-            { data: 'nama', className: 'font-weight-bold', width: '15%' },
-            
-            // 4. Kolom Status
-            { 
-                data: 'status', 
-                className: 'text-center',
-                width: '10%',
-                render: s => {
-                    let badge = s == 1 ? 'badge-success' : 'badge-secondary';
-                    let text = s == 1 ? 'Ditampilkan' : 'Disembunyikan';
-                    return `<span class="badge ${badge}">${text}</span>`;
-                }
-            },
-            
-            // 5. Kolom DMM
-            { 
-                data: 'buh', 
-                width: '12%',
-                render: data => renderBadges(data, 'badge-primary') 
-            },
-            
-            // 6. Kolom DM
-            { 
-                data: 'dm', 
-                width: '12%',
-                render: data => renderBadges(data, 'badge-info') 
-            },
-            
-            // 7. Kolom SCC
-            { 
-                data: 'ads', 
-                width: '12%',
-                render: data => renderBadges(data, 'badge-dark') 
-            },
-            
-            // 8. Kolom CC
-            { 
-                data: 'ccm', 
-                width: '12%',
-                render: data => renderBadges(data, 'badge-warning text-dark') 
-            },
-            { 
-                data: 'cc', 
-                width: '12%',
-                render: data => renderBadges(data, 'badge-warning text-dark') 
-            },
-            
-            @if($role == 'Digital Marketer' || $role == 'Busines Unit Head' || $role == 'Super Admin')
-            { 
-                data: null,
-                className: 'text-center',
-                width: '12%',
-                orderable: false,
-                searchable: false,
-                render: r => `
-                    <div class="btn-group">
-                        <button class="btn btn-sm btn-warning" onclick="editProduk(${r.id})" title="Edit">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteProduk(${r.id}, '${r.nama}')" title="Hapus">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>`
-            }
-            @endif
-        ]
-    });
+<script src="{{ asset('js/produk/datatable.js') }}"></script>
+<script src="{{ asset('js/produk/create.js') }}"></script>
+<script src="{{ asset('js/produk/edit.js') }}"></script>
+<script src="{{ asset('js/produk/delete.js') }}"></script>
 
-    const roleUser = "{{ $role }}";
-
-    // Fungsi untuk reset dropdown di bawahnya
-    function resetAndDisable(targetIds) {
-        targetIds.forEach(id => {
-            $(`#${id}`).val(null).trigger('change').prop('disabled', true);
-        });
-    }
-
-    function filterOptions(childId, selectedParentIds) {
-        const $childSelect = $(`#${childId}`);
-
-        console.log($childSelect);
-        
-        // Sembunyikan semua opsi terlebih dahulu
-        $childSelect.find('option').each(function() {
-            let parentId = $(this).data('parent');
-            console.log($(this));
-            
-            if (!parentId) return;
-
-            if (selectedParentIds && selectedParentIds.includes(parentId.toString())) {
-                $(this).show();
-            } else {
-                $(this).hide();
-                $(this).prop('selected', false); // Batalkan pilihan jika tersembunyi
-            }
-        });
-
-        // Trigger change untuk merantai reset ke level bawahnya
-        $childSelect.trigger('change');
-    }
-
-    // 1. Logika DMM ke DM
-    $('#select-dmm').on('change', function() {
-        let selectedDmm = $(this).val();
-        if (selectedDmm && selectedDmm.length > 0) {
-            $('#select-dm').prop('disabled', false);
-            filterOptions('select-dm', selectedDmm);
-        } else {
-            resetAndDisable(['select-dm', 'select-scc', 'select-cc']);
-        }
-    });
-
-    // 2. Logika DM ke SCC
-    $('#select-dm').on('change', function() {
-        let selectedDm = $(this).val();
-        if (selectedDm && selectedDm.length > 0) {
-            $('#select-scc').prop('disabled', false);
-            filterOptions('select-scc', selectedDm);
-        } else {
-            resetAndDisable(['select-scc', 'select-cc']);
-        }
-    });
-
-    // 3. Logika SCC ke CC
-    $('#select-scc').on('change', function() {
-        let selectedScc = $(this).val();
-        if (selectedScc && selectedScc.length > 0) {
-            $('#select-cc').prop('disabled', false);
-            filterOptions('select-cc', selectedScc);
-        } else {
-            resetAndDisable(['select-cc']);
-        }
-    });
-
-    // Inisialisasi awal jika login sebagai DMM
-    if (roleUser === 'Digital Marketing Manager') {
-        $('#select-dm').prop('disabled', false);
-    }
-    const allPlatforms = ["Tiktok", "Instagram"];
-
-    function updateOptions() {
-        // Kita perlu updateOptions secara spesifik per Modal agar tidak bentrok antar modal
-        $('.modal').each(function() {
-            let $modal = $(this);
-            let selectedValues = [];
-            
-            $modal.find('.platform-select').each(function() {
-                if ($(this).val()) {
-                    selectedValues.push($(this).val());
-                }
-            });
-
-            $modal.find('.platform-select').each(function() {
-                let currentVal = $(this).val();
-                $(this).find('option').each(function() {
-                    let optVal = $(this).val();
-                    if (optVal !== "" && optVal !== currentVal && selectedValues.includes(optVal)) {
-                        $(this).hide();
-                    } else {
-                        $(this).show();
-                    }
-                });
-            });
-
-            // Sembunyikan tombol tambah di modal ini jika platform sudah penuh
-            if (selectedValues.length >= allPlatforms.length) {
-                $modal.find('.add-platform, .add-platform-edit').hide();
-            } else {
-                $modal.find('.add-platform, .add-platform-edit').show();
-            }
-        });
-    }
-
-    // Event Klik Tombol Tambah (Dinamis untuk Tambah & Edit)
-    $(document).on('click', '.add-platform, .add-platform-edit', function() {
-        // 1. Tentukan target container (untuk modal tambah atau edit)
-        let targetSelector = $(this).data('target') || '#platform-container';
-        let $container = $(targetSelector);
-
-        let platformOptions = allPlatforms.map(p => `<option value="${p}">${p}</option>`).join('');
-
-        let newRow = `
-            <div class="platform-row mb-3 mt-2">
-                <div class="input-group shadow-sm">
-                    <select name="platform[]" class="form-control platform-select col-md-4" required>
-                        <option value="">-- Pilih Platform --</option>
-                        ${platformOptions}
-                    </select>
-                    <input type="text" name="access[]" class="form-control" placeholder="Input Access Token">
-                    <div class="input-group-append">
-                        <button type="button" class="btn btn-outline-danger remove-platform" title="Hapus baris">
-                            <i class="fas fa-minus"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>`;
-        
-        // 4. Masukkan ke dalam container
-        $container.append(newRow);
-
-        // 5. Jalankan fungsi filter agar pilihan yang sudah ada di baris lain tersembunyi
-        if (typeof updateOptions === "function") {
-            updateOptions();
-        }
-    });
-
-    $(document).on('click', '.add-dm-row, .add-dm-row-edit', function() {
-        let targetSelector = $(this).data('target') || '#dm-container';
-        let $container = $(targetSelector);
-        
-        let options = `<option value="">-- Pilih DM --</option>`;
-        @foreach ($dm as $d)
-            options += `<option value="{{ $d->id }}">{{ $d->email }}</option>`;
-        @endforeach
-
-        let newRow = `
-            <div class="dm-row mb-3 mt-2">
-                <div class="input-group">
-                    <select name="dm[]" class="form-control" required>${options}</select>
-                    <div class="input-group-append">
-                        <button type="button" class="btn btn-danger dm-remove-row">-</button>
-                    </div>
-                </div>
-            </div>`;
-        $container.append(newRow);
-    });
-
-    // --- Logic untuk Multiple CC ---
-    $(document).on('click', '.add-cc-row, .add-cc-row-edit', function() {
-        let targetSelector = $(this).data('target') || '#cc-container';
-        let $container = $(targetSelector);
-
-        let options = `<option value="">-- Pilih CC --</option>`;
-        @foreach ($cc as $c)
-            options += `<option value="{{ $c->id }}">{{ $c->email }}</option>`;
-        @endforeach
-
-        let newRow = `
-            <div class="cc-row mb-3 mt-2">
-                <div class="input-group">
-                    <select name="cc[]" class="form-control" required>${options}</select>
-                    <div class="input-group-append">
-                        <button type="button" class="btn btn-danger cc-remove-row">-</button>
-                    </div>
-                </div>
-            </div>`;
-        $container.append(newRow);
-    });
-
-    // Event Klik Tombol Hapus
-    $(document).on('click', '.remove-platform', function() {
-        let $row = $(this).closest('.platform-row');
-        $row.fadeOut(200, function() {
-            $(this).remove();
-            if (typeof updateOptions === "function") {
-                updateOptions();
-            }
-        });
-    });
-
-    $(document).on('click', '.remove-dm-row', function() {
-        $(this).closest('.dm-edit-row').remove();
-    });
-
-    $(document).on('click', '.remove-cc-row', function() {
-        $(this).closest('.cc-edit-row').remove();
-    });
-
-    $(document).on('click', '.dm-remove-row', function() {
-        $(this).closest('.dm-row').remove();
-    });
-
-    $(document).on('click', '.cc-remove-row', function() {
-        $(this).closest('.cc-row').remove();
-    });
-
-    // Event saat pilihan berubah
-    $(document).on('change', '.platform-select', function() {
-        updateOptions();
-    });
-
-    // Jalankan sekali saat load untuk inisialisasi modal edit yang sudah ada datanya
-    updateOptions();
-
-    $(document).ready(function() {
-        let baseUrl = window.location.origin;
-        $('#dmm-select').on('change', function() {
-            let dmmId = $(this).val();
-            if(dmmId) {
-                $.get(`${baseUrl}/api/get-dm/${dmmId}`, function(data) {
-                    let html = '<option value="">-- Pilih DM --</option>';
-                    data.forEach(d => html += `<option value="${d.id}">${d.email}</option>`);
-                    $('.dm-staff-select').html(html);
-                });
-            }else{
-                let html = '<option value="">-- Pilih DM --</option>';
-                $('.dm-staff-select').html(html);
-            }
-        });
-        
-        $(document).on('change', '.dm-staff-select', function() {
-            let dmId = $(this).val();
-            let $ccSelect = $(this).closest('.row').find('.cc-staff-select'); // Mencari CC di baris yang sama
-
-            if(dmId) {
-                $.get(`${baseUrl}/api/get-cc/${dmId}`, function(data) {
-                    let html = '<option value="">-- Pilih CC --</option>';
-                    data.forEach(c => html += `<option value="${c.id}">${c.email}</option>`);
-                    $ccSelect.html(html);
-                });
-            }
-        });
-
-        function loadDmEdit($modal, dmmId) {
-            if (!dmmId) return;
-            
-            $.get(`${baseUrl}/api/get-dm/${dmmId}`, function(data) {
-                $modal.find('.dm-staff-select-edit').each(function() {
-                    let $select = $(this);
-                    let selectedId = $select.data('selected');
-                    
-                    let html = '<option value="">-- Pilih DM --</option>';
-                    data.forEach(d => {
-                        let isSelected = (d.id == selectedId) ? 'selected' : '';
-                        html += `<option value="${d.id}" ${isSelected}>${d.email}</option>`;
-                    });
-                    $select.html(html);
-                });
-            });
-        }
-        $(document).on('change', '.dm-staff-select-edit', function() {
-            let dmId = $(this).val();
-            let $modal = $(this).closest('.modal');
-            let $ccSelects = $modal.find('.cc-staff-select-edit');
-
-            if (dmId != "") {
-                $.get(`${baseUrl}/api/get-cc/${dmId}`, function(data) {
-                    let html = '<option value="">-- Pilih CC --</option>';
-                    data.forEach(c => {
-                        html += `<option value="${c.id}">${c.email}</option>`;
-                    });
-                    // Update semua dropdown CC di modal tersebut agar opsinya sesuai DM terbaru
-                    $ccSelects.each(function() {
-                        let selectedId = $(this).data('selected');
-                        $(this).html(html);
-                        // Jika ada data CC lama, tetap pilih datanya
-                        if(selectedId) $(this).val(selectedId);
-                    });
-                });
-            }else{
-                let html = '<option value="">-- Pilih CC --</option>';
-                $ccSelects.html(html).val("").trigger('change');
-            }
-        });
-        $('.modal').on('shown.bs.modal', function () {
-            let $modal = $(this);
-            let dmmId = $modal.find('.dmm-select-edit').val();
-            let firstDmId = $modal.find('.dm-staff-select-edit').first().val();
-
-            if (dmmId) loadDmEdit($modal, dmmId);
-            
-            // Jika sudah ada DM terpilih, otomatis load CC-nya juga
-            if (firstDmId) {
-                $modal.find('.dm-staff-select-edit').first().trigger('change');
-            }
-        });
-
-        // Handle Hapus Baris
-        $(document).on('click', '.remove-row', function() {
-            $(this).closest('.input-group').remove();
-        });
-    });
-});
-
-function renderBadges(emails, badgeClass) {
-    if (!emails || emails.length === 0) return '<span class="text-muted small">-</span>';
-    return emails.map(email => 
-        `<small class="badge ${badgeClass} d-block mb-1" style="font-size:10px">${email}</small>`
-    ).join('');
-}
-
-// Event Handler untuk perubahan dropdown
-$(document).on('change', '#edit-select-dmm, #edit-select-dm', function() {
-    applyHierarchyFilter();
-});
-
-function renderPlatformRowEdit(platform, access, isFirst, productId) {
-    const listPlt = ['Instagram', 'Facebook', 'Tiktok'];
-    let options = listPlt.map(plt => `<option value="${plt}" ${plt === platform ? 'selected' : ''}>${plt}</option>`).join('');
-    
-    return `
-        <div class="platform-row mb-2">
-            <div class="input-group shadow-sm">
-                <select name="platform[]" class="form-control col-md-4">${options}</select>
-                <input type="text" name="access[]" class="form-control" value="${access || ''}" placeholder="Access Token">
-                <div class="input-group-append">
-                    <button type="button" class="btn btn-${isFirst ? 'success add-platform-edit' : 'danger remove-platform'}" 
-                            data-target="#platform-container-edit-${productId}">
-                        <i class="fas fa-${isFirst ? 'plus' : 'minus'}"></i>
-                    </button>
-                </div>
-            </div>
-        </div>`;
-}
-</script>
+<script src="{{ asset('js/produk/produk.js') }}"></script>
 @include('partials.footer')

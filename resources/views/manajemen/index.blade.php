@@ -49,6 +49,7 @@
                             <th>Inspirasi</th>
                             <th>Type</th>
                             <th>Strategi</th>
+                            <th>Funneling</th>
                             <th>Pilar</th>
                             <th>Hook</th>
                             <th>Body</th>
@@ -398,6 +399,17 @@
                                     </select>
                                 </div>
                             </div>
+                            <div class="col-md-12 mb-3">
+                                <div class="form-group">
+                                    <label class="text-dark font-weight-bold small">Funneling <span class="text-danger">*</span></label>
+                                    <select name="funneling" class="form-control custom-select shadow-sm" style="border-radius: 8px;" required>
+                                        <option value="" disabled selected>-- Pilih Status --</option>
+                                            <option value="TOFU">TOFU</option>
+                                            <option value="MOFU">MOFU</option>
+                                            <option value="BOFU">BOFU</option>
+                                    </select>
+                                </div>
+                            </div>
                             <div class="col-md-12">
                                 <div class="form-group mb-0">
                                     <label class="text-dark font-weight-bold small">Catatan Tambahan</label>
@@ -588,6 +600,17 @@
                                 </div>
                             </div>
 
+                            <div class="col-md-12 mb-3">
+                                <div class="form-group">
+                                    <label class="text-dark font-weight-bold small">Funneling <span class="text-danger">*</span></label>
+                                    <select name="funneling" id="edit_funneling" class="form-control custom-select shadow-sm" style="border-radius: 8px;" required>
+                                        <option value="TOFU">TOFU</option>
+                                        <option value="MOFU">MOFU</option>
+                                        <option value="BOFU">BOFU</option>
+                                    </select>
+                                </div>
+                            </div>
+
                             <div class="col-md-12">
                                 <div class="form-group mb-0">
                                     <label class="text-muted font-weight-bold small uppercase">Catatan Revisi / Tambahan</label>
@@ -670,6 +693,7 @@
                 }, // Inspirasi
                 { data: 'type' }, // Type
                 { data: 'strategy' }, // Strategi
+                { data: 'funneling' }, // Strategi
                 { data: 'pilar' }, // Pilar
                 { data: 'hooks' }, // Hook
                 { data: 'nama_body' }, // Body
@@ -771,6 +795,7 @@
             $('#edit_link').val(rowData.link);
             $('#edit_status').val(rowData.status_id);
             $('#edit_note').val(rowData.note);
+            $('#edit_funneling').val(rowData.funneling);
 
             // 3. Update URL Form Action secara dinamis
             $('#formEditKonten').attr('action', `/manajemen/${id}/edit`);

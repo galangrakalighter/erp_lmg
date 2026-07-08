@@ -178,6 +178,7 @@ class ManajemenKontenController extends Controller
             'link'              => 'nullable|string',
             'status'            => 'required|integer',
             'note'              => 'nullable|string',
+            'funneling'         =>'required'
         ]);
 
         // Kirim Data Ke Database
@@ -205,6 +206,7 @@ class ManajemenKontenController extends Controller
                 'link'             => $request->link,
                 'status_id'        => $value['status'],
                 'platform'         => $request->platform,
+                'funneling'        => $request->funneling,
                 'created_at'       => now(),
                 'updated_at'       => now(),
             ]);
@@ -369,6 +371,7 @@ class ManajemenKontenController extends Controller
             'link'              => 'nullable|string',
             'status'            => 'required|integer',
             'note'              => 'nullable|string',
+            'funneling'         => 'required'
         ]);
 
         try {
@@ -394,6 +397,7 @@ class ManajemenKontenController extends Controller
                 'link'             => $request->link,
                 'status_id'        => $value['status'],
                 'platform'         => $request->platform,
+                'funneling'        => $request->funneling,
                 'created_at'       => now(),
                 'updated_at'       => now(),
             ]);

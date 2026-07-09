@@ -223,6 +223,8 @@ Route::middleware('auth')->group(function() {
     Route::get('finance_ledger/list_account', [App\Http\Controllers\LedgerController::class, 'pilih_akun'])->name('finance_ledger.list_account');
     Route::resource('finance_ledger', App\Http\Controllers\LedgerController::class);
     Route::resource('invoice', App\Http\Controllers\InvoiceController::class);
+    Route::get("/PDF/{id_produk}", [App\Http\Controllers\PDFController::class, 'index'])->name('PDF');
+    Route::resource('PDF', App\Http\Controllers\PDFController::class);
     Route::post('/opening-balance/save', [App\Http\Controllers\OpeningBalanceController::class, 'save'])->name('opening-balance.save');
 });
 

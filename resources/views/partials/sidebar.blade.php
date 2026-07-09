@@ -111,6 +111,9 @@
                                                                     <a href="{{ route('manajemen', ['id_produk' => $client->id, 'platform' => $plt]) }}">
                                                                         Content Plan
                                                                     </a>
+                                                                    <a href="{{ route('PDF', ['id_produk' => $client->id]) }}">
+                                                                        File
+                                                                    </a>
                                                                 </div>
                                                             @endforeach
                                                         @else

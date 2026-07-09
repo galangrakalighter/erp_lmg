@@ -25,7 +25,9 @@ class HCOverviewController extends Controller
         $title = "Project Overview";
         $id_client = (int)$id;
         $divisi_list = Division::pluck('name', 'id');
-        $client = ProdukClient::where('id', $id_client)->first();
+        $client = ProdukClient::with('divisions')->findOrFail($id_client);
+        $divisi = $client->divisions->pluck('name', 'id');
+        
         $user = Auth::user();
         $divisi = User::find($user->id)->userDivisions[0] ?? "Super Admin";
         $RoleSekarang = $user->isAdmin == false ? DB::table('roles')->where('id', $divisi['role_id'])->value('role_name') : "Super Admin";

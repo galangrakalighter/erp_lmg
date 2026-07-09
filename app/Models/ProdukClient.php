@@ -26,4 +26,8 @@ class ProdukClient extends Model
     public function teams() {
         return $this->belongsToMany(User::class, 'user_client', 'client_id', 'user_id');
     }
+
+    public function divisions() {
+        return $this->belongsToMany(Division::class, 'client_division', 'client_id', 'division_id');
+    }
 }

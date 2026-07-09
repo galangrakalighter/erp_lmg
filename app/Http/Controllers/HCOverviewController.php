@@ -440,7 +440,7 @@ class HCOverviewController extends Controller
         }
 
         // 2. Query ProdukClient hanya untuk ID yang ada di array tersebut
-        $project = ProdukClient::select('id', 'nama as nama_client');
+        $project = ProdukClient::join('client_division', 'client_division.client_id', 'produk_client.id')->join('divisions', 'divisions.id', '=', 'client_division.division_id')->select('produk_client.id', 'produk_client.nama as nama_client', 'divisions.name as nama_divisi');
             if(Auth::user()->isAdmin == false){
                 $projects = $project->whereIn('id', $userHandledClients); // Filter Utama
             }
@@ -463,6 +463,7 @@ class HCOverviewController extends Controller
                 return [
                     'project_id'  => $client->id,
                     'nama_client' => $client->nama_client,
+                    'nama_divisi' => $client->nama_divisi,
                     'percentage'  => $percentage,
                     'total'       => $totalKPI,
                     'done'        => $doneKPI,

@@ -387,7 +387,7 @@
                 </div>
             </div>
         </li>
-        @if(Auth::user()->isAdmin == true)
+        @if(Auth::user()->isAdmin == true || $myDivision->name == "Tech")
         <li class="nav-item {{ request()->is('*HC*') ? 'active' : '' }}">
             <a class="nav-link {{ request()->is('*HC*') ? '' : 'collapsed' }}" href="#" 
             data-toggle="collapse" data-target="#collapseTech" 
@@ -414,7 +414,7 @@
                     <div class="group-wrapper mb-2">
                         <div id="cat_mcn" class="collapse ml-2 border-left-custom">
                             @foreach ($techProduk as $client)
-                                @if($myDivision->name == "MCN" || $isSuperAdmin)
+                                @if($myDivision->name == "Tech" || $isSuperAdmin)
                                     @php
                                         // 1. Cek apakah user punya akses eksplisit ke client ini (dari tabel user_client)
                                         $hasClientAccess = in_array($client->client_id, $myClientIds);

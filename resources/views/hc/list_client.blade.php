@@ -58,7 +58,7 @@
                     <div class="d-flex justify-content-between align-items-start mb-3">
                         <div style="flex: 1; min-width: 0;">
                             <h5 class="font-weight-bold text-gray-800 mb-0 text-truncate" title="{{ $p['nama_client'] }}">
-                                {{ $p['nama_client'] }} ({{ Auth::user()->isAdmin == true ? $p['nama_divisi'] : ''}})
+                                {{ $p['nama_client'] }} {{ Auth::user()->isAdmin == true ? '('. $p['nama_divisi'] .')' : ''}}
                             </h5>
                         </div>
                         <div class="text-right ml-2">

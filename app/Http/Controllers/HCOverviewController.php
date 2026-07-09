@@ -109,6 +109,26 @@ class HCOverviewController extends Controller
         return redirect()->back()->with('success', 'KPI Berhasil Di Update');
     }
 
+    public function endKPI($id){
+        $kpi = Kpi::findOrFail($id);
+
+        // Jika sudah selesai
+        if ($kpi->status == 1) {
+            return response()->json([
+                'success' => false,
+                'message' => 'KPI sudah selesai.'
+            ]);
+        }
+
+        $kpi->status = 1;
+        $kpi->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'KPI berhasil diselesaikan.'
+        ]);
+    }
+
     public function deleteKPI($id)
     {
         $kpi = KPI::findOrFail($id);
@@ -150,31 +170,65 @@ class HCOverviewController extends Controller
     public function getKPIData(Request $request, $id, $id_user)
     {
         $user = User::findOrFail($id_user);
+        $division = $user->userDivisions->first();
 
-        $query = KPI::with(['pics.userDivisions.role', 'pics.userDivisions.division'])
-            ->where('project', (int)$id);
+        $query = KPI::with(['pics.userDivisions.role', 'pics.userDivisions.division']);
 
-        // Jika bukan admin, batasi data
+        if ($user->isAdmin) {
+            $query->where('project', $id);
+        } else {
+            $query->where('project', $id)
+                ->where('divisi', $division->division_id);
+        }
+
+        // Batasi data untuk non-admin
         if (!$user->isAdmin) {
-            $query->where(function ($query) use ($user) {
-                $query->whereHas('pics', function ($q) use ($user) {
-                    // KPI yang dimiliki user
-                    $q->where('users.id', $user->id);
-                })->orWhereHas('pics.userDivisions', function ($q) use ($user) {
-                    // KPI milik bawahan
-                    $q->where('parent_id', $user->id);
+            $query->where(function ($q) use ($user) {
+                $q->whereHas('pics', function ($qq) use ($user) {
+                    $qq->where('users.id', $user->id);
+                })->orWhereHas('pics.userDivisions', function ($qq) use ($user) {
+                    $qq->where('parent_id', $user->id);
                 });
             });
         }
 
-        // Filter priority jika ada
-        $query->when($request->priority, function ($query) use ($request) {
-            $query->where('priority', $request->priority);
-        });
+        /*
+        |--------------------------------------------------------------------------
+        | Filter
+        |--------------------------------------------------------------------------
+        */
+
+        $query
+            ->when($request->filled('start_date'), function ($q) use ($request) {
+                $q->whereDate('tanggal_mulai', '>=', $request->start_date);
+            })
+
+            ->when($request->filled('end_date'), function ($q) use ($request) {
+                $q->whereDate('tanggal_deadline', '<=', $request->end_date);
+            })
+
+            ->when($request->filled('divisi'), function ($q) use ($request) {
+                $q->where('divisi', $request->divisi);
+            })
+
+            ->when($request->filled('priority'), function ($q) use ($request) {
+                $q->where('point', $request->priority);
+            })
+
+            ->when($request->filled('status'), function ($q) use ($request) {
+                $q->where('status', $request->status);
+            })
+
+            ->when($request->filled('pic'), function ($q) use ($request) {
+                $q->whereHas('pics', function ($qq) use ($request) {
+                    $qq->where('users.id', $request->pic);
+                });
+            });
 
         $data = $query->get();
 
         $result = $data->map(function ($kpi) {
+
             $listEmail = $kpi->pics->pluck('email')->implode(', ');
 
             $firstPic = $kpi->pics->first();
@@ -444,7 +498,7 @@ class HCOverviewController extends Controller
         // 2. Query ProdukClient hanya untuk ID yang ada di array tersebut
         $project = ProdukClient::join('client_division', 'client_division.client_id', 'produk_client.id')->join('divisions', 'divisions.id', '=', 'client_division.division_id')->select('produk_client.id', 'produk_client.nama as nama_client', 'divisions.name as nama_divisi');
             if(Auth::user()->isAdmin == false){
-                $projects = $project->whereIn('id', $userHandledClients); // Filter Utama
+                $projects = $project->whereIn('produk_client.id', $userHandledClients); // Filter Utama
             }
             $projects = $project->get()
             ->map(function ($client) {

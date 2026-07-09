@@ -1,6 +1,50 @@
 @include('partials.header')
 
 <div class="container-fluid mt-4">
+    <div class="row mb-3">
+        <div class="col-md-3">
+            <div class="card border-left-warning shadow-sm">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                        Point Belum Selesai
+                    </div>
+                    <div class="h4 mb-0 font-weight-bold" id="pointBelum">0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-left-success shadow-sm">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                        Point Selesai
+                    </div>
+                    <div class="h4 mb-0 font-weight-bold" id="pointSelesai">0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-left-primary shadow-sm">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                        Total Point
+                    </div>
+                    <div class="h4 mb-0 font-weight-bold" id="totalPoint">0</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-left-primary shadow-sm">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                        Total KPI
+                    </div>
+                    <div class="h4 mb-0 font-weight-bold" id="totalKPI">0</div>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="card shadow">
         <div class="card-header d-flex justify-content-between align-items-center">
             {{-- Menampilkan Nama Client jika tersedia --}}
@@ -15,7 +59,7 @@
 
         <div class="card-body border-bottom bg-light">
             {{-- Pastikan action mengarah ke route index dengan parameter id_client --}}
-            <form action="{{ route('hc_overview.index', $id) }}" method="GET">
+            <form id="filterForm" action="{{ route('hc_overview.index', $id) }}" method="GET">
                 <div class="row">
                     {{-- Filter Baris 1 --}}
                     <div class="col-md-2 mb-3">
@@ -59,11 +103,8 @@
                         <label class="small font-weight-bold text-dark">Status:</label>
                         <select name="status" class="form-control form-control-sm border-primary">
                             <option value="">- Semua -</option>
-                            <option value="0" {{ request('status') === '0' ? 'selected' : '' }}>Not Started</option>
-                            <option value="1" {{ request('status') === '1' ? 'selected' : '' }}>In Progress</option>
-                            <option value="2" {{ request('status') === '2' ? 'selected' : '' }}>Revisi</option>
-                            <option value="3" {{ request('status') === '3' ? 'selected' : '' }}>Minta Approval</option>
-                            <option value="4" {{ request('status') === '4' ? 'selected' : '' }}>Done</option>
+                            <option value="0" {{ request('status') === '0' ? 'selected' : '' }}>Belum Selesai</option>
+                            <option value="1" {{ request('status') === '1' ? 'selected' : '' }}>Sudah Selesai</option>
                         </select>
                     </div>
                 </div>
@@ -73,8 +114,8 @@
                         <button type="submit" class="btn btn-sm btn-primary px-4 shadow-sm mr-2">
                             <i class="fas fa-filter fa-sm mr-1"></i> Filter
                         </button>
-                        <a href="{{ route('hc_overview.index', $id) }}" class="btn btn-sm btn-secondary px-4 shadow-sm">
-                            <i class="fas fa-undo fa-sm mr-1"></i> Reset
+                        <a href="#" id="resetFilter" class="btn btn-sm btn-secondary">
+                            <i class="fas fa-undo"></i> Reset
                         </a>
                     </div>
                 </div>
@@ -237,62 +278,150 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     const baseUrl = window.location.origin;
-    $(document).ready(function() {
-        function loadTable() {
-            const apiUrl = '/api/kpi-data/' + {{ $client->id }} + '/' + {{ Auth::id() }};
+    function loadTable() {
+        const params = new URLSearchParams({
+            start_date: $('input[name="start_date"]').val(),
+            end_date: $('input[name="end_date"]').val(),
+            divisi: $('select[name="divisi"]').val(),
+            priority: $('select[name="priority"]').val(),
+            pic: $('select[name="pic"]').val(),
+            status: $('select[name="status"]').val(),
+        });
 
-            $.ajax({
-                url: apiUrl,
-                method: 'GET',
-                success: function(response) {
-                    // 1. Hancurkan DataTable jika sudah ada agar tidak error
-                    if ($.fn.DataTable.isDataTable('#dataTable')) {
-                        $('#dataTable').DataTable().destroy();
+        const apiUrl = `/api/kpi-data/{{ $client->id }}/{{ Auth::id() }}?${params.toString()}`;
+
+        $.ajax({
+            url: apiUrl,
+            method: 'GET',
+            success: function(response) {
+                // 1. Hancurkan DataTable jika sudah ada agar tidak error
+                if ($.fn.DataTable.isDataTable('#dataTable')) {
+                    $('#dataTable').DataTable().destroy();
+                }
+
+                let tbody = $('#dataTable tbody');
+                tbody.empty();
+
+                let pointBelum = 0;
+                let pointSelesai = 0;
+                let totalPoint = 0;
+
+                $.each(response.data, function(index, item) {
+                    let status = (item.status == 1) ? 
+                        '<span class="badge badge-success">Sudah Selesai</span>' : 
+                        '<span class="badge badge-warning">Belum Selesai</span>';
+                    
+                    // Escaping data yang kompleks agar tidak merusak HTML
+                    let itemEncoded = JSON.stringify(item).replace(/"/g, '&quot;');
+
+                    totalPoint += Number(item.point);
+
+                    if (item.status == 1) {
+                        pointSelesai += Number(item.point);
+                    } else {
+                        pointBelum += Number(item.point);
                     }
 
-                    let tbody = $('#dataTable tbody');
-                    tbody.empty();
+                    let row = `<tr>
+                        <td>${index + 1}</td>
+                        <td>${item.nama_kpi}</td>
+                        <td>${item.nama_divisi}</td>
+                        <td>${item.vic_email}</td>
+                        <td>${item.point}</td>
+                        <td>${item.tanggal_mulai}</td>
+                        <td>${item.tanggal_deadline}</td>
+                        <td>${status}</td>
+                        <td>${item.note ?? ''}</td>
+                        <td>
+                            ${
+                                item.status == 0
+                                ? `
+                                    <button class="btn btn-sm btn-info" onclick="openEditModal(${itemEncoded})">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </button>
 
-                    $.each(response.data, function(index, item) {
-                        let status = (item.status == 1) ? 
-                            '<span class="badge badge-success">Sudah Selesai</span>' : 
-                            '<span class="badge badge-warning">Belum Selesai</span>';
-                        
-                        // Escaping data yang kompleks agar tidak merusak HTML
-                        let itemEncoded = JSON.stringify(item).replace(/"/g, '&quot;');
+                                    <button class="btn btn-sm btn-success" onclick="selesaikanKPI(${item.id})">
+                                        <i class="fas fa-check"></i> Selesai KPI
+                                    </button>
 
-                        let row = `<tr>
-                            <td>${index + 1}</td>
-                            <td>${item.nama_kpi}</td>
-                            <td>${item.nama_divisi}</td>
-                            <td>${item.vic_email}</td>
-                            <td>${item.point}</td>
-                            <td>${item.tanggal_mulai}</td>
-                            <td>${item.tanggal_deadline}</td>
-                            <td>${status}</td>
-                            <td>${item.note ?? ''}</td>
-                            <td>
-                                <button class="btn btn-sm btn-info" onclick="openEditModal(${itemEncoded})">Edit</button>
-                                <button class="btn btn-sm btn-danger" onclick="openDeleteModal(${item.id})">Hapus</button>
-                            </td>
-                        </tr>`;
-                        tbody.append(row);
-                    });
+                                    <button class="btn btn-sm btn-danger" onclick="openDeleteModal(${item.id})">
+                                        <i class="fas fa-trash"></i> Hapus
+                                    </button>
+                                `
+                                : `
+                                    <span class="badge badge-success p-2">
+                                        <i class="fas fa-check-circle"></i> KPI Selesai
+                                    </span>
+                                `
+                            }
+                        </td>
+                    </tr>`;
+                    tbody.append(row);
+                });
 
-                    // 2. Inisialisasi ulang DataTable setelah data masuk
-                    $('#dataTable').DataTable({
-                        "responsive": true,
-                        "autoWidth": false
-                    });
-                }
-            });
-        }
+                $('#pointBelum').text(pointBelum);
+                $('#pointSelesai').text(pointSelesai);
+                $('#totalPoint').text(totalPoint);
+                $('#totalKPI').text(response.data.length);
+
+                // 2. Inisialisasi ulang DataTable setelah data masuk
+                $('#dataTable').DataTable({
+                    "responsive": true,
+                    "autoWidth": false
+                });
+            }
+        });
+    }
+    $(document).ready(function() {
+        $('#filterForm').submit(function(e){
+            e.preventDefault();
+            loadTable();
+        });
+        $('#resetFilter').click(function(e){
+
+            e.preventDefault();
+
+            $('#filterForm')[0].reset();
+
+            loadTable();
+
+        });
         
         loadTable();
     });
 
+    async function selesaikanKPI(id) {
+
+        if (!confirm('Yakin ingin menyelesaikan KPI ini?')) {
+            return;
+        }
+
+        try {
+
+            const response = await fetch(`/kpi/${id}/selesai`, {
+                method: 'PUT',
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                    'Accept': 'application/json'
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                alert('KPI berhasil diselesaikan.');
+                loadTable();
+            } else {
+                alert(result.message);
+            }
+
+        } catch (error) {
+            console.error(error);
+            alert('Terjadi kesalahan.');
+        }
+    }
+
     function openEditModal(item) {
-        // console.log(item);
         // 1. Set form action ke route update
         $('#editForm').attr('action', '/kpi/' + item.id);
         
@@ -355,7 +484,13 @@
         
         $('#editModal').modal('show');
 
-        HandleChangeDivsion({ value: item.divisi }, 'edit_pic_select');
+        let selectedPics = item.pics.map(pic => pic.id.toString());
+
+        HandleChangeDivsion(
+            { value: item.divisi },
+            'edit_pic_select',
+            selectedPics
+        );
     }
 
     function generateDifficultyOptions(selectedPoint) {
@@ -371,40 +506,36 @@
         $('#hapusModal').modal('show');
     }
 
-    async function HandleChangeDivsion(el, targetId) {
-        let $picSelect = $('#' + targetId); // Gunakan selector jQuery
+    async function HandleChangeDivsion(el, targetId, selectedPic = []) {
+        let $picSelect = $('#' + targetId);
         let userId = {{ Auth::id() }};
 
-        // 1. Reset Select2 dengan benar
-        $picSelect.empty(); // Menghapus semua option lama
-        $picSelect.append('<option value="" disabled>Sedang memuat...</option>');
-        $picSelect.trigger('change'); // Beritahu Select2 untuk refresh tampilan
+        $picSelect.empty();
 
         try {
             const response = await fetch(`${baseUrl}/api/get-users/${el.value}/${userId}`);
-            if (!response.ok) throw new Error('Gagal Mengambil Data PIC');
+            if (!response.ok) throw new Error();
 
             const data = await response.json();
 
-            // 2. Reset lagi sebelum mengisi data baru
-            $picSelect.empty(); 
-            
-            if (data.length > 0) {
-                data.forEach(pic => {
-                    // Menggunakan new Option(text, value)
-                    let newOption = new Option(pic.email, pic.id, false, false);
-                    $picSelect.append(newOption);
-                });
-            } else {
-                $picSelect.append('<option value="" disabled>Tidak ada PIC ditemukan</option>');
-            }
+            data.forEach(pic => {
 
-            // 3. Trigger change agar Select2 merender ulang opsi yang baru saja dimasukkan
+                let selected = selectedPic.includes(pic.id.toString());
+
+                let option = new Option(
+                    pic.email,
+                    pic.id,
+                    selected,
+                    selected
+                );
+
+                $picSelect.append(option);
+            });
+
             $picSelect.trigger('change');
-        } catch (error) {
-            console.error('Error:', error);
-            $picSelect.empty().append('<option value="" disabled>Gagal memuat data</option>').trigger('change');
-            alert('Terjadi kesalahan saat mengambil data PIC.');
+
+        } catch(err){
+            console.log(err);
         }
     }
     $(document).ready(function() {

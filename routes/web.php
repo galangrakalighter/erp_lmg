@@ -194,6 +194,7 @@ Route::middleware('auth')->group(function() {
     Route::get('hc_dailywork', [App\Http\Controllers\HCDailyController::class, 'index'])->name('hc_daily.index');
     Route::post('kpi/store', [App\Http\Controllers\HCOverviewController::class, 'tambahKPI'])->name('kpi.store');
     Route::put('kpi/{id}', [App\Http\Controllers\HCOverviewController::class, 'editKPI'])->name('kpi.update');
+    Route::put('kpi/{id}/selesai', [App\Http\Controllers\HCOverviewController::class, 'endKPI'])->name('kpi.endKPI');
     Route::delete('kpi/{id}', [App\Http\Controllers\HCOverviewController::class, 'deleteKPI'])->name('kpi.destroy');
     // Route::get('/payment', function(){
     //     $title = "Payment - ";

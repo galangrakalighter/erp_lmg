@@ -33,7 +33,7 @@ class HCOverviewController extends Controller
         $RoleSekarang = $user->isAdmin == false ? DB::table('roles')->where('id', $divisi['role_id'])->value('role_name') : "Super Admin";
         // Label kesulitan tetap perlu dikirim ke view untuk filter select
         $difficultyLabels = [
-            1 => 'Sangat Mudah', 2 => 'Mudah', 3 => 'Sedang', 4 => 'Sulit', 5 => 'Sangat Sulit'
+            1 => 'Sangat Mudah', 2 => 'Mudah', 3 => 'Sedang', 5 => 'Sulit', 8 => 'Sangat Sulit'
         ];
 
         $result = [];

@@ -105,22 +105,22 @@
         btnIcon.classList.add('d-none');
         btnSpinner.classList.remove('d-none');
         statusMessage.classList.add('d-none');
+        const csrf = document
+        .querySelector('meta[name="csrf-token"]')
+        .getAttribute('content');
 
         try {
-            const csrf = document
-                .querySelector('meta[name="csrf-token"]')
-                .getAttribute('content');
             const response = await fetch("{{ route('n8n.trigger') }}", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-CSRF-TOKEN": csrf,
-                    "Accept": "application/json"
+                    "X-CSRF-TOKEN": csrf
                 },
                 body: JSON.stringify(payload)
             });
 
             const result = await response.json();
+            console.log(result);
             statusMessage.classList.remove('d-none');
             statusMessage.innerText = result.message;
             statusMessage.className = `mt-4 alert alert-modern py-3 ${response.ok ? 'alert-success' : 'alert-danger'}`;
@@ -132,6 +132,7 @@
             }
 
         } catch (error) {
+            console.log(error)
             statusMessage.classList.remove('d-none');
             statusMessage.className = "mt-4 alert alert-danger alert-modern";
             statusMessage.innerText = "Error menghubungi server.";

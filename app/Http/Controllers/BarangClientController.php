@@ -32,7 +32,7 @@ class BarangClientController extends Controller
     public function trigger(Request $request)
     {
         // Ganti dengan URL Production Webhook n8n Anda
-        $n8nWebhookUrl = 'https://bmglbl3.n8n.bocindonesia.com/webhook-test/02e158b3-fcaa-4859-941b-7a39203c51d1';
+        $n8nWebhookUrl = 'https://bmglbl3.n8n.bocindonesia.com/webhook/02e158b3-fcaa-4859-941b-7a39203c51d1';
 
         $request->validate([
             'automation_type' => 'required',
@@ -58,10 +58,14 @@ class BarangClientController extends Controller
             if ($response->successful()) {
                 return response()->json(['status' => 'success', 'message' => 'Data dikirim! n8n sedang memproses.']);
             }
-            return response()->json(['status' => 'error', 'message' => 'Gagal: ' . $response->status()], $response->status());
+            return response()->json(['status' => 'error', 'message' => 'Gagal: ' . $response], $response->status());
         } catch (\Exception $e) {
             return response()->json(['status' => 'error', 'message' => 'Koneksi gagal.'], 500);
         }
+    }
+    public function triggerBaru(Request $request)
+    {
+        return response()->json(['status' => 'success']);
     }
 
     /**

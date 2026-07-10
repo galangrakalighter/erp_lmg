@@ -202,6 +202,7 @@
                                                         <a href="{{ route('branding', ['id_produk' => $client->id, 'platform' => $plt]) }}">Branding</a>
                                                         <a href="{{ route('analisis', ['id_produk' => $client->id, 'platform' => $plt]) }}">Analisis</a>
                                                         <a href="{{ route('manajemen', ['id_produk' => $client->id, 'platform' => $plt]) }}">Content Plan</a>
+                                                        <a href="{{ route('PDF', ['id_produk' => $client->id]) }}">File</a>
                                                     </div>
                                                 @empty
                                                     <span class="text-muted small p-2 d-block">Platform belum diset</span>

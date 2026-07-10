@@ -107,11 +107,15 @@
         statusMessage.classList.add('d-none');
 
         try {
+            const csrf = document
+                .querySelector('meta[name="csrf-token"]')
+                .getAttribute('content');
             const response = await fetch("{{ route('n8n.trigger') }}", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-CSRF-TOKEN": "{{ csrf_token() }}"
+                    "X-CSRF-TOKEN": csrf,
+                    "Accept": "application/json"
                 },
                 body: JSON.stringify(payload)
             });

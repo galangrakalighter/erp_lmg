@@ -376,7 +376,7 @@ class HCDailyController extends Controller
             ->join('user_division', 'user_division.user_id', '=', 'users.id')
             ->join('roles', 'roles.id', '=', 'user_division.role_id')
             ->leftJoin('kpi', 'kpi.id', '=', 'task.id_kpi')
-            ->select('task.*', 'users.email as vic_email', 'produk_client.nama as project_name', 'roles.role_name as vic_role', 'user_division.parent_id', 'roles.level', DB::raw("COALESCE(kpi.nama_kpi, '-') as nama_kpi"))
+            ->select('task.*', 'users.email as vic_email', 'produk_client.nama as project_name', 'roles.role_name as vic_role', 'user_division.parent_id', 'roles.level', DB::raw("COALESCE(kpi.nama_kpi, '-') as nama_kpi"), 'kpi.note as catatan_kpi')
             ->where('task.pic', $userId)
             ->whereNotNull('task.jam_mulai')
             ->where(function($query) use ($today) {

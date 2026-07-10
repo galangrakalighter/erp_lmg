@@ -1091,7 +1091,59 @@
                                 </div>
                             </div>
                         </div>
-                        ${task.note ? `<div class="mt-1" style="font-size: 8.5px; opacity: 0.9; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">${task.note}</div>` : ''}
+                        <div class="mt-2 d-flex pt-2"
+                            style="
+                                font-size:10px;
+                                line-height:1.3;
+                                color:#000;
+                                border-top:1px solid #000;
+                            ">
+
+                            <!-- NOTE TASK -->
+                            <div class="w-50 pr-2"
+                                style="
+                                    overflow:hidden;
+                                    border-right:1px solid #000;
+                                ">
+                                <div style="font-size:9px; font-weight:700; color:#000; text-transform:uppercase;">
+                                    Note Task
+                                </div>
+
+                                <div
+                                    title="${task.note || '-'}"
+                                    style="
+                                        font-size:11px;
+                                        font-weight:500;
+                                        color:#000;
+                                        white-space:nowrap;
+                                        overflow:hidden;
+                                        text-overflow:ellipsis;
+                                    ">
+                                    ${task.note || '-'}
+                                </div>
+                            </div>
+
+                            <!-- CATATAN KPI -->
+                            <div class="w-50 pl-2" style="overflow:hidden;">
+                                <div style="font-size:9px; font-weight:700; color:#000; text-transform:uppercase;">
+                                    Catatan KPI
+                                </div>
+
+                                <div
+                                    title="${task.catatan_kpi || '-'}"
+                                    style="
+                                        font-size:11px;
+                                        font-weight:500;
+                                        color:#000;
+                                        white-space:nowrap;
+                                        overflow:hidden;
+                                        text-overflow:ellipsis;
+                                    ">
+                                    ${task.catatan_kpi || '-'}
+                                </div>
+                            </div>
+
+                        </div>
                     </div>
                     ${isMyTask ? '<div class="resize-handle" style="position: absolute; bottom: 0; left: 0; right: 0; height: 5px; cursor: ns-resize;"></div>' : ''}
                 </div>
@@ -1101,8 +1153,6 @@
         function renderButtons(task, isMyTask) {
             const status = parseInt(task.status);
             const approve = task.tanggal_approve;
-            console.log(approve);
-            console.log(getRole);
             const btnClass = "btn btn-xs shadow-sm font-weight-bold";
 
             if (isMyTask) {
@@ -1138,7 +1188,7 @@
                     else if (myRole === 3 && task.vic_role === 3) canApprove = true;
                 }
                 
-                if (getRole.name === 'Super Admin') canApprove = true;
+                if (getRole.role_name === 'Super Admin') canApprove = true;
 
                 if (canApprove) {
                     return `<div class="d-flex">

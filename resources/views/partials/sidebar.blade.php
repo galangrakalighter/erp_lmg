@@ -303,7 +303,7 @@
                                     <div class="client-item-wrapper" style="width: 7vw">
                                         {{-- Bagian Header Client --}}
                                         @if($canOpen)
-                                            <a class="client-dropdown-link collapsed" data-toggle="collapse" data-target="#client_lgtr_{{ $client->id }}">
+                                            <a class="client-dropdown-link collapsed" data-toggle="collapse" data-target="#client_mcn_{{ $client->client_id }}">
                                                 <span><i class="far fa-user-circle mr-2"></i>{{ $client->nama }}</span>
                                                 <i class="fas fa-caret-right arrow-icon-xs"></i>
                                             </a>
@@ -317,8 +317,13 @@
 
                                         {{-- Bagian Isi Platform (Hanya dirender jika punya akses) --}}
                                         @if($canOpen)
-                                            <div id="client_mcn" class="collapse ml-3">
+                                            <div id="client_mcn_{{ $client->client_id }}" class="collapse ml-3">
                                                 <div class="platform-sub-links">
+                                                    <div class="client-item-wrapper mb-2">
+                                                        <a class="client-dropdown-link {{ request()->is('PDF') ? 'active' : '' }}" href="{{ route('PDF', ['id_produk' => $client->id]) }}">
+                                                            <span>File</span>
+                                                        </a>
+                                                    </div>
                                                 </div>
                                             </div>
                                         @endif
@@ -435,7 +440,7 @@
                                     <div class="client-item-wrapper" style="width: 7vw">
                                         {{-- Bagian Header Client --}}
                                         @if($canOpen)
-                                            <a class="client-dropdown-link collapsed" data-toggle="collapse" data-target="#client_tech">
+                                            <a class="client-dropdown-link collapsed" data-toggle="collapse" data-target="#client_tech_{{ $client->client_id }}">
                                                 <span><i class="far fa-user-circle mr-2"></i>{{ $client->nama }}</span>
                                                 <i class="fas fa-caret-right arrow-icon-xs"></i>
                                             </a>
@@ -449,7 +454,7 @@
 
                                         {{-- Bagian Isi Platform (Hanya dirender jika punya akses) --}}
                                         @if($canOpen)
-                                            <div id="client_tech" class="collapse ml-3">
+                                            <div id="client_tech_{{ $client->client_id }}" class="collapse ml-3">
                                                 <div class="platform-sub-links">
                                                     <div class="client-item-wrapper mb-2">
                                                         <a class="client-dropdown-link {{ request()->is('finance_coa') ? 'active' : '' }}" href="#">
@@ -464,6 +469,11 @@
                                                     <div class="client-item-wrapper mb-2">
                                                         <a class="client-dropdown-link {{ request()->is('finance_coa') ? 'active' : '' }}" href="#">
                                                             <span>Monitoring</span>
+                                                        </a>
+                                                    </div>
+                                                    <div class="client-item-wrapper mb-2">
+                                                        <a class="client-dropdown-link {{ request()->is('PDF') ? 'active' : '' }}" href="{{ route('PDF', ['id_produk' => $client->id]) }}">
+                                                            <span>File</span>
                                                         </a>
                                                     </div>
                                                 </div>

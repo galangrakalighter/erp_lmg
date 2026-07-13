@@ -1186,6 +1186,7 @@
                     if (myRole === 1 && task.level === 2) canApprove = true;
                     else if (myRole === 2 && task.level === 3) canApprove = true;
                     else if (myRole === 3 && task.vic_role === 3) canApprove = true;
+                    else if (myRole === 1) canApprove = true;
                 }
                 
                 if (getRole.role_name === 'Super Admin') canApprove = true;

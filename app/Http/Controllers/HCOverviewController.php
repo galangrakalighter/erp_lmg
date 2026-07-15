@@ -664,20 +664,6 @@ class HCOverviewController extends Controller
         ]);
     }
 
-    public function dashboard(){
-        $title = 'Dashboard';
-        $user = Auth::user();
-
-        $divisi = User::find(Auth::user()->id)->userDivisions;
-        $role = $user->isAdmin == false ? DB::table('roles')->where('id', $divisi['role_id'])->value('role_name') : "Super Admin";
-        $allUser = UserDivision::join('users', 'users.id', '=', 'user_division.user_id')->where('user_division.parent_id', $user->id)->orWhere('user_division.user_id', $user->id)->select('users.id', 'users.email')->get();
-        if($user->isAdmin == true){
-            $allUser = User::where('isAdmin', false)->get();
-        }
-
-        return view('hc.dashboard', compact('title', 'allUser', 'role'));
-    }
-
     public function getTasksByDate(Request $request)
     {
         $tanggal = $request->query('tanggal');

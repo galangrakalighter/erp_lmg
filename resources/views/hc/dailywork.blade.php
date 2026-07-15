@@ -523,7 +523,7 @@
                         <div class="row">
                             <div class="col-md-6 form-group mb-4">
                                 <label class="font-weight-bold text-dark small">DIVISI</label>
-                                <select name="divisi" class="form-control custom-select shadow-sm border-0" required>
+                                <select name="divisi" class="form-control custom-select shadow-sm border-0" id="divisiId" required>
                                     @foreach($result as $divId => $nama)
                                         <option value="{{ $divId }}">{{ $nama }}</option>
                                     @endforeach
@@ -968,6 +968,7 @@
 
             // 2. Perhitungan Jam Selesai
             let totalMenitSelesai = (validH * 60) + validM + durasiMenit;
+            console.log(durasiMenit);
             let jamSelesai = Math.floor(totalMenitSelesai / 60);
             let menitSelesai = totalMenitSelesai % 60;
 
@@ -1636,6 +1637,7 @@
     const baseUrl = window.location.origin;
     // Tambah
     const inputPic = document.getElementById('pic_select');
+    const inputDivisi = document.getElementById('divisiId');
     const inputTanggal = document.getElementById('tanggal_mulai');
     const inputMulai = document.getElementById('jam_mulai');
     const inputSelesai = document.getElementById('jam_selesai');
@@ -1768,9 +1770,11 @@
         const mulai = inputMulai.value;
         const selesai = inputSelesai.value;
 
+        const divisiId = inputDivisi.value;
+
         if (mulai) {
             const jamM = parseInt(mulai.split(':')[0]);
-            let limitMulai = (picId == "39") ? 8 : 9;
+            let limitMulai = (divisiId == "5") ? 8 : 9;
             if (jamM < limitMulai) {
                 alert(`PIC ini minimal mulai jam 0${limitMulai}:00`);
                 inputMulai.value = ""; return;

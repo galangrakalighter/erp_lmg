@@ -24,4 +24,11 @@ class KPI extends Model
     {
         return $this->belongsToMany(User::class, 'kpi_user', 'kpi_id', 'user_id');
     }
+    
+    public function projectClient()
+    {
+        // 'project' adalah nama kolom foreign key di tabel kpi
+        // 'id' adalah primary key di tabel produk_client
+        return $this->belongsTo(ProdukClient::class, 'project', 'id');
+    }
 }

@@ -30,4 +30,9 @@ class ProdukClient extends Model
     public function divisions() {
         return $this->belongsToMany(Division::class, 'client_division', 'client_id', 'division_id');
     }
+
+    public function kpis()
+    {
+        return $this->hasMany(KPI::class, 'project', 'id');
+    }
 }

@@ -10,58 +10,75 @@ class KPIController extends Controller
     {
         $isAdmin = Auth::user()->isAdmin == true;
 
-        // 1. Base Query
-        if ($isAdmin && !$request->filled('user_id')) {
-            $kpiQuery = \App\Models\KPI::query();
-        } elseif ($isAdmin && $request->filled('user_id')) {
-            $kpiQuery = \App\Models\KPI::whereHas('pics', function($q) use ($request) {
-                $q->where('user_id', $request->user_id);
-            });
+        // 1. Base Query (Filter User/Project saja, TANPA filter tanggal)
+       if ($isAdmin) {
+            if ($request->filled('user_id')) {
+                $baseQuery = \App\Models\KPI::whereHas('pics', function($q) use ($request) {
+                    $q->where('user_id', $request->user_id);
+                });
+            } else {
+                $baseQuery = \App\Models\KPI::query();
+            }
         } else {
-            $kpiQuery = Auth::user()->kpis();
+            // Non-admin: 
+            // 1. Tampilkan jika dia adalah PIC (kpis)
+            // 2. ATAU Tampilkan jika KPI tersebut memiliki divisi yang sama dengan miliknya
+            $userDivisions = Auth::user()->userDivisions()->pluck('division_id')->toArray();
+
+            $baseQuery = \App\Models\KPI::where(function($q) use ($request, $userDivisions) {
+                // Kondisi A: Jika ada filter user_id dari request, pakai itu
+                if ($request->filled('user_id')) {
+                    $q->whereHas('pics', function($sub) use ($request) {
+                        $sub->where('user_id', $request->user_id);
+                    });
+                } else {
+                    // Kondisi B: Default (jika tidak ada filter user_id)
+                    // Tampilkan KPI miliknya sendiri ATAU KPI yang divisinya cocok
+                    $q->whereHas('pics', function($sub) {
+                        $sub->where('user_id', Auth::id());
+                    })->orWhereIn('divisi', $userDivisions);
+                }
+            });
+        }
+        if ($request->filled('project_id')) {
+            $baseQuery->where('project', $request->project_id);
         }
 
-        // Filter Project & Tanggal
-        if ($request->filled('project_id')) $kpiQuery->where('project', $request->project_id);
-        if ($request->filled('start_date')) $kpiQuery->where('tanggal_mulai', '>=', $request->start_date);
-        if ($request->filled('end_date')) $kpiQuery->where('tanggal_deadline', '<=', $request->end_date);
+        // 2. Query untuk Statistik Berdasarkan Rentang Tanggal (Filter Start & End)
+        $filteredQuery = (clone $baseQuery);
+        if ($request->filled('start_date')) $filteredQuery->where('tanggal_mulai', '>=', $request->start_date);
+        if ($request->filled('end_date')) $filteredQuery->where('tanggal_deadline', '<=', $request->end_date);
 
-        // 2. Perhitungan Statistik Dasar 
-        // SESUAIKAN status: Misal 2 = Selesai, 1 = Progress
-        $total = (clone $kpiQuery)->count();
-        $selesai = (clone $kpiQuery)->where('status', 1)->count(); 
-        $progress = (clone $kpiQuery)->where('status', 0)->count();
+        $total = (clone $filteredQuery)->count();
+        $selesai = (clone $filteredQuery)->where('status', 1)->count(); 
+        $progress = (clone $filteredQuery)->where('status', 0)->whereDate('tanggal_deadline', '>=', now())->count();
+        $overdue = (clone $filteredQuery)->where('status', '!=', 1)
+                                        ->whereDate('tanggal_deadline', '<', now())
+                                        ->count();
+
+        // 3. Perhitungan untuk Hari Ini & Besok (MENGABAIKAN filter tanggal dari request)
+        // Gunakan $baseQuery agar filter user/project tetap jalan, tapi tanggal tidak
+        $Hariini = (clone $baseQuery)->whereDate('tanggal_deadline', now()->toDateString())->count();
+        $Besok = (clone $baseQuery)->whereDate('tanggal_deadline', now()->addDay()->toDateString())->count();
         
-        // Overdue: Status bukan 2 (belum selesai) DAN tanggal deadline sudah lewat
-        $overdue = (clone $kpiQuery)->where('status', '!=', 1)
-                                ->whereDate('tanggal_deadline', '<', now())
-                                ->count();
+        // List Deadline Hari Ini (juga abaikan filter tanggal request)
+        $deadlinesHariIni = (clone $baseQuery)
+            ->whereDate('tanggal_deadline', now()->toDateString())
+            ->where('status', '!=', 2) 
+            ->limit(5)
+            ->get();
 
-        // 3. Perhitungan Baru untuk Kartu Kanan
-        $Hariini = (clone $kpiQuery)->whereDate('tanggal_deadline', now()->toDateString())->count();
-
-        // Deadline minggu depan (atau target selanjutnya)
-        $Besok = (clone $kpiQuery)->whereDate('tanggal_deadline', now()->addDay()->toDateString())->count();
-        
-        $pointBulanIni = (clone $kpiQuery)
-                        ->where('status', 1) 
-                        ->whereBetween('tanggal_deadline', [
-                            now()->startOfMonth()->toDateString(), 
-                            now()->endOfMonth()->toDateString()
-                        ])
-                        ->sum('point');
-        
-        $deadlinesHariIni = (clone $kpiQuery)
-        ->whereDate('tanggal_deadline', now()->toDateString())
-        ->where('status', '!=', 2) // Asumsi 2 adalah selesai
-        ->limit(5)
-        ->get();
-
-        $aktivitasMingguIni = (clone $kpiQuery)
-        ->whereBetween('tanggal_deadline', [now()->startOfWeek(), now()->endOfWeek()])
-        ->orderBy('updated_at', 'desc') // atau kolom tanggal lainnya
-        ->limit(5)
-        ->get();
+        // Point Bulan Ini (biasanya tetap ingin sesuai filter atau bulan berjalan, 
+        // jika ingin tetap sesuai bulan berjalan saja tanpa terpengaruh filter date, pakai $baseQuery)
+        $pointBulanIni = (clone $baseQuery)
+            ->where('status', 1) 
+            ->whereBetween('tanggal_deadline', [now()->startOfMonth(), now()->endOfMonth()])
+            ->sum('point');
+            
+        $aktivitasMingguIni = (clone $filteredQuery)
+            ->with(['pics', 'projectClient'])
+            ->orderBy('tanggal_mulai', 'asc')
+            ->get();
 
         return response()->json([
             'total' => $total,

@@ -53,7 +53,7 @@ class DashboardController extends Controller
 
         $divisi = User::find(Auth::user()->id)->userDivisions;
         $role = $user->isAdmin == false ? DB::table('roles')->where('id', $divisi[0]['role_id'])->value('role_name') : "Super Admin";
-        $listBawahan = UserDivision::join('users', 'users.id', '=', 'user_division.user_id')->where('user_division.parent_id', $user->id)->orWhere('user_division.user_id', $user->id)->whereNot('user_division.user_id', Auth::id())->select('users.id', 'users.email')->get();
+        $listBawahan = UserDivision::join('users', 'users.id', '=', 'user_division.user_id')->where('user_division.parent_id', $user->id)->orWhere('user_division.user_id', $user->id)->select('users.id', 'users.email')->get();
         if($user->isAdmin == true){
             $listBawahan = User::where('isAdmin', false)->get();
         }

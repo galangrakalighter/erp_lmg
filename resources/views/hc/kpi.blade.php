@@ -207,6 +207,10 @@
             margin-bottom: 20px;
         }
     }
+
+    .cursor-pointer { cursor: pointer; transition: 0.3s; }
+    .cursor-pointer:hover { transform: scale(1.02); opacity: 0.9; }
+    .stat-card.active { border: 2px solid #007bff; }
 </style>
 
 <div class="container-fluid">
@@ -263,7 +267,7 @@
         </div>
 
         <!-- Selesai -->
-        <div class="stat-card">
+        <div class="stat-card cursor-pointer" onclick="filterByStatus('selesai')">
             <div class="icon-box icon-green">
                 <i class="bi bi-check-circle-fill"></i>
             </div>
@@ -273,7 +277,7 @@
         </div>
 
         <!-- Progress -->
-        <div class="stat-card">
+        <div class="stat-card cursor-pointer" onclick="filterByStatus('progress')">
             <div class="icon-box icon-yellow">
                 <i class="bi bi-pie-chart-fill"></i>
             </div>
@@ -283,7 +287,7 @@
         </div>
 
         <!-- Overdue -->
-        <div class="stat-card">
+        <div class="stat-card cursor-pointer" onclick="filterByStatus('overdue')">
             <div class="icon-box icon-red">
                 <i class="bi bi-exclamation-triangle-fill"></i>
             </div>
@@ -310,64 +314,79 @@
         </div>
 
         <!-- Kolom Kanan: Daftar Item -->
-        <div class="list-container border-start ps-4">
-            <!-- KPI Hari Ini -->
-            <div class="kpi-mini-card" style="background: #f8f9ff;">
-                <div class="kpi-icon-box bg-primary text-white"><i class="bi bi-calendar-event"></i></div>
-                <div class="flex-grow-1">
-                    <div class="fw-bold">KPI Hari Ini</div>
-                    <div class="small text-muted">Deadline hari ini</div>
-                </div>
-                <div class="h4 text-primary fw-bold m-0" id="val-kpi-hari-ini">0 <br><span style="font-size: 10px; font-weight: normal;">KPI</span></div>
-            </div>
+        <div class="list-container border-start ps-4 flex-grow-1">
+            <div class="row">
+                <!-- Bagian Kiri Container: KPI & Points -->
+                <div class="col-md-6">
+                    <div class="kpi-mini-card mb-3" style="background: #f8f9ff;">
+                        <div class="kpi-icon-box bg-primary text-white"><i class="bi bi-calendar-event"></i></div>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">KPI Hari Ini</div>
+                            <div class="small text-muted">Deadline hari ini</div>
+                        </div>
+                        <div class="h4 text-primary fw-bold m-0" id="val-kpi-hari-ini">0</div>
+                    </div>
 
-            <!-- Deadline Besok -->
-            <div class="kpi-mini-card" style="background: #f6fdf9;">
-                <div class="kpi-icon-box bg-success text-white"><i class="bi bi-calendar-check"></i></div>
-                <div class="flex-grow-1">
-                    <div class="fw-bold">Deadline Besok</div>
-                    <div class="small text-muted">Jangan sampai terlewat</div>
-                </div>
-                <div class="h4 text-success fw-bold m-0" id="val-deadline-besok">0 <br><span style="font-size: 10px; font-weight: normal;">KPI</span></div>
-            </div>
+                    <div class="kpi-mini-card mb-3" style="background: #f6fdf9;">
+                        <div class="kpi-icon-box bg-success text-white"><i class="bi bi-calendar-check"></i></div>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">Deadline Besok</div>
+                            <div class="small text-muted">Jangan sampai terlewat</div>
+                        </div>
+                        <div class="h4 text-success fw-bold m-0" id="val-deadline-besok">0</div>
+                    </div>
 
-            <!-- Point Bulan Ini -->
-            <div class="kpi-mini-card" style="background: #fcf9ff;">
-                <div class="kpi-icon-box" style="background: #8e44ad; color: white;"><i class="bi bi-trophy"></i></div>
-                <div class="flex-grow-1">
-                    <div class="fw-bold">Point Bulan Ini</div>
-                    <div class="small text-muted">Dari KPI yang diselesaikan</div>
+                    <div class="kpi-mini-card" style="background: #fcf9ff;">
+                        <div class="kpi-icon-box" style="background: #8e44ad; color: white;"><i class="bi bi-trophy"></i></div>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">Point Bulan Ini</div>
+                            <div class="small text-muted">Total point</div>
+                        </div>
+                        <div class="h4 fw-bold m-0" style="color: #8e44ad;" id="val-point-bulan-ini">0</div>
+                    </div>
                 </div>
-                <div class="h4 fw-bold m-0" style="color: #8e44ad;" id="val-point-bulan-ini">0 <br><span style="font-size: 10px; font-weight: normal;">Point</span></div>
+
+                <!-- Bagian Kanan Container: Deadline Hari Ini (List) -->
+                <div class="col-md-6">
+                    <div class="h6 mb-3 fw-bold"><i class="bi bi-clock text-primary me-2"></i> Deadline Hari Ini</div>
+                    <div id="list-deadline" style="max-height: 250px; overflow-y: auto;">
+                        <!-- Data akan masuk ke sini via JS -->
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- Deadline Hari Ini -->
     <div class="row mt-4">
-        <!-- Deadline Hari Ini -->
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm p-4 rounded-4">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="m-0"><i class="bi bi-clock text-primary me-2"></i> Deadline Hari Ini</h5>
-                    <a href="#" class="text-decoration-none small">Lihat semua</a>
-                </div>
-                <!-- Target Injeksi Data -->
-                <div id="list-deadline">
-                    <!-- Data akan masuk ke sini via JS -->
-                </div>
-            </div>
-        </div>
 
         <!-- Aktivitas Terbaru -->
-        <div class="col-md-6">
+        <div class="col-12">
             <div class="card border-0 shadow-sm p-4 rounded-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="m-0"><i class="bi bi-lightning-charge text-warning me-2"></i> Aktivitas Terbaru</h5>
-                    <a href="#" class="text-decoration-none small">Lihat semua</a>
                 </div>
                 <!-- Target Injeksi Data -->
-                <div id="list-aktivitas">
-                    <!-- Data akan masuk ke sini via JS -->
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Tanggal</th>
+                                <th>Client</th>
+                                <th>Nama KPI</th>
+                                <th>PIC (Email)</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="list-aktivitas-body">
+                            <!-- Data akan masuk ke sini via JS -->
+                        </tbody>
+                    </table>
+                    <nav>
+                        <ul class="pagination pagination-sm justify-content-center" id="pagination-controls">
+                            <!-- Tombol akan muncul di sini -->
+                        </ul>
+                    </nav>
                 </div>
             </div>
         </div>
@@ -377,6 +396,26 @@
 
 <!-- JavaScript untuk mengambil data statistik -->
 <script>
+let currentPage = 1;
+let data = null;
+const itemsPerPage = 5; // Ubah sesuai kebutuhan
+
+let currentFilter = 'all'; // Default menampilkan semua
+
+function filterByStatus(status) {
+    // Toggle: Jika diklik filter yang sama, maka reset ke 'all'
+    currentFilter = (currentFilter === status) ? 'all' : status;
+    
+    // Update visual kartu aktif
+    document.querySelectorAll('.stat-card').forEach(card => card.classList.remove('active'));
+    if (currentFilter !== 'all') {
+        // Logika sederhana untuk menandai kartu aktif (sesuaikan selector jika perlu)
+        event.currentTarget.classList.add('active');
+    }
+    
+    renderAktivitas(1); // Render ulang tabel dengan filter baru
+}
+
 async function loadStats() {
     const projectId = document.getElementById('filterProject').value;
     const userId = document.getElementById('filterUser') ? document.getElementById('filterUser').value : '';
@@ -389,7 +428,7 @@ async function loadStats() {
     if (dateEnd) url += `&end_date=${dateEnd}`;
 
     const response = await fetch(url);
-    const data = await response.json();
+    data = await response.json();
     console.log(data);
 
     // Update Angka
@@ -431,40 +470,156 @@ async function loadStats() {
         listDeadline.innerHTML = '<p class="text-muted small text-center py-2">Tidak Ada Deadline Hari Ini.</p>';
     }
 
-    // 5. Update List Aktivitas Terbaru
-    const listAktivitas = document.getElementById('list-aktivitas');
-    listAktivitas.innerHTML = ''; // Reset isi
-    if(data.aktivitas.length > 0){
-        data.aktivitas.forEach(item => {
-            listAktivitas.innerHTML += `
-                <div class="d-flex align-items-start mb-3">
-                    <div class="text-success mt-1 me-3"><i class="bi bi-circle-fill" style="font-size: 10px;"></i></div>
-                    <div>
-                        <div class="small text-muted">${item.waktu || 'Baru saja'}</div>
-                        <div class="fw-bold">${item.deskripsi}</div>
-                        <div class="small">${item.keterangan || ''}</div>
-                    </div>
-                </div>`;
+    currentPage = 1;
+    renderAktivitas(currentPage);
+}
+
+function renderAktivitas(page = 1) {
+    const listBody = document.getElementById('list-aktivitas-body');
+    const paginationControls = document.getElementById('pagination-controls');
+    listBody.innerHTML = '';
+    
+    const today = new Date().toISOString().split('T')[0];
+
+    // Filter data berdasarkan kriteria
+    let filteredData = data.aktivitas.filter(item => {
+        if (currentFilter === 'all') return true;
+        if (currentFilter === 'selesai') return item.status == 1;
+        if (currentFilter === 'progress') return item.status == 0 && item.tanggal_deadline >= today;
+        if (currentFilter === 'overdue') return item.status == 0 && item.tanggal_deadline < today;
+        return true;
+    });
+
+    // Paginasi pada hasil filter
+    const start = (page - 1) * itemsPerPage;
+    const paginatedItems = filteredData.slice(start, start + itemsPerPage);
+    const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+
+    
+    // Render Baris Tabel
+    if (paginatedItems.length > 0) {
+        
+        // Lalu di template HTML:
+        paginatedItems.forEach(item => {
+            const picEmails = item.pics && item.pics.length > 0 
+                ? item.pics.map(pic => `<span class="badge bg-light text-dark border m-1">${pic.email}</span>`).join('')
+                : '<span class="text-muted small">Tanpa PIC</span>';
+            const picEmail = item.pics && item.pics.length > 0 
+                ? `<span class="badge bg-light text-dark border">${item.pics[0].email}</span>` 
+                : '<span class="text-muted small">Tanpa PIC</span>';
+
+            const btnSelesai = item.status == 0 
+                ? `<button class="btn btn-sm btn-success" onclick="selesaikanKPI(${item.id})">
+                     <i class="bi bi-check-lg"></i> Selesai
+                   </button>` 
+                : '<span class="badge bg-secondary">Selesai</span>';
+
+            listBody.innerHTML += `
+                <tr>
+                    <td class="small text-muted">${item.tanggal_mulai || '-'}</td>
+                    <td class="fw-bold">${item.project_client.nama}</td>
+                    <td class="fw-bold">${item.nama_kpi}</td>
+                    <td>${picEmails}</td>
+                    <td>${btnSelesai}</td>
+                </tr>`;
         });
-    }else{
-        listAktivitas.innerHTML = '<p class="text-muted small text-center py-2">Tidak Ada Aktivitas Minggu Ini.</p>';
+    } else {
+        listBody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">Tidak ada aktivitas ditemukan.</td></tr>`;
+    }
+
+    // Render Tombol Pagination
+    paginationControls.innerHTML = '';
+    for (let i = 1; i <= totalPages; i++) {
+        paginationControls.innerHTML += `
+            <li class="page-item ${i === page ? 'active' : ''}">
+                <button class="page-link" onclick="changePage(${i})">${i}</button>
+            </li>`;
     }
 }
 
-// Panggil fungsi saat halaman selesai dimuat
-document.addEventListener('DOMContentLoaded', loadStats);
-// loadStats();
+function changePage(page) {
+    currentPage = page;
+    renderAktivitas(currentPage);
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    const now = new Date();
+    
+    // Mendapatkan tahun dan bulan saat ini
+    const year = now.getFullYear();
+    const month = (now.getMonth() + 1).toString().padStart(2, '0'); // Bulan dimulai dari 0
+    
+    // Mendapatkan tanggal pertama bulan ini
+    const firstDay = `${year}-${month}-01`;
+    
+    // Mendapatkan tanggal terakhir bulan ini
+    const lastDay = new Date(year, now.getMonth() + 1, 0).getDate().toString().padStart(2, '0');
+    const lastDayFormatted = `${year}-${month}-${lastDay}`;
+    
+    // Set value ke input
+    document.getElementById('dateStart').value = firstDay;
+    document.getElementById('dateEnd').value = lastDayFormatted;
+    
+    loadStats();
+});
+
+async function selesaikanKPI(id) {
+
+    if (!confirm('Yakin ingin menyelesaikan KPI ini?')) {
+        return;
+    }
+
+    try {
+
+        const response = await fetch(`/kpi/${id}/selesai`, {
+            method: 'PUT',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                'Accept': 'application/json'
+            }
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            alert('KPI berhasil diselesaikan.');
+            loadStats();
+        } else {
+            alert(result.message);
+        }
+
+    } catch (error) {
+        console.error(error);
+        alert('Terjadi kesalahan.');
+    }
+}
 
 function resetFilters() {
-    // Reset semua input ke nilai default
+    // 1. Reset Select Input
     document.getElementById('filterProject').value = '';
     if (document.getElementById('filterUser')) {
         document.getElementById('filterUser').value = '';
     }
-    document.getElementById('dateStart').value = '';
-    document.getElementById('dateEnd').value = '';
+
+    filterByStatus('all');
+
+    // 2. Hitung Tanggal Awal dan Akhir Bulan Ini
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = (now.getMonth() + 1).toString().padStart(2, '0');
     
-    // Panggil ulang loadStats
+    // Tanggal 1
+    const firstDay = `${year}-${month}-01`;
+    
+    // Tanggal terakhir bulan ini
+    const lastDay = new Date(year, now.getMonth() + 1, 0).getDate().toString().padStart(2, '0');
+    const lastDayFormatted = `${year}-${month}-${lastDay}`;
+
+    // 3. Terapkan ke Input
+    document.getElementById('dateStart').value = firstDay;
+    document.getElementById('dateEnd').value = lastDayFormatted;
+    
+    // 4. Panggil ulang loadStats
     loadStats();
 }
 </script>

@@ -498,11 +498,11 @@
         <li class="nav-item {{ request()->is('*HC*') ? 'active' : '' }}">
             <a class="nav-link {{ request()->is('*HC*') ? '' : 'collapsed' }}" href="#" 
             data-toggle="collapse" data-target="#collapseTech" 
-            aria-expanded="{{ request()->is('*HC*') ? 'true' : 'false' }}" aria-controls="collapseTech">
+            aria-expanded="{{ request()->is('*HC*') ? 'true' : 'false' }}" aria-controls="collapseEcommerce">
                 <span>Ecommerce</span>
             </a>
             
-            <div id="collapseTech" class="collapse {{ request()->is('*HC*') ? 'show' : '' }}" 
+            <div id="collapseEcommerce" class="collapse {{ request()->is('*HC*') ? 'show' : '' }}" 
                 aria-labelledby="headingHC" data-parent="#accordionSidebar">
                 <div class="collapse-container">
                     @if ($isSuperAdmin || $myDivision->name == "Ecommerce" && $myRole->level < 2)

@@ -494,6 +494,98 @@
             </div>
         </li>
         @endif
+        @if(Auth::user()->isAdmin == true || $myDivision->name == "Ecommrce")
+        <li class="nav-item {{ request()->is('*HC*') ? 'active' : '' }}">
+            <a class="nav-link {{ request()->is('*HC*') ? '' : 'collapsed' }}" href="#" 
+            data-toggle="collapse" data-target="#collapseTech" 
+            aria-expanded="{{ request()->is('*HC*') ? 'true' : 'false' }}" aria-controls="collapseTech">
+                <span>Ecommerce</span>
+            </a>
+            
+            <div id="collapseTech" class="collapse {{ request()->is('*HC*') ? 'show' : '' }}" 
+                aria-labelledby="headingHC" data-parent="#accordionSidebar">
+                <div class="collapse-container">
+                    @if ($isSuperAdmin || $myDivision->name == "Ecommerce" && $myRole->level < 2)
+                        <div class="px-2 mb-3">
+                            <a class="btn-cms-link" href="{{ route('client.produk_divisi', 5) }}">
+                                <i class="fas fa-cog mr-1"></i> Dashboard CMS
+                            </a>
+                        </div>
+                    @endif
+
+                    <a class="category-dropdown-link collapsed" data-toggle="collapse" data-target="#cat_mcn">
+                        <span><i class="fas fa-folder-open mr-2 text-info"></i>Client</span>
+                        <i class="fas fa-chevron-down arrow-icon-xs"></i>
+                    </a>
+
+                    <div class="group-wrapper mb-2">
+                        <div id="cat_mcn" class="collapse ml-2 border-left-custom">
+                            @foreach ($techProduk as $client)
+                                @if($myDivision->name == "Ecommerce" || $isSuperAdmin)
+                                    @php
+                                        // 1. Cek apakah user punya akses eksplisit ke client ini (dari tabel user_client)
+                                        $hasClientAccess = in_array($client->client_id, $myClientIds);
+
+                                        // 2. Tentukan Power User: Super Admin, Role Admin, atau Head of Division
+                                        // Mereka bisa melihat semua client tanpa harus terdaftar di tabel user_client
+                                        $isPowerUser = $isSuperAdmin || $myRole->role_name == "Busines Unit Head";
+
+                                        // 3. Syarat Utama Membuka Dropdown Client:
+                                        // Dia Power User ATAU (Berada di Divisi 1 DAN terdaftar di user_client)
+                                        $canOpen = $isPowerUser || (in_array(1, $myDivision->pluck('id')->toArray()) && $hasClientAccess);
+                                    @endphp
+
+                                    <div class="client-item-wrapper" style="width: 7vw">
+                                        {{-- Bagian Header Client --}}
+                                        @if($canOpen)
+                                            <a class="client-dropdown-link collapsed" data-toggle="collapse" data-target="#client_ecommerce_{{ $client->client_id }}">
+                                                <span><i class="far fa-user-circle mr-2"></i>{{ $client->nama }}</span>
+                                                <i class="fas fa-caret-right arrow-icon-xs"></i>
+                                            </a>
+                                        @else
+                                            {{-- Tampilan untuk yang tidak punya akses: Nama muncul tapi tidak bisa diklik --}}
+                                            <div class="p-1 text-muted" style="opacity: 0.6; cursor: not-allowed;">
+                                                <span><i class="far fa-user-circle mr-2"></i>{{ $client->nama }}</span>
+                                                <i class="fas fa-caret-right arrow-icon-xs"></i>
+                                            </div>
+                                        @endif
+
+                                        {{-- Bagian Isi Platform (Hanya dirender jika punya akses) --}}
+                                        @if($canOpen)
+                                            <div id="client_ecommerce_{{ $client->client_id }}" class="collapse ml-3">
+                                                {{-- <div class="platform-sub-links">
+                                                    <div class="client-item-wrapper mb-2">
+                                                        <a class="client-dropdown-link {{ request()->is('finance_coa') ? 'active' : '' }}" href="#">
+                                                            <span>Overview</span>
+                                                        </a>
+                                                    </div>
+                                                    <div class="client-item-wrapper mb-2">
+                                                        <a class="client-dropdown-link {{ request()->is('finance_coa') ? 'active' : '' }}" href="#">
+                                                            <span>Github</span>
+                                                        </a>
+                                                    </div>
+                                                    <div class="client-item-wrapper mb-2">
+                                                        <a class="client-dropdown-link {{ request()->is('finance_coa') ? 'active' : '' }}" href="#">
+                                                            <span>Monitoring</span>
+                                                        </a>
+                                                    </div>
+                                                    <div class="client-item-wrapper mb-2">
+                                                        <a class="client-dropdown-link {{ request()->is('PDF') ? 'active' : '' }}" href="{{ route('PDF', ['id_produk' => $client->id]) }}">
+                                                            <span>File</span>
+                                                        </a>
+                                                    </div>
+                                                </div> --}}
+                                            </div>
+                                        @endif
+                                    </div>
+                                @endif
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </li>
+        @endif
         @if(Auth::user()->isAdmin == true || $myDivision->name == 'Finance')
         <li class="nav-item {{ request()->is('*HC*') ? 'active' : '' }}">
             <a class="nav-link {{ request()->is('*HC*') ? '' : 'collapsed' }}" href="#" 

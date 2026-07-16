@@ -31,4 +31,8 @@ class Task extends Model
     public function user(){
         return $this->belongsTo(User::class, 'pic');
     }
+    public function projectClient()
+    {
+        return $this->belongsTo(ProdukClient::class, 'project', 'id');
+    }
 }

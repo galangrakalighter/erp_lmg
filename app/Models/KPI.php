@@ -27,8 +27,6 @@ class KPI extends Model
     
     public function projectClient()
     {
-        // 'project' adalah nama kolom foreign key di tabel kpi
-        // 'id' adalah primary key di tabel produk_client
         return $this->belongsTo(ProdukClient::class, 'project', 'id');
     }
 }

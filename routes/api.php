@@ -30,3 +30,4 @@ Route::PUT('/produk/{id}', [App\Http\Controllers\ProdukController::class, 'updat
 Route::DELETE('/produk/{id}', [App\Http\Controllers\ProdukController::class, 'hapusDataClient'])->name('client.hapusDataClient');
 Route::get('/produk-get/{id}', [App\Http\Controllers\ProdukController::class, 'getProduk']);
 Route::get('/invoices', [App\Http\Controllers\InvoiceController::class, 'getInvoiceData'])->name('api.invoices.data');
+Route::get('/get-user-divisions', [App\Http\Controllers\UserController::class, 'getUserDivision']);

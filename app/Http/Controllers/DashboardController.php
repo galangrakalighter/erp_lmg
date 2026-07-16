@@ -26,7 +26,7 @@ class DashboardController extends Controller
         if($user->isAdmin == true){
             $allUser = User::where('isAdmin', false)->get();
         }
-        $divisiId = $user->isAdmin == false ? $divisi[0]->divisi_id : null;
+        $divisiId = $user->isAdmin == false ? $divisi[0]->division_id : null;
         $produk =  DB::table('client_division')
             ->join('divisions', 'divisions.id', '=', 'client_division.division_id')
             ->join('produk_client', 'produk_client.id', '=', 'client_division.client_id');
@@ -36,8 +36,14 @@ class DashboardController extends Controller
             }
             $client = $produk->where('produk_client.status', 1)->select('produk_client.id as id_client', 'produk_client.nama as nama_client')
             ->get();
+        
+        if(Auth::user()->isAdmin == true){
+            $divisiList = DB::table('divisions')->get();
+        }else{    
+            $divisiList = DB::table('divisions')->where('id', $divisiId)->get();
+        }
 
-        return view('hc.dashboard_new', compact('title', 'allUser', 'role', 'client', 'divisiId'));
+        return view('hc.dashboard_new', compact('title', 'allUser', 'role', 'client', 'divisiId', 'divisiList'));
     }
 
     public function kpi_dashboard(){

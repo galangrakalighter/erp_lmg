@@ -216,39 +216,42 @@
 <div class="container-fluid">
 
     <!-- HEADER BARU: Teks Kiri, Kalender Kanan -->
-    <div class="dashboard-header">
-        <div class="header-text">
-            <h2>Halo, {{ Auth::user()->name }} 👋</h2>
-            <p>Selamat bekerja hari ini</p>
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <!-- Header Text -->
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">Halo, {{ Auth::user()->name }} 👋</h1>
+            <p class="text-muted small">Selamat bekerja hari ini</p>
         </div>
 
-        <div class="d-flex align-items-center gap-2">
-            <!-- Filter Project -->
-            <select id="filterProject" class="custom-select-filter" onchange="loadStats()">
+        <!-- Filter Section -->
+        <div class="d-flex align-items-center flex-wrap gap-2">
+            <!-- Filter Project & User -->
+            <select id="filterProject" class="form-control form-control-sm mr-2" style="width: auto; min-width: 150px;" onchange="loadStats()">
                 <option value="">Semua Project</option>
                 @foreach($listProject as $p)
                     <option value="{{ $p->id }}">{{ $p->nama }}</option>
                 @endforeach
             </select>
 
-            <!-- Filter Bawahan -->
-            <select id="filterUser" class="custom-select-filter" onchange="loadStats()">
+            <select id="filterUser" class="form-control form-control-sm mr-2" style="width: auto; min-width: 150px;" onchange="loadStats()">
                 <option value="">Semua Bawahan</option>
                 @foreach($listBawahan as $bawahan)
                     <option value="{{ $bawahan->id }}">{{ $bawahan->email }}</option>
                 @endforeach
             </select>
 
-            <!-- Filter Tanggal -->
-            <div class="d-flex align-items-center bg-white border rounded-3 px-2">
-                <input type="date" id="dateStart" class="border-0 bg-transparent py-2" style="font-size: 14px;" onchange="loadStats()">
-                <span class="text-muted px-1">s/d</span>
-                <input type="date" id="dateEnd" class="border-0 bg-transparent py-2" style="font-size: 14px;" onchange="loadStats()">
+            <!-- Date Filters -->
+            <div class="input-group input-group-sm mr-2" style="width: auto;">
+                <input type="date" id="dateStart" class="form-control" onchange="loadStats()">
+                <div class="input-group-append">
+                    <span class="input-group-text">s/d</span>
+                </div>
+                <input type="date" id="dateEnd" class="form-control" onchange="loadStats()">
             </div>
 
-            <!-- Tombol Reset -->
-            <button onclick="resetFilters()" class="btn btn-light btn-sm border rounded-3 px-3">
-                <i class="bi bi-arrow-clockwise"></i>
+            <!-- Reset Button -->
+            <button onclick="resetFilters()" class="btn btn-sm btn-secondary" title="Reset Filter">
+                <i class="fas fa-sync-alt"></i>
             </button>
         </div>
     </div>
@@ -259,7 +262,7 @@
         <!-- Total KPI -->
         <div class="stat-card">
             <div class="icon-box icon-blue">
-                <i class="bi bi-clipboard-data-fill"></i>
+                <i class="fas fa-clipboard-list"></i> <!-- Ganti ke Font Awesome -->
             </div>
             <div class="stat-title">Total KPI</div>
             <div class="stat-number text-blue" id="val-total">0</div>
@@ -269,7 +272,7 @@
         <!-- Selesai -->
         <div class="stat-card cursor-pointer" onclick="filterByStatus('selesai')">
             <div class="icon-box icon-green">
-                <i class="bi bi-check-circle-fill"></i>
+                <i class="fas fa-check-circle"></i> <!-- Ganti ke Font Awesome -->
             </div>
             <div class="stat-title">Selesai</div>
             <div class="stat-number text-green" id="val-selesai">0</div>
@@ -279,7 +282,7 @@
         <!-- Progress -->
         <div class="stat-card cursor-pointer" onclick="filterByStatus('progress')">
             <div class="icon-box icon-yellow">
-                <i class="bi bi-pie-chart-fill"></i>
+                <i class="fas fa-chart-pie"></i> <!-- Ganti ke Font Awesome -->
             </div>
             <div class="stat-title">Progress</div>
             <div class="stat-number text-yellow" id="val-progress">0</div>
@@ -289,7 +292,7 @@
         <!-- Overdue -->
         <div class="stat-card cursor-pointer" onclick="filterByStatus('overdue')">
             <div class="icon-box icon-red">
-                <i class="bi bi-exclamation-triangle-fill"></i>
+                <i class="fas fa-exclamation-triangle"></i> <!-- Ganti ke Font Awesome -->
             </div>
             <div class="stat-title">Overdue</div>
             <div class="stat-number text-red" id="val-overdue">0</div>
@@ -318,8 +321,9 @@
             <div class="row">
                 <!-- Bagian Kiri Container: KPI & Points -->
                 <div class="col-md-6">
+                    <!-- KPI Hari Ini -->
                     <div class="kpi-mini-card mb-3" style="background: #f8f9ff;">
-                        <div class="kpi-icon-box bg-primary text-white"><i class="bi bi-calendar-event"></i></div>
+                        <div class="kpi-icon-box bg-primary text-white"><i class="fas fa-calendar-day"></i></div>
                         <div class="flex-grow-1">
                             <div class="fw-bold">KPI Hari Ini</div>
                             <div class="small text-muted">Deadline hari ini</div>
@@ -327,8 +331,9 @@
                         <div class="h4 text-primary fw-bold m-0" id="val-kpi-hari-ini">0</div>
                     </div>
 
+                    <!-- Deadline Besok -->
                     <div class="kpi-mini-card mb-3" style="background: #f6fdf9;">
-                        <div class="kpi-icon-box bg-success text-white"><i class="bi bi-calendar-check"></i></div>
+                        <div class="kpi-icon-box bg-success text-white"><i class="fas fa-calendar-check"></i></div>
                         <div class="flex-grow-1">
                             <div class="fw-bold">Deadline Besok</div>
                             <div class="small text-muted">Jangan sampai terlewat</div>
@@ -336,8 +341,9 @@
                         <div class="h4 text-success fw-bold m-0" id="val-deadline-besok">0</div>
                     </div>
 
+                    <!-- Point Bulan Ini -->
                     <div class="kpi-mini-card" style="background: #fcf9ff;">
-                        <div class="kpi-icon-box" style="background: #8e44ad; color: white;"><i class="bi bi-trophy"></i></div>
+                        <div class="kpi-icon-box" style="background: #8e44ad; color: white;"><i class="fas fa-trophy"></i></div>
                         <div class="flex-grow-1">
                             <div class="fw-bold">Point Bulan Ini</div>
                             <div class="small text-muted">Total point</div>
@@ -495,24 +501,19 @@ function renderAktivitas(page = 1) {
     const paginatedItems = filteredData.slice(start, start + itemsPerPage);
     const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
-    
     // Render Baris Tabel
     if (paginatedItems.length > 0) {
-        
-        // Lalu di template HTML:
         paginatedItems.forEach(item => {
             const picEmails = item.pics && item.pics.length > 0 
                 ? item.pics.map(pic => `<span class="badge bg-light text-dark border m-1">${pic.email}</span>`).join('')
                 : '<span class="text-muted small">Tanpa PIC</span>';
-            const picEmail = item.pics && item.pics.length > 0 
-                ? `<span class="badge bg-light text-dark border">${item.pics[0].email}</span>` 
-                : '<span class="text-muted small">Tanpa PIC</span>';
 
+            // MENGGANTI Ikon Bootstrap (bi) menjadi Font Awesome (fas)
             const btnSelesai = item.status == 0 
                 ? `<button class="btn btn-sm btn-success" onclick="selesaikanKPI(${item.id})">
-                     <i class="bi bi-check-lg"></i> Selesai
+                     <i class="fas fa-check"></i> Selesai
                    </button>` 
-                : '<span class="badge bg-secondary">Selesai</span>';
+                : '<span class="badge badge-secondary">Selesai</span>'; // Gunakan badge bawaan SB Admin 2
 
             listBody.innerHTML += `
                 <tr>
@@ -524,7 +525,7 @@ function renderAktivitas(page = 1) {
                 </tr>`;
         });
     } else {
-        listBody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">Tidak ada aktivitas ditemukan.</td></tr>`;
+        listBody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">Tidak ada aktivitas ditemukan.</td></tr>`;
     }
 
     // Render Tombol Pagination

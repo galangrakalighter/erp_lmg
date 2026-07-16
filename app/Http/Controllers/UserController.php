@@ -212,4 +212,17 @@ class UserController extends Controller
             return redirect()->back()->with('error', 'Gagal menghapus user: ' . $th->getMessage());
         }
     }
+
+    public function getUserDivision(Request $request){
+        $divisiId = $request->input('divisi_id');
+        if($divisiId != 'all'){
+            $allUser = User::whereHas('userDivisions', function($user) use ($divisiId) {
+                $user->where('division_id', $divisiId);
+            })->get();
+        }else{
+            $allUser = User::where('isAdmin', false)->get();
+        }
+
+        return response()->json($allUser);
+    }
 }

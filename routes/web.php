@@ -186,6 +186,7 @@ Route::middleware('auth')->group(function() {
     Route::get('dashboard_kpi', [App\Http\Controllers\DashboardController::class, 'kpi_dashboard'])->name('overview.dashboard_kpi');
     Route::get('/kpi/stats', [App\Http\Controllers\KPIController::class, 'getKpiStats']);
     Route::get('/task/stats', [App\Http\Controllers\KPIController::class, 'getTaskStats']);
+    Route::get('/kpi/get-active-task', [App\Http\Controllers\KPIController::class, 'getActiveTask']);
     Route::post('hc_overview/daily_task', [App\Http\Controllers\HCDailyController::class, 'storeDaily'])->name('hc_daily.storeDaily');
     Route::get('hc_overview/{id_client}', [App\Http\Controllers\HCOverviewController::class, 'index'])->name('hc_overview.index');
     Route::post('hc_overview/{id_client}', [App\Http\Controllers\HCOverviewController::class, 'store'])->name('hc_overview.store');

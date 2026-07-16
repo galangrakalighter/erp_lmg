@@ -494,7 +494,7 @@
             </div>
         </li>
         @endif
-        @if(Auth::user()->isAdmin == true || $myDivision->name == "Ecommrce")
+        @if(Auth::user()->isAdmin == true || $myDivision->name == "Ecommerce")
         <li class="nav-item {{ request()->is('*HC*') ? 'active' : '' }}">
             <a class="nav-link {{ request()->is('*HC*') ? '' : 'collapsed' }}" href="#" 
             data-toggle="collapse" data-target="#collapseTech" 

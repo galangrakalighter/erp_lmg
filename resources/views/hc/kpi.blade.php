@@ -1,5 +1,5 @@
-@include('partials.header')
-
+@extends('layout.app')
+@section('content')
 <style>
     /* Styling Baru Mengikuti Referensi image_0.png */
     body {
@@ -213,8 +213,6 @@
     .stat-card.active { border: 2px solid #007bff; }
 </style>
 
-<div class="container-fluid">
-
     <!-- HEADER BARU: Teks Kiri, Kalender Kanan -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <!-- Header Text -->
@@ -398,231 +396,230 @@
         </div>
     </div>
 
-</div>
 
 <!-- JavaScript untuk mengambil data statistik -->
 <script>
-let currentPage = 1;
-let data = null;
-const itemsPerPage = 5; // Ubah sesuai kebutuhan
+    let currentPage = 1;
+    let data = null;
+    const itemsPerPage = 5; // Ubah sesuai kebutuhan
 
-let currentFilter = 'all'; // Default menampilkan semua
+    let currentFilter = 'all'; // Default menampilkan semua
 
-function filterByStatus(status) {
-    // Toggle: Jika diklik filter yang sama, maka reset ke 'all'
-    currentFilter = (currentFilter === status) ? 'all' : status;
-    
-    // Update visual kartu aktif
-    document.querySelectorAll('.stat-card').forEach(card => card.classList.remove('active'));
-    if (currentFilter !== 'all') {
-        // Logika sederhana untuk menandai kartu aktif (sesuaikan selector jika perlu)
-        event.currentTarget.classList.add('active');
-    }
-    
-    renderAktivitas(1); // Render ulang tabel dengan filter baru
-}
-
-async function loadStats() {
-    const projectId = document.getElementById('filterProject').value;
-    const userId = document.getElementById('filterUser') ? document.getElementById('filterUser').value : '';
-    const dateStart = document.getElementById('dateStart').value;
-    const dateEnd = document.getElementById('dateEnd').value;
-
-    let url = `/kpi/stats?project_id=${projectId}`;
-    if (userId) url += `&user_id=${userId}`; // Tambahkan param user
-    if (dateStart) url += `&start_date=${dateStart}`;
-    if (dateEnd) url += `&end_date=${dateEnd}`;
-
-    const response = await fetch(url);
-    data = await response.json();
-    console.log(data);
-
-    // Update Angka
-    document.getElementById('val-total').innerText = data.total;
-    document.getElementById('val-selesai').innerText = data.selesai;
-    document.getElementById('val-progress').innerText = data.progress;
-    document.getElementById('val-overdue').innerText = data.overdue;
-
-    // Update Deskripsi
-    document.getElementById('desc-selesai').innerText = `${data.persenSelesai}% dari total KPI`;
-    document.getElementById('desc-progress').innerText = `${data.persenProgress}% dari total KPI`;
-    document.getElementById('desc-overdue').innerText = `${data.persenOverdue}% dari total KPI`;
-
-    const persen = data.persenSelesai || 0; // Menggunakan persenSelesai
-    const chart = document.getElementById('chart-donat');
-    const text = document.getElementById('val-persen-chart');
-
-    chart.style.setProperty('--percentage', `${persen}%`);
-    text.innerText = `${persen}%`;
-
-    document.getElementById('val-kpi-hari-ini').innerHTML = `${data.kpiHariIni} <br><span style="font-size: 10px; font-weight: normal;">KPI</span>`;
-    document.getElementById('val-deadline-besok').innerHTML = `${data.deadlineBesok} <br><span style="font-size: 10px; font-weight: normal;">KPI</span>`;
-    document.getElementById('val-point-bulan-ini').innerHTML = `${data.totalPoint} <br><span style="font-size: 10px; font-weight: normal;">Point</span>`;
-
-    const listDeadline = document.getElementById('list-deadline');
-    listDeadline.innerHTML = ''; // Reset isi
-    if (data.deadlines.length > 0) {
-        data.deadlines.forEach(item => {
-            listDeadline.innerHTML += `
-                <div class="d-flex align-items-center p-3 bg-light rounded-3 mb-2">
-                    <div class="bg-white px-2 py-1 rounded border small fw-bold text-primary">${item.jam || '00:00'}</div>
-                    <div class="ms-3">
-                        <div class="fw-bold">${item.nama}</div>
-                        <div class="small text-muted">${item.project_name || 'Tanpa Project'}</div>
-                    </div>
-                </div>`;
-        });
-    } else {
-        listDeadline.innerHTML = '<p class="text-muted small text-center py-2">Tidak Ada Deadline Hari Ini.</p>';
+    function filterByStatus(status) {
+        // Toggle: Jika diklik filter yang sama, maka reset ke 'all'
+        currentFilter = (currentFilter === status) ? 'all' : status;
+        
+        // Update visual kartu aktif
+        document.querySelectorAll('.stat-card').forEach(card => card.classList.remove('active'));
+        if (currentFilter !== 'all') {
+            // Logika sederhana untuk menandai kartu aktif (sesuaikan selector jika perlu)
+            event.currentTarget.classList.add('active');
+        }
+        
+        renderAktivitas(1); // Render ulang tabel dengan filter baru
     }
 
-    currentPage = 1;
-    renderAktivitas(currentPage);
-}
+    async function loadStats() {
+        const projectId = document.getElementById('filterProject').value;
+        const userId = document.getElementById('filterUser') ? document.getElementById('filterUser').value : '';
+        const dateStart = document.getElementById('dateStart').value;
+        const dateEnd = document.getElementById('dateEnd').value;
 
-function renderAktivitas(page = 1) {
-    const listBody = document.getElementById('list-aktivitas-body');
-    const paginationControls = document.getElementById('pagination-controls');
-    listBody.innerHTML = '';
-    
-    const today = new Date().toISOString().split('T')[0];
+        let url = `/kpi/stats?project_id=${projectId}`;
+        if (userId) url += `&user_id=${userId}`; // Tambahkan param user
+        if (dateStart) url += `&start_date=${dateStart}`;
+        if (dateEnd) url += `&end_date=${dateEnd}`;
 
-    // Filter data berdasarkan kriteria
-    let filteredData = data.aktivitas.filter(item => {
-        if (currentFilter === 'all') return true;
-        if (currentFilter === 'selesai') return item.status == 1;
-        if (currentFilter === 'progress') return item.status == 0 && item.tanggal_deadline >= today;
-        if (currentFilter === 'overdue') return item.status == 0 && item.tanggal_deadline < today;
-        return true;
-    });
+        const response = await fetch(url);
+        data = await response.json();
+        console.log(data);
 
-    // Paginasi pada hasil filter
-    const start = (page - 1) * itemsPerPage;
-    const paginatedItems = filteredData.slice(start, start + itemsPerPage);
-    const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+        // Update Angka
+        document.getElementById('val-total').innerText = data.total;
+        document.getElementById('val-selesai').innerText = data.selesai;
+        document.getElementById('val-progress').innerText = data.progress;
+        document.getElementById('val-overdue').innerText = data.overdue;
 
-    // Render Baris Tabel
-    if (paginatedItems.length > 0) {
-        paginatedItems.forEach(item => {
-            const picEmails = item.pics && item.pics.length > 0 
-                ? item.pics.map(pic => `<span class="badge bg-light text-dark border m-1">${pic.email}</span>`).join('')
-                : '<span class="text-muted small">Tanpa PIC</span>';
+        // Update Deskripsi
+        document.getElementById('desc-selesai').innerText = `${data.persenSelesai}% dari total KPI`;
+        document.getElementById('desc-progress').innerText = `${data.persenProgress}% dari total KPI`;
+        document.getElementById('desc-overdue').innerText = `${data.persenOverdue}% dari total KPI`;
 
-            // MENGGANTI Ikon Bootstrap (bi) menjadi Font Awesome (fas)
-            const btnSelesai = item.status == 0 
-                ? `<button class="btn btn-sm btn-success" onclick="selesaikanKPI(${item.id})">
-                     <i class="fas fa-check"></i> Selesai
-                   </button>` 
-                : '<span class="badge badge-secondary">Selesai</span>'; // Gunakan badge bawaan SB Admin 2
+        const persen = data.persenSelesai || 0; // Menggunakan persenSelesai
+        const chart = document.getElementById('chart-donat');
+        const text = document.getElementById('val-persen-chart');
 
-            listBody.innerHTML += `
-                <tr>
-                    <td class="small text-muted">${item.tanggal_mulai || '-'}</td>
-                    <td class="fw-bold">${item.project_client.nama}</td>
-                    <td class="fw-bold">${item.nama_kpi}</td>
-                    <td>${picEmails}</td>
-                    <td>${btnSelesai}</td>
-                </tr>`;
-        });
-    } else {
-        listBody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">Tidak ada aktivitas ditemukan.</td></tr>`;
-    }
+        chart.style.setProperty('--percentage', `${persen}%`);
+        text.innerText = `${persen}%`;
 
-    // Render Tombol Pagination
-    paginationControls.innerHTML = '';
-    for (let i = 1; i <= totalPages; i++) {
-        paginationControls.innerHTML += `
-            <li class="page-item ${i === page ? 'active' : ''}">
-                <button class="page-link" onclick="changePage(${i})">${i}</button>
-            </li>`;
-    }
-}
+        document.getElementById('val-kpi-hari-ini').innerHTML = `${data.kpiHariIni} <br><span style="font-size: 10px; font-weight: normal;">KPI</span>`;
+        document.getElementById('val-deadline-besok').innerHTML = `${data.deadlineBesok} <br><span style="font-size: 10px; font-weight: normal;">KPI</span>`;
+        document.getElementById('val-point-bulan-ini').innerHTML = `${data.totalPoint} <br><span style="font-size: 10px; font-weight: normal;">Point</span>`;
 
-function changePage(page) {
-    currentPage = page;
-    renderAktivitas(currentPage);
-}
-
-document.addEventListener("DOMContentLoaded", function() {
-    const now = new Date();
-    
-    // Mendapatkan tahun dan bulan saat ini
-    const year = now.getFullYear();
-    const month = (now.getMonth() + 1).toString().padStart(2, '0'); // Bulan dimulai dari 0
-    
-    // Mendapatkan tanggal pertama bulan ini
-    const firstDay = `${year}-${month}-01`;
-    
-    // Mendapatkan tanggal terakhir bulan ini
-    const lastDay = new Date(year, now.getMonth() + 1, 0).getDate().toString().padStart(2, '0');
-    const lastDayFormatted = `${year}-${month}-${lastDay}`;
-    
-    // Set value ke input
-    document.getElementById('dateStart').value = firstDay;
-    document.getElementById('dateEnd').value = lastDayFormatted;
-    
-    loadStats();
-});
-
-async function selesaikanKPI(id) {
-
-    if (!confirm('Yakin ingin menyelesaikan KPI ini?')) {
-        return;
-    }
-
-    try {
-
-        const response = await fetch(`/kpi/${id}/selesai`, {
-            method: 'PUT',
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-                'Accept': 'application/json'
-            }
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            alert('KPI berhasil diselesaikan.');
-            loadStats();
+        const listDeadline = document.getElementById('list-deadline');
+        listDeadline.innerHTML = ''; // Reset isi
+        if (data.deadlines.length > 0) {
+            data.deadlines.forEach(item => {
+                listDeadline.innerHTML += `
+                    <div class="d-flex align-items-center p-3 bg-light rounded-3 mb-2">
+                        <div class="bg-white px-2 py-1 rounded border small fw-bold text-primary">${item.jam || '00:00'}</div>
+                        <div class="ms-3">
+                            <div class="fw-bold">${item.nama}</div>
+                            <div class="small text-muted">${item.project_name || 'Tanpa Project'}</div>
+                        </div>
+                    </div>`;
+            });
         } else {
-            alert(result.message);
+            listDeadline.innerHTML = '<p class="text-muted small text-center py-2">Tidak Ada Deadline Hari Ini.</p>';
         }
 
-    } catch (error) {
-        console.error(error);
-        alert('Terjadi kesalahan.');
-    }
-}
-
-function resetFilters() {
-    // 1. Reset Select Input
-    document.getElementById('filterProject').value = '';
-    if (document.getElementById('filterUser')) {
-        document.getElementById('filterUser').value = '';
+        currentPage = 1;
+        renderAktivitas(currentPage);
     }
 
-    filterByStatus('all');
+    function renderAktivitas(page = 1) {
+        const listBody = document.getElementById('list-aktivitas-body');
+        const paginationControls = document.getElementById('pagination-controls');
+        listBody.innerHTML = '';
+        
+        const today = new Date().toISOString().split('T')[0];
 
-    // 2. Hitung Tanggal Awal dan Akhir Bulan Ini
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = (now.getMonth() + 1).toString().padStart(2, '0');
-    
-    // Tanggal 1
-    const firstDay = `${year}-${month}-01`;
-    
-    // Tanggal terakhir bulan ini
-    const lastDay = new Date(year, now.getMonth() + 1, 0).getDate().toString().padStart(2, '0');
-    const lastDayFormatted = `${year}-${month}-${lastDay}`;
+        // Filter data berdasarkan kriteria
+        let filteredData = data.aktivitas.filter(item => {
+            if (currentFilter === 'all') return true;
+            if (currentFilter === 'selesai') return item.status == 1;
+            if (currentFilter === 'progress') return item.status == 0 && item.tanggal_deadline >= today;
+            if (currentFilter === 'overdue') return item.status == 0 && item.tanggal_deadline < today;
+            return true;
+        });
 
-    // 3. Terapkan ke Input
-    document.getElementById('dateStart').value = firstDay;
-    document.getElementById('dateEnd').value = lastDayFormatted;
-    
-    // 4. Panggil ulang loadStats
-    loadStats();
-}
+        // Paginasi pada hasil filter
+        const start = (page - 1) * itemsPerPage;
+        const paginatedItems = filteredData.slice(start, start + itemsPerPage);
+        const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+
+        // Render Baris Tabel
+        if (paginatedItems.length > 0) {
+            paginatedItems.forEach(item => {
+                const picEmails = item.pics && item.pics.length > 0 
+                    ? item.pics.map(pic => `<span class="badge bg-light text-dark border m-1">${pic.email}</span>`).join('')
+                    : '<span class="text-muted small">Tanpa PIC</span>';
+
+                // MENGGANTI Ikon Bootstrap (bi) menjadi Font Awesome (fas)
+                const btnSelesai = item.status == 0 
+                    ? `<button class="btn btn-sm btn-success" onclick="selesaikanKPI(${item.id})">
+                        <i class="fas fa-check"></i> Selesai
+                    </button>` 
+                    : '<span class="badge badge-secondary">Selesai</span>'; // Gunakan badge bawaan SB Admin 2
+
+                listBody.innerHTML += `
+                    <tr>
+                        <td class="small text-muted">${item.tanggal_mulai || '-'}</td>
+                        <td class="fw-bold">${item.project_client.nama}</td>
+                        <td class="fw-bold">${item.nama_kpi}</td>
+                        <td>${picEmails}</td>
+                        <td>${btnSelesai}</td>
+                    </tr>`;
+            });
+        } else {
+            listBody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">Tidak ada aktivitas ditemukan.</td></tr>`;
+        }
+
+        // Render Tombol Pagination
+        paginationControls.innerHTML = '';
+        for (let i = 1; i <= totalPages; i++) {
+            paginationControls.innerHTML += `
+                <li class="page-item ${i === page ? 'active' : ''}">
+                    <button class="page-link" onclick="changePage(${i})">${i}</button>
+                </li>`;
+        }
+    }
+
+    function changePage(page) {
+        currentPage = page;
+        renderAktivitas(currentPage);
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        const now = new Date();
+        
+        // Mendapatkan tahun dan bulan saat ini
+        const year = now.getFullYear();
+        const month = (now.getMonth() + 1).toString().padStart(2, '0'); // Bulan dimulai dari 0
+        
+        // Mendapatkan tanggal pertama bulan ini
+        const firstDay = `${year}-${month}-01`;
+        
+        // Mendapatkan tanggal terakhir bulan ini
+        const lastDay = new Date(year, now.getMonth() + 1, 0).getDate().toString().padStart(2, '0');
+        const lastDayFormatted = `${year}-${month}-${lastDay}`;
+        
+        // Set value ke input
+        document.getElementById('dateStart').value = firstDay;
+        document.getElementById('dateEnd').value = lastDayFormatted;
+        
+        loadStats();
+    });
+
+    async function selesaikanKPI(id) {
+
+        if (!confirm('Yakin ingin menyelesaikan KPI ini?')) {
+            return;
+        }
+
+        try {
+
+            const response = await fetch(`/kpi/${id}/selesai`, {
+                method: 'PUT',
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                    'Accept': 'application/json'
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                alert('KPI berhasil diselesaikan.');
+                loadStats();
+            } else {
+                alert(result.message);
+            }
+
+        } catch (error) {
+            console.error(error);
+            alert('Terjadi kesalahan.');
+        }
+    }
+
+    function resetFilters() {
+        // 1. Reset Select Input
+        document.getElementById('filterProject').value = '';
+        if (document.getElementById('filterUser')) {
+            document.getElementById('filterUser').value = '';
+        }
+
+        filterByStatus('all');
+
+        // 2. Hitung Tanggal Awal dan Akhir Bulan Ini
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = (now.getMonth() + 1).toString().padStart(2, '0');
+        
+        // Tanggal 1
+        const firstDay = `${year}-${month}-01`;
+        
+        // Tanggal terakhir bulan ini
+        const lastDay = new Date(year, now.getMonth() + 1, 0).getDate().toString().padStart(2, '0');
+        const lastDayFormatted = `${year}-${month}-${lastDay}`;
+
+        // 3. Terapkan ke Input
+        document.getElementById('dateStart').value = firstDay;
+        document.getElementById('dateEnd').value = lastDayFormatted;
+        
+        // 4. Panggil ulang loadStats
+        loadStats();
+    }
 </script>
 
-@include('partials.footer')
+@endsection

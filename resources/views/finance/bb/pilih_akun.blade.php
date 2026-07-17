@@ -1,5 +1,5 @@
-@include('partials.header')
-
+@extends('layout.app')
+@section('content')
 <style>
     /* Efek hover interaktif agar card terasa premium */
     .account-card {
@@ -16,7 +16,6 @@
     }
 </style>
 
-<div class="container-fluid">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
         <div>
             <h1 class="h4 text-gray-800 font-weight-bold mb-0">{{ $title }}</h1>
@@ -71,6 +70,5 @@
         </div>
         @endforeach
     </div>
-</div>
 
-@include('partials.footer')
+@endsection

@@ -1,6 +1,5 @@
-@include('partials.header')
-
-<div class="container-fluid mt-4 pb-5">
+@extends('layout.app')
+@section('content')
     <div class="row g-4 mb-6">
         <div class="col-lg-6">
             <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
@@ -317,12 +316,10 @@
             </div>
         </div>
     </div>
-</div>
 
 @include('cms_market.4p.index')
 @include('cms_market.swot.index')
 @include('cms_market.segmentasi.index')
 @include('cms_market.target_audience.index')
 @include('cms_market.positioning.index')
-
-@include('partials.footer')
+@endsection

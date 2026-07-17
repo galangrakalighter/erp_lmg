@@ -15,7 +15,8 @@ class KPI extends Model
         "tanggal_deadline",
         "note",
         "status",
-        "project"
+        "project",
+        'create_by'
     ];
 
     public $timestamps = false;

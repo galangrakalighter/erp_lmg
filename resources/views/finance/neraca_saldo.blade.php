@@ -1,6 +1,6 @@
-@include('partials.header')
+@extends('layout.app')
+@section('content')
 
-<div class="container-fluid">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
         <div>
             <h1 class="h4 text-gray-800 font-weight-bold mb-1">{{ $title }}</h1>
@@ -88,6 +88,5 @@
             </div>
         </div>
     </div>
-</div>
 
-@include('partials.footer')
+@endsection

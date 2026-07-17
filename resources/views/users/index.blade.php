@@ -1,6 +1,6 @@
-@include('partials.header')
+@extends('layout.app')
+@section('content')
 
-<div class="container-fluid mt-4">
     <div class="card shadow mb-4">
         <div class="card-header py-3 bg-white d-flex justify-content-between align-items-center">
             <h6 class="m-0 font-weight-bold text-primary">Manajemen Hierarki User</h6>
@@ -58,7 +58,6 @@
             </div>
         </div>
     </div>
-</div>
 
 <div class="modal fade" id="tambahModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -254,378 +253,428 @@
     </div>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-<script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+@push('script')
 <script>
-const divisionHierarchy = {
-    "Digital Marketing": [
-        {
-            role: "Busines Unit Head",
-            label: "Business Unit Head"
-        },
-        {
-            role: "Digital Marketer",
-            label: "Digital Marketer"
-        },
-        {
-            role: "Advertising",
-            label: "Advertising"
-        },
-        {
-            role: "Content Creator Manager",
-            label: "Content Creator Manager"
-        },
-        {
-            role: "Content Creator",
-            label: "Content Creator"
+    const divisionHierarchy = {
+        "Digital Marketing": [
+            {
+                role: "Busines Unit Head",
+                label: "Business Unit Head"
+            },
+            {
+                role: "Digital Marketer",
+                label: "Digital Marketer"
+            },
+            {
+                role: "Advertising",
+                label: "Advertising"
+            },
+            {
+                role: "Content Creator Manager",
+                label: "Content Creator Manager"
+            },
+            {
+                role: "Content Creator",
+                label: "Content Creator"
+            }
+        ],
+
+        "Business Dev": [
+            {
+                role: "Busines Unit Head",
+                label: "Busines Unit Head"
+            },
+            {
+                role: "Busines Development Manager",
+                label: "Busines Development Manager"
+            },
+            {
+                role: "Busines Development Specialist",
+                label: "Busines Development Specialist"
+            }
+        ],
+
+        "MCN": [
+            {
+                role: "Busines Unit Head",
+                label: "Busines Unit Head"
+            },
+            {
+                role: "MCN Specialis Manager",
+                label: "MCN Specialis Manager"
+            },
+            {
+                role: "MCN Specialis",
+                label: "MCN Specialis"
+            }
+        ],
+
+        "Tech": [
+            {
+                role: "Busines Unit Head",
+                label: "Busines Unit Head"
+            },
+            {
+                role: "Project Manager",
+                label: "Project Manager"
+            },
+            {
+                role: "Developer",
+                label: "Developer"
+            }
+        ],
+
+        "Finance": [
+            {
+                role: "Busines Unit Head",
+                label: "Busines Unit Head"
+            }
+        ],
+
+
+    };
+    let organization = {};  
+    $(document).ready(function() {
+
+        if ($.isFunction($.fn.select2)) {
+            $('.select2').select2({
+                theme: 'bootstrap4',
+                width: '100%'
+            });
         }
-    ],
 
-    "Business Dev": [
-        {
-            role: "Busines Unit Head",
-            label: "Busines Unit Head"
-        },
-        {
-            role: "Busines Development Manager",
-            label: "Busines Development Manager"
-        },
-        {
-            role: "Busines Development Specialist",
-            label: "Busines Development Specialist"
-        }
-    ],
+        let initialDivisiId = $('#divisionTabs .nav-link.active').data('divisi') || 1;
+        filterRoleByDivision(initialDivisiId);
+        
+        renderTable(1, "Digital Marketing");
 
-    "MCN": [
-        {
-            role: "Busines Unit Head",
-            label: "Busines Unit Head"
-        },
-        {
-            role: "MCN Specialis Manager",
-            label: "MCN Specialis Manager"
-        },
-        {
-            role: "MCN Specialis",
-            label: "MCN Specialis"
-        }
-    ],
+        // Listener saat ganti tab
+        $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+            let divisiId = $(e.target).data('divisi');
+            let divisiName = $(e.target).data('name');
 
-    "Tech": [
-        {
-            role: "Busines Unit Head",
-            label: "Busines Unit Head"
-        },
-        {
-            role: "Project Manager",
-            label: "Project Manager"
-        },
-        {
-            role: "Developer",
-            label: "Developer"
-        }
-    ],
+            // Jalankan filter dropdown role
+            filterRoleByDivision(divisiId);
 
-    "Finance": [
-        {
-            role: "Busines Unit Head",
-            label: "Busines Unit Head"
-        }
-    ],
-
-
-};
-let organization = {};  
-$(document).ready(function() {
-
-    if ($.isFunction($.fn.select2)) {
-        $('.select2').select2({
-            theme: 'bootstrap4',
-            width: '100%'
+            // Jalankan render ulang tabel (fungsi yang sudah kita buat sebelumnya)
+            renderTable(divisiId, divisiName);
         });
-    }
-
-    let initialDivisiId = $('#divisionTabs .nav-link.active').data('divisi') || 1;
-    filterRoleByDivision(initialDivisiId);
-    
-    renderTable(1, "Digital Marketing");
-
-    // Listener saat ganti tab
-    $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
-        let divisiId = $(e.target).data('divisi');
-        let divisiName = $(e.target).data('name');
-
-        // Jalankan filter dropdown role
-        filterRoleByDivision(divisiId);
-
-        // Jalankan render ulang tabel (fungsi yang sudah kita buat sebelumnya)
-        renderTable(divisiId, divisiName);
-    });
-    // 1. Inisialisasi DataTable + Fitur Filtering
-    var table = $('#dataTable_baru').DataTable({
-        "destroy": true,
-        "dom": '<"d-flex justify-content-between mb-3"l>rtip', 
-        "ordering": true,
-        "pageLength": 10,
-        "language": {
-            "lengthMenu": "Tampilkan _MENU_ data",
-            "info": "Menampilkan _START_ sampai _END_ dari _TOTAL_ user",
-            "paginate": { "next": "Next", "previous": "Prev" }
-        }
-    });
-    
-
-    $('#custom_search').on('keyup', function() {
-        table.search(this.value).draw();
-    });
-
-    $('.select2-multiple-edit').select2({
-        placeholder: "Pilih satu atau lebih bawahan",
-        allowClear: true,
-        dropdownParent: $('#editModal') // Penting agar select2 muncul di atas modal
-    });
-
-    // Filter Role (Kolom 4 / Index 3)
-    $('#filter_role').on('change', function() {
-        let val = $(this).val();
-        $('#mainDataTable').DataTable().column(2).search(val ? '^' + val + '$' : '', true, false).draw();
-    });
-
-    function filterRoleByDivision(selectedDivisiId) {
-        let $roleSelect = $('#filter_role');
-        let $options = $roleSelect.find('option');
-
-        // Reset pilihan ke "-- Semua Role --" setiap kali pindah tab
-        $roleSelect.val('');
-
-        $options.each(function() {
-            let optionDivisiId = $(this).data('divisi');
-            
-            // Jika tab "Semua" diklik (id: all) atau option tidak punya divisi_id
-            if (selectedDivisiId === 'all' || !optionDivisiId) {
-                $(this).show();
-            } 
-            // Jika division_id pada role cocok dengan tab yang aktif
-            else if (optionDivisiId == selectedDivisiId) {
-                $(this).show();
-            } 
-            // Sembunyikan jika tidak cocok
-            else {
-                $(this).hide();
+        // 1. Inisialisasi DataTable + Fitur Filtering
+        var table = $('#dataTable_baru').DataTable({
+            "destroy": true,
+            "dom": '<"d-flex justify-content-between mb-3"l>rtip', 
+            "ordering": true,
+            "pageLength": 10,
+            "language": {
+                "lengthMenu": "Tampilkan _MENU_ data",
+                "info": "Menampilkan _START_ sampai _END_ dari _TOTAL_ user",
+                "paginate": { "next": "Next", "previous": "Prev" }
             }
         });
+        
+
+        $('#custom_search').on('keyup', function() {
+            table.search(this.value).draw();
+        });
+
+        $('.select2-multiple-edit').select2({
+            placeholder: "Pilih satu atau lebih bawahan",
+            allowClear: true,
+            dropdownParent: $('#editModal') // Penting agar select2 muncul di atas modal
+        });
+
+        // Filter Role (Kolom 4 / Index 3)
+        $('#filter_role').on('change', function() {
+            let val = $(this).val();
+            $('#mainDataTable').DataTable().column(2).search(val ? '^' + val + '$' : '', true, false).draw();
+        });
+
+        function filterRoleByDivision(selectedDivisiId) {
+            let $roleSelect = $('#filter_role');
+            let $options = $roleSelect.find('option');
+
+            // Reset pilihan ke "-- Semua Role --" setiap kali pindah tab
+            $roleSelect.val('');
+
+            $options.each(function() {
+                let optionDivisiId = $(this).data('divisi');
+                
+                // Jika tab "Semua" diklik (id: all) atau option tidak punya divisi_id
+                if (selectedDivisiId === 'all' || !optionDivisiId) {
+                    $(this).show();
+                } 
+                // Jika division_id pada role cocok dengan tab yang aktif
+                else if (optionDivisiId == selectedDivisiId) {
+                    $(this).show();
+                } 
+                // Sembunyikan jika tidak cocok
+                else {
+                    $(this).hide();
+                }
+            });
+        }
+
+        // Reset Filter
+        $('#reset_filter').on('click', function() {
+            $('#custom_search').val('');
+            $('#filter_role').val('').trigger('change');
+            
+            // Kembalikan ke pencarian kosong
+            let table = $('#mainDataTable').DataTable();
+            table.search('').columns().search('').draw();
+        });
+    });
+
+    function renderTable(divisiId, divisiName) {
+        let container = $('#table-container');
+        container.empty();
+
+        // 1. Tentukan Struktur Header (THEAD)
+        let thead = '';
+        if (divisiId === 'all') {
+            thead = `<tr>
+                <th width="5%">No</th>
+                <th>User (Email)</th>
+                <th>Penempatan (Divisi & Role)</th>
+                <th>Akses Produk</th>
+                <th>Atasan Langsung</th>
+                <th width="10%">Aksi</th>
+            </tr>`;
+        } else {
+            // Header Khusus Divisi dengan Hierarki Detail
+            let hierarchy = divisionHierarchy[divisiName] || [];
+
+            let hierarchyHeaders = hierarchy
+                .map(h => `<th>${h.label}</th>`)
+                .join('');
+
+            thead = `<tr>
+                <th width="5%">No</th>
+                <th>User</th>
+                <th>Role</th>
+                ${hierarchyHeaders}
+                <th width="5%">Aksi</th>
+            </tr>`;
+        }
+
+        container.append(`<table class="table table-bordered table-hover w-100" id="mainDataTable">
+            <thead class="bg-light text-center small font-weight-bold">${thead}</thead>
+            <tbody class="small text-dark"></tbody>
+        </table>`);
+
+        // 2. Inisialisasi DataTable
+        $('#mainDataTable').DataTable({
+
+            ajax:{
+
+                url:"api/users/json",
+
+                dataSrc:function(json){
+
+                    let filtered = divisiId === 'all'
+                        ? json
+                        : json.filter(u =>
+                            u.user_divisions.some(
+                                d => d.division_id == divisiId
+                            )
+                        );
+
+                    buildOrganization(filtered, divisiId);
+
+                    return filtered;
+                }
+
+            },
+
+            columns:getColumnsConfig(divisiId, divisiName)
+
+        });
     }
 
-    // Reset Filter
-    $('#reset_filter').on('click', function() {
-        $('#custom_search').val('');
-        $('#filter_role').val('').trigger('change');
-        
-        // Kembalikan ke pencarian kosong
-        let table = $('#mainDataTable').DataTable();
-        table.search('').columns().search('').draw();
-    });
-});
+    function getColumnsConfig(divisiId, divisiName) {
+        let cols = [
+            { data: null, render: (d, t, r, meta) => meta.row + 1, className: 'text-center' },
+            { data: null, render: r => `<strong>${r.name ?? '-'}</strong><div class="text-xs text-muted">${r.email ?? '-'}</div>` }
+        ];
 
-function renderTable(divisiId, divisiName) {
-    let container = $('#table-container');
-    container.empty();
-
-    // 1. Tentukan Struktur Header (THEAD)
-    let thead = '';
-    if (divisiId === 'all') {
-        thead = `<tr>
-            <th width="5%">No</th>
-            <th>User (Email)</th>
-            <th>Penempatan (Divisi & Role)</th>
-            <th>Akses Produk</th>
-            <th>Atasan Langsung</th>
-            <th width="10%">Aksi</th>
-        </tr>`;
-    } else {
-        // Header Khusus Divisi dengan Hierarki Detail
+        if (divisiId === 'all') {
+            cols.push(
+                { 
+                    data: 'user_divisions', 
+                    render: uds => (uds ?? []).map(ud => `<span class="badge badge-info mb-1">${ud.division?.name ?? '-'}</span>`).join(' ') 
+                },
+                { 
+                    data: 'user_clients', 
+                    render: ucs => (ucs ?? []).map(uc => `<span class="badge badge-light border mb-1">${uc.client?.nama ?? '-'}</span>`).join(' ') 
+                },
+                { 
+                    data: 'user_divisions', 
+                    render: uds => (uds ?? []).map(ud => ud.parent ? `<div class="text-xs">• ${ud.parent.email}</div>` : '').join('') 
+                }
+            );
+        } else {
         let hierarchy = divisionHierarchy[divisiName] || [];
 
-        let hierarchyHeaders = hierarchy
-            .map(h => `<th>${h.label}</th>`)
-            .join('');
-
-        thead = `<tr>
-            <th width="5%">No</th>
-            <th>User</th>
-            <th>Role</th>
-            ${hierarchyHeaders}
-            <th width="5%">Aksi</th>
-        </tr>`;
-    }
-
-    container.append(`<table class="table table-bordered table-hover w-100" id="mainDataTable">
-        <thead class="bg-light text-center small font-weight-bold">${thead}</thead>
-        <tbody class="small text-dark"></tbody>
-    </table>`);
-
-    // 2. Inisialisasi DataTable
-    $('#mainDataTable').DataTable({
-
-        ajax:{
-
-            url:"api/users/json",
-
-            dataSrc:function(json){
-
-                let filtered = divisiId === 'all'
-                    ? json
-                    : json.filter(u =>
-                        u.user_divisions.some(
-                            d => d.division_id == divisiId
-                        )
-                    );
-
-                buildOrganization(filtered, divisiId);
-
-                return filtered;
-            }
-
-        },
-
-        columns:getColumnsConfig(divisiId, divisiName)
-
-    });
-}
-
-function getColumnsConfig(divisiId, divisiName) {
-    let cols = [
-        { data: null, render: (d, t, r, meta) => meta.row + 1, className: 'text-center' },
-        { data: null, render: r => `<strong>${r.name ?? '-'}</strong><div class="text-xs text-muted">${r.email ?? '-'}</div>` }
-    ];
-
-    if (divisiId === 'all') {
-        cols.push(
-            { 
-                data: 'user_divisions', 
-                render: uds => (uds ?? []).map(ud => `<span class="badge badge-info mb-1">${ud.division?.name ?? '-'}</span>`).join(' ') 
-            },
-            { 
-                data: 'user_clients', 
-                render: ucs => (ucs ?? []).map(uc => `<span class="badge badge-light border mb-1">${uc.client?.nama ?? '-'}</span>`).join(' ') 
-            },
-            { 
-                data: 'user_divisions', 
-                render: uds => (uds ?? []).map(ud => ud.parent ? `<div class="text-xs">• ${ud.parent.email}</div>` : '').join('') 
-            }
-        );
-    } else {
-       let hierarchy = divisionHierarchy[divisiName] || [];
-
-        cols.push({
-            data: 'user_divisions',
-            render: uds => {
-                let current = (uds ?? []).find(
-                    ud => ud.division_id == divisiId
-                );
-
-                let roleDisplay = current?.role ?? '-';
-
-                return `
-                    <span class="badge badge-outline-secondary text-dark">
-                        ${roleDisplay.replace(/_/g, ' ').toUpperCase()}
-                    </span>
-                `;
-            }
-        });
-
-        hierarchy.forEach(item => {
             cols.push({
-                data: null,
-                render:function(data,type,row){
-
-                    let targets = getHierarchyUser(
-                        row,
-                        divisiId,
-                        item.role
+                data: 'user_divisions',
+                render: uds => {
+                    let current = (uds ?? []).find(
+                        ud => ud.division_id == divisiId
                     );
 
-                    if (!targets.length)
-                        return "-";
+                    let roleDisplay = current?.role ?? '-';
 
-                    return targets.map(target => {
+                    return `
+                        <span class="badge badge-outline-secondary text-dark">
+                            ${roleDisplay.replace(/_/g, ' ').toUpperCase()}
+                        </span>
+                    `;
+                }
+            });
 
-                        if (
-                            target.email &&
-                            row.email &&
-                            target.email.toLowerCase() === row.email.toLowerCase()
-                        ) {
+            hierarchy.forEach(item => {
+                cols.push({
+                    data: null,
+                    render:function(data,type,row){
+
+                        let targets = getHierarchyUser(
+                            row,
+                            divisiId,
+                            item.role
+                        );
+
+                        if (!targets.length)
+                            return "-";
+
+                        return targets.map(target => {
+
+                            if (
+                                target.email &&
+                                row.email &&
+                                target.email.toLowerCase() === row.email.toLowerCase()
+                            ) {
+                                return `
+                                    <div class="text-center">
+                                        <span class="badge badge-success">
+                                            Self
+                                        </span>
+                                    </div>
+                                `;
+                            }
+
                             return `
-                                <div class="text-center">
-                                    <span class="badge badge-success">
-                                        Self
-                                    </span>
+                                <div class="text-xs font-weight-bold text-primary text-center">
+                                    ${target.email}
                                 </div>
                             `;
-                        }
 
-                        return `
-                            <div class="text-xs font-weight-bold text-primary text-center">
-                                ${target.email}
-                            </div>
-                        `;
-
-                    }).join('');
-                }
-                
+                        }).join('');
+                    }
+                    
+                });
             });
+        }
+
+        cols.push({ 
+            data: 'id', 
+            render: (id, type, r) => { // 'id' adalah isi dari data: 'id', 'r' adalah objek baris lengkap
+                // Kita gunakan 'id' untuk parameter pertama
+                // Kita gunakan 'r.name' untuk parameter kedua
+                const userName = r.name ? r.name.replace(/'/g, "\\'") : '-';
+
+                return `
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-warning" onclick="editUser(${id})" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteUser(${id}, '${userName}')" title="Hapus">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+            }, 
+            className: 'text-center' 
         });
+        return cols;
     }
 
-    cols.push({ 
-        data: 'id', 
-        render: (id, type, r) => { // 'id' adalah isi dari data: 'id', 'r' adalah objek baris lengkap
-            // Kita gunakan 'id' untuk parameter pertama
-            // Kita gunakan 'r.name' untuk parameter kedua
-            const userName = r.name ? r.name.replace(/'/g, "\\'") : '-';
+    function buildOrganization(allUsers, divisiId) {
 
-            return `
-                <div class="btn-group">
-                    <button class="btn btn-sm btn-outline-warning" onclick="editUser(${id})" title="Edit">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="deleteUser(${id}, '${userName}')" title="Hapus">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            `;
-        }, 
-        className: 'text-center' 
-    });
-    return cols;
-}
+        organization = {};
 
-function buildOrganization(allUsers, divisiId) {
+        // Ambil seluruh user pada divisi aktif
+        const users = allUsers.filter(u =>
+            (u.user_divisions || []).some(d => d.division_id == divisiId)
+        );
 
-    organization = {};
+        users.forEach(user => {
 
-    // Ambil seluruh user pada divisi aktif
-    const users = allUsers.filter(u =>
-        (u.user_divisions || []).some(d => d.division_id == divisiId)
-    );
+            const current = user.user_divisions.find(
+                d => d.division_id == divisiId
+            );
 
-    users.forEach(user => {
+            if (!current) return;
 
-        const current = user.user_divisions.find(
+            // Cari root (Business Unit Head)
+            let root = user;
+            let parentId = current.parent_id;
+
+            while (parentId) {
+
+                const parentUser = users.find(u => u.id == parentId);
+
+                if (!parentUser)
+                    break;
+
+                const parentDivision = parentUser.user_divisions.find(
+                    d => d.division_id == divisiId
+                );
+
+                if (!parentDivision)
+                    break;
+
+                root = parentUser;
+                parentId = parentDivision.parent_id;
+            }
+
+            if (!organization[root.id])
+                organization[root.id] = {};
+
+            if (!organization[root.id][current.role]) {
+                organization[root.id][current.role] = [];
+            }
+
+            organization[root.id][current.role].push({
+                id: user.id,
+                email: user.email,
+                name: user.name
+            });
+
+            console.log(organization);
+        });
+
+    }
+
+    function getHierarchyUser(row, divisiId, roleName) {
+
+        const current = row.user_divisions.find(
             d => d.division_id == divisiId
         );
 
-        if (!current) return;
+        if (!current)
+            return null;
 
-        // Cari root (Business Unit Head)
-        let root = user;
+        // Cari root
+        let root = row;
         let parentId = current.parent_id;
+
+        const allUsers = $('#mainDataTable').DataTable().ajax.json();
 
         while (parentId) {
 
-            const parentUser = users.find(u => u.id == parentId);
+            const parentUser = allUsers.find(
+                u => u.id == parentId
+            );
 
             if (!parentUser)
                 break;
@@ -642,315 +691,263 @@ function buildOrganization(allUsers, divisiId) {
         }
 
         if (!organization[root.id])
-            organization[root.id] = {};
+            return null;
 
-        if (!organization[root.id][current.role]) {
-            organization[root.id][current.role] = [];
-        }
+        return organization[root.id][roleName] ?? [];
 
-        organization[root.id][current.role].push({
-            id: user.id,
-            email: user.email,
-            name: user.name
+    }
+
+    function updateRoleOptions(divisiId) {
+        let $roleSelect = $('#modal_role');
+        let $parentPanel = $('#parent_panel');
+
+        // Reset role
+        $roleSelect.val('').prop('disabled', !divisiId);
+        $parentPanel.addClass('d-none');
+
+        $roleSelect.find('option').each(function () {
+
+            let roleDivId = $(this).data('divisi'); // <-- perbaikan
+
+            if (!roleDivId || roleDivId == divisiId) {
+                $(this).show();
+            } else {
+                $(this).hide();
+            }
         });
 
-        console.log(organization);
-    });
-
-}
-
-function getHierarchyUser(row, divisiId, roleName) {
-
-    const current = row.user_divisions.find(
-        d => d.division_id == divisiId
-    );
-
-    if (!current)
-        return null;
-
-    // Cari root
-    let root = row;
-    let parentId = current.parent_id;
-
-    const allUsers = $('#mainDataTable').DataTable().ajax.json();
-
-    while (parentId) {
-
-        const parentUser = allUsers.find(
-            u => u.id == parentId
-        );
-
-        if (!parentUser)
-            break;
-
-        const parentDivision = parentUser.user_divisions.find(
-            d => d.division_id == divisiId
-        );
-
-        if (!parentDivision)
-            break;
-
-        root = parentUser;
-        parentId = parentDivision.parent_id;
+        // Refresh Select2 jika digunakan
+        $roleSelect.trigger('change.select2');
     }
 
-    if (!organization[root.id])
-        return null;
+    function updateParentOptions() {
+        let divisiId = $('#modal_divisi').val();
+        let roleId = $('#modal_role').val();
+        let selectedLevel = parseInt($('#modal_role option:selected').data('level'));
 
-    return organization[root.id][roleName] ?? [];
+        let $parentSelect = $('#modal_parent');
+        let $subSelect = $('#modal_subordinates');
 
-}
+        let $panel = $('#hierarchy_panel');
+        let $subPanel = $('#subordinate_panel'); // <-- panel bawahan
 
-function updateRoleOptions(divisiId) {
-    let $roleSelect = $('#modal_role');
-    let $parentPanel = $('#parent_panel');
-
-    // Reset role
-    $roleSelect.val('').prop('disabled', !divisiId);
-    $parentPanel.addClass('d-none');
-
-    $roleSelect.find('option').each(function () {
-
-        let roleDivId = $(this).data('divisi'); // <-- perbaikan
-
-        if (!roleDivId || roleDivId == divisiId) {
-            $(this).show();
-        } else {
-            $(this).hide();
+        if (!roleId) {
+            $panel.addClass('d-none');
+            return;
         }
-    });
 
-    // Refresh Select2 jika digunakan
-    $roleSelect.trigger('change.select2');
-}
+        $panel.removeClass('d-none');
 
-function updateParentOptions() {
-    let divisiId = $('#modal_divisi').val();
-    let roleId = $('#modal_role').val();
-    let selectedLevel = parseInt($('#modal_role option:selected').data('level'));
+        const allData = $('#mainDataTable').DataTable().ajax.json();
 
-    let $parentSelect = $('#modal_parent');
-    let $subSelect = $('#modal_subordinates');
+        // ============================
+        // Cari level terbesar pada divisi yang dipilih
+        // ============================
+        let maxLevel = 0;
 
-    let $panel = $('#hierarchy_panel');
-    let $subPanel = $('#subordinate_panel'); // <-- panel bawahan
+        $('#modal_role option').each(function () {
+            if ($(this).data('divisi') == divisiId) {
+                let level = parseInt($(this).data('level'));
 
-    if (!roleId) {
-        $panel.addClass('d-none');
-        return;
-    }
-
-    $panel.removeClass('d-none');
-
-    const allData = $('#mainDataTable').DataTable().ajax.json();
-
-    // ============================
-    // Cari level terbesar pada divisi yang dipilih
-    // ============================
-    let maxLevel = 0;
-
-    $('#modal_role option').each(function () {
-        if ($(this).data('divisi') == divisiId) {
-            let level = parseInt($(this).data('level'));
-
-            if (level > maxLevel) {
-                maxLevel = level;
+                if (level > maxLevel) {
+                    maxLevel = level;
+                }
             }
+        });
+
+        // ============================
+        // Atasan
+        // ============================
+        let htmlParent = '<option value="">-- Tanpa Atasan --</option>';
+
+        let parents = allData.filter(u => {
+            let ud = (u.user_divisions ?? []).find(d => d.division_id == divisiId);
+            return ud && parseInt(ud.level) < selectedLevel;
+        });
+
+        parents.forEach(p => {
+            htmlParent += `<option value="${p.id}">${p.name} (${p.email})</option>`;
+        });
+
+        $parentSelect.html(htmlParent);
+
+        // ============================
+        // Jika level terbesar, sembunyikan bawahan
+        // ============================
+        if (selectedLevel >= maxLevel) {
+            $subPanel.addClass('d-none');
+            $subSelect.html('').trigger('change');
+            return;
         }
-    });
 
-    // ============================
-    // Atasan
-    // ============================
-    let htmlParent = '<option value="">-- Tanpa Atasan --</option>';
+        $subPanel.removeClass('d-none');
 
-    let parents = allData.filter(u => {
-        let ud = (u.user_divisions ?? []).find(d => d.division_id == divisiId);
-        return ud && parseInt(ud.level) < selectedLevel;
-    });
+        // ============================
+        // Bawahan
+        // ============================
+        let htmlSub = '';
 
-    parents.forEach(p => {
-        htmlParent += `<option value="${p.id}">${p.name} (${p.email})</option>`;
-    });
+        let subordinates = allData.filter(u => {
+            let ud = (u.user_divisions ?? []).find(d => d.division_id == divisiId);
 
-    $parentSelect.html(htmlParent);
+            return ud && parseInt(ud.level) === selectedLevel + 1;
+        });
 
-    // ============================
-    // Jika level terbesar, sembunyikan bawahan
-    // ============================
-    if (selectedLevel >= maxLevel) {
-        $subPanel.addClass('d-none');
-        $subSelect.html('').trigger('change');
-        return;
+        subordinates.forEach(s => {
+            htmlSub += `<option value="${s.id}">${s.name} (${s.email})</option>`;
+        });
+
+        $subSelect.html(htmlSub).trigger('change');
     }
 
-    $subPanel.removeClass('d-none');
+    function editUser(id) {
+        // 1. Ambil data JSON dari DataTable
+        const allData = $('#mainDataTable').DataTable().ajax.json();
+        console.log(allData);
+        const user = allData.find(u => u.id == id);
 
-    // ============================
-    // Bawahan
-    // ============================
-    let htmlSub = '';
+        if (!user) return Swal.fire('Error', 'Data tidak ditemukan', 'error');
 
-    let subordinates = allData.filter(u => {
-        let ud = (u.user_divisions ?? []).find(d => d.division_id == divisiId);
+        // 2. Set Action Form URL (Route Update)
+        $('#formEditUser').attr('action', `/manajemen_user/${id}`);
 
-        return ud && parseInt(ud.level) === selectedLevel + 1;
-    });
+        // 3. Set Judul Modal
+        $('#editModal .modal-title').html(`<i class="fas fa-edit mr-2"></i>Edit User: ${user.name}`);
 
-    subordinates.forEach(s => {
-        htmlSub += `<option value="${s.id}">${s.name} (${s.email})</option>`;
-    });
+        // 4. Isi Field Profil Basic
+        $('#edit_name').val(user.name);
+        $('#edit_email').val(user.email);
 
-    $subSelect.html(htmlSub).trigger('change');
-}
+        // 5. Logika Set Divisi & Role
+        // Asumsi kita mengedit penempatan pertama (user_divisions[0])
+        const currentPlacement = user.user_divisions[0];
 
-function editUser(id) {
-    // 1. Ambil data JSON dari DataTable
-    const allData = $('#mainDataTable').DataTable().ajax.json();
-    console.log(allData);
-    const user = allData.find(u => u.id == id);
+        if (currentPlacement) {
+            // A. Set Divisi dan picu filter role
+            $('#edit_divisi').val(currentPlacement.division_id).trigger('change');
 
-    if (!user) return Swal.fire('Error', 'Data tidak ditemukan', 'error');
-
-    // 2. Set Action Form URL (Route Update)
-    $('#formEditUser').attr('action', `/manajemen_user/${id}`);
-
-    // 3. Set Judul Modal
-    $('#editModal .modal-title').html(`<i class="fas fa-edit mr-2"></i>Edit User: ${user.name}`);
-
-    // 4. Isi Field Profil Basic
-    $('#edit_name').val(user.name);
-    $('#edit_email').val(user.email);
-
-    // 5. Logika Set Divisi & Role
-    // Asumsi kita mengedit penempatan pertama (user_divisions[0])
-    const currentPlacement = user.user_divisions[0];
-
-    if (currentPlacement) {
-        // A. Set Divisi dan picu filter role
-        $('#edit_divisi').val(currentPlacement.division_id).trigger('change');
-
-        // B. Gunakan sedikit delay agar option role selesai difilter oleh updateRoleOptionsEdit
-        setTimeout(() => {
-            // Set Role
-            $('#edit_role').val(currentPlacement.role_id).trigger('change');
-
-            // C. Delay lagi agar daftar atasan/bawahan selesai dimuat
+            // B. Gunakan sedikit delay agar option role selesai difilter oleh updateRoleOptionsEdit
             setTimeout(() => {
-                // Set Atasan saat ini
-                $('#edit_parent').val(currentPlacement.parent_id);
+                // Set Role
+                $('#edit_role').val(currentPlacement.role_id).trigger('change');
 
-                // Set Bawahan saat ini (Cari siapa saja yang parent_id-nya adalah user ini)
-                let currentSubordinateIds = allData.filter(u => {
-                    let ud = (u.user_divisions ?? []).find(d => d.division_id == currentPlacement.division_id);
-                    return ud && ud.parent_id == user.id;
-                }).map(u => u.id);
+                // C. Delay lagi agar daftar atasan/bawahan selesai dimuat
+                setTimeout(() => {
+                    // Set Atasan saat ini
+                    $('#edit_parent').val(currentPlacement.parent_id);
 
-                $('#edit_subordinates').val(currentSubordinateIds).trigger('change');
+                    // Set Bawahan saat ini (Cari siapa saja yang parent_id-nya adalah user ini)
+                    let currentSubordinateIds = allData.filter(u => {
+                        let ud = (u.user_divisions ?? []).find(d => d.division_id == currentPlacement.division_id);
+                        return ud && ud.parent_id == user.id;
+                    }).map(u => u.id);
 
-            }, 200); // Delay untuk hierarki
-        }, 100); // Delay untuk role
-    } else {
-        // Reset jika tidak ada penempatan
-        $('#edit_divisi').val('').trigger('change');
-    }
+                    $('#edit_subordinates').val(currentSubordinateIds).trigger('change');
 
-    // Tampilkan Modal
-    $('#editModal').modal('show');
-}
-
-function deleteUser(id, name) {
-    $('#formDeleteUser').attr('action', `/manajemen_user/${id}`);
-    
-    // 2. Set Nama di Modal
-    $('#delete_user_name').text(name);
-    
-    // 3. Tampilkan Modal
-    $('#deleteModal').modal('show');
-}
-
-function updateRoleOptionsEdit(divisiId) {
-    let $roleSelect = $('#edit_role');
-    let $panel = $('#hierarchy_panel_edit');
-
-    // Reset role dan panel
-    $roleSelect.val('').prop('disabled', !divisiId);
-    $panel.addClass('d-none');
-
-    $roleSelect.find('option').each(function() {
-        let roleDivId = $(this).data('divisi');
-        // Tampilkan option default atau yang divisinya cocok
-        if (!roleDivId || roleDivId == divisiId) {
-            $(this).show();
+                }, 200); // Delay untuk hierarki
+            }, 100); // Delay untuk role
         } else {
-            $(this).hide();
+            // Reset jika tidak ada penempatan
+            $('#edit_divisi').val('').trigger('change');
         }
-    });
-}
 
-function updateHierarchyPanelEdit() {
-    let divisiId = $('#edit_divisi').val();
-    let selectedLevel = parseInt($('#edit_role option:selected').data('level'));
-    let currentUserId = $('#formEditUser').attr('action').split('/').pop();
-    
-    let $parentSelect = $('#edit_parent');
-    let $subSelect = $('#edit_subordinates');
-    let $panel = $('#hierarchy_panel_edit');
-
-    // Jika role belum dipilih atau level 1, sembunyikan panel
-    if (!divisiId || isNaN(selectedLevel)) {
-        $panel.addClass('d-none');
-        return;
+        // Tampilkan Modal
+        $('#editModal').modal('show');
     }
 
-    $panel.removeClass('d-none');
-
-    // Ambil data user dari tabel
-    const allData = $('#mainDataTable').DataTable().ajax.json();
-
-    // --- LOGIKA SAMA PERSIZ DENGAN MODAL TAMHAB ---
-
-    // 1. FILTER CALON ATASAN (Level Angka < Level Sekarang, misal 2 < 3)
-    let htmlParent = '<option value="">-- Tanpa Atasan --</option>';
-    let potentialParents = allData.filter(u => {
-        let ud = (u.user_divisions ?? []).find(d => d.division_id == divisiId);
-        // Pastikan bukan dirinya sendiri (penting saat edit)
-        return ud && parseInt(ud.level) < selectedLevel && u.id != $('#formEditUser').attr('action').split('/').pop();
-    });
-    potentialParents.forEach(p => {
-        htmlParent += `<option value="${p.id}">${p.name} (${p.email})</option>`;
-    });
-    $parentSelect.html(htmlParent);
-
-    // 2. FILTER CALON BAWAHAN (Level Angka > Level Sekarang, misal 4 > 3)
-    let htmlSub = '';
-    let potentialSubordinates = allData.filter(u => {
-        // 1. Cari data divisi user tersebut yang cocok dengan divisiId yang dipilih
-        let ud = (u.user_divisions ?? []).find(d => d.division_id == divisiId);
+    function deleteUser(id, name) {
+        $('#formDeleteUser').attr('action', `/manajemen_user/${id}`);
         
-        if (ud) {
-            let userLevel = parseInt(ud.level);
-            
-            // 2. Logika Filter:
-            // - Harus Level + 1 (Bawahan langsung)
-            // - Bukan dirinya sendiri (u.id != currentUserId)
-            return userLevel === (selectedLevel + 1) && u.id != currentUserId;
+        // 2. Set Nama di Modal
+        $('#delete_user_name').text(name);
+        
+        // 3. Tampilkan Modal
+        $('#deleteModal').modal('show');
+    }
+
+    function updateRoleOptionsEdit(divisiId) {
+        let $roleSelect = $('#edit_role');
+        let $panel = $('#hierarchy_panel_edit');
+
+        // Reset role dan panel
+        $roleSelect.val('').prop('disabled', !divisiId);
+        $panel.addClass('d-none');
+
+        $roleSelect.find('option').each(function() {
+            let roleDivId = $(this).data('divisi');
+            // Tampilkan option default atau yang divisinya cocok
+            if (!roleDivId || roleDivId == divisiId) {
+                $(this).show();
+            } else {
+                $(this).hide();
+            }
+        });
+    }
+
+    function updateHierarchyPanelEdit() {
+        let divisiId = $('#edit_divisi').val();
+        let selectedLevel = parseInt($('#edit_role option:selected').data('level'));
+        let currentUserId = $('#formEditUser').attr('action').split('/').pop();
+        
+        let $parentSelect = $('#edit_parent');
+        let $subSelect = $('#edit_subordinates');
+        let $panel = $('#hierarchy_panel_edit');
+
+        // Jika role belum dipilih atau level 1, sembunyikan panel
+        if (!divisiId || isNaN(selectedLevel)) {
+            $panel.addClass('d-none');
+            return;
         }
-        
-        return false;
-    });
-    potentialSubordinates.forEach(s => {
-        htmlSub += `<option value="${s.id}">${s.name} (${s.email})</option>`;
-    });
-    $subSelect.html(htmlSub);
 
-    // Refresh Select2 Multiple
-    $subSelect.select2({
-        placeholder: "Pilih satu atau lebih bawahan",
-        allowClear: true,
-        dropdownParent: $('#editModal')
-    });
-}
+        $panel.removeClass('d-none');
+
+        // Ambil data user dari tabel
+        const allData = $('#mainDataTable').DataTable().ajax.json();
+
+        // --- LOGIKA SAMA PERSIZ DENGAN MODAL TAMHAB ---
+
+        // 1. FILTER CALON ATASAN (Level Angka < Level Sekarang, misal 2 < 3)
+        let htmlParent = '<option value="">-- Tanpa Atasan --</option>';
+        let potentialParents = allData.filter(u => {
+            let ud = (u.user_divisions ?? []).find(d => d.division_id == divisiId);
+            // Pastikan bukan dirinya sendiri (penting saat edit)
+            return ud && parseInt(ud.level) < selectedLevel && u.id != $('#formEditUser').attr('action').split('/').pop();
+        });
+        potentialParents.forEach(p => {
+            htmlParent += `<option value="${p.id}">${p.name} (${p.email})</option>`;
+        });
+        $parentSelect.html(htmlParent);
+
+        // 2. FILTER CALON BAWAHAN (Level Angka > Level Sekarang, misal 4 > 3)
+        let htmlSub = '';
+        let potentialSubordinates = allData.filter(u => {
+            // 1. Cari data divisi user tersebut yang cocok dengan divisiId yang dipilih
+            let ud = (u.user_divisions ?? []).find(d => d.division_id == divisiId);
+            
+            if (ud) {
+                let userLevel = parseInt(ud.level);
+                
+                // 2. Logika Filter:
+                // - Harus Level + 1 (Bawahan langsung)
+                // - Bukan dirinya sendiri (u.id != currentUserId)
+                return userLevel === (selectedLevel + 1) && u.id != currentUserId;
+            }
+            
+            return false;
+        });
+        potentialSubordinates.forEach(s => {
+            htmlSub += `<option value="${s.id}">${s.name} (${s.email})</option>`;
+        });
+        $subSelect.html(htmlSub);
+
+        // Refresh Select2 Multiple
+        $subSelect.select2({
+            placeholder: "Pilih satu atau lebih bawahan",
+            allowClear: true,
+            dropdownParent: $('#editModal')
+        });
+    }
 </script>
+@endpush
 
-@include('partials.footer')
+@endsection

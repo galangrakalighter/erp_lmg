@@ -1,6 +1,6 @@
-@include('partials.header')
+@extends('layout.app')
+@section('content')
 
-<div class="container-fluid py-4">
     <div class="row">
         <div class="col-12">
             <div class="card shadow mb-4">
@@ -87,7 +87,6 @@
             </div>
         </div>
     </div>
-</div>
 
 <div class="modal fade" id="modalTambahJurnal" tabindex="-1" role="dialog" aria-labelledby="modalTambahJurnalLabel" aria-hidden="true" data-backdrop="static">
     <div class="modal-dialog modal-xl" role="document">
@@ -917,4 +916,4 @@
     });
 </script>
 
-@include('partials.footer')
+@endsection

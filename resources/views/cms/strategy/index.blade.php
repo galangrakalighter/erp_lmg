@@ -1,6 +1,5 @@
-@include('partials.header')
-
-<div class="container-fluid mt-4">
+@extends('layout.app')
+@section('content')
 
     <div class="card shadow">
         {{-- CARD HEADER --}}
@@ -183,6 +182,5 @@
         </div>
     </div>
     @endforeach
-</div>
 
-@include('partials.footer')
+@endsection

@@ -1,4 +1,5 @@
-@include('partials.header')
+@extends('layout.app')
+@section('content')
 <style>
     /* Menghilangkan garis pinggir luar tabel agar terlihat modern */
     .table-responsive {
@@ -427,7 +428,7 @@
     </div>
 
 @endforeach
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 <script>
     function formatRupiah(angka, prefix) {
         var number_string = angka.replace(/[^,\d]/g, '').toString(),
@@ -494,4 +495,4 @@
     });
 </script>
 
-@include('partials.footer')
+@endsection

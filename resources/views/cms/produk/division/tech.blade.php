@@ -1,5 +1,5 @@
-@include('partials.header')
-
+@extends('layout.app')
+@section('content')
 <div class="card shadow">
     {{-- CARD HEADER --}}
     <div class="card-header d-flex justify-content-between align-items-center">
@@ -159,11 +159,7 @@
     </div>
 
 </div>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@1.5.2/dist/select2-bootstrap4.min.css">
-
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+@push('script')
 <script>
     let isEditing = false;
     $(document).ready(function () {
@@ -485,5 +481,5 @@
 
     });
 </script>
-
-@include('partials.footer')
+@endpush
+@endsection

@@ -77,6 +77,7 @@ class HCOverviewController extends Controller
         // Ambil semua data kecuali 'pic'
         $data = $request->except('pic');
         $data['status'] = 0;
+        $data['create_by'] = Auth::id();
 
         // Simpan KPI
         $kpi = KPI::create($data);
@@ -237,6 +238,7 @@ class HCOverviewController extends Controller
             return [
                 'id'               => $kpi->id,
                 'nama_kpi'         => $kpi->nama_kpi,
+                'create_by'        => $kpi->create_by,
                 'point'            => $kpi->point,
                 'tanggal_mulai'    => $kpi->tanggal_mulai,
                 'tanggal_deadline' => $kpi->tanggal_deadline,
@@ -262,6 +264,7 @@ class HCOverviewController extends Controller
             return [
                 'id'               => $kpi->id,
                 'nama_kpi'         => $kpi->nama_kpi,
+                'create_by'        => $kpi->create_by,
                 'point'            => $kpi->point,
                 'tanggal_mulai'    => $kpi->tanggal_mulai,
                 'tanggal_deadline' => $kpi->tanggal_deadline,

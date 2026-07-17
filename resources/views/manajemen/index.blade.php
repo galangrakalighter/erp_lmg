@@ -1,6 +1,6 @@
-@include('partials.header')
-<div class="container-fluid mt-4">
-{{-- NOTIFIKASI --}}
+@extends('layout.app')
+@section('content')
+
     <div class="card shadow">
         {{-- CARD HEADER --}}
         <div class="card-header d-flex justify-content-between align-items-center py-3">
@@ -662,8 +662,8 @@
             </div>
         </div>
     </div>
-</div>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+@push('script')
 <script>
     const produkId = "{{ $produk->id }}";
     const platform = "{{ $platform }}";
@@ -1013,5 +1013,5 @@
         }
     }
 </script>
-
-@include('partials.footer')
+@endpush
+@endsection

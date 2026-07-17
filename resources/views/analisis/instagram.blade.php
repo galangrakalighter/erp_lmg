@@ -1,8 +1,6 @@
-@include('partials.header')
-
+@extends('layout.app')
 <!-- Memastikan Library Chart.js dimuat dari CDN -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+@section('content')
 <style>
     /* Styling khusus untuk card dan tabel agar lebih modern (Tanpa styling body) */
     .card { 
@@ -110,7 +108,6 @@
         transition: all 0.2s ease;
     }
 </style>
-<div class="container-fluid mt-4 pb-5">
     <div class="row mb-4">
         <div class="col-12">
             <div class="card border-0 shadow-sm p-3">
@@ -486,11 +483,7 @@
             </div>
         </div>
     </div>
-</div>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/confirmDate/confirmDate.css">
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const allPosts = @json($posts);
@@ -592,5 +585,4 @@
         renderChart(allPosts);
     });
 </script>
-
-@include('partials.footer')
+@endsection

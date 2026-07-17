@@ -1,7 +1,5 @@
-@include('partials.header')
-
-<div class="container-fluid mt-4">
-
+@extends('layout.app')
+@section('content')
     <div class="card shadow">
         {{-- CARD HEADER --}}
         <div class="card-header d-flex justify-content-between align-items-center">
@@ -26,7 +24,7 @@
                             <th>No</th>
                             <th>Nama</th>
                             <th>Status</th>
-                            @if($role == 'Digital Marketer' || $role == 'Busines Unit Head')
+                            @if($role == 'Digital Marketer' || $role == 'Busines Unit Head' || $role == 'Super Admin')
                             <th>Action</th>
                             @endif
                         </tr>
@@ -182,6 +180,4 @@
         </div>
     </div>
     @endforeach
-</div>
-
-@include('partials.footer')
+@endsection

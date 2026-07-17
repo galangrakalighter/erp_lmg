@@ -1,5 +1,5 @@
-@include('partials.header')
-
+@extends('layout.app')
+@section('content')
 <div class="container mt-4">
     <div class="card shadow-sm">
         <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
@@ -118,4 +118,4 @@
         </form>
     </div>
 </div>
-@include('partials.footer')
+@endsection

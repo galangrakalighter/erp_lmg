@@ -1,6 +1,6 @@
-@include('partials.header')
+@extends('layout.app')
+@section('content')
 
-<div class="container-fluid mt-4 pb-5">
     {{-- CARD UTAMA --}}
     <div class="card shadow mb-4">
         {{-- CARD HEADER --}}
@@ -125,7 +125,6 @@
             </div>
         </div>
     </div>
-</div>
 @foreach ($leads as $lead)
     {{-- Modal Edit --}}
     <div class="modal fade" id="editModal_{{ $lead->id }}" tabindex="-1" role="dialog" aria-labelledby="editModalLabel_{{ $lead->id }}" aria-hidden="true">
@@ -275,4 +274,5 @@
         </div>
     </div>
 @endforeach
-@include('partials.footer')
+
+@endsection

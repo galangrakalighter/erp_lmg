@@ -1,5 +1,5 @@
-@include('partials.header')
-
+@extends('layout.app')
+@section('content')
 <style>
     /* Styling Filter & Tabel */
     .filter-wrapper {
@@ -61,7 +61,6 @@
     }
 </style>
 
-<div class="container-fluid mt-4">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800 font-weight-bold">Database Affiliator</h1>
         <div>
@@ -278,7 +277,6 @@
             </div>
         </div>
     </div>
-</div>
 
 <div class="modal fade" id="tambahModal" tabindex="-1" role="dialog" aria-labelledby="tambahModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered shadow-lg" role="document">
@@ -782,9 +780,6 @@
     </div>
 </div>
 @endforeach
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
-
-<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -889,5 +884,4 @@
         };
     });
 </script>
-
-@include('partials.footer')
+@endsection

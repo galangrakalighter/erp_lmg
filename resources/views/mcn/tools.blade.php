@@ -1,5 +1,5 @@
-@include('partials.header')
-
+@extends('layout.app')
+@section('content')
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     .automation-body { background-color: #f4f7fa; font-family: 'Inter', sans-serif; }
@@ -144,5 +144,4 @@
         }
     });
 </script>
-
-@include('partials.footer')
+@endsection

@@ -1,4 +1,5 @@
-@include('partials.header')
+@extends('layout.app')
+@section('content')
 <style>
     /* Mengatur agar kolom 5 bisa sejajar di layar besar */
     @media (min-width: 992px) {
@@ -124,7 +125,7 @@
         box-shadow: 0 0 10px rgba(78, 115, 223, 0.2);
     }
 </style>
-<div class="container-fluid">
+
     <input type="hidden" id="divisi" value="{{ $divisiId }}">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <!-- Header Text -->
@@ -388,7 +389,6 @@
             </div>
         </div>
     </div>
-</div>
 
 
 
@@ -929,5 +929,4 @@
         }
     }
 </script>
-
-@include('partials.footer')
+@endsection

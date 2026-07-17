@@ -1,4 +1,5 @@
-@include('partials.header')
+@extends('layout.app')
+@section('content')
 <style>
 
 #pdfViewerPage{
@@ -77,8 +78,6 @@
 
 </style>
 <div id="pageContent">
-<div class="container-fluid mt-4">
-
     <div class="card shadow">
 
         <div class="card-header d-flex justify-content-between align-items-center">
@@ -95,12 +94,6 @@
         </div>
 
         <div class="card-body">
-
-            @if(session('success'))
-                <div class="alert alert-success">
-                    {{ session('success') }}
-                </div>
-            @endif
 
             <div class="table-responsive">
 
@@ -171,8 +164,6 @@
         </div>
 
     </div>
-
-</div>
 
 {{-- ==================== MODAL TAMBAH ==================== --}}
 
@@ -375,8 +366,9 @@
 </div>
 
 @endforeach
-
 </div>
+
+
 <div id="pdfViewerPage">
 
     <div class="viewer-header">
@@ -421,13 +413,8 @@
     </div>
 
 </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
-<script>
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-</script>
-
+@push('script')
 <script>
 
 const viewer = document.getElementById("pdfViewerPage");
@@ -575,4 +562,5 @@ viewerBody.addEventListener("wheel",async function(e){
 },{passive:false});
 
 </script>
-@include('partials.footer')
+@endpush
+@endsection

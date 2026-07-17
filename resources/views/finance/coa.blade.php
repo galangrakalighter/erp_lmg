@@ -1,6 +1,6 @@
-@include('partials.header')
+@extends('layout.app')
+@section('content')
 
-<div class="container-fluid mt-4">
     <div class="card shadow">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h6 class="m-0 font-weight-bold text-primary">Daftar Akun (Chart of Accounts)</h6>
@@ -87,7 +87,6 @@
             </div>
         </div>
     </div>
-</div>
 
 <div class="modal fade" id="tambahModal" tabindex="-1" role="dialog" aria-labelledby="tambahModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
@@ -399,4 +398,4 @@
     }
 </script>
 
-@include('partials.footer')
+@endsection

@@ -1,5 +1,5 @@
-@include('partials.header')
-
+@extends('layout.app')
+@section('content')
 <div class="container-fluid mt-4">
     <div class="row mb-3">
         <div class="col-md-3">
@@ -273,9 +273,7 @@
         </div>
     </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+@push('script')
 <script>
     const baseUrl = window.location.origin;
     function loadTable() {
@@ -545,4 +543,5 @@
         });
     });
 </script>
-@include('partials.footer')
+@endpush
+@endsection

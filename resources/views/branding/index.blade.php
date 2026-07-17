@@ -1,6 +1,6 @@
-@include('partials.header')
+@extends('layout.app')
+@section('content')
 
-<div class="container-fluid mt-4 pb-5">
     <div class="row g-4 mb-4">
         <div class="col-lg-6">
             <div class="card shadow-sm h-100">
@@ -508,7 +508,6 @@
             </div>
         </div>
     </div>
-</div>
 
 @include("cms_branding.identify")
 @include("cms_branding.moodboard")
@@ -519,4 +518,4 @@
 @include("cms_branding.value")
 @include("cms_branding.audio")
 @include("cms_branding.komposisi")
-@include('partials.footer')
+@endsection

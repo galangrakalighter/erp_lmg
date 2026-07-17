@@ -1,6 +1,6 @@
-@include('partials.header')
+@extends('layout.app')
+@section('content')
 
-<div class="container-fluid">
     <div class="mb-4">
         <a href="{{ route('finance_ledger.list_account', ['periode' => $periode]) }}" class="btn btn-sm btn-light border shadow-sm mb-3">
             <i class="fas fa-arrow-left mr-1"></i> Kembali ke Pilih Akun
@@ -124,6 +124,5 @@
             </div>
         </div>
     </div>
-</div>
 
-@include('partials.footer')
+@endsection

@@ -1,5 +1,5 @@
-@include('partials.header')
-
+@extends('layout.app')
+@section('content')
 <div class="p-6 max-w-7xl mx-auto">
     
     <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-gray-200 pb-4 mb-6">
@@ -161,4 +161,4 @@
     </div>
 </div>
 
-@include('partials.footer')
+@endsection

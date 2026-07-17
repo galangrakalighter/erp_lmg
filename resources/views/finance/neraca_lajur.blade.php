@@ -1,6 +1,6 @@
-@include('partials.header')
+@extends('layout.app')
+@section('content')
 
-<div class="container-fluid my-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
             <h2 class="mb-1" style="font-weight: 600; color: #333;">NERACA LAJUR</h2>
@@ -132,6 +132,5 @@
             </tbody>
         </table>
     </div>
-</div>
 
-@include('partials.footer')
+@endsection

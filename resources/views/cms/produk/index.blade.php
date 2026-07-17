@@ -1,6 +1,5 @@
-@include('partials.header')
-
-<div class="container-fluid mt-4">
+@extends('layout.app')
+@section('content')
 
     <div class="card shadow">
         {{-- CARD HEADER --}}
@@ -230,8 +229,7 @@
             </div>
         </div>
     </div>
-    {{-- @endforeach --}}
-</div>
+
 <script>
     window.produkConfig = {
         userId: "{{ Auth::id() }}",
@@ -254,18 +252,4 @@
         }
     };
 </script>
-
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@1.5.2/dist/select2-bootstrap4.min.css">
-
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
-<script src="{{ asset('js/produk/datatable.js') }}"></script>
-<script src="{{ asset('js/produk/create.js') }}"></script>
-<script src="{{ asset('js/produk/edit.js') }}"></script>
-<script src="{{ asset('js/produk/delete.js') }}"></script>
-
-<script src="{{ asset('js/produk/produk.js') }}"></script>
-@include('partials.footer')
+@endsection

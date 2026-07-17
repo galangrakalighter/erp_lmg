@@ -1,5 +1,5 @@
-@include('partials.header')
-
+@extends('layout.app')
+@section('content')
 <style>
     /* Efek hover agar card terlihat interaktif */
     .client-card {
@@ -123,4 +123,4 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
-@include('partials.footer')
+@endsection

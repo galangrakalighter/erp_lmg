@@ -311,8 +311,9 @@
                 'tools.index',
                 'gform_affiliate.index',
                 'selection.index',
-                'PDF'
             ]);
+
+            $isPdf = Route::is('PDF');
         @endphp
 
         <li class="nav-item {{ $isMCNPage ? 'active' : '' }}">
@@ -341,7 +342,7 @@
                     </a>
 
                     <div class="group-wrapper mb-2">
-                        <div id="cat_mcn" class="collapse {{ ($isMCNPage) ? 'show' : '' }} ml-2 border-left-custom">
+                        <div id="cat_mcn" class="collapse {{ ($isPdf) ? 'show' : '' }} ml-2 border-left-custom">
                             @foreach ($mcnProduk as $client)
                                 @if($myDivision->name == "MCN" || $isSuperAdmin)
                                     @php

@@ -347,7 +347,10 @@ class ProdukController extends Controller
                 return view('cms.produk.division.mcn', $return);
                 break;
             case 5:
-                return view('cms.produk.division.mcn', $return);
+                return view('cms.produk.division.tech', $return);
+                break;
+            case 7:
+                return view('cms.produk.division.ecommerce', $return);
                 break;
             default:
         }

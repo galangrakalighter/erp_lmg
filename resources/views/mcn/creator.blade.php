@@ -59,24 +59,99 @@
         border: 1px solid #d1d3e2 !important;
         border-radius: 4px !important;
     }
+    .table-responsive {
+        overflow-x: auto;
+    }
+
+    .filter-wrapper{
+        overflow:hidden;
+    }
+
+    @media (max-width: 768px){
+
+        .filter-wrapper{
+            padding:15px;
+        }
+
+        .filter-wrapper .form-control,
+        .filter-wrapper .choices{
+            width:100%;
+        }
+
+        .btn-xs{
+            padding:.35rem .55rem;
+            font-size:.75rem;
+        }
+
+        h1.h3{
+            font-size:1.35rem;
+        }
+
+        .card-body{
+            padding:15px;
+        }
+
+        label{
+            font-size:.75rem;
+        }
+
+        .btn{
+            width:100%;
+            margin-bottom:8px;
+        }
+
+        .modal-xl{
+            max-width:100%;
+            margin:.5rem;
+        }
+
+        .modal-body{
+            padding:1rem;
+        }
+
+        .table-responsive{
+            overflow-x:auto;
+            -webkit-overflow-scrolling:touch;
+        }
+
+        table{
+            min-width:1800px;
+        }
+
+        .table td,
+        .table th{
+            white-space:nowrap;
+            font-size:.72rem;
+        }
+
+        .choices{
+            width:100%;
+        }
+    }
 </style>
 
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800 font-weight-bold">Database Affiliator</h1>
-        <div>
-            {{-- <button type="button" class="btn btn-outline-success btn-sm shadow-sm mr-2" data-toggle="modal" data-target="#importModal">
-                <i class="fas fa-file-excel fa-sm mr-1"></i> Import Excel
-            </button> --}}
-            <button type="button" class="btn btn-primary btn-sm shadow-sm" data-toggle="modal" data-target="#tambahModal">
-                <i class="fas fa-plus fa-sm mr-1"></i> Tambah Affiliator
+    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4">
+        <h1 class="h3 mb-3 mb-md-0 text-gray-800 font-weight-bold">
+            Database Affiliator
+        </h1>
+
+        <div class="d-flex flex-wrap">
+            <button
+                type="button"
+                class="btn btn-primary btn-sm shadow-sm w-100 w-md-auto"
+                data-toggle="modal"
+                data-target="#tambahModal">
+
+                <i class="fas fa-plus mr-1"></i>
+                Tambah Affiliator
             </button>
         </div>
     </div>
 
     <div class="card shadow mb-4">
         <div class="card-body">
-            <form id="filterForm" class="row">
-                <div class="col-md-3 mb-3">
+            <form id="filterForm" class="row g-2">
+                <div class="col-12 col-md-6 col-lg-3">
                     <label class="small font-weight-bold">Kategori</label>
                     <select class="form-control form-control-sm border-left-primary shadow-sm" id="filterKategori" onchange="filterTable()">
                         <option value="">Semua Kategori</option>
@@ -92,7 +167,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-2 mb-3">
+                <div class="col-12 col-md-6 col-lg-2">
                     <label class="small font-weight-bold">Provinsi</label>
                     <select class="form-control form-control-sm border-left-success shadow-sm" id="filterLokasi">
                         <option value="">Semua Provinsi</option>
@@ -141,7 +216,7 @@
                         <option value="Papua Barat Daya">Papua Barat Daya</option>
                     </select>
                 </div>
-                <div class="col-md-2 mb-3">
+                <div class="col-12 col-md-6 col-lg-2">
                     <label class="small font-weight-bold">Platform Followers</label>
                     <select class="form-control form-control-sm border-left-warning shadow-sm" id="filterPlatform" onchange="filterTable()">
                         <option value="all">Gabungan (Semua)</option>
@@ -151,12 +226,12 @@
                     </select>
                 </div>
 
-                <div class="col-md-2 mb-3">
+                <div class="col-12 col-md-6 col-lg-2">
                     <label class="small font-weight-bold">Min. Followers</label>
                     <input type="number" class="form-control form-control-sm shadow-sm" id="filterFollowers" oninput="filterTable()" placeholder="0">
                 </div>
 
-                <div class="col-md-2 mb-3">
+                <div class="col-12 col-md-6 col-lg-2">
                     <label class="small font-weight-bold">Platform GMV</label>
                     <select class="form-control form-control-sm border-left-warning shadow-sm" id="filterPlatformGMV" onchange="filterTable()">
                         <option value="all">Gabungan (Semua)</option>
@@ -165,11 +240,11 @@
                     </select>
                 </div>
 
-                <div class="col-md-2 mb-3">
+                <div class="col-12 col-md-6 col-lg-3">
                     <label class="small font-weight-bold">Min. GMV</label>
                     <input type="number" class="form-control form-control-sm" id="filterGMV" oninput="filterTable()" placeholder="0">
                 </div>
-                <div class="col-md-3 mb-3 d-flex align-items-end">
+                <div class="col-12 col-md-6 col-lg-3 d-flex align-items-end">
                     <div class="w-100 mr-2">
                         <label class="small font-weight-bold">Gender</label>
                         <select class="form-control form-control-sm" id="filterGender" onchange="filterTable()">
@@ -187,7 +262,7 @@
     <div class="card shadow mb-4">
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered table-hover table-sm nowrap" id="dataTables1" width="100%" cellspacing="0">
+                <table class="table table-bordered table-hover table-sm dt-responsive" id="dataTables1" width="100%">
                     <thead class="bg-primary text-white text-center">
                         <tr>
                             <th rowspan="2" class="align-middle">No</th>
@@ -294,7 +369,7 @@
 
                 <div class="modal-body bg-light p-4">
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-12 col-lg-6">
                             <div class="card border-0 shadow-sm mb-4">
                                 <div class="card-body">
                                     <h6 class="font-weight-bold text-primary mb-3 border-bottom pb-2">
@@ -330,7 +405,7 @@
                                     </div>
 
                                     <div class="row mt-2">
-                                        <div class="col-md-6">
+                                        <div class="col-12 col-lg-6">
                                             <div class="form-group">
                                                 <label class="small font-weight-bold text-dark">Provinsi</label>
                                                 <select name="provinsi" id="choices-provinsi" class="form-control" required>
@@ -387,7 +462,7 @@
                                                 </select>
                                             </div>
                                         </div>
-                                        <div class="col-md-6">
+                                        <div class="col-12 col-lg-6">
                                             <div class="form-group">
                                                 <label class="small font-weight-bold text-dark">Gender</label>
                                                 <select name="gender" class="form-control form-control-sm" required>
@@ -415,7 +490,7 @@
                             </div>
                         </div>
 
-                        <div class="col-md-6">
+                        <div class="col-12 col-lg-6">
                             <div class="card border-0 shadow-sm mb-4 border-left-success">
                                 <div class="card-body">
                                     <h6 class="font-weight-bold text-success mb-3 border-bottom pb-2">
@@ -448,7 +523,7 @@
                                             <span class="small font-weight-bold text-uppercase" style="color: #ee4d2d; letter-spacing: 0.5px;">Shopee Data</span>
                                         </div>
                                         <div class="row mx-0">
-                                            <div class="col-md-3 px-1">
+                                            <div class="col-12 col-md-6 col-lg-3 px-1">
                                                 <div class="form-group mb-2">
                                                     <label class="small font-weight-bold mb-1">Username</label>
                                                     <div class="input-group input-group-sm">
@@ -456,19 +531,19 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div class="col-md-3 px-1">
+                                            <div class="col-12 col-md-6 col-lg-3 px-1">
                                                 <div class="form-group mb-2">
                                                     <label class="small font-weight-bold mb-1">URL Toko</label>
                                                     <input type="text" name="url_shopee" class="form-control form-control-sm border-0 shadow-sm" placeholder="shopee.co.id/...">
                                                 </div>
                                             </div>
-                                            <div class="col-md-3 px-1">
+                                            <div class="col-12 col-md-6 col-lg-3 px-1">
                                                 <div class="form-group mb-2">
                                                     <label class="small font-weight-bold mb-1">Followers</label>
                                                     <input type="number" name="fol_shopee" class="form-control form-control-sm border-0 shadow-sm" placeholder="0">
                                                 </div>
                                             </div>
-                                            <div class="col-md-3 px-1">
+                                            <div class="col-12 col-md-6 col-lg-3 px-1">
                                                 <div class="form-group mb-2">
                                                     <label class="small font-weight-bold mb-1">GMV Shopee</label>
                                                     <input type="number" name="gmv_shopee" class="form-control form-control-sm border-0 shadow-sm" placeholder="Rp">
@@ -483,7 +558,7 @@
                                             <span class="small font-weight-bold text-uppercase" style="color: #833ab4; letter-spacing: 0.5px;">Instagram Data</span>
                                         </div>
                                         <div class="row mx-0">
-                                            <div class="col-md-4 px-1">
+                                            <div class="col-12 col-md-6 col-lg-4 px-1">
                                                 <div class="form-group mb-1">
                                                     <label class="small font-weight-bold mb-1">Username IG</label>
                                                     <div class="input-group input-group-sm border-0 shadow-sm">
@@ -492,13 +567,13 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div class="col-md-4 px-1">
+                                            <div class="col-12 col-md-6 col-lg-4 px-1">
                                                 <div class="form-group mb-1">
                                                     <label class="small font-weight-bold mb-1">URL Profile</label>
                                                     <input type="text" name="url_ig" class="form-control form-control-sm border-0 shadow-sm" placeholder="instagram.com/...">
                                                 </div>
                                             </div>
-                                            <div class="col-md-4 px-1">
+                                            <div class="col-12 col-md-6 col-lg-4 px-1">
                                                 <div class="form-group mb-1">
                                                     <label class="small font-weight-bold mb-1 text-truncate">Follower IG</label>
                                                     <input type="number" name="fol_ig" class="form-control form-control-sm border-0 shadow-sm" placeholder="0">
@@ -567,7 +642,7 @@
 
                 <div class="modal-body bg-light p-4 text-left">
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-12 col-lg-6">
                             <div class="card border-0 shadow-sm mb-4">
                                 <div class="card-body">
                                     <h6 class="font-weight-bold text-primary mb-3 border-bottom pb-2">
@@ -603,7 +678,7 @@
                                     </div>
 
                                     <div class="row mt-2">
-                                        <div class="col-md-6">
+                                        <div class="col-12 col-lg-6">
                                             <div class="form-group">
                                                 <label class="small font-weight-bold">Provinsi</label>
                                                 <select name="provinsi" class="form-control form-control-sm select-choices-edit" required>
@@ -665,7 +740,7 @@
                                                 </select>
                                             </div>
                                         </div>
-                                        <div class="col-md-6">
+                                        <div class="col-12 col-lg-6">
                                             <div class="form-group">
                                                 <label class="small font-weight-bold">Gender</label>
                                                 <select name="gender" class="form-control form-control-sm" required>
@@ -697,7 +772,7 @@
                             </div>
                         </div>
 
-                        <div class="col-md-6">
+                        <div class="col-12 col-lg-6">
                             <div class="card border-0 shadow-sm mb-4 border-left-success">
                                 <div class="card-body">
                                     <h6 class="font-weight-bold text-success mb-3 border-bottom pb-2"><i class="fas fa-tags mr-2"></i>Rate Card</h6>
@@ -806,7 +881,27 @@
         const elementsFilter = document.getElementById('filterLokasi');
         if (elementsFilter) new Choices(elementsFilter, config);
 
-        const table = $('#dataTables1').DataTable();
+        const table = $('#dataTables1').DataTable({
+            responsive: {
+                details: {
+                    type: 'column',
+                    target: -1
+                }
+            },
+            autoWidth: false,
+            scrollX: true,
+            pageLength: 10,
+            columnDefs: [
+                {
+                    responsivePriority: 1,
+                    targets: [0,1,-1]
+                },
+                {
+                    responsivePriority: 2,
+                    targets: [13,14]
+                }
+            ]
+        });
 
         // 2. Daftarkan Fungsi Filter Global (Vanilla JS Logic)
         // DataTable akan menjalankan fungsi ini untuk SETIAP baris di SEMUA halaman
@@ -820,6 +915,8 @@
             var platformGMV = $('#filterPlatformGMV').val();
             const minFolInput = parseInt(document.getElementById('filterFollowers').value) || 0;
             const minGMVInput = parseInt(document.getElementById('filterGMV').value) || 0;
+
+            if (!cells || cells.length === 0) return true;
 
             const folTT  = parseInt(cells[3].dataset.fol) || 0;
             const folSHP = parseInt(cells[6].dataset.fol) || 0;

@@ -339,6 +339,7 @@
                         </div>
                     </div>
 
+                    @if($myDivision->name == "MCN" || $isSuperAdmin)
                     <div class="client-item-wrapper mb-2">
                         <a class="client-dropdown-link {{ request()->is('barang_client') ? 'active' : '' }}" href="{{ route('barang_client.index') }}">
                             <span>Project MCN</span>
@@ -361,6 +362,7 @@
                             <span>Tools</span>
                         </a>
                     </div>
+                    @endif
 
                     @foreach ($mcnClient as $item)
                     <a class="client-dropdown-link {{ request()->is('project/' . $item->id . '*') ? '' : 'collapsed' }}" 
@@ -497,7 +499,7 @@
         @if(Auth::user()->isAdmin == true || $myDivision->name == "Ecommerce")
         <li class="nav-item {{ request()->is('*HC*') ? 'active' : '' }}">
             <a class="nav-link {{ request()->is('*HC*') ? '' : 'collapsed' }}" href="#" 
-            data-toggle="collapse" data-target="#collapseTech" 
+            data-toggle="collapse" data-target="#collapseEcommerce" 
             aria-expanded="{{ request()->is('*HC*') ? 'true' : 'false' }}" aria-controls="collapseEcommerce">
                 <span>Ecommerce</span>
             </a>
@@ -505,9 +507,9 @@
             <div id="collapseEcommerce" class="collapse {{ request()->is('*HC*') ? 'show' : '' }}" 
                 aria-labelledby="headingHC" data-parent="#accordionSidebar">
                 <div class="collapse-container">
-                    @if ($isSuperAdmin || $myDivision->name == "Ecommerce" && $myRole->level < 2)
+                    @if ($isSuperAdmin || $myDivision->name == "Ecommerce" && $myRole->level < 4)
                         <div class="px-2 mb-3">
-                            <a class="btn-cms-link" href="{{ route('client.produk_divisi', 5) }}">
+                            <a class="btn-cms-link" href="{{ route('client.produk_divisi', 7) }}">
                                 <i class="fas fa-cog mr-1"></i> Dashboard CMS
                             </a>
                         </div>
@@ -520,7 +522,7 @@
 
                     <div class="group-wrapper mb-2">
                         <div id="cat_mcn" class="collapse ml-2 border-left-custom">
-                            @foreach ($techProduk as $client)
+                            @foreach ($ecommerceProduk as $client)
                                 @if($myDivision->name == "Ecommerce" || $isSuperAdmin)
                                     @php
                                         // 1. Cek apakah user punya akses eksplisit ke client ini (dari tabel user_client)

@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
+use App\Models\Division;
 use App\Models\UserDivision;
 use App\Models\ProdukClient;
 
@@ -64,8 +65,12 @@ class DashboardController extends Controller
             $listBawahan = User::where('isAdmin', false)->get();
         }
 
-        // dd($listBawahan);
+        if($role == 'Super Admin'){
+            $listDivisi = Division::all();
+        }else{
+            $listDivisi = Division::where('id', $divisi[0]->division_id)->get();
+        }
         
-        return view('hc.kpi', compact('title', 'listProject', 'listBawahan'));
+        return view('hc.kpi', compact('title', 'listProject', 'listBawahan', 'listDivisi'));
     }
 }

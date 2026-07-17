@@ -11,12 +11,16 @@ class KPIController extends Controller
         $isAdmin = Auth::user()->isAdmin == true;
 
         // 1. Base Query (Filter User/Project saja, TANPA filter tanggal)
-       if ($isAdmin) {
+        if ($isAdmin) {
             if ($request->filled('user_id')) {
                 $baseQuery = \App\Models\KPI::whereHas('pics', function($q) use ($request) {
                     $q->where('user_id', $request->user_id);
                 });
-            } else {
+            } else if($request->filled('divisi_id')){
+                $baseQuery = \App\Models\KPI::whereHas('pics', function($q) use ($request) {
+                    $q->where('divisi', $request->divisi_id);
+                });
+            }else {
                 $baseQuery = \App\Models\KPI::query();
             }
         } else {
@@ -115,16 +119,22 @@ class KPIController extends Controller
             ->leftJoin('produk_client', 'task.project', '=', 'produk_client.id')
             ->leftJoin('users', 'task.pic', '=', 'users.id')
             ->leftJoin('kpi', 'task.id_kpi', '=', 'kpi.id')
+            ->leftJoin('user_division', 'users.id', '=', 'user_division.user_id')
             ->whereIn('task.pic', $allowedUserIds);
         
         $clientFilter = $request->query('client');
         $picFilter = $request->query('pic');
         $activityPic = $request->query('activity_pic');
         $timerPic = $request->query('timer_pic');
+        $divisiFilter = $request->query('divisi_id');
         if ($clientFilter && $clientFilter !== 'all') {
             $query->where('task.project', $clientFilter);
         } elseif ($picFilter && $picFilter !== 'all') {
             $query->where('task.pic', $picFilter);
+        }
+
+        if ($divisiFilter && $divisiFilter !== 'all') {
+            $query->where('user_division.division_id', $divisiFilter);
         }
 
         // 3. Filter Tanggal

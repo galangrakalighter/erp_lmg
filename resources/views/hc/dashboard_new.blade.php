@@ -152,6 +152,13 @@
                 @endforeach
             </select>
 
+            <select id="filter-divisi" class="form-control form-control-sm mr-2" style="width: auto; min-width: 150px;" onchange="loadTaskStats()">
+                <option value="all">Semua Divisi</option>
+                @foreach($divisiList as $u)
+                    <option value="{{ $u->id }}">{{ $u->name }}</option>
+                @endforeach
+            </select>
+
             <!-- Filter Tanggal -->
             <div class="input-group input-group-sm mr-2" style="width: auto;">
                 <input type="date" id="dateStart" class="form-control" onchange="loadTaskStats()">
@@ -464,6 +471,7 @@
     async function loadTaskStats() {
         const pic = document.getElementById('filter-pic').value;
         const selectPIC = document.getElementById('filter-pic');
+        const selectDivisi = document.getElementById('filter-divisi').value;
         const client = document.getElementById('filter-client').value;
         const dateStart = document.getElementById('dateStart').value;
         const dateEnd = document.getElementById('dateEnd').value;
@@ -474,7 +482,7 @@
             pic = 'all';
         }
         
-        const res = await fetch(`/task/stats?pic=${pic}&client=${client}&start=${dateStart}&end=${dateEnd}&activity_pic=${filterUserActivity}&timer_pic=${timerPic}`); 
+        const res = await fetch(`/task/stats?pic=${pic}&client=${client}&start=${dateStart}&end=${dateEnd}&activity_pic=${filterUserActivity}&timer_pic=${timerPic}&divisi_id=${selectDivisi}`); 
         const data = await res.json();
 
         const total = data.totalHariIni;

@@ -238,6 +238,15 @@
                 @endforeach
             </select>
 
+            <select id="filterDivisi" class="form-control form-control-sm mr-2" style="width: auto; min-width: 150px;" onchange="loadStats()">
+                @if(Auth::user()->isAdmin == true)
+                <option value="">Semua Divisi</option>
+                @endif
+                @foreach($listDivisi as $divisi)
+                    <option value="{{ $divisi->id }}">{{ $divisi->name }}</option>
+                @endforeach
+            </select>
+
             <!-- Date Filters -->
             <div class="input-group input-group-sm mr-2" style="width: auto;">
                 <input type="date" id="dateStart" class="form-control" onchange="loadStats()">
@@ -422,11 +431,13 @@
     async function loadStats() {
         const projectId = document.getElementById('filterProject').value;
         const userId = document.getElementById('filterUser') ? document.getElementById('filterUser').value : '';
+        const divisiId = document.getElementById('filterDivisi') ? document.getElementById('filterDivisi').value : '';
         const dateStart = document.getElementById('dateStart').value;
         const dateEnd = document.getElementById('dateEnd').value;
 
         let url = `/kpi/stats?project_id=${projectId}`;
         if (userId) url += `&user_id=${userId}`; // Tambahkan param user
+        if (divisiId) url += `&divisi_id=${divisiId}`; // Tambahkan param user
         if (dateStart) url += `&start_date=${dateStart}`;
         if (dateEnd) url += `&end_date=${dateEnd}`;
 
@@ -599,6 +610,11 @@
             document.getElementById('filterUser').value = '';
         }
 
+        const filterDivisi = document.getElementById('filterDivisi');
+        if (filterDivisi) {
+            filterDivisi.value = filterDivisi.options[0].value; 
+        }
+
         filterByStatus('all');
 
         // 2. Hitung Tanggal Awal dan Akhir Bulan Ini
@@ -616,6 +632,8 @@
         // 3. Terapkan ke Input
         document.getElementById('dateStart').value = firstDay;
         document.getElementById('dateEnd').value = lastDayFormatted;
+
+
         
         // 4. Panggil ulang loadStats
         loadStats();

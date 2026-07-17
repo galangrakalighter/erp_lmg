@@ -23,15 +23,26 @@
         {{-- ==========================================
              1. DIGITAL MARKETING (ID 1)
         ========================================== --}}
-        <li class="nav-item {{ (request()->is('*manajemen*') || request()->is('*analisis*')) && !request()->is('*BD*') ? 'active' : '' }}">
-            <a class="nav-link {{ (request()->is('*manajemen*') || request()->is('*analisis*')) ? '' : 'collapsed' }}" href="#" 
+        {{-- Buat Digital Marketing Dan Busines Dev--}}
+        @php
+            $currentProduct = request()->route('id_produk');
+            $currentPlatform = request()->route('platform');
+            
+            // Identifikasi apakah produk saat ini ada di list Digital Marketing atau Business Dev
+            $isDMProduct = $digitalMarketingProduk->contains('client_id', $currentProduct);
+            $isBDProduct = $businessDevProduk->contains('client_id', $currentProduct);
+
+            $isMarketingPage = Route::is(['market_research', 'branding', 'analisis', 'manajemen', 'PDF']);
+        @endphp
+        <li class="nav-item {{ ($isMarketingPage && $isDMProduct) ? 'active' : '' }}">
+            <a class="nav-link {{ ($isMarketingPage && $isDMProduct) ? '' : 'collapsed' }}" href="#" 
             data-toggle="collapse" data-target="#collapseDM" 
-            aria-expanded="{{ request()->is('*manajemen*') ? 'true' : 'false' }}" aria-controls="collapseMCN">
+            aria-expanded="{{ ($isMarketingPage && $isDMProduct) ? 'true' : 'false' }}" aria-controls="collapseDM">
                 <span>Digital Marketing</span>
             </a>
             
-            <div id="collapseDM" class="collapse {{ request()->is('*HC*') ? 'show' : '' }}" 
-                aria-labelledby="headingHC" data-parent="#accordionSidebar">
+            <div id="collapseDM" class="collapse {{ ($isMarketingPage && $isDMProduct) ? 'show' : '' }}" 
+                aria-labelledby="headingDM" data-parent="#accordionSidebar">
                 <div class="collapse-container">
 
                     <div class="brand-sub-header text-danger mb-3">
@@ -47,12 +58,15 @@
                         </div>
                     @endif
 
-                    <a class="category-dropdown-link collapsed" data-toggle="collapse" data-target="#cat_dm">
+                    <a class="category-dropdown-link {{ $isMarketingPage ? '' : 'collapsed' }}" 
+                        data-toggle="collapse" 
+                        data-target="#cat_dm" 
+                        aria-expanded="{{ ($isMarketingPage) ? 'true' : 'false' }}">
                         <span><i class="fas fa-folder-open mr-2 text-warning"></i>Client</span>
                     </a>
 
                     <div class="group-wrapper mb-2">
-                        <div id="cat_dm" class="collapse ml-2 border-left-custom">
+                        <div id="cat_dm" class="collapse {{ ($isMarketingPage) ? 'show' : '' }} ml-2 border-left-custom">
                             @foreach ($digitalMarketingProduk as $client)
                                 @if($myDivision->name == "Digital Marketing" || $isSuperAdmin)
                                         @php
@@ -66,12 +80,16 @@
                                             // 3. Syarat Utama Membuka Dropdown Client:
                                             // Dia Power User ATAU (Berada di Divisi 1 DAN terdaftar di user_client)
                                             $canOpen = $isPowerUser || (in_array(1, $myDivision->pluck('id')->toArray()) && $hasClientAccess);
+                                            $isActiveClient = $currentProduct == $client->client_id;
                                         @endphp
 
                                         <div class="client-item-wrapper" style="width: 7vw">
                                             {{-- Bagian Header Client --}}
                                             @if($canOpen)
-                                                <a class="client-dropdown-link collapsed" data-toggle="collapse" data-target="#client_lgtr_{{ $client->client_id }}">
+                                                <a class="client-dropdown-link {{ $isActiveClient ? '' : 'collapsed' }}" 
+                                                    data-toggle="collapse" 
+                                                    data-target="#client_lgtr_{{ $client->client_id }}" 
+                                                    aria-expanded="{{ $isActiveClient ? 'true' : 'false' }}">
                                                     <span><i class="far fa-user-circle mr-2"></i>{{ $client->nama }}</span>
                                                     <i class="fas fa-caret-right arrow-icon-xs"></i>
                                                 </a>
@@ -85,7 +103,7 @@
 
                                             {{-- Bagian Isi Platform (Hanya dirender jika punya akses) --}}
                                             @if($canOpen)
-                                                <div id="client_lgtr_{{ $client->client_id }}" class="collapse ml-3">
+                                                <div id="client_lgtr_{{ $client->client_id }}" class="collapse {{ $isActiveClient ? 'show' : '' }}">
                                                     <div class="platform-sub-links">
                                                         @php
                                                             $accessToken = json_decode($client->access_token, true);
@@ -95,23 +113,26 @@
 
                                                         @if($platforms->isNotEmpty())
                                                             @foreach ($platforms as $plt)
+                                                            @php
+                                                                $isPlatform = $currentPlatform == $plt;
+                                                            @endphp
                                                                 <div class="platform-group">
                                                                     <div class="platform-label">
                                                                         <i class="fab fa-{{ strtolower($plt) }}"></i> {{ $plt }}
                                                                     </div>
-                                                                    <a href="{{ route('market_research', ['id_produk' => $client->id, 'platform' => $plt]) }}">
+                                                                    <a href="{{ route('market_research', ['id_produk'=>$client->id, 'platform'=>$plt ]) }}" class="{{ Route::is('market_research') && $isPlatform && $isActiveClient ? 'active-menu' : '' }}">
                                                                         Market Research
                                                                     </a>
-                                                                    <a href="{{ route('branding', ['id_produk' => $client->id, 'platform' => $plt]) }}">
+                                                                   <a href="{{ route('branding', ['id_produk'=>$client->id, 'platform'=>$plt ]) }}" class="{{ Route::is('branding') && $isPlatform && $isActiveClient ? 'active-menu' : '' }}">
                                                                         Branding
                                                                     </a>
-                                                                    <a href="{{ route('analisis', ['id_produk' => $client->id, 'platform' => $plt]) }}">
+                                                                    <a href="{{ route('analisis', ['id_produk'=>$client->id, 'platform'=>$plt ]) }}" class="{{ Route::is('analisis') && $isPlatform && $isActiveClient ? 'active-menu' : '' }}">
                                                                         Analisis
                                                                     </a>
-                                                                    <a href="{{ route('manajemen', ['id_produk' => $client->id, 'platform' => $plt]) }}">
+                                                                    <a href="{{ route('manajemen', ['id_produk'=>$client->id, 'platform'=>$plt ]) }}" class="{{ Route::is('manajemen') && $isPlatform && $isActiveClient ? 'active-menu' : '' }}">
                                                                         Content Plan
                                                                     </a>
-                                                                    <a href="{{ route('PDF', ['id_produk' => $client->id]) }}">
+                                                                   <a href="{{ route('PDF', ['id_produk'=>$client->id ]) }}" class="{{ Route::is('PDF') && $isActiveClient ? 'active-menu' : '' }}">
                                                                         File
                                                                     </a>
                                                                 </div>
@@ -130,12 +151,12 @@
                 </div>
             </div>
         </li>
-        <li class="nav-item {{ request()->is('*BD*') ? 'active' : '' }}">
-            <a class="nav-link {{ request()->is('*BD*') ? '' : 'collapsed' }}" href="#" data-toggle="collapse" data-target="#collapseBD" aria-expanded="{{ request()->is('*BD*') ? 'true' : 'false' }}" aria-controls="collapseBD">
+        <li class="nav-item {{ ($isMarketingPage && $isBDProduct) ? 'active' : '' }}">
+            <a class="nav-link {{ ($isMarketingPage && $isBDProduct) ? '' : 'collapsed' }}" href="#" data-toggle="collapse" data-target="#collapseBD" aria-expanded="{{ ($isMarketingPage && $isBDProduct) ? 'true' : 'false' }}" aria-controls="collapseBD">
                 <span>Business Dev</span>
             </a>
             
-            <div id="collapseBD" class="collapse {{ request()->is('*HC*') ? 'show' : '' }}" 
+            <div id="collapseBD" class="collapse {{ ($isMarketingPage && $isBDProduct) ? 'show' : '' }}" 
                 aria-labelledby="headingBD" data-parent="#accordionSidebar">
                 <div class="collapse-container">
 
@@ -175,7 +196,7 @@
                             <span><i class="fas fa-folder-open mr-2 text-info"></i>Internal {{ $catLabel }}</span>
                         </a>
 
-                        <div id="cat_bd_{{ strtolower($catLabel) }}" class="collapse ml-2 border-left-custom mb-2">
+                        <div id="cat_bd_{{ strtolower($catLabel) }}" class="collapse {{ ($isMarketingPage) ? 'show' : '' }} ml-2 border-left-custom mb-2">
                             @php
                                 // Filter data yang hanya boleh dilihat user ini
                                 $filteredClients = $groupedProduk->get($catId, collect())->filter(function($client) use ($isDigitalMarketing, $isSuperAdmin) {
@@ -184,25 +205,31 @@
                             @endphp
 
                             @forelse ($filteredClients as $client)
-                                @php $canOpen = $checkAccess($client); @endphp
+                                @php 
+                                    $canOpen = $checkAccess($client); 
+                                    $isActiveClient = $currentProduct == $client->client_id;
+                                @endphp
 
                                 <div class="client-item-wrapper" style="width: 7vw">
                                     @if($canOpen)
-                                        <a class="client-dropdown-link collapsed" data-toggle="collapse" data-target="#client_bd_{{ $catLabel }}_{{ $client->client_id }}">
+                                        <a class="client-dropdown-link {{ $isActiveClient ? '' : 'collapsed' }}" data-toggle="collapse" data-target="#client_bd_{{ $catLabel }}_{{ $client->client_id }}" aria-expanded="{{ $isActiveClient ? 'true' : 'false' }}">
                                             <span><i class="far fa-user-circle mr-2"></i>{{ $client->nama }}</span>
                                             <i class="fas fa-caret-right arrow-icon-xs"></i>
                                         </a>
-                                        <div id="client_bd_{{ $catLabel }}_{{ $client->client_id }}" class="collapse ml-3">
+                                        <div id="client_bd_{{ $catLabel }}_{{ $client->client_id }}" class="collapse ml-3 {{ $isActiveClient ? 'show' : '' }}">
                                             <div class="platform-sub-links">
                                                 @php $platforms = collect(json_decode($client->access_token, true)['platform'] ?? [])->filter(); @endphp
                                                 @forelse ($platforms as $plt)
+                                                    @php
+                                                        $isPlatform = $currentPlatform == $plt;
+                                                    @endphp
                                                     <div class="platform-group">
                                                         <div class="platform-label"><i class="fab fa-{{ strtolower($plt) }}"></i> {{ $plt }}</div>
-                                                        <a href="{{ route('market_research', ['id_produk' => $client->id, 'platform' => $plt]) }}">Market Research</a>
-                                                        <a href="{{ route('branding', ['id_produk' => $client->id, 'platform' => $plt]) }}">Branding</a>
-                                                        <a href="{{ route('analisis', ['id_produk' => $client->id, 'platform' => $plt]) }}">Analisis</a>
-                                                        <a href="{{ route('manajemen', ['id_produk' => $client->id, 'platform' => $plt]) }}">Content Plan</a>
-                                                        <a href="{{ route('PDF', ['id_produk' => $client->id]) }}">File</a>
+                                                        <a href="{{ route('market_research', ['id_produk' => $client->id, 'platform' => $plt]) }}" class="{{ Route::is('market_research') && $isPlatform && $isActiveClient ? 'active-menu' : '' }}">Market Research</a>
+                                                        <a href="{{ route('branding', ['id_produk' => $client->id, 'platform' => $plt]) }}" class="{{ Route::is('branding') && $isPlatform && $isActiveClient ? 'active-menu' : '' }}">Branding</a>
+                                                        <a href="{{ route('analisis', ['id_produk' => $client->id, 'platform' => $plt]) }}" class="{{ Route::is('analisis') && $isPlatform && $isActiveClient ? 'active-menu' : '' }}">Analisis</a>
+                                                        <a href="{{ route('manajemen', ['id_produk' => $client->id, 'platform' => $plt]) }}" class="{{ Route::is('manajemen') && $isPlatform && $isActiveClient ? 'active-menu' : '' }}">Content Plan</a>
+                                                        <a href="{{ route('PDF', ['id_produk' => $client->id]) }}" class="{{ Route::is('PDF') && $isActiveClient ? 'active-menu' : '' }}">File</a>
                                                     </div>
                                                 @empty
                                                     <span class="text-muted small p-2 d-block">Platform belum diset</span>
@@ -226,37 +253,47 @@
             </div>
         </li>
 
-        <li class="nav-item {{ request()->is('*HC*') ? 'active' : '' }}">
-            <a class="nav-link {{ request()->is('*HC*') ? '' : 'collapsed' }}" href="#" 
+        {{-- Menu HC --}}
+        @php
+            // Definisikan route yang termasuk dalam menu Human Capital
+            $isHCPage = Route::is([
+                'hc_daily.index',
+                'hc_overview.list',
+                'overview.dashboard_kpi',
+                'overview.dashboard'
+            ]);
+        @endphp
+        <li class="nav-item {{ $isHCPage ? 'active' : '' }}">
+            <a class="nav-link {{ $isHCPage ? '' : 'collapsed' }}" href="#" 
             data-toggle="collapse" data-target="#collapseHC" 
-            aria-expanded="{{ request()->is('*HC*') ? 'true' : 'false' }}" aria-controls="collapseHC">
+            aria-expanded="{{ $isHCPage ? 'true' : 'false' }}" aria-controls="collapseHC">
                 <span>Human Capital</span>
             </a>
             
-            <div id="collapseHC" class="collapse {{ request()->is('*HC*') ? 'show' : '' }}" 
+            <div id="collapseHC" class="collapse {{ $isHCPage ? 'show' : '' }}" 
                 aria-labelledby="headingHC" data-parent="#accordionSidebar">
                 <div class="collapse-container">
                     {{-- Menu Daily Work --}}
                     <div class="client-item-wrapper mb-2">
-                        <a class="client-dropdown-link {{ request()->is('hc_dailywork') ? 'active' : '' }}" href="{{ route('hc_daily.index') }}">
+                        <a class="client-dropdown-link {{ Route::is('hc_daily.index') ? 'active' : '' }}" href="{{ route('hc_daily.index') }}">
                             <span>Daily Work</span>
                         </a>
                     </div>
 
                     <div class="client-item-wrapper mb-2">
-                        <a class="client-dropdown-link {{ request()->is('hc_overview.list') ? 'active' : '' }}" href="{{ route('hc_overview.list') }}">
+                        <a class="client-dropdown-link {{ Route::is('hc_overview.list') ? 'active' : '' }}" href="{{ route('hc_overview.list') }}">
                             <span>Project Overview</span>
                         </a>
                     </div>
 
                     <div class="client-item-wrapper mb-2">
-                        <a class="client-dropdown-link {{ request()->is('overview.dashboard_kpi') ? 'active' : '' }}" href="{{ route('overview.dashboard_kpi') }}">
+                        <a class="client-dropdown-link {{ Route::is('overview.dashboard_kpi') ? 'active' : '' }}" href="{{ route('overview.dashboard_kpi') }}">
                             <span>KPI</span>
                         </a>
                     </div>
 
                     <div class="client-item-wrapper">
-                        <a class="client-dropdown-link {{ request()->is('hc_overview.list') ? 'active' : '' }}" href="{{ route('overview.dashboard') }}">
+                        <a class="client-dropdown-link {{ Route::is('overview.dashboard') ? 'active' : '' }}" href="{{ route('overview.dashboard') }}">
                             <span>Dashboard</span>
                         </a>
                     </div>
@@ -264,14 +301,28 @@
             </div>
         </li>
 
-        <li class="nav-item {{ request()->is('*HC*') ? 'active' : '' }}">
-            <a class="nav-link {{ request()->is('*HC*') ? '' : 'collapsed' }}" href="#" 
+        @php
+            // Daftar semua route yang termasuk di bawah menu MCN
+            $isMCNPage = Route::is([
+                'client.produk_divisi',
+                'barang_client.index',
+                'social_creator.index',
+                'blacklist.index',
+                'tools.index',
+                'gform_affiliate.index',
+                'selection.index',
+                'PDF'
+            ]);
+        @endphp
+
+        <li class="nav-item {{ $isMCNPage ? 'active' : '' }}">
+            <a class="nav-link {{ $isMCNPage ? '' : 'collapsed' }}" href="#" 
             data-toggle="collapse" data-target="#collapseMCN" 
-            aria-expanded="{{ request()->is('*HC*') ? 'true' : 'false' }}" aria-controls="collapseMCN">
+            aria-expanded="{{ $isMCNPage ? 'true' : 'false' }}" aria-controls="collapseMCN">
                 <span>MCN</span>
             </a>
             
-            <div id="collapseMCN" class="collapse {{ request()->is('*HC*') ? 'show' : '' }}" 
+            <div id="collapseMCN" class="collapse {{ $isMCNPage ? 'show' : '' }}" 
                 aria-labelledby="headingHC" data-parent="#accordionSidebar">
                 <div class="collapse-container">
                     
@@ -290,7 +341,7 @@
                     </a>
 
                     <div class="group-wrapper mb-2">
-                        <div id="cat_mcn" class="collapse ml-2 border-left-custom">
+                        <div id="cat_mcn" class="collapse {{ ($isMCNPage) ? 'show' : '' }} ml-2 border-left-custom">
                             @foreach ($mcnProduk as $client)
                                 @if($myDivision->name == "MCN" || $isSuperAdmin)
                                     @php
@@ -304,12 +355,13 @@
                                         // 3. Syarat Utama Membuka Dropdown Client:
                                         // Dia Power User ATAU (Berada di Divisi 1 DAN terdaftar di user_client)
                                         $canOpen = $isPowerUser || (in_array(1, $myDivision->pluck('id')->toArray()) && $hasClientAccess);
+                                        $isActiveClient = $currentProduct == $client->client_id;
                                     @endphp
 
                                     <div class="client-item-wrapper" style="width: 7vw">
                                         {{-- Bagian Header Client --}}
                                         @if($canOpen)
-                                            <a class="client-dropdown-link collapsed" data-toggle="collapse" data-target="#client_mcn_{{ $client->client_id }}">
+                                            <a class="client-dropdown-link {{ $isActiveClient ? '' : 'collapsed' }}" data-toggle="collapse" data-target="#client_mcn_{{ $client->client_id }}" aria-expanded="{{ $isActiveClient ? 'true' : 'false' }}">
                                                 <span><i class="far fa-user-circle mr-2"></i>{{ $client->nama }}</span>
                                                 <i class="fas fa-caret-right arrow-icon-xs"></i>
                                             </a>
@@ -323,10 +375,10 @@
 
                                         {{-- Bagian Isi Platform (Hanya dirender jika punya akses) --}}
                                         @if($canOpen)
-                                            <div id="client_mcn_{{ $client->client_id }}" class="collapse ml-3">
+                                            <div id="client_mcn_{{ $client->client_id }}" class="collapse {{ $isActiveClient ? 'show' : '' }} ml-3">
                                                 <div class="platform-sub-links">
                                                     <div class="client-item-wrapper mb-2">
-                                                        <a class="client-dropdown-link {{ request()->is('PDF') ? 'active' : '' }}" href="{{ route('PDF', ['id_produk' => $client->id]) }}">
+                                                        <a class="client-dropdown-link {{ Route::is('PDF') ? 'active-menu' : '' }}" href="{{ route('PDF', ['id_produk' => $client->id]) }}">
                                                             <span>File</span>
                                                         </a>
                                                     </div>
@@ -341,24 +393,24 @@
 
                     @if($myDivision->name == "MCN" || $isSuperAdmin)
                     <div class="client-item-wrapper mb-2">
-                        <a class="client-dropdown-link {{ request()->is('barang_client') ? 'active' : '' }}" href="{{ route('barang_client.index') }}">
+                        <a class="client-dropdown-link {{ Route::is('barang_client.index') ? 'active' : '' }}" href="{{ route('barang_client.index') }}">
                             <span>Project MCN</span>
                         </a>
                     </div>
 
                     <div class="client-item-wrapper mb-2">
-                        <a class="client-dropdown-link {{ request()->is('social_creator') ? 'active' : '' }}" href="{{ route('social_creator.index') }}">
+                        <a class="client-dropdown-link {{ Route::is('social_creator.index') ? 'active' : '' }}" href="{{ route('social_creator.index') }}">
                             <span>Affiliator</span>
                         </a>
                     </div>
 
                     <div class="client-item-wrapper mb-2">
-                        <a class="client-dropdown-link {{ request()->is('blacklist') ? 'active' : '' }}" href="{{ route('blacklist.index') }}">
+                        <a class="client-dropdown-link {{ Route::is('blacklist.index') ? 'active' : '' }}" href="{{ route('blacklist.index') }}">
                             <span>Blacklist</span>
                         </a>
                     </div>
                     <div class="client-item-wrapper mb-2">
-                        <a class="client-dropdown-link {{ request()->is('tools') ? 'active' : '' }}" href="{{ route('tools.index') }}">
+                        <a class="client-dropdown-link {{ Route::is('tools.index') ? 'active' : '' }}" href="{{ route('tools.index') }}">
                             <span>Tools</span>
                         </a>
                     </div>
@@ -589,54 +641,72 @@
         </li>
         @endif
         @if(Auth::user()->isAdmin == true || $myDivision->name == 'Finance')
-        <li class="nav-item {{ request()->is('*HC*') ? 'active' : '' }}">
-            <a class="nav-link {{ request()->is('*HC*') ? '' : 'collapsed' }}" href="#" 
+        @php
+            $isFinancePage = Route::is([
+                'finance_coa.index',
+                'general_journal.index',
+                'finance_ledger.list_account',
+                'Ledger.neraca_saldo',
+                'adjustment_journal.index',
+                'Ledger.neraca_lajur',
+                'Ledger.arus_kas',
+                'Ledger.jurnal_penutup'
+            ]);
+        @endphp
+        <li class="nav-item {{ $isFinancePage ? 'active' : '' }}">
+            <a class="nav-link {{ $isFinancePage ? '' : 'collapsed' }}" href="#" 
             data-toggle="collapse" data-target="#collapseFinance" 
-            aria-expanded="{{ request()->is('*HC*') ? 'true' : 'false' }}" aria-controls="collapseMCN">
+            aria-expanded="{{ $isFinancePage ? 'true' : 'false' }}" aria-controls="collapseFinance">
                 <span>Finance</span>
             </a>
             
-            <div id="collapseFinance" class="collapse {{ request()->is('*HC*') ? 'show' : '' }}" 
+            <div id="collapseFinance" class="collapse {{ $isFinancePage ? 'show' : '' }}" 
                 aria-labelledby="headingHC" data-parent="#accordionSidebar">
                 <div class="collapse-container">
                     <div class="client-item-wrapper mb-2">
-                        <a class="client-dropdown-link {{ request()->is('finance_coa') ? 'active' : '' }}" href="{{ route('finance_coa.index') }}">
+                        <a class="client-dropdown-link {{ Route::is('finance_coa.index') ? 'active' : '' }}" href="{{ route('finance_coa.index') }}">
                             <span>Daftar Akun</span>
                         </a>
                     </div>
+                    
                     <div class="client-item-wrapper mb-2">
-                        <a class="client-dropdown-link {{ request()->is('general_journal') ? 'active' : '' }}" href="{{ route('general_journal.index') }}">
+                        <a class="client-dropdown-link {{ Route::is('general_journal.index') ? 'active' : '' }}" href="{{ route('general_journal.index') }}">
                             <span>Jurnal Umum</span>
                         </a>
                     </div>
+                    
                     <div class="client-item-wrapper mb-2">
-                        <a class="client-dropdown-link {{ request()->is('finance_ledger') ? 'active' : '' }}" href="{{ route('finance_ledger.list_account') }}">
+                        <a class="client-dropdown-link {{ Route::is('finance_ledger.list_account') ? 'active' : '' }}" href="{{ route('finance_ledger.list_account') }}">
                             <span>Buku Besar</span>
                         </a>
                     </div>
+                    
                     <div class="client-item-wrapper mb-2">
-                        <a class="client-dropdown-link {{ request()->is('Ledger.neraca_saldo') ? 'active' : '' }}" href="{{ route('Ledger.neraca_saldo') }}">
+                        <a class="client-dropdown-link {{ Route::is('Ledger.neraca_saldo') ? 'active' : '' }}" href="{{ route('Ledger.neraca_saldo') }}">
                             <span>Neraca Saldo</span>
                         </a>
                     </div>
+                    
                     <div class="client-item-wrapper mb-2">
-                        <a class="client-dropdown-link {{ request()->is('adjustment_journal') ? 'active' : '' }}" href="{{ route('adjustment_journal.index') }}">
+                        <a class="client-dropdown-link {{ Route::is('adjustment_journal.index') ? 'active' : '' }}" href="{{ route('adjustment_journal.index') }}">
                             <span>Jurnal Penyesuaian</span>
                         </a>
                     </div>
 
                     <div class="client-item-wrapper mb-2">
-                        <a class="client-dropdown-link {{ request()->is('Ledger.neraca_lajur') ? 'active' : '' }}" href="{{ route('Ledger.neraca_lajur') }}">
+                        <a class="client-dropdown-link {{ Route::is('Ledger.neraca_lajur') ? 'active' : '' }}" href="{{ route('Ledger.neraca_lajur') }}">
                             <span>Neraca Lajur</span>
                         </a>
                     </div>
+                    
                     <div class="client-item-wrapper mb-2">
-                        <a class="client-dropdown-link {{ request()->is('Ledger.arus_kas') ? 'active' : '' }}" href="{{ route('Ledger.arus_kas') }}">
+                        <a class="client-dropdown-link {{ Route::is('Ledger.arus_kas') ? 'active' : '' }}" href="{{ route('Ledger.arus_kas') }}">
                             <span>Laporan Arus Kas</span>
                         </a>
                     </div>
+                    
                     <div class="client-item-wrapper mb-2">
-                        <a class="client-dropdown-link {{ request()->is('Ledger.jurnal_penutup') ? 'active' : '' }}" href="{{ route('Ledger.jurnal_penutup') }}">
+                        <a class="client-dropdown-link {{ Route::is('Ledger.jurnal_penutup') ? 'active' : '' }}" href="{{ route('Ledger.jurnal_penutup') }}">
                             <span>Jurnal Penutup</span>
                         </a>
                     </div>
@@ -652,14 +722,14 @@
     @endif
 
     @if($isSuperAdmin)
-        <li class="nav-item">
+        <li class="nav-item {{ Route::is('manajemen_user.index') ? 'active' : '' }}">
             <a class="nav-link collapsed" href="{{ route('manajemen_user.index') }}">
                 <span>Manajemen User</span>
             </a>
         </li>
     @endif
 
-    <li class="nav-item">
+    <li class="nav-item {{ Route::is('crm.index') ? 'active' : '' }}">
         <a class="nav-link collapsed" href="{{ route('crm.index') }}">
             <span>Customer Relationship Management</span>
         </a>

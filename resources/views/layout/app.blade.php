@@ -124,7 +124,7 @@
         <small class="text-primary fw-bold mt-2" id="progressPercentage">0%</small>
     </div>
     <div id="wrapper">
-        @include('partials.sidebar')
+        @include('partials.sidebar_new')
 
         <div id="content-wrapper" class="d-flex flex-column">
             <div id="content">

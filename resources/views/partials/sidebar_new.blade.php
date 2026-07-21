@@ -442,8 +442,8 @@
                     <div id="collapseSubKPI" class="collapse ml-3 {{ $isKPIActive ? 'show' : '' }}">
                         <div class="platform-sub-links">
                             <div class="platform-group">
-                                <a href="{{ route('overview.dashboard_kpi') }}" class="client-dropdown-link-out-div {{ Route::is('overview.dashboard_kpi') ? 'active-menu' : '' }}">KPI</a>
-                                <a href="{{ route('hc_overview.list') }}" class="client-dropdown-link-out-div {{ Route::is('hc_overview.list') ? 'active-menu' : '' }}">Project Overview</a>
+                                <a href="{{ route('overview.dashboard_kpi') }}" class="client-dropdown-link-out-div {{ Route::is('overview.dashboard_kpi') ? 'active-menu' : '' }}">Dashboard</a>
+                                <a href="{{ route('hc_overview.list') }}" class="client-dropdown-link-out-div {{ Route::is('hc_overview.list') ? 'active-menu' : '' }}">Overview</a>
                             </div>
                         </div>
                     </div>

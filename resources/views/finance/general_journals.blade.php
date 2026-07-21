@@ -516,9 +516,11 @@
         })
         .then(res => res.json())
         .then(response => {
+            console.log(response);
             // Mengambil data dan list periode terkunci dari response server
             const data = response.journals;
-            const lockedPeriods = response.isLocked;
+            let lockedPeriods = response.isLocked;
+            console.log(lockedPeriods)
             
             tbody.innerHTML = '';
 
@@ -529,12 +531,28 @@
 
             // Helper: Cek apakah periode dari tanggal transaksi ada di list terkunci
             function isPeriodLocked(dateString) {
+                if (!dateString) return false;
+                
                 const txDate = new Date(dateString);
+                if (isNaN(txDate.getTime())) return false; // Validasi jika tanggal kosong/invalid
+
+                const now = new Date();
+                
+                // Jika tahun dan bulan transaksi sama dengan bulan & tahun saat ini, buat jadi false (tidak terkunci)
+                if (txDate.getFullYear() === now.getFullYear() && txDate.getMonth() === now.getMonth()) {
+                    return false;
+                }
+
                 const period = `${txDate.getFullYear()}-${('0' + (txDate.getMonth() + 1)).slice(-2)}`;
-                return lockedPeriods.includes(period);
+                
+                // Pastikan lockedPeriods berupa array, lalu cek isinya
+                const periodsArray = Array.isArray(lockedPeriods) ? lockedPeriods.map(p => String(p).trim()) : [];
+                
+                return periodsArray.includes(period);
             }
 
             let currentJournalId = null;
+            console.log(data);
 
             data.forEach(row => {
                 const debitVal = parseFloat(row.debit) || 0;

@@ -86,14 +86,6 @@ class GeneralJournalService
         $totalDebit = collect($items)->sum('debit');
         $totalKredit = collect($items)->sum('kredit');
 
-        if (round($totalDebit, 2) !== round($totalKredit, 2)) {
-            throw new \Exception("Jumlah total debit (Rp " . number_format($totalDebit) . ") dan kredit (Rp " . number_format($totalKredit) . ") tidak seimbang!");
-        }
-
-        if ($totalDebit <= 0) {
-            throw new \Exception("Nominal transaksi jurnal tidak boleh nol atau minus.");
-        }
-
         // 4. Eksekusi Database Transaction
         DB::beginTransaction();
 

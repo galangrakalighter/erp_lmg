@@ -5,12 +5,21 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Invoice;
 use App\Models\InvoicePayment;
+use App\Services\GeneralJournalService;
 use App\Models\ProdukClient;
+use App\Models\ChartOfAccount;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 
 class InvoiceController extends Controller
 {
+    protected $journalService;
+
+    public function __construct(GeneralJournalService $journalService)
+    {
+        $this->journalService = $journalService;
+    }
     /**
      * Display a listing of the resource.
      */
@@ -18,7 +27,9 @@ class InvoiceController extends Controller
     {
         $title = "Pembayaran";
         $customers = ProdukClient::all();
-        return view('finance.invoice', compact('title', 'customers'));
+        $accountPendapatan = ChartOfAccount::where('category', 'pendapatan')->where('is_active', true)->get();
+        $accountPiutang = ChartOfAccount::where('category', 'beban')->where('is_active', true)->get();
+        return view('finance.invoice', compact('title', 'customers', 'accountPendapatan', 'accountPiutang'));
     }
 
     public function getInvoiceData()
@@ -76,6 +87,27 @@ class InvoiceController extends Controller
             $path = $request->file('file_path')->store('payments', 'public');
         }
 
+
+        $invoiceData = Invoice::findOrFail($id);
+
+        $dataBaru = [
+            'tgl_transaksi' => now()->toDateString(),
+            'no_invoice' => $invoiceData->no_invoice,
+            'keterangan' => '',
+            'cash_flow_activity' => 'operasional',
+            'status' => 'draft',
+            'items' => [
+                [
+                    'chart_of_account_id' => $request->coa,
+                    'keterangan_item' => '',
+                    'debit' => (float) $request->amount,
+                    'kredit' => 0
+                ]
+            ]
+        ];
+
+        $this->journalService->storeJournal($dataBaru);
+
         DB::transaction(function () use ($request, $id, $path) {
             $invoice = Invoice::findOrFail($id);
 
@@ -116,8 +148,49 @@ class InvoiceController extends Controller
         ]);
         $data['paid_amount'] = 0;
         $data['status'] = 'unpaid';
+        $dataBaru = [
+            'tgl_transaksi' => now()->toDateString(),
+            'no_invoice' => $request->no_invoice,
+            'keterangan' => '',
+            'cash_flow_activity' => 'operasional',
+            'status' => 'draft',
+            'items' => [
+                [
+                    'chart_of_account_id' => $request->coa,
+                    'keterangan_item' => '',
+                    'debit' => 0,
+                    'kredit' => (float) $request->total_amount
+                ]
+            ]
+        ];
+
+        $this->journalService->storeJournal($dataBaru);
         Invoice::create($data);
+
         return back()->with('success', 'Invoice dibuat');
+    }
+
+    private function generateJournalNumber($date)
+    {
+        $carbonDate = Carbon::parse($date);
+        $prefix = 'JV-' . $carbonDate->format('Ym') . '-'; // Menghasilkan "JV-202605-"
+
+        // Cari nomor urut terakhir pada bulan dan tahun tersebut di database
+        $lastJournal = DB::table('general_journals')
+            ->where('no_jurnal', 'like', $prefix . '%')
+            ->orderBy('no_jurnal', 'desc')
+            ->first();
+
+        if ($lastJournal) {
+            // Potong string nomor urut terakhir untuk mengambil angka 4 digit belakang (misal dari 'JV-202605-0012' diambil '0012')
+            $lastNumber = intval(substr($lastJournal->no_jurnal, -4));
+            $newNumber = $lastNumber + 1;
+        } else {
+            $newNumber = 1; // Jika ini transaksi pertama di bulan tersebut
+        }
+
+        // Gabungkan prefix dengan angka baru yang diformat pad-left 4 digit (0001, 0002, dst)
+        return $prefix . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
     }
 
     /**

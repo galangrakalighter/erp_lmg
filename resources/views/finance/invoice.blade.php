@@ -54,6 +54,16 @@
                     </div>
 
                     <div class="form-group">
+                        <label>Akun</label>
+                        <select name="coa" id="coa_id" class="form-control" required>
+                            <option value="">Pilih Akun</option>
+                            @foreach($accountPiutang as $customer)
+                                <option value="{{ $customer->id }}">{{ $customer->nama_akun }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="form-group">
                         <label>No Invoice</label>
                         <input type="text" name="no_invoice" id="no_invoice" class="form-control" required>
                     </div>
@@ -85,6 +95,15 @@
                     <h5 class="modal-title">Pembayaran: <span id="modalNoInvoice"></span></h5>
                 </div>
                 <div class="modal-body">
+                    <div class="form-group">
+                        <label>Akun</label>
+                        <select name="coa" id="coa_id" class="form-control" required>
+                            <option value="">Pilih Akun</option>
+                            @foreach($accountPendapatan as $customer)
+                                <option value="{{ $customer->id }}">{{ $customer->nama_akun }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                     <div class="form-group">
                         <label>Jumlah Bayar</label>
                         <input type="number" name="amount" class="form-control" required>

@@ -539,11 +539,11 @@
                             <span>Jurnal Penutup</span>
                         </a>
                     </div>
-                    {{-- <div class="client-item-wrapper mb-2">
-                        <a class="client-dropdown-link {{ request()->is('invoice') ? 'active' : '' }}" href="{{ route('invoice.index') }}">
+                    <div class="client-item-wrapper mb-2">
+                        <a class="client-dropdown-link-out-div {{ Route::is('invoice.index') ? 'active' : '' }}" href="{{ route('invoice.index') }}">
                             <span>Pembayaran</span>
                         </a>
-                    </div> --}}
+                    </div>
                 </div>
             </div>
         </li>

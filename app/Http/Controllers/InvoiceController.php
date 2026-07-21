@@ -170,29 +170,49 @@ class InvoiceController extends Controller
         return back()->with('success', 'Invoice dibuat');
     }
 
-    private function generateJournalNumber($date)
+    public function list_client()
     {
-        $carbonDate = Carbon::parse($date);
-        $prefix = 'JV-' . $carbonDate->format('Ym') . '-'; // Menghasilkan "JV-202605-"
+        $title = 'Profit Per Client';
 
-        // Cari nomor urut terakhir pada bulan dan tahun tersebut di database
-        $lastJournal = DB::table('general_journals')
-            ->where('no_jurnal', 'like', $prefix . '%')
-            ->orderBy('no_jurnal', 'desc')
-            ->first();
+        // Hanya mengambil client yang minimal punya 1 invoice
+        $clients = ProdukClient::has('invoices')
+            ->with('invoices.payments')
+            ->get()
+            ->map(function ($client) {
+                $totalInvoice = $client->invoices->sum('total_amount');
+                
+                $totalBayar = $client->invoices->sum(function ($invoice) {
+                    return $invoice->payments->sum('amount');
+                });
+                
+                $balance = $totalInvoice - $totalBayar;
 
-        if ($lastJournal) {
-            // Potong string nomor urut terakhir untuk mengambil angka 4 digit belakang (misal dari 'JV-202605-0012' diambil '0012')
-            $lastNumber = intval(substr($lastJournal->no_jurnal, -4));
-            $newNumber = $lastNumber + 1;
-        } else {
-            $newNumber = 1; // Jika ini transaksi pertama di bulan tersebut
-        }
+                $client->total_invoice = $totalInvoice;
+                $client->total_bayar = $totalBayar;
+                $client->balance = $balance;
 
-        // Gabungkan prefix dengan angka baru yang diformat pad-left 4 digit (0001, 0002, dst)
-        return $prefix . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+                return $client;
+            });
+
+        return view('finance.profit_list', compact('title', 'clients'));
     }
 
+    public function detail($id)
+    {
+        $title = "Detail Profit Client";
+
+        // Ambil data client spesifik berdasarkan ID beserta invoice dan pembayaran di dalamnya
+        $client = ProdukClient::with(['invoices.payments'])->findOrFail($id);
+
+        // Hitung total keseluruhan invoice dan pembayaran untuk client ini
+        $totalInvoice = $client->invoices->sum('total_amount');
+        $totalBayar = $client->invoices->sum(function ($invoice) {
+            return $invoice->payments->sum('amount');
+        });
+        $balance = $totalInvoice - $totalBayar;
+
+        return view('finance.detail_profit', compact('title', 'client', 'totalInvoice', 'totalBayar', 'balance'));
+    }
     /**
      * Display the specified resource.
      */

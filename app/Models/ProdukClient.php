@@ -35,4 +35,9 @@ class ProdukClient extends Model
     {
         return $this->hasMany(KPI::class, 'project', 'id');
     }
+
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class, 'customer_id', 'id');
+    }
 }

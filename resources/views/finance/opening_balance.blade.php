@@ -1,6 +1,6 @@
-@include("partials.header")
+@extends('layout.app')
+@section('content')
 
-<div class="container-fluid px-4">
     <h1 class="mt-4">Informasi Saldo Awal Akun</h1>
     <ol class="breadcrumb mb-4">
         <li class="breadcrumb-item"><a href="#">Finance</a></li>
@@ -56,7 +56,6 @@
             </div>
         </div>
     </div>
-</div>
 
 <script>
     // Helper untuk membuat format mata uang Rp (Format Indonesia) di JavaScript
@@ -122,4 +121,4 @@
     }
 </script>
 
-@include("partials.footer")
+@endsection

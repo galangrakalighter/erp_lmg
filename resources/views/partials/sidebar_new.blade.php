@@ -544,6 +544,11 @@
                             <span>Pembayaran</span>
                         </a>
                     </div>
+                    <div class="client-item-wrapper mb-2">
+                        <a class="client-dropdown-link-out-div {{ Route::is('profit.list') ? 'active' : '' }}" href="{{ route('profit.list') }}">
+                            <span>Profit</span>
+                        </a>
+                    </div>
                 </div>
             </div>
         </li>

@@ -223,6 +223,8 @@ Route::middleware('auth')->group(function() {
     Route::post('/invoice/payment/{id}', [App\Http\Controllers\InvoiceController::class, 'payment'])->name('invoices.payment');
     Route::get('/invoice/pdf/{id}', [App\Http\Controllers\InvoiceController::class, 'generatePdf'])->name('invoices.generate_pdf');
     Route::get('finance_ledger/list_account', [App\Http\Controllers\LedgerController::class, 'pilih_akun'])->name('finance_ledger.list_account');
+    Route::get('profit/list', [App\Http\Controllers\InvoiceController::class, 'list_client'])->name('profit.list');
+    Route::get('profit/detail/{id}', [App\Http\Controllers\InvoiceController::class, 'detail'])->name('profit.detail');
     Route::resource('finance_ledger', App\Http\Controllers\LedgerController::class);
     Route::resource('invoice', App\Http\Controllers\InvoiceController::class);
     Route::get("/PDF/{id_produk}", [App\Http\Controllers\PDFController::class, 'index'])->name('PDF');

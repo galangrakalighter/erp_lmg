@@ -130,7 +130,8 @@
                             <th>No</th>
                             <th>KPI</th>
                             <th>Divisi</th>
-                            <th>PIC</th>
+                            <th>Pembuat</th>
+                            <th>Penerima</th>
                             <th>Point</th>
                             <th>Mulai</th>
                             <th>Deadline</th>
@@ -303,6 +304,7 @@
                 let pointBelum = 0;
                 let pointSelesai = 0;
                 let totalPoint = 0;
+                console.log(response.data);
 
                 $.each(response.data, function(index, item) {
                     let status = (item.status == 1) ? 
@@ -324,6 +326,7 @@
                         <td>${index + 1}</td>
                         <td>${item.nama_kpi}</td>
                         <td>${item.nama_divisi}</td>
+                        <td>${item.pembuat}</td>
                         <td>${item.vic_email}</td>
                         <td>${item.point}</td>
                         <td>${item.tanggal_mulai}</td>

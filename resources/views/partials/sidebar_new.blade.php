@@ -242,32 +242,24 @@
 
         $isMarketingPage = Route::is(['market_research', 'branding', 'analisis', 'manajemen', 'PDF']);
 
-        $divisiOpen = !Route::is([
-            'hc_daily.index',
-            'hc_overview.list',
-            'overview.dashboard_kpi',
-            'overview.dashboard',
-            'finance_coa.index',
-            'general_journal.index',
-            'finance_ledger.list_account',
-            'Ledger.neraca_saldo',
-            'adjustment_journal.index',
-            'Ledger.neraca_lajur',
-            'Ledger.arus_kas',
-            'Ledger.jurnal_penutup',
-            'home',
-            'manajemen_user.index',
-            'crm.index'
+        $divisiOpen = Route::is([
+            'client.produk_divisi',
+            'barang_client.index',
+            'social_creator.index',
+            'blacklist.index',
+            'tools.index',
+            'gform_affiliate.index',
+            'selection.index',
         ])
     @endphp
 
     <!-- Nav Item: Divisi -->
-    <li class="nav-item {{ $divisiOpen ? 'active' : '' }}">
+    <li class="nav-item {{ $divisiOpen || ($isMarketingPage && $isDMProduct) ? 'active' : '' }}">
         <a class="nav-link" href="#" data-toggle="collapse" data-target="#collapseDivisi" aria-expanded="true">
             <span>Divisi</span>
         </a>
 
-        <div id="collapseDivisi" class="collapse {{ $divisiOpen ? 'show' : '' }}" data-parent="#accordionSidebar">
+        <div id="collapseDivisi" class="collapse {{ $divisiOpen || ($isMarketingPage && $isDMProduct) ? 'show' : '' }}" data-parent="#accordionSidebar">
             <div class="bg-white py-2 collapse-inner rounded">
                 
                 @include('partials.sidebar_digital_marketing')
@@ -432,33 +424,47 @@
             <span>Human Capital</span>
         </a>
         
+        @php
+            $isKPIActive = Route::is(['overview.dashboard_kpi', 'hc_overview.list']);
+            $isHarianActive = Route::is(['overview.dashboard', 'hc_daily.index']);
+        @endphp
+
         <div id="collapseHC" class="collapse {{ $isHCPage ? 'show' : '' }}" 
             aria-labelledby="headingHC" data-parent="#accordionSidebar">
-            <div class="collapse-container">
-                {{-- Menu Daily Work --}}
-                <div class="client-item-wrapper mb-2">
-                    <a class="client-dropdown-link-out-div {{ Route::is('hc_daily.index') ? 'active' : '' }}" href="{{ route('hc_daily.index') }}">
-                        <span>Daily Work</span>
-                    </a>
-                </div>
-
-                <div class="client-item-wrapper mb-2">
-                    <a class="client-dropdown-link-out-div {{ Route::is('hc_overview.list') ? 'active' : '' }}" href="{{ route('hc_overview.list') }}">
-                        <span>Project Overview</span>
-                    </a>
-                </div>
-
-                <div class="client-item-wrapper mb-2">
-                    <a class="client-dropdown-link-out-div {{ Route::is('overview.dashboard_kpi') ? 'active' : '' }}" href="{{ route('overview.dashboard_kpi') }}">
+            <div class="collapse-container-class-outdiv">
+                
+                {{-- Dropdown KPI (Berisi KPI & Project Overview) --}}
+                <div class="client-item-wrapper-class-outdiv mb-2">
+                     <a class="category-dropdown-link-out-div collapsed mb-3 d-block" data-toggle="collapse" data-target="#collapseSubKPI">
                         <span>KPI</span>
                     </a>
+                    
+                    <div id="collapseSubKPI" class="collapse ml-3 {{ $isKPIActive ? 'show' : '' }}">
+                        <div class="platform-sub-links">
+                            <div class="platform-group">
+                                <a href="{{ route('overview.dashboard_kpi') }}" class="client-dropdown-link-out-div {{ Route::is('overview.dashboard_kpi') ? 'active-menu' : '' }}">KPI</a>
+                                <a href="{{ route('hc_overview.list') }}" class="client-dropdown-link-out-div {{ Route::is('hc_overview.list') ? 'active-menu' : '' }}">Project Overview</a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="client-item-wrapper">
-                    <a class="client-dropdown-link-out-div {{ Route::is('overview.dashboard') ? 'active' : '' }}" href="{{ route('overview.dashboard') }}">
-                        <span>Dashboard</span>
+                {{-- Dropdown Harian (Berisi Dashboard & Daily Work) --}}
+                <div class="client-item-wrapper-class-outdiv">
+                    <a class="category-dropdown-link-out-div collapsed mb-3 d-block" data-toggle="collapse" data-target="#collapseSubHarian">
+                        <span>Harian</span>
                     </a>
+                    
+                    <div id="collapseSubHarian" class="collapse ml-3 {{ $isHarianActive ? 'show' : '' }}">
+                        <div class="platform-sub-links">
+                            <div class="platform-group">
+                                <a href="{{ route('overview.dashboard') }}" class="client-dropdown-link-out-div {{ Route::is('overview.dashboard') ? 'active-menu' : '' }}">Dashboard</a>
+                                <a href="{{ route('hc_daily.index') }}" class="client-dropdown-link-out-div {{ Route::is('hc_daily.index') ? 'active-menu' : '' }}">Daily Work</a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
             </div>
         </div>
     </li>

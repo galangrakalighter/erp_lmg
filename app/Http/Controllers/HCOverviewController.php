@@ -234,6 +234,7 @@ class HCOverviewController extends Controller
 
             $firstPic = $kpi->pics->first();
             $division = $firstPic?->userDivisions->first();
+            $pembuat = User::find($kpi->create_by);
 
             return [
                 'id'               => $kpi->id,
@@ -249,6 +250,7 @@ class HCOverviewController extends Controller
                 'role_pic'         => $division->role->role_name ?? '-',
                 'divisi'           => $division->division_id ?? null,
                 'pics'             => $kpi->pics,
+                'pembuat'          => $pembuat->email
             ];
         });
 

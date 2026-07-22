@@ -217,6 +217,7 @@ Route::middleware('auth')->group(function() {
     Route::get('/arus-kas', [App\Http\Controllers\LedgerController::class, 'arus_kas'])->name('Ledger.arus_kas');
     Route::get('/jurnal-penutup', [App\Http\Controllers\LedgerController::class, 'jurnal_penutup'])->name('Ledger.jurnal_penutup');
     Route::post('/jurnal-tutup', [App\Http\Controllers\LedgerController::class, 'lockPeriode'])->name('Ledger.lock_periode');
+    Route::post('/payroll/payment', [App\Http\Controllers\PayrollController::class, 'payment'])->name('payroll.payment');
     Route::get('finance/report/worksheet/export-laba-rugi', [App\Http\Controllers\LedgerController::class, 'export_laba_rugi']);
     Route::get('finance/report/worksheet/export-neraca', [App\Http\Controllers\LedgerController::class, 'export_neraca']);
     Route::get('finance/report/cash-flow/export', [App\Http\Controllers\LedgerController::class, 'export_cash_flow']);
@@ -225,6 +226,7 @@ Route::middleware('auth')->group(function() {
     Route::get('finance_ledger/list_account', [App\Http\Controllers\LedgerController::class, 'pilih_akun'])->name('finance_ledger.list_account');
     Route::get('profit/list', [App\Http\Controllers\InvoiceController::class, 'list_client'])->name('profit.list');
     Route::get('profit/detail/{id}', [App\Http\Controllers\InvoiceController::class, 'detail'])->name('profit.detail');
+    Route::resource('payroll', App\Http\Controllers\PayrollController::class);
     Route::resource('finance_ledger', App\Http\Controllers\LedgerController::class);
     Route::resource('invoice', App\Http\Controllers\InvoiceController::class);
     Route::get("/PDF/{id_produk}", [App\Http\Controllers\PDFController::class, 'index'])->name('PDF');

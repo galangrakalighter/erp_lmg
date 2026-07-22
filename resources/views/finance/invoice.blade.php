@@ -64,7 +64,7 @@
 
                         <div class="form-group">
                             <label>No Invoice</label>
-                            <input type="text" name="no_invoice" id="no_invoice" class="form-control" required>
+                            <input type="text" name="no_invoice" id="no_invoice" class="form-control" placeholder="Akan digenerate otomatis oleh sistem" readonly>
                         </div>
 
                         <div class="form-group">
@@ -75,6 +75,10 @@
                         <div class="form-group">
                             <label>Jatuh Tempo</label>
                             <input type="date" name="due_date" id="due_date" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Keterangan</label>
+                            <textarea id="keterangan" name="keterangan" class="form-control" rows="4" cols="50"></textarea>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -117,6 +121,10 @@
                                 <option value="Transfer">Transfer</option>
                                 <option value="Tunai">Tunai</option>
                             </select>
+                        </div>
+                         <div class="form-group">
+                            <label>Keterangan</label>
+                            <textarea id="keterangan" name="keterangan" class="form-control" rows="4" cols="50"></textarea>
                         </div>
                         <div class="form-group">
                             <label>Bukti Pembayaran</label>

@@ -31,3 +31,4 @@ Route::DELETE('/produk/{id}', [App\Http\Controllers\ProdukController::class, 'ha
 Route::get('/produk-get/{id}', [App\Http\Controllers\ProdukController::class, 'getProduk']);
 Route::get('/invoices', [App\Http\Controllers\InvoiceController::class, 'getInvoiceData'])->name('api.invoices.data');
 Route::get('/get-user-divisions', [App\Http\Controllers\UserController::class, 'getUserDivision']);
+Route::get('/get-data-payroll', [App\Http\Controllers\PayrollController::class, 'getDataPayroll']);

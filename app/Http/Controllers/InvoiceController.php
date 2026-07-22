@@ -8,6 +8,8 @@ use App\Models\InvoicePayment;
 use App\Services\GeneralJournalService;
 use App\Models\ProdukClient;
 use App\Models\ChartOfAccount;
+use App\Models\User;
+use App\Models\Payrol;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -26,7 +28,12 @@ class InvoiceController extends Controller
     public function index()
     {
         $title = "Pembayaran";
-        $customers = ProdukClient::all();
+        $customers = DB::table('client_division')
+            ->join('divisions', 'divisions.id', '=', 'client_division.division_id')
+            ->join('produk_client', 'produk_client.id', '=', 'client_division.client_id')
+            ->where('client_division.division_id', 6)
+            ->where('produk_client.status', 1)
+            ->get();
         $accountPendapatan = ChartOfAccount::where('category', 'pendapatan')->where('is_active', true)->get();
         $accountPiutang = ChartOfAccount::where('category', 'beban')->where('is_active', true)->get();
         return view('finance.invoice', compact('title', 'customers', 'accountPendapatan', 'accountPiutang'));
@@ -87,19 +94,29 @@ class InvoiceController extends Controller
             $path = $request->file('file_path')->store('payments', 'public');
         }
 
+        $invoice = Invoice::find($id);
 
-        $invoiceData = Invoice::findOrFail($id);
+        $customer = ProdukClient::findOrFail($invoice->customer_id);
+        $customerCode = $customer->nama; 
+
+        $tanggalFormat = date('Ymd');
+
+        $jumlahInvoiceCustomer = \App\Models\Invoice::where('customer_id', $invoice->customer_id)->count() + 1;
+
+        $urutanInvoice = sprintf('%04d', $jumlahInvoiceCustomer);
+
+        $noInvoice = "INV/{$tanggalFormat}/{$customerCode}/{$urutanInvoice}";
 
         $dataBaru = [
             'tgl_transaksi' => now()->toDateString(),
-            'no_invoice' => $invoiceData->no_invoice,
-            'keterangan' => '',
+            'no_invoice' => $noInvoice,
+            'keterangan' => $request->keterangan,
             'cash_flow_activity' => 'operasional',
             'status' => 'draft',
             'items' => [
                 [
                     'chart_of_account_id' => $request->coa,
-                    'keterangan_item' => '',
+                    'keterangan_item' => $request->keterangan,
                     'debit' => (float) $request->amount,
                     'kredit' => 0
                 ]
@@ -108,15 +125,17 @@ class InvoiceController extends Controller
 
         $this->journalService->storeJournal($dataBaru);
 
-        DB::transaction(function () use ($request, $id, $path) {
+        DB::transaction(function () use ($request, $id, $path, $noInvoice) {
             $invoice = Invoice::findOrFail($id);
+
 
             InvoicePayment::create([
                 'invoice_id'   => $id,
                 'amount'       => $request->amount,
                 'payment_date' => $request->payment_date,
                 'method'       => $request->method,
-                'file_path'    => $path, // Simpan path ke database
+                'file_path'    => $path,
+                'no_invoice'   => $noInvoice
             ]);
 
             $invoice->paid_amount += $request->amount;
@@ -142,22 +161,33 @@ class InvoiceController extends Controller
     {
         $data = $request->validate([
             'customer_id' => 'required',
-            'no_invoice' => 'required|unique:invoices',
             'total_amount' => 'required|numeric',
             'due_date' => 'required|date'
         ]);
+
+        $customer = ProdukClient::findOrFail($request->customer_id);
+        $customerCode = $customer->nama; 
+
+        $tanggalFormat = date('Ymd');
+
+        $jumlahInvoiceCustomer = \App\Models\Invoice::where('customer_id', $request->customer_id)->count() + 1;
+
+        $urutanInvoice = sprintf('%04d', $jumlahInvoiceCustomer);
+
+        $noInvoice = "INV/{$tanggalFormat}/{$customerCode}/{$urutanInvoice}";
+        $data['no_invoice'] = $noInvoice;
         $data['paid_amount'] = 0;
         $data['status'] = 'unpaid';
         $dataBaru = [
             'tgl_transaksi' => now()->toDateString(),
-            'no_invoice' => $request->no_invoice,
-            'keterangan' => '',
+            'no_invoice' => $noInvoice,
+            'keterangan' => $request->keterangan,
             'cash_flow_activity' => 'operasional',
             'status' => 'draft',
             'items' => [
                 [
                     'chart_of_account_id' => $request->coa,
-                    'keterangan_item' => '',
+                    'keterangan_item' => $request->keterangan,
                     'debit' => 0,
                     'kredit' => (float) $request->total_amount
                 ]
@@ -243,7 +273,36 @@ class InvoiceController extends Controller
      * Remove the specified resource from storage.
      */
     public function destroy($id) {
-        Invoice::findOrFail($id)->delete();
-        return back()->with('success', 'Invoice berhasil dihapus');
+
+        // Invoice::findOrFail($id)->delete();
+        // return back()->with('success', 'Invoice berhasil dihapus');
+
+        $invoice = Invoice::find($id);
+
+        $invoicePayment = InvoicePayment::where('invoice_id', $id)->get();
+        foreach($invoicePayment as $pd){
+            $jurnalUmum = DB::table('general_journals')->where('no_invoice', $pd->no_invoice)->first();
+            if ($jurnalUmum) {
+                // Hapus detail jurnal terlebih dahulu (berdasarkan foreign key)
+                DB::table('general_journal_details')->where('general_journal_id', $jurnalUmum->id)->delete();
+                
+                // Hapus header jurnal umum menggunakan query builder DB::table
+                DB::table('general_journals')->where('id', $jurnalUmum->id)->delete();
+            }
+        }
+
+        $jurnalUmumPayrol = DB::table('general_journals')->where('no_invoice', $invoice->no_invoice)->first();
+
+        if($jurnalUmumPayrol){
+            DB::table('general_journal_details')->where('general_journal_id', $jurnalUmumPayrol->id)->delete();
+            DB::table('general_journals')->where('id', $jurnalUmumPayrol->id)->delete();
+        }
+
+        InvoicePayment::where('invoice_id', $id)->delete();
+
+        $invoice->delete();
+
+        return redirect()->back()->with('success', 'Data payroll beserta jurnal terkait berhasil dihapus.');
+
     }
 }

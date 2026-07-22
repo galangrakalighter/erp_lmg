@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="row" id="project-container">
-    @foreach($clients as $c)
+    @forelse($clients as $c)
     <div class="col-xl-4 col-md-6 mb-4 project-card">
         <a href="{{ route('profit.detail', $c->id) }}" class="client-card card shadow-sm border-0 border-left-{{ $c->balance > 0 ? 'warning' : 'success' }} h-100 text-decoration-none">
             <div class="card-body">
@@ -32,6 +32,15 @@
             </div>
         </a>
     </div>
-    @endforeach
+    @empty
+    <!-- Pesan yang muncul jika data clients kosong -->
+    <div class="col-12">
+        <div class="alert alert-secondary text-center py-4 shadow-sm border-0" role="alert">
+            <i class="fas fa-info-circle fa-2x mb-2 text-muted"></i>
+            <h5 class="font-weight-bold text-dark">Belum Ada Data</h5>
+            <p class="text-muted mb-0">Tidak ada data client atau project yang dapat ditampilkan saat ini.</p>
+        </div>
+    </div>
+    @endforelse
 </div>
 @endsection

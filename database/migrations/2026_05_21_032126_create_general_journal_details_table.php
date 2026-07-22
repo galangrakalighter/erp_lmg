@@ -17,14 +17,12 @@ return new class extends Migration
                   ->constrained('general_journals')
                   ->onDelete('cascade');
 
-            // Menghubungkan ke tabel Chart of Account kamu
             $table->foreignId('chart_of_account_id')
                   ->constrained('chart_of_account')
-                  ->onDelete('restrict'); // Mencegah COA dihapus jika sudah dipakai bertransaksi
+                  ->onDelete('restrict');
 
-            $table->string('keterangan_item')->nullable(); // Detail keterangan per baris akun
+            $table->string('keterangan_item')->nullable();
             
-            // Menggunakan decimal (15,2) agar aman untuk nominal besar dan pecahan sen
             $table->decimal('debit', 15, 2)->default(0.00);
             $table->decimal('kredit', 15, 2)->default(0.00);
             $table->timestamps();

@@ -479,7 +479,10 @@
                 'adjustment_journal.index',
                 'Ledger.neraca_lajur',
                 'Ledger.arus_kas',
-                'Ledger.jurnal_penutup'
+                'Ledger.jurnal_penutup',
+                'invoice.index',
+                'profit.list',
+                'payroll.index'
             ]);
         @endphp
         <li class="nav-item {{ $isFinancePage ? 'active' : '' }}">
@@ -492,6 +495,13 @@
             <div id="collapseFinance" class="collapse {{ $isFinancePage ? 'show' : '' }}" 
                 aria-labelledby="headingHC" data-parent="#accordionSidebar">
                 <div class="collapse-container">
+                    @if ($isSuperAdmin || ($myDivision->name == "Finance" && $myRole->level < 2))
+                        <div class="mb-2">
+                            <a href="{{ route('client.produk_divisi', 6) }}" class="btn-cms-link-out-div d-flex align-items-center text-dark py-2 px-2 rounded text-decoration-none transition-hover">
+                                <i class="fas fa-cog mr-2"></i> <span>Dashboard CMS</span>
+                            </a>
+                        </div>
+                    @endif
                     <div class="client-item-wrapper mb-2">
                         <a class="client-dropdown-link-out-div {{ Route::is('finance_coa.index') ? 'active' : '' }}" href="{{ route('finance_coa.index') }}">
                             <span>Daftar Akun</span>
@@ -547,6 +557,11 @@
                     <div class="client-item-wrapper mb-2">
                         <a class="client-dropdown-link-out-div {{ Route::is('profit.list') ? 'active' : '' }}" href="{{ route('profit.list') }}">
                             <span>Profit</span>
+                        </a>
+                    </div>
+                    <div class="client-item-wrapper mb-2">
+                        <a class="client-dropdown-link-out-div {{ Route::is('payroll.index') ? 'active' : '' }}" href="{{ route('payroll.index') }}">
+                            <span>Payroll</span>
                         </a>
                     </div>
                 </div>

@@ -30,6 +30,7 @@ return new class extends Migration
             $table->decimal('amount', 15, 2);
             $table->string('method');
             $table->string('file_path')->nullable();
+            $table->string('no_invoice')->nullable();
             $table->timestamps();
         });
     }

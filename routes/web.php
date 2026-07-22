@@ -184,6 +184,8 @@ Route::middleware('auth')->group(function() {
     // Dashboard HC
     Route::get('dashboard_hc', [App\Http\Controllers\DashboardController::class, 'dashboard'])->name('overview.dashboard');
     Route::get('dashboard_kpi', [App\Http\Controllers\DashboardController::class, 'kpi_dashboard'])->name('overview.dashboard_kpi');
+    Route::get('dashboard_finance', [App\Http\Controllers\DashboardController::class, 'finance_dashboard'])->name('finance.dashboard');
+    Route::get('audit', [App\Http\Controllers\DashboardController::class, 'audit'])->name('audit.index');
     Route::get('/kpi/stats', [App\Http\Controllers\KPIController::class, 'getKpiStats']);
     Route::get('/task/stats', [App\Http\Controllers\KPIController::class, 'getTaskStats']);
     Route::get('/kpi/get-active-task', [App\Http\Controllers\KPIController::class, 'getActiveTask']);

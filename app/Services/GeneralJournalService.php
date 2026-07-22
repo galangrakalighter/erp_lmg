@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Exception;
+use App\Services\AuditService;
 
 class GeneralJournalService
 {
@@ -107,11 +108,12 @@ class GeneralJournalService
             ]);
 
             // Simpan Ke Tabel Detail (general_journal_details) looping per baris akun
+            $detailData = [];
             foreach ($items as $item) {
                 // Abaikan baris kosong yang tidak sengaja terkirim (jika ada)
                 if (empty($item['chart_of_account_id'])) continue;
 
-                DB::table('general_journal_details')->insert([
+                $detailData[] = [
                     'general_journal_id'  => $journalId,
                     'chart_of_account_id' => $item['chart_of_account_id'],
                     'keterangan_item'     => $item['keterangan_item'] ?? null,
@@ -119,8 +121,18 @@ class GeneralJournalService
                     'kredit'              => $item['kredit'] ?? 0.00,
                     'created_at'          => Carbon::now(),
                     'updated_at'          => Carbon::now()
-                ]);
+                ];
             }
+
+            DB::table('general_journal_details')->insert($detailData);
+
+            AuditService::log(
+                'CREATED',
+                'Jurnal Umum',
+                'Membuat jurnal baru dengan nomor: ' . $noJurnal . ' (Status: ' . $data['status'] . ')',
+                null,
+                ['header_id' => $journalId, 'no_jurnal' => $noJurnal, 'items' => $detailData]
+            );
 
             // Jika semua baris sukses dimasukkan tanpa error, kunci permanen datanya
             DB::commit();

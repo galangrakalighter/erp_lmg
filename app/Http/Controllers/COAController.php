@@ -6,7 +6,7 @@ use App\Models\ChartOfAccount; // Sesuaikan dengan nama Model COA Anda
 use App\Services\ChartOfAccountService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
-
+use App\Services\AuditService;
 class COAController extends Controller
 {
     protected $coaService;
@@ -63,6 +63,14 @@ class COAController extends Controller
             // Jika lolos, simpan data
             $this->coaService->storeAccount($validated);
 
+            AuditService::log(
+                'CREATED',
+                'Chart of Accounts (COA)',
+                'Menambahkan akun COA baru: [' . $validated['kode'] . '] ' . $validated['nama_akun'],
+                null,
+                $validated
+            );
+
             // Flash message saat sukses
             return redirect()->route('finance_coa.index')
                 ->with('success', 'Akun baru berhasil ditambahkan!');
@@ -93,6 +101,8 @@ class COAController extends Controller
             // 1. Cari data COA yang ingin diubah, jika tidak ketemu otomatis melempar 404
             $coa = ChartOfAccount::findOrFail($id);
 
+            $oldData = $coa->toArray();
+
             // 2. Jalankan Validasi dengan Pengecualian ID saat ini (. $coa->id)
             $validated = $request->validate([
                 'kode' => 'required|integer|unique:chart_of_account,kode,' . $coa->id, 
@@ -108,6 +118,14 @@ class COAController extends Controller
 
             // 3. Kirim data yang lolos validasi ke Service Layer
             $this->coaService->updateAccount($coa, $validated);
+
+            AuditService::log(
+                'UPDATED',
+                'Chart of Accounts (COA)',
+                'Memperbarui akun COA: [' . $validated['kode'] . '] ' . $validated['nama_akun'],
+                $oldData,
+                $validated
+            );
 
             // 4. Flash message sukses jika berhasil update
             return redirect()->route('finance_coa.index')
@@ -135,8 +153,18 @@ class COAController extends Controller
     public function destroy($id)
     {
         $coa = ChartOfAccount::findOrFail($id);
+
+        $oldData = $coa->toArray();
         
         $this->coaService->deleteAccount($coa);
+
+        AuditService::log(
+            'DELETED',
+            'Chart of Accounts (COA)',
+            'Menghapus akun COA: [' . $oldData['kode'] . '] ' . $oldData['nama_akun'],
+            $oldData,
+            null
+        );
 
         return redirect()->route('finance_coa.index')
             ->with('success', 'Akun berhasil dihapus!');

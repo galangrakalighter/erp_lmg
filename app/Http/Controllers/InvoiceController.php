@@ -13,6 +13,7 @@ use App\Models\Payrol;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use App\Services\AuditService;
 
 class InvoiceController extends Controller
 {
@@ -80,56 +81,66 @@ class InvoiceController extends Controller
         return $pdf->stream('Invoice_' . $invoice->no_invoice . '.pdf');
     }
 
-    public function payment(Request $request, $id){
-        
+    public function payment(Request $request, $id)
+    {
         $request->validate([
             'amount'       => 'required|numeric',
             'payment_date' => 'required|date',
-            'file_path'    => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048', // Validasi file
+            'file_path'    => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048', 
         ]);
+
+        // 1. Proteksi Periode: Cek apakah periode dari tanggal pembayaran terkunci
+        $periode = date('Y-m', strtotime($request->payment_date));
+        $isLocked = DB::table('period_locks')
+            ->where('periode', $periode)
+            ->where('is_locked', true)
+            ->exists();
+
+        if ($isLocked) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Gagal memproses pembayaran! Periode ' . $periode . ' sudah ditutup dan terkunci.');
+        }
 
         $path = null;
         if ($request->hasFile('file_path')) {
-            // Simpan file ke folder 'payments' di dalam storage/app/public
             $path = $request->file('file_path')->store('payments', 'public');
         }
 
-        $invoice = Invoice::find($id);
+        // Ambil data invoice lama sebelum diubah untuk log audit
+        $invoice = Invoice::findOrFail($id);
+        $oldInvoiceData = $invoice->toArray();
 
         $customer = ProdukClient::findOrFail($invoice->customer_id);
         $customerCode = $customer->nama; 
 
         $tanggalFormat = date('Ymd');
-
         $jumlahInvoiceCustomer = \App\Models\Invoice::where('customer_id', $invoice->customer_id)->count() + 1;
-
         $urutanInvoice = sprintf('%04d', $jumlahInvoiceCustomer);
-
         $noInvoice = "INV/{$tanggalFormat}/{$customerCode}/{$urutanInvoice}";
 
         $dataBaru = [
-            'tgl_transaksi' => now()->toDateString(),
+            'tgl_transaksi' => $request->payment_date, // Menggunakan tanggal pembayaran agar sinkron dengan periode
             'no_invoice' => $noInvoice,
-            'keterangan' => $request->keterangan,
+            'keterangan' => $request->keterangan ?? 'Pembayaran Invoice #' . $invoice->id,
             'cash_flow_activity' => 'operasional',
             'status' => 'draft',
             'items' => [
                 [
                     'chart_of_account_id' => $request->coa,
-                    'keterangan_item' => $request->keterangan,
+                    'keterangan_item' => $request->keterangan ?? 'Pembayaran Invoice',
                     'debit' => (float) $request->amount,
                     'kredit' => 0
                 ]
             ]
         ];
 
-        $this->journalService->storeJournal($dataBaru);
+        // Simpan jurnal via service
+        $journalId = $this->journalService->storeJournal($dataBaru);
 
-        DB::transaction(function () use ($request, $id, $path, $noInvoice) {
-            $invoice = Invoice::findOrFail($id);
-
-
-            InvoicePayment::create([
+        $paymentRecord = null;
+        DB::transaction(function () use ($request, $id, $path, $noInvoice, &$paymentRecord, &$invoice) {
+            $paymentRecord = InvoicePayment::create([
                 'invoice_id'   => $id,
                 'amount'       => $request->amount,
                 'payment_date' => $request->payment_date,
@@ -142,6 +153,23 @@ class InvoiceController extends Controller
             $invoice->status = ($invoice->paid_amount >= $invoice->total_amount) ? 'paid' : 'partial';
             $invoice->save();
         });
+
+        // Ambil data invoice terbaru setelah pembayaran
+        $invoice->refresh();
+        $newInvoiceData = $invoice->toArray();
+
+        // [BARU] Catat ke Audit Trail
+        AuditService::log(
+            'CREATED',
+            'Pembayaran Invoice',
+            'Mencatatkan pembayaran sebesar Rp ' . number_format($request->amount, 0, ',', '.') . ' untuk Invoice ID: ' . $id,
+            $oldInvoiceData,
+            [
+                'invoice_updated' => $newInvoiceData,
+                'payment_detail'  => $paymentRecord ? $paymentRecord->toArray() : null,
+                'journal_id'      => $journalId
+            ]
+        );
 
         return back()->with('success', 'Pembayaran dan bukti berhasil disimpan.');
     }
@@ -159,45 +187,83 @@ class InvoiceController extends Controller
      */
     public function store(Request $request)
     {
+        // 1. Proteksi Periode: Cek apakah periode bulan ini terkunci
+        $currentDate = now()->toDateString();
+        $periode = date('Y-m', strtotime($currentDate));
+        $isLocked = DB::table('period_locks')
+            ->where('periode', $periode)
+            ->where('is_locked', true)
+            ->exists();
+
+        if ($isLocked) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Gagal membuat invoice! Periode ' . $periode . ' sudah ditutup dan terkunci.');
+        }
+
         $data = $request->validate([
-            'customer_id' => 'required',
+            'customer_id'  => 'required',
             'total_amount' => 'required|numeric',
-            'due_date' => 'required|date'
+            'due_date'     => 'required|date'
         ]);
 
         $customer = ProdukClient::findOrFail($request->customer_id);
         $customerCode = $customer->nama; 
 
         $tanggalFormat = date('Ymd');
-
         $jumlahInvoiceCustomer = \App\Models\Invoice::where('customer_id', $request->customer_id)->count() + 1;
-
         $urutanInvoice = sprintf('%04d', $jumlahInvoiceCustomer);
 
         $noInvoice = "INV/{$tanggalFormat}/{$customerCode}/{$urutanInvoice}";
         $data['no_invoice'] = $noInvoice;
         $data['paid_amount'] = 0;
         $data['status'] = 'unpaid';
+
         $dataBaru = [
-            'tgl_transaksi' => now()->toDateString(),
+            'tgl_transaksi' => $currentDate,
             'no_invoice' => $noInvoice,
-            'keterangan' => $request->keterangan,
+            'keterangan' => $request->keterangan ?? 'Pembuatan Invoice #' . $noInvoice,
             'cash_flow_activity' => 'operasional',
             'status' => 'draft',
             'items' => [
                 [
                     'chart_of_account_id' => $request->coa,
-                    'keterangan_item' => $request->keterangan,
+                    'keterangan_item' => $request->keterangan ?? 'Piutang Usaha / Invoice ' . $noInvoice,
                     'debit' => 0,
                     'kredit' => (float) $request->total_amount
                 ]
             ]
         ];
 
-        $this->journalService->storeJournal($dataBaru);
-        Invoice::create($data);
+        try {
+            // Eksekusi penyimpanan jurnal dan invoice dalam satu database transaction atau berurutan
+            DB::beginTransaction();
 
-        return back()->with('success', 'Invoice dibuat');
+            $journalId = $this->journalService->storeJournal($dataBaru);
+            $invoice = Invoice::create($data);
+
+            DB::commit();
+
+            // [BARU] Catat ke Audit Trail
+            AuditService::log(
+                'CREATED',
+                'Manajemen Invoice',
+                'Membuat invoice baru dengan nomor: ' . $noInvoice . ' untuk customer ' . $customerCode,
+                null,
+                [
+                    'invoice'    => $invoice->toArray(),
+                    'journal_id' => $journalId
+                ]
+            );
+
+            return back()->with('success', 'Invoice dibuat');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Gagal membuat invoice: ' . $e->getMessage());
+        }
     }
 
     public function list_client()
@@ -265,44 +331,132 @@ class InvoiceController extends Controller
     public function update(Request $request, string $id)
     {
         $invoice = Invoice::findOrFail($id);
+
+        // 1. Proteksi Periode: Cek apakah periode tanggal saat ini (atau tanggal invoice) terkunci
+        $invoiceDate = $invoice->created_at ? date('Y-m', strtotime($invoice->created_at)) : date('Y-m');
+        $isLocked = DB::table('period_locks')
+            ->where('periode', $invoiceDate)
+            ->where('is_locked', true)
+            ->exists();
+
+        if ($isLocked) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Gagal memperbarui invoice! Periode ' . $invoiceDate . ' sudah ditutup dan terkunci.');
+        }
+
+        // Ambil data lama sebelum di-update untuk keperluan audit log
+        $oldData = $invoice->toArray();
+
+        // Lakukan update data
         $invoice->update($request->all());
+
+        // Ambil data terbaru setelah di-update
+        $invoice->refresh();
+        $newData = $invoice->toArray();
+
+        // [BARU] Catat ke Audit Trail
+        AuditService::log(
+            'UPDATED',
+            'Manajemen Invoice',
+            'Memperbarui data invoice dengan nomor: ' . ($invoice->no_invoice ?? $id),
+            $oldData,
+            $newData
+        );
+
         return back()->with('success', 'Invoice berhasil diupdate');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy($id) {
-
-        // Invoice::findOrFail($id)->delete();
-        // return back()->with('success', 'Invoice berhasil dihapus');
-
+    public function destroy($id)
+    {
         $invoice = Invoice::find($id);
 
-        $invoicePayment = InvoicePayment::where('invoice_id', $id)->get();
-        foreach($invoicePayment as $pd){
+        if (!$invoice) {
+            return redirect()->back()->with('error', 'Data invoice tidak ditemukan!');
+        }
+
+        // 1. Proteksi Periode: Cek apakah periode tanggal invoice terkunci
+        $invoiceDate = $invoice->created_at ? date('Y-m', strtotime($invoice->created_at)) : date('Y-m');
+        $isLocked = DB::table('period_locks')
+            ->where('periode', $invoiceDate)
+            ->where('is_locked', true)
+            ->exists();
+
+        if ($isLocked) {
+            return redirect()->back()->with('error', 'Gagal menghapus! Periode ' . $invoiceDate . ' sudah ditutup dan terkunci.');
+        }
+
+        // 2. Kumpulkan data lama sebelum dihapus untuk keperluan log audit
+        $invoicePayments = InvoicePayment::where('invoice_id', $id)->get();
+        
+        $associatedJournals = [];
+        foreach ($invoicePayments as $pd) {
             $jurnalUmum = DB::table('general_journals')->where('no_invoice', $pd->no_invoice)->first();
             if ($jurnalUmum) {
-                // Hapus detail jurnal terlebih dahulu (berdasarkan foreign key)
-                DB::table('general_journal_details')->where('general_journal_id', $jurnalUmum->id)->delete();
-                
-                // Hapus header jurnal umum menggunakan query builder DB::table
-                DB::table('general_journals')->where('id', $jurnalUmum->id)->delete();
+                $details = DB::table('general_journal_details')->where('general_journal_id', $jurnalUmum->id)->get();
+                $associatedJournals[] = [
+                    'header'  => (array) $jurnalUmum,
+                    'details' => $details->map(function($d) { return (array)$d; })->toArray()
+                ];
             }
         }
 
         $jurnalUmumPayrol = DB::table('general_journals')->where('no_invoice', $invoice->no_invoice)->first();
-
-        if($jurnalUmumPayrol){
-            DB::table('general_journal_details')->where('general_journal_id', $jurnalUmumPayrol->id)->delete();
-            DB::table('general_journals')->where('id', $jurnalUmumPayrol->id)->delete();
+        if ($jurnalUmumPayrol) {
+            $detailsPayroll = DB::table('general_journal_details')->where('general_journal_id', $jurnalUmumPayrol->id)->get();
+            $associatedJournals[] = [
+                'header'  => (array) $jurnalUmumPayrol,
+                'details' => $detailsPayroll->map(function($d) { return (array)$d; })->toArray()
+            ];
         }
 
-        InvoicePayment::where('invoice_id', $id)->delete();
+        $oldData = [
+            'invoice'          => $invoice->toArray(),
+            'invoice_payments' => $invoicePayments->map(function($p) { return $p->toArray(); })->toArray(),
+            'journals'         => $associatedJournals
+        ];
 
-        $invoice->delete();
+        $invoiceNumber = $invoice->no_invoice;
 
-        return redirect()->back()->with('success', 'Data payroll beserta jurnal terkait berhasil dihapus.');
+        try {
+            DB::beginTransaction();
 
+            // 3. Eksekusi penghapusan relasi pembayaran dan jurnal terkait
+            foreach($invoicePayments as $pd){
+                $jurnalUmum = DB::table('general_journals')->where('no_invoice', $pd->no_invoice)->first();
+                if ($jurnalUmum) {
+                    DB::table('general_journal_details')->where('general_journal_id', $jurnalUmum->id)->delete();
+                    DB::table('general_journals')->where('id', $jurnalUmum->id)->delete();
+                }
+            }
+
+            if($jurnalUmumPayrol){
+                DB::table('general_journal_details')->where('general_journal_id', $jurnalUmumPayrol->id)->delete();
+                DB::table('general_journals')->where('id', $jurnalUmumPayrol->id)->delete();
+            }
+
+            InvoicePayment::where('invoice_id', $id)->delete();
+            $invoice->delete();
+
+            DB::commit();
+
+            // 4. Catat ke Audit Trail
+            AuditService::log(
+                'DELETED',
+                'Manajemen Invoice',
+                'Menghapus invoice beserta seluruh pembayaran dan jurnal terkait dengan nomor: ' . $invoiceNumber,
+                $oldData,
+                null
+            );
+
+            return redirect()->back()->with('success', 'Data invoice beserta jurnal terkait berhasil dihapus.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Gagal menghapus data: ' . $e->getMessage());
+        }
     }
 }

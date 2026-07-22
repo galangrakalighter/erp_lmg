@@ -11,6 +11,7 @@ use App\Exports\TrialBalanceExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
+use App\Services\AuditService;
 
 class LedgerController extends Controller
 {
@@ -601,17 +602,36 @@ class LedgerController extends Controller
     {
         $request->validate(['periode' => 'required']);
 
+        $periode = $request->periode;
+
+        // Ambil data status lama sebelum di-update (jika sudah ada) untuk keperluan log audit
+        $oldLock = DB::table('period_locks')->where('periode', $periode)->first();
+
+        // Lakukan update atau insert status kunci periode
         DB::table('period_locks')->updateOrInsert(
-            ['periode' => $request->periode],
+            ['periode' => $periode],
             [
-                'is_locked' => true,
-                'locked_at' => now(),
-                'locked_by' => Auth::id(),
-                'created_at' => now()
+                'is_locked'  => true,
+                'locked_at'  => now(),
+                'locked_by'  => Auth::id(),
+                'updated_at' => now(),
+                'created_at' => $oldLock ? $oldLock->created_at : now()
             ]
         );
 
-        return redirect()->back()->with('success', 'Periode ' . $request->periode . ' berhasil ditutup.');
+        // Ambil data terbaru setelah proses
+        $newLock = DB::table('period_locks')->where('periode', $periode)->first();
+
+        // [BARU] Catat ke Audit Trail
+        AuditService::log(
+            'UPDATED',
+            'Periode Akuntansi',
+            'Menutup / Mengunci periode akuntansi bulan: ' . $periode,
+            $oldLock ? (array) $oldLock : null,
+            (array) $newLock
+        );
+
+        return redirect()->back()->with('success', 'Periode ' . $periode . ' berhasil ditutup.');
     }
 
     private function getLabaRugiData($request, $trialBalanceService)

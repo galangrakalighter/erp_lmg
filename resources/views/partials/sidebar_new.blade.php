@@ -503,6 +503,11 @@
                         </div>
                     @endif
                     <div class="client-item-wrapper mb-2">
+                        <a class="client-dropdown-link-out-div {{ Route::is('finance.dashboard') ? 'active' : '' }}" href="{{ route('finance.dashboard') }}">
+                            <span>Dashboard</span>
+                        </a>
+                    </div>
+                    <div class="client-item-wrapper mb-2">
                         <a class="client-dropdown-link-out-div {{ Route::is('finance_coa.index') ? 'active' : '' }}" href="{{ route('finance_coa.index') }}">
                             <span>Daftar Akun</span>
                         </a>
@@ -564,6 +569,13 @@
                             <span>Payroll</span>
                         </a>
                     </div>
+                    @if(Auth::user()->isAdmin == true)
+                    <div class="client-item-wrapper mb-2">
+                        <a class="client-dropdown-link-out-div {{ Route::is('audit.index') ? 'active' : '' }}" href="{{ route('audit.index') }}">
+                            <span>Audit</span>
+                        </a>
+                    </div>
+                    @endif
                 </div>
             </div>
         </li>

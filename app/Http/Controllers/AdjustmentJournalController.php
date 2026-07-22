@@ -7,6 +7,7 @@ use App\Models\ChartOfAccount;
 use App\Models\AdjustmentJournal;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Services\AuditService;
 class AdjustmentJournalController extends Controller
 {
     /**
@@ -90,15 +91,27 @@ class AdjustmentJournalController extends Controller
             ]);
 
             // 3. Simpan Rincian / Detail Akun
+            $detailData = [];
             foreach ($request->items as $item) {
-                $journal->details()->create([
+                $detail = $journal->details()->create([
                     'chart_of_account_id' => $item['chart_of_account_id'],
                     'debit'               => $item['debit'],
                     'kredit'              => $item['kredit'],
                 ]);
+                $detailData[] = $detail->toArray();
             }
 
             DB::commit();
+            AuditService::log(
+                'CREATED',
+                'Jurnal Penyesuaian',
+                'Membuat jurnal penyesuaian baru dengan nomor: ' . $journalNumber,
+                null,
+                [
+                    'header'  => $journal->toArray(),
+                    'details' => $detailData
+                ]
+            );
             return redirect()->back()->with('success', "Jurnal {$journalNumber} berhasil dibuat!");
 
         } catch (\Exception $e) {
@@ -145,10 +158,14 @@ class AdjustmentJournalController extends Controller
         }
 
         try {
-            DB::beginTransaction();
-
             $journal = AdjustmentJournal::findOrFail($id);
+            $oldData = [
+                'header'  => $journal->toArray(),
+                'details' => $journal->details->map(function ($detail) { return $detail->toArray(); })->toArray()
+            ];
 
+            DB::beginTransaction();
+            
             // 1. Update data Header
             $journal->update([
                 'tgl_transaksi' => $request->date,
@@ -158,15 +175,31 @@ class AdjustmentJournalController extends Controller
             // 2. Hapus detail lama, lalu ganti dengan rincian yang baru di-submit
             $journal->details()->delete();
 
+            $newDetailsData = [];
+
             foreach ($request->items as $item) {
-                $journal->details()->create([
+                $detail = $journal->details()->create([
                     'chart_of_account_id' => $item['chart_of_account_id'],
                     'debit'               => $item['debit'],
                     'kredit'              => $item['kredit'],
                 ]);
+
+                $newDetailsData[] = $detail->toArray();
             }
 
             DB::commit();
+            $journal->refresh();
+            $newData = [
+                'header'  => $journal->toArray(),
+                'details' => $newDetailsData
+            ];
+            AuditService::log(
+                'UPDATED',
+                'Jurnal Penyesuaian',
+                'Memperbarui jurnal penyesuaian dengan nomor: ' . ($journal->no_jurnal ?? $journal->journal_number),
+                $oldData,
+                $newData
+            );
             return redirect()->back()->with('success', "Jurnal {$journal->journal_number} berhasil diperbarui!");
 
         } catch (Exception $e) {
@@ -187,7 +220,33 @@ class AdjustmentJournalController extends Controller
             return redirect()->back()->with('error', 'Data tidak dapat dihapus, periode sudah ditutup.');
         }
 
-        $journal->delete();
-        return redirect()->back()->with('success', 'Jurnal berhasil dihapus.');
+        try {
+            // Simpan data lama untuk keperluan audit trail
+            $oldData = [
+                'header'  => $journal->toArray(),
+                'details' => $journal->details->map(function ($detail) { return $detail->toArray(); })->toArray()
+            ];
+
+            $journalNumber = $journal->no_jurnal ?? $journal->journal_number;
+
+            // Eksekusi hapus (Pastikan relasi detail ikut terhapus jika tidak menggunakan cascading delete di database, 
+            // atau hapus detailnya manual terlebih dahulu seperti: $journal->details()->delete();)
+            $journal->details()->delete();
+            $journal->delete();
+
+            // [BARU] Catat ke Audit Trail
+            AuditService::log(
+                'DELETED',
+                'Jurnal Penyesuaian',
+                'Menghapus jurnal penyesuaian dengan nomor: ' . $journalNumber,
+                $oldData,
+                null
+            );
+
+            return redirect()->back()->with('success', 'Jurnal berhasil dihapus.');
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal menghapus jurnal: ' . $e->getMessage());
+        }
     }
 }

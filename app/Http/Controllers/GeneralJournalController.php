@@ -9,6 +9,7 @@ use App\Models\ChartOfAccount; // Untuk me-load data select COA di modal
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\DB;
 use Exception;
+use App\Services\AuditService;
 
 class GeneralJournalController extends Controller
 {
@@ -84,7 +85,15 @@ class GeneralJournalController extends Controller
 
             // 2. Kirim ke Service Layer
             try {
-                $this->journalService->storeJournal($validated);
+                $journalId = $this->journalService->storeJournal($validated);
+
+                AuditService::log(
+                    'CREATED',
+                    'Jurnal Umum',
+                    'Membuat jurnal transaksi baru pada tanggal ' . $validated['tgl_transaksi'] . ' (Status: ' . $validated['status'] . ')',
+                    null,
+                    ['header_id' => $journalId, 'data' => $validated]
+                );
 
                 return redirect()->back()->with('success', 'Data Jurnal Berhasil Disimpan');
             } catch (Exception $e) {
@@ -151,7 +160,29 @@ class GeneralJournalController extends Controller
 
         // 2. Kirim ke Service Layer untuk pemrosesan Database Transaction
         try {
+            $oldHeader = DB::table('general_journals')->where('id', $id)->first();
+            $oldDetails = DB::table('general_journal_details')->where('general_journal_id', $id)->get();
+            $oldData = [
+                'header' => (array) $oldHeader,
+                'details' => $oldDetails->map(function ($item) { return (array) $item; })->toArray()
+            ];
             $this->journalService->updateJournal($id, $validated);
+
+            $newHeader = DB::table('general_journals')->where('id', $id)->first();
+            $newDetails = DB::table('general_journal_details')->where('general_journal_id', $id)->get();
+
+            $newData = [
+                'header' => (array) $newHeader,
+                'details' => $newDetails->map(function ($item) { return (array) $item; })->toArray()
+            ];
+
+            AuditService::log(
+                'UPDATED',
+                'Jurnal Umum',
+                'Memperbarui jurnal transaksi dengan nomor: ' . ($newHeader->no_jurnal ?? $id),
+                $oldData,
+                $newData
+            );
 
             return redirect()->back()->with('success', 'Data Jurnal Berhasil Diperbaharui');
         } catch (Exception $e) {
@@ -163,7 +194,32 @@ class GeneralJournalController extends Controller
     public function destroy($id)
     {
         try {
+            $oldHeader = DB::table('general_journals')->where('id', $id)->first();
+        
+            if (!$oldHeader) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Data jurnal tidak ditemukan!'
+                ], 404);
+            }
+
+            $oldDetails = DB::table('general_journal_details')->where('general_journal_id', $id)->get();
+            
+            $oldData = [
+                'header'  => (array) $oldHeader,
+                'details' => $oldDetails->map(function ($item) { return (array) $item; })->toArray()
+            ];
+
+
             $this->journalService->deleteJournal($id);
+
+            AuditService::log(
+                'DELETED',
+                'Jurnal Umum',
+                'Menghapus transaksi jurnal umum dengan nomor: ' . ($oldHeader->no_jurnal ?? $id),
+                $oldData,
+                null
+            );
 
             return response()->json([
                 'status'  => 'success',

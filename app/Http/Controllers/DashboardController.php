@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Division;
 use App\Models\UserDivision;
 use App\Models\ProdukClient;
+use App\Models\AuditTrail;
 
 class DashboardController extends Controller
 {
@@ -72,5 +73,149 @@ class DashboardController extends Controller
         }
         
         return view('hc.kpi', compact('title', 'listProject', 'listBawahan', 'listDivisi'));
+    }
+
+    public function finance_dashboard(Request $request){
+        $periode = $request->get('periode', date('Y-m'));
+        $year    = date('Y', strtotime($periode));
+        $month   = date('m', strtotime($periode));
+
+        $title = 'Dashboard Finance';
+
+        // 1. HITUNG PROFIT BERSIH (Pendapatan - Beban)
+        // Sesuai nilai option HTML: 'pendapatan' dan 'beban'
+        $totalPendapatan = DB::table('general_journal_details as gjd')
+            ->join('general_journals as gj', 'gj.id', '=', 'gjd.general_journal_id')
+            ->join('chart_of_account as coa', 'coa.id', '=', 'gjd.chart_of_account_id')
+            ->where('coa.type', 'pendapatan') 
+            ->whereYear('gj.tgl_transaksi', $year)
+            ->whereMonth('gj.tgl_transaksi', $month)
+            ->sum(DB::raw('gjd.kredit - gjd.debit'));
+
+        $totalBeban = DB::table('general_journal_details as gjd')
+            ->join('general_journals as gj', 'gj.id', '=', 'gjd.general_journal_id')
+            ->join('chart_of_account as coa', 'coa.id', '=', 'gjd.chart_of_account_id')
+            ->where('coa.type', 'beban') 
+            ->whereYear('gj.tgl_transaksi', $year)
+            ->whereMonth('gj.tgl_transaksi', $month)
+            ->sum(DB::raw('gjd.debit - gjd.kredit'));
+
+        $totalProfit = $totalPendapatan - $totalBeban;
+
+        // 2. HITUNG CASHFLOW (Arus Kas Masuk & Keluar)
+        // Biasannya akun Kas atau Bank masuk ke kategori 'aset' (misal: Kas / Bank)
+        // Anda bisa menyaring berdasarkan nama tipe 'aset' atau spesifik nama akun kas/bank
+        $cashflowIn = DB::table('general_journal_details as gjd')
+            ->join('general_journals as gj', 'gj.id', '=', 'gjd.general_journal_id')
+            ->join('chart_of_account as coa', 'coa.id', '=', 'gjd.chart_of_account_id')
+            ->where('coa.type', 'aset') 
+            ->whereYear('gj.tgl_transaksi', $year)
+            ->whereMonth('gj.tgl_transaksi', $month)
+            ->sum('gjd.debit');
+
+        $cashflowOut = DB::table('general_journal_details as gjd')
+            ->join('general_journals as gj', 'gj.id', '=', 'gjd.general_journal_id')
+            ->join('chart_of_account as coa', 'coa.id', '=', 'gjd.chart_of_account_id')
+            ->where('coa.type', 'aset')
+            ->whereYear('gj.tgl_transaksi', $year)
+            ->whereMonth('gj.tgl_transaksi', $month)
+            ->sum('gjd.kredit');
+
+        $netCashflow = $cashflowIn - $cashflowOut;
+
+        // 3. HITUNG SALDO UTAMA TERKINI (Khusus Aset Kas/Bank)
+        $mainBalances = DB::table('chart_of_account as coa')
+            ->leftJoin('general_journal_details as gjd', 'coa.id', '=', 'gjd.chart_of_account_id')
+            ->select(
+                'coa.id',
+                'coa.kode',
+                'coa.nama_akun',
+                'coa.type',
+                DB::raw('COALESCE(SUM(gjd.debit - gjd.kredit), 0) as balance')
+            )
+            ->where('coa.type', 'aset') // Mengambil dari kategori aset
+            ->groupBy('coa.id', 'coa.kode', 'coa.nama_akun', 'coa.type')
+            ->get();
+
+        $totalSaldoUtama = $mainBalances->sum('balance');
+
+        return view('finance.dashboard', compact(
+            'periode',
+            'totalPendapatan',
+            'totalBeban',
+            'totalProfit',
+            'cashflowIn',
+            'cashflowOut',
+            'netCashflow',
+            'mainBalances',
+            'totalSaldoUtama',
+            'title'
+        ));
+    }
+
+    public function audit(Request $request){
+        $query = AuditTrail::with('user')->latest();
+
+        // Filter berdasarkan modul
+        if ($request->filled('module')) {
+            $query->where('module', $request->module);
+        }
+
+        // Filter berdasarkan aksi (CREATED, UPDATED, DELETED)
+        if ($request->filled('action')) {
+            $query->where('action', $request->action);
+        }
+
+        // Filter berdasarkan rentang tanggal
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $query->whereBetween('created_at', [
+                $request->start_date . ' 00:00:00',
+                $request->end_date . ' 23:59:59'
+            ]);
+        } elseif ($request->filled('start_date')) {
+            $query->where('created_at', '>=', $request->start_date . ' 00:00:00');
+        } elseif ($request->filled('end_date')) {
+            $query->where('created_at', '<=', $request->end_date . ' 23:59:59');
+        }
+
+        // Ambil data unik modul untuk isi dropdown select option secara dinamis
+        $modules = AuditTrail::select('module')->distinct()->whereNotNull('module')->pluck('module');
+
+        $audits = $query->paginate(15)->appends($request->query());
+
+        $title = 'Audit Keuangan';
+
+        return view('finance.audit', compact('audits', 'modules', 'title'));
+    }
+
+    public function getDataAudit(Request $request){
+        $query = AuditTrail::with('user')->latest();
+
+        if ($request->filled('search')) {
+            $query->where('description', 'like', '%' . $request->search . '%');
+        }
+
+        if ($request->filled('module')) {
+            $query->where('module', $request->module);
+        }
+
+        if ($request->filled('action')) {
+            $query->where('action', $request->action);
+        }
+
+        if ($request->filled('start_date')) {
+            $query->whereDate('created_at', '>=', $request->start_date);
+        }
+
+        if ($request->filled('end_date')) {
+            $query->whereDate('created_at', '<=', $request->end_date);
+        }
+
+        $audits = $query->paginate(15);
+
+        return response()->json([
+            'success' => true,
+            'data' => $audits
+        ]);
     }
 }

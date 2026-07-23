@@ -454,16 +454,7 @@
             kreditInput.removeAttribute('readonly');
             debitInput.classList.remove('bg-light');
             kreditInput.classList.remove('bg-light');
-
-            if (coaType === 'D') {
-                kreditInput.value = 0;
-                kreditInput.setAttribute('readonly', true);
-                kreditInput.classList.add('bg-light');
-            } else if (coaType === 'K') {
-                debitInput.value = 0;
-                debitInput.setAttribute('readonly', true);
-                debitInput.classList.add('bg-light');
-            }
+            
             calculateEditTotals();
         }
     });
@@ -693,8 +684,8 @@
                                 </select>
                             </td>
                             <td><input type="text" name="items[${editRowIndex}][keterangan_item]" class="form-control form-control-sm" value="${item.keterangan_item || ''}" placeholder="Keterangan baris..."></td>
-                            <td><input type="number" name="items[${editRowIndex}][debit]" class="form-control form-control-sm input-edit-nominal input-edit-debit ${!isD ? 'bg-light' : ''}" value="${parseFloat(item.debit)}" min="0" step="0.01" ${!isD ? 'readonly' : ''} required></td>
-                            <td><input type="number" name="items[${editRowIndex}][kredit]" class="form-control form-control-sm input-edit-nominal input-edit-kredit ${isD ? 'bg-light' : ''}" value="${parseFloat(item.kredit)}" min="0" step="0.01" ${isD ? 'readonly' : ''} required></td>
+                            <td><input type="number" name="items[${editRowIndex}][debit]" class="form-control form-control-sm input-edit-nominal input-edit-debit ${!isD ? 'bg-light' : ''}" value="${parseFloat(item.debit)}" min="0" step="0.01" required></td>
+                            <td><input type="number" name="items[${editRowIndex}][kredit]" class="form-control form-control-sm input-edit-nominal input-edit-kredit ${isD ? 'bg-light' : ''}" value="${parseFloat(item.kredit)}" min="0" step="0.01" required></td>
                             <td class="text-center">
                                 <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove(); calculateEditTotals();"><i class="fas fa-trash"></i></button>
                             </td>

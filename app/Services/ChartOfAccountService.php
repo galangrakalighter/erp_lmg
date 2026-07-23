@@ -144,18 +144,14 @@ class ChartOfAccountService
 
             // 3. Logika Upsert Saldo Awal
             if (!empty($openingPeriode)) {
-                // Ditambahkan 'public.' jika PostgreSQL kamu ketat terhadap skema tabel
-                DB::table('public.opening_balances')->updateOrInsert(
+                DB::table('opening_balances')->updateOrInsert(
                     [
                         'periode'             => $openingPeriode,
                         'chart_of_account_id' => $coa->id
                     ],
                     [
-                        'saldo'               => $openingSaldo,
-                        'updated_at'          => now(),
-                        // created_at di bawah ini opsional, jika updateOrInsert di Laravel 
-                        // kadang mengabaikan created_at saat UPDATE, ini adalah cara paling aman:
-                        'created_at'          => DB::raw('COALESCE(created_at, NOW())') 
+                        'saldo'      => $openingSaldo,
+                        'updated_at' => now(),
                     ]
                 );
             }

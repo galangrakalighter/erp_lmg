@@ -179,11 +179,6 @@ class GeneralJournalService
             throw new Exception("Data jurnal tidak ditemukan.");
         }
 
-        // 2. [BARU] PROTEKSI STATUS POSTED: Jika di DB sudah 'posted', kunci mutlak
-        if ($currentJournal->status === 'posted') {
-            throw new Exception("Gagal Update: Transaksi yang sudah berstatus 'Posted' tidak dapat diubah kembali.");
-        }
-
         // 3. [BARU] PROTEKSI KUNCI PERIODE BULANAN
         // Cek apakah tanggal lama (di DB) atau tanggal baru (dari Form) berasal dari bulan lalu
         $this->validatePeriodLock($currentJournal->tgl_transaksi);

@@ -527,7 +527,7 @@ class HCDailyController extends Controller
         $newMenit  = (int) $request->menit;
         $overloadDates = [];
         $batasWaktu = 420;
-        if((int)$request->pic == 39){
+        if((int)$request->pic == 5){
             $batasWaktu = 480;
         }
 

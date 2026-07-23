@@ -8,9 +8,16 @@
                     <h5 class="m-0 font-weight-bold text-primary">
                         <i class="fas fa-book mr-2"></i>Jurnal Umum
                     </h5>
-                    <button type="button" class="btn btn-primary btn-sm shadow-sm" data-toggle="modal" data-target="#modalTambahJurnal">
-                        <i class="fas fa-plus fa-sm mr-2"></i>Buat Jurnal Baru
-                    </button>
+                    <div>
+                        <!-- Tombol Export PDF Baru -->
+                        <button type="button" class="btn btn-danger btn-sm shadow-sm mr-2" onclick="exportJournalPdf()">
+                            <i class="fas fa-file-pdf fa-sm mr-1"></i> Export PDF
+                        </button>
+
+                        <button type="button" class="btn btn-primary btn-sm shadow-sm" data-toggle="modal" data-target="#modalTambahJurnal">
+                            <i class="fas fa-plus fa-sm mr-2"></i>Buat Jurnal Baru
+                        </button>
+                    </div>
                 </div>
                 
                 <!-- Bagian Filter Data -->
@@ -372,6 +379,23 @@
         container.insertAdjacentHTML('beforeend', newRowHtml);
         entryRowIndex++;
         calculateJournalTotals();
+    }
+
+    function exportJournalPdf() {
+        let startDate = document.getElementById('filter_start_date').value;
+        let endDate = document.getElementById('filter_end_date').value;
+        let status = document.getElementById('filter_status').value;
+        let search = document.getElementById('filter_search').value;
+
+        let params = new URLSearchParams({
+            start_date: startDate,
+            end_date: endDate,
+            status: status,
+            search: search
+        });
+
+        // Sesuaikan route endpoint export Anda
+        window.open(`{{ route('journals.export-pdf') }}?${params.toString()}`, '_blank');
     }
 
     function removeEntryRow(button) {

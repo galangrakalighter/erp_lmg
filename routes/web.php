@@ -200,6 +200,9 @@ Route::middleware('auth')->group(function() {
     Route::put('kpi/{id}', [App\Http\Controllers\HCOverviewController::class, 'editKPI'])->name('kpi.update');
     Route::put('kpi/{id}/selesai', [App\Http\Controllers\HCOverviewController::class, 'endKPI'])->name('kpi.endKPI');
     Route::delete('kpi/{id}', [App\Http\Controllers\HCOverviewController::class, 'deleteKPI'])->name('kpi.destroy');
+    Route::get('/journals/export-pdf', [App\Http\Controllers\PDFController::class, 'exportGeneralJournal'])->name('journals.export-pdf');
+    Route::get('/finance-ledger/export-pdf', [App\Http\Controllers\PDFController::class, 'exportBukuBesar'])->name('ledger.export-pdf');
+    Route::get('/adjustment-journal/export-pdf', [App\Http\Controllers\PDFController::class, 'exportAdjustmen'])->name('adjustment_journal.export-pdf');
     // Route::get('/payment', function(){
     //     $title = "Payment - ";
     //     return view('payment.index', compact('title'));

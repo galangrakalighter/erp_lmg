@@ -7,9 +7,18 @@
             
             {{-- Tombol Buat Baru: Muncul hanya jika bulan ini tidak terkunci --}}
             @php $currentPeriod = date('Y-m'); @endphp
-            <button type="button" class="btn btn-primary btn-sm shadow-sm" data-toggle="modal" data-target="#tambahJournalModal" onclick="resetJournalForm()">
-                <i class="fas fa-plus fa-sm mr-1"></i> Buat Jurnal Baru
-            </button>
+            <div>
+                {{-- Tombol Export PDF --}}
+                <a href="{{ route('adjustment_journal.export-pdf', ['periode' => request('periode', date('Y-m'))]) }}" target="_blank" class="btn btn-danger btn-sm shadow-sm mr-1">
+                    <i class="fas fa-file-pdf fa-sm mr-1"></i> Export PDF
+                </a>
+
+                {{-- Tombol Buat Baru: Muncul hanya jika bulan ini tidak terkunci --}}
+                @php $currentPeriod = date('Y-m'); @endphp
+                <button type="button" class="btn btn-primary btn-sm shadow-sm" data-toggle="modal" data-target="#tambahJournalModal" onclick="resetJournalForm()">
+                    <i class="fas fa-plus fa-sm mr-1"></i> Buat Jurnal Baru
+                </button>
+            </div>
         </div>
         
         <div class="card-body">

@@ -82,7 +82,6 @@
                         <tr>
                             <th>Waktu</th>
                             <th>Pengguna (User)</th>
-                            <th>Aksi</th>
                             <th>Modul</th>
                             <th>Deskripsi</th>
                         </tr>
@@ -205,9 +204,7 @@
                     <td>${createdAt}</td>
                     <td>
                         <strong>${userName}</strong>
-                        <br><small class="text-muted">IP: ${ipAddress}</small>
                     </td>
-                    <td><span class="badge ${badgeClass}">${audit.action}</span></td>
                     <td>${audit.module ?? '-'}</td>
                     <td>${audit.description ?? '-'}</td>
                 </tr>

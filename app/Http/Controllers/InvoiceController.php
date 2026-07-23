@@ -66,19 +66,22 @@ class InvoiceController extends Controller
     public function generatePdf($id)
     {
         $invoice = Invoice::findOrFail($id);
-        
+                
         $pdf = Pdf::loadView('finance.invoice_pdf', [
             'invoice_number' => $invoice->no_invoice,
             'invoice_date'   => \Carbon\Carbon::parse($invoice->created_at)->format('d M Y'),
             'due_date'       => \Carbon\Carbon::parse($invoice->due_date)->format('d M Y'),
-            'client_company' => $invoice->customer->nama, // Sesuaikan dengan relasi Anda
+            'client_company' => $invoice->customer->nama, 
             'amount'         => $invoice->total_amount,
-            'bank_name'      => 'Bank BCA', // Bisa diambil dari database atau config
+            'bank_name'      => 'Bank BCA', 
             'account_name'   => 'Lighter Media Group',
             'account_number' => '1234567890'
         ]);
 
-        return $pdf->stream('Invoice_' . $invoice->no_invoice . '.pdf');
+        // Ganti karakter '/' atau '\' dengan '_' atau '-' agar aman dijadikan nama file
+        $safeInvoiceNo = str_replace(['/', '\\'], '-', $invoice->no_invoice);
+
+        return $pdf->stream('Invoice_' . $safeInvoiceNo . '.pdf');
     }
 
     public function payment(Request $request, $id)
@@ -266,11 +269,12 @@ class InvoiceController extends Controller
         }
     }
 
-    public function list_client()
+    public function list_client(Request $request)
     {
         $title = 'Profit Per Client';
+        $viewMode = $request->input('view', 'off'); // 'on' atau 'off'
 
-        // Hanya mengambil client yang minimal punya 1 invoice
+        // Ambil data client yang minimal punya 1 invoice beserta relasinya
         $clients = ProdukClient::has('invoices')
             ->with('invoices.payments')
             ->get()
@@ -290,7 +294,19 @@ class InvoiceController extends Controller
                 return $client;
             });
 
-        return view('finance.profit_list', compact('title', 'clients'));
+        // Jika mode ON, kita hitung juga total keseluruhan (global summary) dari seluruh client
+        $totalInvoiceAll = 0;
+        $totalBayarAll = 0;
+        $balanceAll = 0;
+
+        if ($viewMode === 'on') {
+            $totalInvoiceAll = $clients->sum('total_invoice');
+            $totalBayarAll = $clients->sum('total_bayar');
+            $balanceAll = $clients->sum('balance');
+            $title = 'Rekapitulasi Keseluruhan Piutang & Pembayaran Client';
+        }
+
+        return view('finance.profit_list', compact('title', 'clients', 'viewMode', 'totalInvoiceAll', 'totalBayarAll', 'balanceAll'));
     }
 
     public function detail($id)

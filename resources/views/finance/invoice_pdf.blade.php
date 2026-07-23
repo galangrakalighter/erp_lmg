@@ -68,9 +68,6 @@
         <p><strong>Lighter Media Group</strong></p>
     </div>
 
-    <div class="footer">
-        <p>Copyright © {{ date('Y') }} Lighter Media Group</p>
-    </div>
 
 </body>
 </html>

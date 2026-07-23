@@ -10,17 +10,23 @@
             </p>
         </div>
         
-        <form action="{{ url()->current() }}" method="GET" class="flex items-center gap-2 mt-3 sm:mt-0">
+        <form action="{{ url()->current() }}" method="GET" class="d-flex flex-wrap align-items-center gap-2 mt-3 mt-sm-0">
             <input type="month" name="periode" value="{{ $periode }}" 
-                   class="rounded border border-gray-300 text-xs px-2 py-1.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-white font-medium text-gray-700 shadow-sm">
-            <button type="submit" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded shadow transition-colors">
+                class="form-control form-control-sm bg-white font-weight-medium text-dark shadow-sm" style="width: auto;">
+            
+            <button type="submit" class="btn btn-primary btn-sm shadow-sm px-3">
                 Filter
             </button>
 
             <a href="{{ url('finance/report/cash-flow/export?periode=' . $periode) }}" 
-            class="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded shadow">
-                Export Excel
+            class="btn btn-success btn-sm shadow-sm px-3">
+                <i class="fas fa-file-excel mr-1"></i> Export Excel
             </a>
+
+            {{-- <a href="{{ url('finance/report/cash-flow/export-pdf?periode=' . $periode) }}" target="_blank"
+            class="btn btn-danger btn-sm shadow-sm px-3">
+                <i class="fas fa-file-pdf mr-1"></i> Export PDF
+            </a> --}}
         </form>
     </div>
 

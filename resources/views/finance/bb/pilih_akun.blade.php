@@ -22,12 +22,23 @@
             <p class="text-muted small mb-0 font-italic">Silahkan pilih salah satu akun di bawah untuk melihat mutasi Buku Besar secara real-time.</p>
         </div>
         
-        <div class="mt-3 mt-md-0">
-            <form action="{{ url()->current() }}" method="GET" class="form-inline bg-white p-2 rounded shadow-sm border">
+        <div class="mt-3 mt-md-0 d-flex align-items-center">
+            <!-- Form Periode -->
+            <form action="{{ url()->current() }}" method="GET" class="form-inline bg-white p-2 rounded shadow-sm border mr-2">
+                <!-- Jika ada filter akun yang sedang aktif, sertakan juga sebagai hidden input agar tidak hilang saat ganti bulan -->
+                @if(request('chart_of_account_id'))
+                    <input type="hidden" name="chart_of_account_id" value="{{ request('chart_of_account_id') }}">
+                @endif
+
                 <label for="periode" class="mr-2 small font-weight-bold text-muted text-uppercase">Periode Buku:</label>
                 <input type="month" name="periode" id="periode" class="form-control form-control-sm border-0 bg-light font-weight-bold text-gray-800" 
-                       value="{{ $periode }}" onchange="this.form.submit()">
+                    value="{{ $periode }}" onchange="this.form.submit()">
             </form>
+
+            <!-- Tombol Export PDF Buku Besar -->
+            <button type="button" class="btn btn-danger btn-sm shadow-sm px-3 py-2" onclick="exportLedgerPdf()">
+                <i class="fas fa-file-pdf mr-1"></i> Export PDF
+            </button>
         </div>
     </div>
 
@@ -70,5 +81,20 @@
         </div>
         @endforeach
     </div>
+
+    <script>
+        function exportLedgerPdf() {
+            let periode = document.getElementById('periode').value;
+            // Ambil akun yang sedang aktif (jika ada elemen select akun di halaman Anda)
+            let accountId = document.getElementById('chart_of_account_id') ? document.getElementById('chart_of_account_id').value : '';
+
+            let params = new URLSearchParams({
+                periode: periode,
+                chart_of_account_id: accountId
+            });
+
+            window.open(`{{ route('ledger.export-pdf') }}?${params.toString()}`, '_blank');
+        }
+    </script>
 
 @endsection

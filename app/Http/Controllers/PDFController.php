@@ -9,6 +9,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
 use App\Models\FilePdf;
 use App\Models\ProdukClient;
+use Carbon\Carbon;
 class PDFController extends Controller
 {
     protected $pdf;
@@ -41,6 +42,140 @@ class PDFController extends Controller
             break;
         }
         return $pdf->download('Data-Produk-Halaman-'.$halaman.'.pdf');
+    }
+
+    public function exportGeneralJournal(Request $request){
+        $query = DB::table('general_journals');
+
+        // Cek apakah user mengisi filter tanggal
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $startDate = $request->start_date;
+            $endDate = $request->end_date;
+            $query->whereBetween('tgl_transaksi', [$startDate, $endDate]);
+        } else {
+            // Default ke bulan ini jika tidak ada filter
+            $startDate = Carbon::now()->startOfMonth()->toDateString();
+            $endDate = Carbon::now()->endOfMonth()->toDateString();
+            $query->whereBetween('tgl_transaksi', [$startDate, $endDate]);
+        }
+
+        // Filter status jika ada
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // Filter pencarian
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('no_jurnal', 'like', "%{$search}%")
+                ->orWhere('no_invoice', 'like', "%{$search}%")
+                ->orWhere('keterangan', 'like', "%{$search}%");
+            });
+        }
+
+        $journals = $query->orderBy('tgl_transaksi', 'asc')->get();
+
+        foreach ($journals as $journal) {
+            $journal->details = DB::table('general_journal_details')
+                ->leftJoin('chart_of_account', 'general_journal_details.chart_of_account_id', '=', 'chart_of_account.id')
+                ->where('general_journal_details.general_journal_id', $journal->id)
+                ->select(
+                    'general_journal_details.*', 
+                    'chart_of_account.kode as account_code', 
+                    'chart_of_account.nama_akun as account_name'
+                )
+                ->get();
+        }
+
+        // --- DINAMIS NAMA FILE PDF ---
+        $fileName = 'Laporan-Jurnal-Umum_' . $startDate . '_s_d_' . $endDate;
+        
+        if ($request->filled('status')) {
+            $fileName .= '_' . strtolower($request->status);
+        }
+        
+        $fileName .= '.pdf';
+        // ----------------------------
+
+        $pdf = PDF::loadView('pdf.general_journal', [
+            'journals' => $journals,
+            'startDate' => $startDate,
+            'endDate' => $endDate
+        ]);
+
+        $pdf->setPaper('a4', 'landscape');
+
+        // Menggunakan variabel $fileName yang sudah dinamis
+        return $pdf->stream($fileName);
+    }
+
+    public function exportBukuBesar(Request $request){
+        // Ambil periode dari input (format YYYY-MM), default ke bulan ini jika kosong
+        $periodeInput = $request->input('periode', date('Y-m'));
+        $startDate = Carbon::createFromFormat('Y-m', $periodeInput)->startOfMonth()->toDateString();
+        $endDate = Carbon::createFromFormat('Y-m', $periodeInput)->endOfMonth()->toDateString();
+
+        // Query detail jurnal untuk buku besar dalam rentang periode tersebut (status posted)
+        $mutasi = DB::table('general_journal_details')
+            ->join('general_journals', 'general_journal_details.general_journal_id', '=', 'general_journals.id')
+            ->join('chart_of_account', 'general_journal_details.chart_of_account_id', '=', 'chart_of_account.id')
+            ->whereBetween('general_journals.tgl_transaksi', [$startDate, $endDate])
+            ->where('general_journals.status', 'posted')
+            ->select(
+                'general_journals.tgl_transaksi',
+                'general_journals.no_jurnal',
+                'general_journals.no_invoice',
+                'general_journals.keterangan as journal_keterangan',
+                'general_journal_details.keterangan_item',
+                'general_journal_details.debit',
+                'general_journal_details.kredit',
+                'chart_of_account.id as account_id',
+                'chart_of_account.kode as account_code',
+                'chart_of_account.nama_akun as account_name',
+                'chart_of_account.type as account_type' // 'D' atau 'K'
+            )
+            ->orderBy('chart_of_account.kode', 'asc')
+            ->orderBy('general_journals.tgl_transaksi', 'asc')
+            ->get()
+            ->groupBy('account_id'); // Dikelompokkan per akun
+
+        // Nama file dinamis sesuai periode
+        $fileName = 'Buku-Besar-Semua-Akun_' . $periodeInput . '.pdf';
+
+        $pdf = PDF::loadView('pdf.bb', [ // Sesuaikan path view pdf Anda
+            'mutasi' => $mutasi,
+            'periodeInput' => $periodeInput,
+            'startDate' => $startDate,
+            'endDate' => $endDate
+        ]);
+
+        $pdf->setPaper('a4', 'landscape');
+
+        return $pdf->stream($fileName);
+    }
+
+    public function exportAdjustmen(Request $request){
+        $periodeInput = $request->input('periode', date('Y-m'));
+        $startDate = Carbon::createFromFormat('Y-m', $periodeInput)->startOfMonth()->toDateString();
+        $endDate = Carbon::createFromFormat('Y-m', $periodeInput)->endOfMonth()->toDateString();
+
+        // Ambil data jurnal penyesuaian berdasarkan rentang tanggal periode
+        $journals = \App\Models\AdjustmentJournal::with(['details.account'])
+            ->whereBetween('tgl_transaksi', [$startDate, $endDate])
+            ->orderBy('tgl_transaksi', 'asc')
+            ->get();
+
+        $fileName = 'Jurnal-Penyesuaian_' . $periodeInput . '.pdf';
+
+        $pdf = PDF::loadView('pdf.adjustment', [
+            'journals' => $journals,
+            'periodeInput' => $periodeInput,
+        ]);
+
+        $pdf->setPaper('a4', 'portrait');
+
+        return $pdf->stream($fileName);
     }
 
     public function index($id){

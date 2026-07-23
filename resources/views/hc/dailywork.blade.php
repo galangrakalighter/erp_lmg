@@ -1646,6 +1646,7 @@
         const inputMulaiEdit = document.getElementById('edit_jam_mulai');
         const inputSelesaiEdit = document.getElementById('edit_jam_selesai');
         const inputEstimasiEdit = document.getElementById('edit_menit');
+        const inputDivisiEdit = document.getElementById('edit_divisi');
         const inputPicEdit = document.getElementById('edit_pic_select');
         const inputTanggalEdit = document.getElementById('edit_tanggal_mulai');
 
@@ -1808,9 +1809,11 @@
             const mulai = inputMulaiEdit.value;
             const selesai = inputSelesaiEdit.value;
 
+            const divisiId = inputDivisiEdit.value;
+
             if (mulai) {
                 const jamM = parseInt(mulai.split(':')[0]);
-                let limitMulai = (picId == "39") ? 8 : 9;
+                let limitMulai = (divisiId == "5") ? 8 : 9;
                 if (jamM < limitMulai) {
                     alert(`PIC ini minimal mulai jam 0${limitMulai}:00`);
                     inputMulaiEdit.value = ""; return;

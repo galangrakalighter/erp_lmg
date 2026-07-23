@@ -26,7 +26,7 @@ class GeneralJournalService
                 'gj.tgl_transaksi',
                 'gj.no_invoice',
                 'gj.keterangan as keterangan_header',
-                'gj.status', // [BARU] Wajib diambil agar JavaScript di frontend bisa membaca status draft/posted
+                'gj.status', 
                 'gjd.keterangan_item',
                 'coa.kode as kode_akun',
                 'coa.nama_akun',
@@ -54,9 +54,12 @@ class GeneralJournalService
             });
         }
 
-        // Diurutkan berdasarkan tanggal terbaru dan nomor jurnal terbaru
+        // Diurutkan berdasarkan tanggal terbaru, nomor jurnal terbaru, 
+        // lalu baris dengan debit terbesar/ada isinya didahulukan (descending pada kolom debit)
         return $query->orderBy('gj.tgl_transaksi', 'desc')
                     ->orderBy('gj.no_jurnal', 'desc')
+                    ->orderBy('gj.id', 'desc')
+                    ->orderBy('gjd.debit', 'desc') // Baris dengan nilai debit > 0 akan naik ke atas
                     ->get();
     }
 

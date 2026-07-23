@@ -381,6 +381,41 @@
         calculateJournalTotals();
     }
 
+    let editEntryRowIndex = 2;
+
+    function addNewEditEntryRow() {
+        const container = document.getElementById('editEntriesRowContainer');
+        
+        // Mengambil pilihan opsi COA dari elemen select yang ada di dalam modal edit, 
+        // atau fallback ke select utama jika belum ada baris di modal edit.
+        const masterSelect = container.querySelector('.select-coa-target') || document.querySelector('.select-coa-target');
+        const optionsHtml = masterSelect ? masterSelect.innerHTML : '<option value="">- Cari / Pilih Akun COA -</option>';
+
+        const newRowHtml = `
+            <tr class="entry-row">
+                <td>
+                    <select name="items[${editEntryRowIndex}][chart_of_account_id]" class="form-control form-control-sm select-coa-target" required>
+                        ${optionsHtml}
+                    </select>
+                </td>
+                <td><input type="text" name="items[${editEntryRowIndex}][keterangan_item]" class="form-control form-control-sm" placeholder="Keterangan baris..."></td>
+                <td><input type="number" name="items[${editEntryRowIndex}][debit]" class="form-control form-control-sm input-nominal input-debit" value="0" min="0" step="0.01" required></td>
+                <td><input type="number" name="items[${editEntryRowIndex}][kredit]" class="form-control form-control-sm input-nominal input-kredit" value="0" min="0" step="0.01" required></td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-sm btn-danger row-delete-btn" onclick="removeEntryRow(this)"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>
+        `;
+        
+        container.insertAdjacentHTML('beforeend', newRowHtml);
+        editEntryRowIndex++;
+        
+        // Panggil fungsi kalkulasi total khusus edit jika sudah tersedia di skrip Anda
+        if (typeof calculateEditJournalTotals === 'function') {
+            calculateEditJournalTotals();
+        }
+    }
+
     function exportJournalPdf() {
         let startDate = document.getElementById('filter_start_date').value;
         let endDate = document.getElementById('filter_end_date').value;
@@ -454,7 +489,7 @@
             kreditInput.removeAttribute('readonly');
             debitInput.classList.remove('bg-light');
             kreditInput.classList.remove('bg-light');
-            
+
             calculateEditTotals();
         }
     });
@@ -517,7 +552,7 @@
         
         const tbody = document.getElementById('journalTableBody');
         if (tbody) {
-            tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin mr-1"></i> Memuat data transaksi...</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin mr-1"></i> Memuat data transaksi...</td></tr>`;
         }
         
         let params = new URLSearchParams({ start_date: startDate, end_date: endDate });
@@ -532,15 +567,14 @@
         .then(res => res.json())
         .then(response => {
             console.log(response);
-            // Mengambil data dan list periode terkunci dari response server
             const data = response.journals;
             let lockedPeriods = response.isLocked;
-            console.log(lockedPeriods)
+            console.log(lockedPeriods);
             
             tbody.innerHTML = '';
 
             if (!data || data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">Tidak ditemukan transaksi jurnal pada periode ini.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-muted">Tidak ditemukan transaksi jurnal pada periode ini.</td></tr>`;
                 return;
             }
 
@@ -549,25 +583,21 @@
                 if (!dateString) return false;
                 
                 const txDate = new Date(dateString);
-                if (isNaN(txDate.getTime())) return false; // Validasi jika tanggal kosong/invalid
+                if (isNaN(txDate.getTime())) return false;
 
                 const now = new Date();
                 
-                // Jika tahun dan bulan transaksi sama dengan bulan & tahun saat ini, buat jadi false (tidak terkunci)
                 if (txDate.getFullYear() === now.getFullYear() && txDate.getMonth() === now.getMonth()) {
                     return false;
                 }
 
                 const period = `${txDate.getFullYear()}-${('0' + (txDate.getMonth() + 1)).slice(-2)}`;
-                
-                // Pastikan lockedPeriods berupa array, lalu cek isinya
                 const periodsArray = Array.isArray(lockedPeriods) ? lockedPeriods.map(p => String(p).trim()) : [];
                 
                 return periodsArray.includes(period);
             }
 
             let currentJournalId = null;
-            console.log(data);
 
             data.forEach(row => {
                 const debitVal = parseFloat(row.debit) || 0;
@@ -578,13 +608,13 @@
                 
                 let dateCell = '';
                 let descCell = '';
+                let statusCell = '';
                 let actionCell = '';
                 const rowClass = currentJournalId !== row.journal_id ? 'border-top-double' : '';
 
+                // Jika ini adalah baris pertama untuk journal_id tersebut, isi datanya
                 if (currentJournalId !== row.journal_id) {
-                    // Logika kunci: Jika status 'posted' ATAU periode sudah masuk tabel lock
                     const isLocked = row.status === 'posted' || isPeriodLocked(row.tgl_transaksi);
-                    const lockReason = row.status === 'posted' ? 'Jurnal posted tidak dapat diubah' : 'Periode bulan ini telah ditutup';
 
                     let statusBadge = '';
                     if (row.status === 'posted') {
@@ -595,10 +625,12 @@
                         statusBadge = `<br><span class="badge badge-warning small mt-1"><i class="fas fa-file-alt mr-1"></i>Draft</span>`;
                     }
 
-                    dateCell = `<b>${row.tgl_transaksi}</b><br><small class="text-primary">${row.no_jurnal}</small>${statusBadge}`;
+                    dateCell = `<b>${row.tgl_transaksi}</b><br><small class="text-primary">${row.no_jurnal}</small>`;
                     descCell = `<b>${row.no_invoice || '-'}</b><br><span class="text-muted">${row.keterangan_header}</span>`;
                     
-                        // Tampilan tombol normal untuk data yang masih bisa diedit
+                    // Status dan Action hanya muncul sekali di baris pertama
+                    statusCell = `${statusBadge}`;
+                    
                     actionCell = `
                         <div class="btn-group">
                             <button type="button" class="btn btn-xs btn-light text-info border" 
@@ -626,19 +658,19 @@
                         </td>
                         <td class="text-right text-success font-mono">${debitFormatted}</td>
                         <td class="text-right text-danger font-mono">${kreditFormatted}</td>
-                        <td class="text-right text-danger">${row.status}</td>
-                        <td class="text-center">
-                            ${actionCell}
-                        </td>
+                        <td class="text-center font-weight-bold align-middle">${statusCell}</td>
+                        <td class="text-center align-middle">${actionCell}</td>
                     </tr>
                 `;
                 tbody.insertAdjacentHTML('beforeend', trHtml);
+                
+                // Perbarui currentJournalId setelah baris diproses
                 currentJournalId = row.journal_id;
             });
         })
         .catch(err => {
             console.error("Gagal memuat jurnal:", err);
-            tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger"><i class="fas fa-exclamation-triangle mr-1"></i> Gagal memuat data transaksi dari server.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger"><i class="fas fa-exclamation-triangle mr-1"></i> Gagal memuat data transaksi dari server.</td></tr>`;
         });
     }
 

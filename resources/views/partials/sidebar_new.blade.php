@@ -482,7 +482,8 @@
                 'Ledger.jurnal_penutup',
                 'invoice.index',
                 'profit.list',
-                'payroll.index'
+                'payroll.index',
+                'audit.index'
             ]);
         @endphp
         <li class="nav-item {{ $isFinancePage ? 'active' : '' }}">

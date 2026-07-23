@@ -607,30 +607,19 @@
                     dateCell = `<b>${row.tgl_transaksi}</b><br><small class="text-primary">${row.no_jurnal}</small>${statusBadge}`;
                     descCell = `<b>${row.no_invoice || '-'}</b><br><span class="text-muted">${row.keterangan_header}</span>`;
                     
-                    if (isLocked) {
-                        // Tampilan khusus jika terkunci: Ikon Gembok yang tidak bisa diklik
-                        actionCell = `
-                            <div class="text-center">
-                                <span class="text-secondary" title="Data terkunci karena ${row.status === 'posted' ? 'sudah diposting' : 'periode sudah ditutup'}">
-                                    <i class="fas fa-lock"></i>
-                                </span>
-                            </div>
-                        `;
-                    } else {
                         // Tampilan tombol normal untuk data yang masih bisa diedit
-                        actionCell = `
-                            <div class="btn-group">
-                                <button type="button" class="btn btn-xs btn-light text-info border" 
-                                    onclick="openEditJournalModal(${row.journal_id})" title="Edit Jurnal">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button type="button" class="btn btn-xs btn-light text-danger border" 
-                                    onclick="voidJournal(${row.journal_id})" title="Void Jurnal">
-                                    <i class="fas fa-ban"></i>
-                                </button>
-                            </div>
-                        `;
-                    }
+                    actionCell = `
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-xs btn-light text-info border" 
+                                onclick="openEditJournalModal(${row.journal_id})" title="Edit Jurnal">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button type="button" class="btn btn-xs btn-light text-danger border" 
+                                onclick="voidJournal(${row.journal_id})" title="Void Jurnal">
+                                <i class="fas fa-ban"></i>
+                            </button>
+                        </div>
+                    `;
                 }
 
                 const trHtml = `

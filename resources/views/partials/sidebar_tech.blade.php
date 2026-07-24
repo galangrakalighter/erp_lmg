@@ -2,27 +2,34 @@
     Tech
 </a>
 
-<div id="collapseTech" class="collapse {{ request()->is('*tech*') ? 'show' : '' }}" 
+@php
+    $techProdukList = $techProduk->contains('client_id', $currentProduct);
+    $isPdf = Route::is('PDF');
+    $isTechCMS = Route::is('client.produk_divisi') && request()->route('division') == 5;
+@endphp
+<div id="collapseTech" class="collapse {{ $techProdukList && $isPdf || $isTechCMS ? 'show' : '' }}" 
     aria-labelledby="headingTech" data-parent="#collapseDivisi">
     <div class="collapse-container px-2 py-2">
         
         @if ($isSuperAdmin || ($myDivision->name == "Tech" && $myRole->level < 2))
             <div class="mb-2">
-                <a href="{{ route('client.produk_divisi', 5) }}" class="btn-cms-link d-flex align-items-center text-dark py-2 px-2 rounded text-decoration-none transition-hover">
+                <a href="{{ route('client.produk_divisi', 5) }}" class="btn-cms-link client-sub-menu-link-client d-flex align-items-center text-dark py-2 px-2 rounded text-decoration-none transition-hover {{ $isTechCMS ? 'active' : '' }}">
                     <i class="fas fa-cog mr-2"></i> <span>Dashboard CMS</span>
                 </a>
             </div>
+            
+            {{-- PERBAIKAN: Hapus {{ $isPdf ? 'collapse' : '' }} dari tag <a> ini --}}
             <a class="category-dropdown-link d-flex align-items-center justify-content-between p-2 rounded text-decoration-none text-dark transition-hover mb-2" 
             data-toggle="collapse" 
-            data-target="#cat_tech">
+            data-target="#cat_tech"
+            aria-expanded="{{ $isPdf ? 'true' : 'false' }}">
                 <span><i class="fas fa-folder-open mr-2 text-info"></i>Client</span>
                 <i class="fas fa-caret-down arrow-icon-xs"></i>
             </a>
         @endif
 
-
         <div class="group-wrapper mb-2">
-            <div id="cat_tech" class="collapse ml-2 border-left-custom">
+            <div id="cat_tech" class="collapse {{ $techProdukList && $isPdf ? 'show' : '' }} ml-2 border-left-custom">
                 @foreach ($techProduk as $client)
                     @if($myDivision->name == "Tech" || $isSuperAdmin)
                         @php
@@ -40,7 +47,7 @@
                         <div class="client-item-wrapper mb-1">
                             {{-- Bagian Header Client --}}
                             @if($canOpen)
-                                <a class="client-dropdown-link text-dark d-flex align-items-center justify-content-between p-2 rounded text-decoration-none transition-hover {{ !$isActiveClient ? 'collapsed' : '' }}" 
+                                <a class="client-dropdown-link client-sub-menu-link-client text-dark d-flex align-items-center justify-content-between p-2 rounded text-decoration-none transition-hover {{ !$isActiveClient || ($techProdukList && $isPdf) || $isTechCMS ? 'collapsed' : '' }}" 
                                 data-toggle="collapse" 
                                 data-target="#client_tech_{{ $client->client_id }}" 
                                 aria-expanded="{{ $isActiveClient ? 'true' : 'false' }}">
@@ -49,25 +56,25 @@
                                 </a>
 
                                 {{-- Bagian Isi Sub-Menu (Overview, Github, Monitoring, File) --}}
-                                <div id="client_tech_{{ $client->client_id }}" class="collapse {{ $isActiveClient ? 'show' : '' }}">
+                                <div id="client_tech_{{ $client->client_id }}" class="collapse {{ $isActiveClient || ($isActiveClient && $isPdf) ? 'show' : '' }}">
                                     <div class="platform-sub-links pl-3 pt-1 pb-2">
                                         <div class="client-item-wrapper mb-1">
-                                            <a class="d-flex align-items-center text-dark py-1 px-2 rounded text-decoration-none transition-hover {{ request()->is('tech_overview') ? 'active-menu bg-light font-weight-bold' : '' }}" href="#">
+                                            <a class="d-flex align-items-center text-dark py-1 px-2 rounded text-decoration-none transition-hover {{ request()->is('tech_overview') ? 'active' : '' }}" href="#">
                                                 <i class="fas fa-eye mr-2 text-primary"></i> <span>Overview</span>
                                             </a>
                                         </div>
                                         <div class="client-item-wrapper mb-1">
-                                            <a class="d-flex align-items-center text-dark py-1 px-2 rounded text-decoration-none transition-hover {{ request()->is('tech_github') ? 'active-menu bg-light font-weight-bold' : '' }}" href="#">
+                                            <a class="d-flex align-items-center text-dark py-1 px-2 rounded text-decoration-none transition-hover {{ request()->is('tech_github') ? 'active' : '' }}" href="#">
                                                 <i class="fab fa-github mr-2 text-dark"></i> <span>Github</span>
                                             </a>
                                         </div>
                                         <div class="client-item-wrapper mb-1">
-                                            <a class="d-flex align-items-center text-dark py-1 px-2 rounded text-decoration-none transition-hover {{ request()->is('tech_monitoring') ? 'active-menu bg-light font-weight-bold' : '' }}" href="#">
+                                            <a class="d-flex align-items-center text-dark py-1 px-2 rounded text-decoration-none transition-hover {{ request()->is('tech_monitoring') ? 'active' : '' }}" href="#">
                                                 <i class="fas fa-desktop mr-2 text-success"></i> <span>Monitoring</span>
                                             </a>
                                         </div>
                                         <div class="client-item-wrapper mb-1">
-                                            <a class="d-flex align-items-center text-dark py-1 px-2 rounded text-decoration-none transition-hover {{ Route::is('PDF') && $isActiveClient ? 'active-menu bg-light font-weight-bold' : '' }}" href="{{ route('PDF', ['id_produk' => $client->id]) }}">
+                                            <a class="d-flex client-sub-menu-link align-items-center text-dark py-1 px-2 rounded text-decoration-none transition-hover {{ Route::is('PDF') && $isActiveClient ? 'active' : '' }}" href="{{ route('PDF', ['id_produk' => $client->id]) }}">
                                                 <span>File</span>
                                             </a>
                                         </div>

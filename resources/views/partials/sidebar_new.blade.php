@@ -203,6 +203,54 @@
         text-align: center;
         letter-spacing: 1px;
     }
+
+    .client-sub-menu-link {
+        display: block;
+        padding: 6px 10px;
+        margin-bottom: 4px;
+        color: rgba(0, 0, 0, 0.85) !important;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-decoration: none !important;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+    }
+
+    .client-sub-menu-link:hover {
+        color: #050505 !important;
+        border-color: #000000;
+        text-decoration: none !important;
+    }
+
+    .client-sub-menu-link.active {
+        color: #000000 !important;
+        font-weight: 700;
+        border-left: 4px solid #000000; /* Aksen border kiri hitam yang tegas saat aktif */
+        border-color: #000000;
+    }
+
+    .client-sub-menu-link-client {
+        display: block;
+        padding: 6px 10px;
+        margin-bottom: 4px;
+        color: rgba(0, 0, 0, 0.85) !important;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-decoration: none !important;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+    }
+
+    .client-sub-menu-link-client:hover {
+        color: #050505 !important;
+        text-decoration: none !important;
+    }
+
+    .client-sub-menu-link-client.active {
+        color: #000000 !important;
+        font-weight: 700;
+        border-left: 4px solid #000000; /* Aksen border kiri hitam yang tegas saat aktif */
+    }
 </style>
 <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
 
@@ -239,6 +287,9 @@
         // Identifikasi apakah produk saat ini ada di list Digital Marketing atau Business Dev
         $isDMProduct = $digitalMarketingProduk->contains('client_id', $currentProduct);
         $isBDProduct = $businessDevProduk->contains('client_id', $currentProduct);
+        $isMCNProduct = $mcnProduk->contains('client_id', $currentProduct);
+        $techProdukList = $techProduk->contains('client_id', $currentProduct);
+        $isEcommerceList = $ecommerceProduk->contains('client_id', $currentProduct);
 
         $isMarketingPage = Route::is(['market_research', 'branding', 'analisis', 'manajemen', 'PDF']);
 
@@ -250,16 +301,18 @@
             'tools.index',
             'gform_affiliate.index',
             'selection.index',
-        ])
+        ]);
+
+        $isPdf = Route::is('PDF');
     @endphp
 
     <!-- Nav Item: Divisi -->
-    <li class="nav-item {{ $divisiOpen || ($isMarketingPage && $isDMProduct) ? 'active' : '' }}">
+    <li class="nav-item {{ $divisiOpen || ($isMarketingPage && $isDMProduct) || ($isMCNProduct && $isPdf) || ($techProdukList && $isPdf) || ($isEcommerceList && $isPdf) ? 'active' : '' }}">
         <a class="nav-link" href="#" data-toggle="collapse" data-target="#collapseDivisi" aria-expanded="true">
             <span>Divisi</span>
         </a>
 
-        <div id="collapseDivisi" class="collapse {{ $divisiOpen || ($isMarketingPage && $isDMProduct) ? 'show' : '' }}" data-parent="#accordionSidebar">
+        <div id="collapseDivisi" class="collapse {{ $divisiOpen || ($isMarketingPage && $isDMProduct) || ($isMCNProduct && $isPdf) || ($techProdukList && $isPdf) || ($isEcommerceList && $isPdf) ? 'show' : '' }}" data-parent="#accordionSidebar">
             <div class="bg-white py-2 collapse-inner rounded">
                 
                 @include('partials.sidebar_digital_marketing')

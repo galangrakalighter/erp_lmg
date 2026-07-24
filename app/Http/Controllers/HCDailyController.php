@@ -488,6 +488,8 @@ class HCDailyController extends Controller
     public function storeDaily(Request $request){
         $data = Task::where('pic', (int)$request->pic)->get();
 
+        $user = User::find($request->pic)->userDivisions[0];
+
         $newStart = Carbon::parse($request->tanggal_mulai . ' ' . $request->jam_mulai);
 
         $newEnd = (clone $newStart)->addMinutes((int)$request->menit);
@@ -527,7 +529,7 @@ class HCDailyController extends Controller
         $newMenit  = (int) $request->menit;
         $overloadDates = [];
         $batasWaktu = 420;
-        if((int)$request->pic == 5){
+        if($user->division_id == 5){
             $batasWaktu = 480;
         }
 

@@ -8,7 +8,7 @@
         .header { text-align: center; margin-bottom: 15px; border-bottom: 2px solid #333; padding-bottom: 8px; }
         .header h3 { margin: 0 0 3px 0; font-size: 14px; text-transform: uppercase; }
         .header p { margin: 0; font-size: 11px; color: #555; }
-        .account-section { margin-bottom: 25px; page-break-inside: avoid; }
+        .account-section { margin-bottom: 25px; }
         .account-title { font-size: 11px; font-weight: bold; background: #e9ecef; padding: 6px 8px; border: 1px solid #bbb; margin-bottom: 0; text-transform: uppercase; }
         table { width: 100%; border-collapse: collapse; }
         th, td { border: 1px solid #bbb; padding: 5px 7px; vertical-align: top; }
@@ -40,7 +40,7 @@
             <div class="account-title">
                 [{{ $account->kode }}] - {{ $account->nama_akun }}
                 <span style="float:right">
-                    (Normal : {{ strtoupper($account->type) }})
+                    (Type : {{ strtoupper($account->type) }})
                 </span>
             </div>
 
@@ -63,7 +63,7 @@
                     <tr>
                         <td colspan="5"><strong>Saldo Awal</strong></td>
                         <td class="text-right">
-                            {{ number_format($item['opening_balance'],2,',','.') }}
+                            {{ number_format($item['opening_balance'],0,',','.') }}
                         </td>
                     </tr>
 
@@ -101,15 +101,15 @@
                         </td>
 
                         <td class="text-right">
-                            {{ number_format($subTotalDebit,2,',','.') }}
+                            {{ number_format($subTotalDebit,0,',','.') }}
                         </td>
 
                         <td class="text-right">
-                            {{ number_format($subTotalKredit,2,',','.') }}
+                            {{ number_format($subTotalKredit,0,',','.') }}
                         </td>
 
                         <td class="text-right">
-                            {{ number_format($item['final_balance'],2,',','.') }}
+                            {{ number_format($item['final_balance'],0,',','.') }}
                         </td>
                     </tr>
 

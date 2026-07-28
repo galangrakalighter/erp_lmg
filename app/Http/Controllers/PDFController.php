@@ -126,10 +126,15 @@ class PDFController extends Controller
 
         foreach ($accounts as $account) {
 
-            $ledger[] = $this->ledgerService->getAccountLedger(
+            $item = $this->ledgerService->getAccountLedger(
                 $account->id,
                 $periode
             );
+
+            // Hanya tambahkan jika memiliki transaksi
+            if (!empty($item['mutasi'])) {
+                $ledger[] = $item;
+            }
 
         }
 

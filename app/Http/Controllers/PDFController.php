@@ -41,7 +41,7 @@ class PDFController extends Controller
             default:
             break;
         }
-        return $pdf->download('Data-Produk-Halaman-'.$halaman.'.pdf');
+        return $pdf->download($halaman.' '. $produk->nama .'.pdf');
     }
 
     public function exportGeneralJournal(Request $request){

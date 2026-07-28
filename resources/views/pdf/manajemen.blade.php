@@ -34,12 +34,15 @@
         /* Mengatur lebar kolom spesifik jika diperlukan */
         .col-no { width: 30px; }
         .col-tanggal { width: 70px; }
+        .nowrap {
+            white-space: nowrap;
+        }
     </style>
 </head>
 <body>
 
     <div class="judul-dokumen">
-        <h2>Laporan Data Produk</h2>
+        <h2>Content Plan</h2>
     </div>
 
     <table>
@@ -49,6 +52,7 @@
                 <th>Inspirasi</th>
                 <th>Type</th>
                 <th>Strategi</th>
+                <th class="nowrap">Funneling</th>
                 <th>Pilar</th>
                 <th>Hook</th>
                 <th>Body</th>
@@ -72,6 +76,7 @@
                     <th><a href="{{ $item->inspirasi }}" target="_blank">{{ $item->inspirasi }}</a></th>
                     <th>{{ $item->type }}</th>
                     <th>{{ $item->strategy }}</th>
+                    <td>{{ $item->funneling }}</td>
                     <th>{{ $item->pilar }}</th>
                     <th>{{ $item->hooks }}</th>
                     <th>{{ $item->nama_body }}</th>

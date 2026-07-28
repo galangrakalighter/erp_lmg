@@ -264,6 +264,16 @@
                                 <option value="posted">Posted (Masuk Buku Besar)</option>
                             </select>
                         </div>
+                        <div class="col-md-5 form-group mt-2">
+                            <label class="small font-weight-bold text-secondary">Aktivitas Arus Kas (Metode Langsung) <span class="text-danger">*</span></label>
+                            <select name="cash_flow_activity" id="edit_cash_flow" class="form-control" required>
+                                <option value="non_cash" selected>Bukan Transaksi Kas (Non-Kas)</option>
+                                <option value="operasional">Operasional</option>
+                                <option value="investasi">Investasi</option>
+                                <option value="pendanaan">Pendanaan</option>
+                            </select>
+                            <small class="form-text text-muted">Pilih jenis aktivitas jika transaksi ini mengalirkan uang tunai/bank.</small>
+                        </div>
                     </div>
 
                     <!-- Form Bawah (Detail Akun Ledger) -->
@@ -761,6 +771,7 @@
                 
                 // Set Dropdown Status Baru (Draft/Posted)
                 document.getElementById('edit_status').value = data.header.status;
+                document.getElementById('edit_cash_flow').value = data.header.arus;
 
                 // Kosongkan container loading sebelum merender baris rincian akun
                 container.innerHTML = '';

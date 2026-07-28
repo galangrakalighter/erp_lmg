@@ -150,6 +150,7 @@ class GeneralJournalController extends Controller
             'tgl_transaksi' => 'required|date',
             'no_invoice'    => 'nullable|string|max:100',
             'keterangan'    => 'required|string',
+            'cash_flow_activity' => 'required',
             'status'        => 'required|in:draft,posted', // [BARU] Memastikan input status valid
             'items'         => 'required|array|min:2',
             'items.*.chart_of_account_id' => 'required|integer',

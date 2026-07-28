@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 class LedgerService
 {
-     public function getAccountLedger(int $coaId, string $periode)
+    public function getAccountLedger(int $coaId, string $periode)
     {
         // 1. Ambil data master COA untuk mengetahui posisi normalnya (D/K)
         $coa = ChartofAccount::findOrFail($coaId);

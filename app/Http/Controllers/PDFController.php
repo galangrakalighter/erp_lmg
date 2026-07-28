@@ -5,18 +5,22 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Services\PDFExport;
+use App\Services\LedgerService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
 use App\Models\FilePdf;
 use App\Models\ProdukClient;
+use App\Models\ChartofAccount;
 use Carbon\Carbon;
 class PDFController extends Controller
 {
     protected $pdf;
+    protected $ledgerService;
 
-    public function __construct(PDFExport $pdf)
+    public function __construct(PDFExport $pdf, LedgerService $ledgerService)
     {
         $this->pdf = $pdf;
+        $this->ledgerService = $ledgerService;
     }
 
     public function exportPDF($id, $halaman){
@@ -110,49 +114,36 @@ class PDFController extends Controller
         return $pdf->stream($fileName);
     }
 
-    public function exportBukuBesar(Request $request){
-        // Ambil periode dari input (format YYYY-MM), default ke bulan ini jika kosong
-        $periodeInput = $request->input('periode', date('Y-m'));
-        $startDate = Carbon::createFromFormat('Y-m', $periodeInput)->startOfMonth()->toDateString();
-        $endDate = Carbon::createFromFormat('Y-m', $periodeInput)->endOfMonth()->toDateString();
+    public function exportBukuBesar(Request $request)
+    {
+        $periode = $request->input('periode', date('Y-m'));
 
-        // Query detail jurnal untuk buku besar dalam rentang periode tersebut (status posted)
-        $mutasi = DB::table('general_journal_details')
-            ->join('general_journals', 'general_journal_details.general_journal_id', '=', 'general_journals.id')
-            ->join('chart_of_account', 'general_journal_details.chart_of_account_id', '=', 'chart_of_account.id')
-            ->whereBetween('general_journals.tgl_transaksi', [$startDate, $endDate])
-            ->where('general_journals.status', 'posted')
-            ->select(
-                'general_journals.tgl_transaksi',
-                'general_journals.no_jurnal',
-                'general_journals.no_invoice',
-                'general_journals.keterangan as journal_keterangan',
-                'general_journal_details.keterangan_item',
-                'general_journal_details.debit',
-                'general_journal_details.kredit',
-                'chart_of_account.id as account_id',
-                'chart_of_account.kode as account_code',
-                'chart_of_account.nama_akun as account_name',
-                'chart_of_account.type as account_type' // 'D' atau 'K'
-            )
-            ->orderBy('chart_of_account.kode', 'asc')
-            ->orderBy('general_journals.tgl_transaksi', 'asc')
-            ->get()
-            ->groupBy('account_id'); // Dikelompokkan per akun
+        $startDate = Carbon::createFromFormat('Y-m', $periode)->startOfMonth()->toDateString();
+        $endDate   = Carbon::createFromFormat('Y-m', $periode)->endOfMonth()->toDateString();
 
-        // Nama file dinamis sesuai periode
-        $fileName = 'Buku-Besar-Semua-Akun_' . $periodeInput . '.pdf';
+        $ledger = [];
 
-        $pdf = PDF::loadView('pdf.bb', [ // Sesuaikan path view pdf Anda
-            'mutasi' => $mutasi,
-            'periodeInput' => $periodeInput,
-            'startDate' => $startDate,
-            'endDate' => $endDate
+        $accounts = ChartofAccount::orderBy('kode')->get();
+
+        foreach ($accounts as $account) {
+
+            $ledger[] = $this->ledgerService->getAccountLedger(
+                $account->id,
+                $periode
+            );
+
+        }
+
+        $pdf = PDF::loadView('pdf.bb', [
+            'ledger'        => $ledger,
+            'periodeInput'  => $periode,
+            'startDate'     => $startDate,
+            'endDate'       => $endDate,
         ]);
 
         $pdf->setPaper('a4', 'landscape');
 
-        return $pdf->stream($fileName);
+        return $pdf->stream('Buku-Besar-'.$periode.'.pdf');
     }
 
     public function exportAdjustmen(Request $request){

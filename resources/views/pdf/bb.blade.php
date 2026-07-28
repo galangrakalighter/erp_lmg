@@ -25,67 +25,104 @@
         <p>Periode: {{ \Carbon\Carbon::parse($startDate)->translatedFormat('F Y') }}</p>
     </div>
 
-    @forelse($mutasi as $accountId => $rows)
+    @forelse($ledger as $item)
+
         @php
-            $firstRow = $rows->first();
+            $account = $item['account'];
+            $rows = $item['mutasi'];
+
             $subTotalDebit = 0;
             $subTotalKredit = 0;
-            $runningBalance = 0;
         @endphp
 
         <div class="account-section">
+
             <div class="account-title">
-                [{{ $firstRow->account_code }}] - {{ $firstRow->account_name }} 
-                <span style="font-weight: normal; font-size: 9px; float: right;">(Normal: {{ strtoupper($firstRow->account_type) }})</span>
+                [{{ $account->kode }}] - {{ $account->nama_akun }}
+                <span style="float:right">
+                    (Normal : {{ strtoupper($account->type) }})
+                </span>
             </div>
+
             <table>
+
                 <thead>
                     <tr>
-                        <th style="width: 10%">Tanggal</th>
-                        <th style="width: 12%">No. Jurnal</th>
-                        <th style="width: 15%">No. Invoice</th>
-                        <th style="width: 28%">Keterangan</th>
-                        <th style="width: 12%">Debit (Rp)</th>
-                        <th style="width: 12%">Kredit (Rp)</th>
-                        <th style="width: 11%">Saldo (Rp)</th>
+                        <th>Tanggal</th>
+                        <th>No Jurnal</th>
+                        <th>Keterangan</th>
+                        <th>Debit</th>
+                        <th>Kredit</th>
+                        <th>Saldo</th>
                     </tr>
                 </thead>
+
                 <tbody>
-                    @foreach($rows as $row)
-                        @php
-                            $subTotalDebit += $row->debit;
-                            $subTotalKredit += $row->kredit;
-                            
-                            // Hitung saldo berjalan berdasarkan tipe normal akun ('D' atau 'K')
-                            if(strtoupper($firstRow->account_type) === 'K') {
-                                $runningBalance += ($row->kredit - $row->debit);
-                            } else {
-                                $runningBalance += ($row->debit - $row->kredit);
-                            }
-                        @endphp
-                        <tr>
-                            <td class="text-center">{{ \Carbon\Carbon::parse($row->tgl_transaksi)->format('d/m/Y') }}</td>
-                            <td class="text-center"><strong>{{ $row->no_jurnal }}</strong></td>
-                            <td>{{ $row->no_invoice ?? '-' }}</td>
-                            <td>{{ $row->keterangan_item ?: $row->journal_keterangan }}</td>
-                            <td class="text-right">{{ number_format($row->debit, 2, ',', '.') }}</td>
-                            <td class="text-right">{{ number_format($row->kredit, 2, ',', '.') }}</td>
-                            <td class="text-right" style="font-weight: bold;">{{ number_format($runningBalance, 2, ',', '.') }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-                <tfoot>
+
+                    {{-- Saldo Awal --}}
                     <tr>
-                        <td colspan="4" class="text-right">TOTAL MUTASI BULAN INI:</td>
-                        <td class="text-right">{{ number_format($subTotalDebit, 2, ',', '.') }}</td>
-                        <td class="text-right">{{ number_format($subTotalKredit, 2, ',', '.') }}</td>
-                        <td class="text-right">{{ number_format($runningBalance, 2, ',', '.') }}</td>
+                        <td colspan="5"><strong>Saldo Awal</strong></td>
+                        <td class="text-right">
+                            {{ number_format($item['opening_balance'],2,',','.') }}
+                        </td>
                     </tr>
+
+                    @foreach($rows as $row)
+
+                        @php
+                            $subTotalDebit += $row['debit'];
+                            $subTotalKredit += $row['kredit'];
+                        @endphp
+
+                        <tr>
+                            <td>{{ \Carbon\Carbon::parse($row['tanggal'])->format('d/m/Y') }}</td>
+                            <td>{{ $row['nomor_jurnal'] }}</td>
+                            <td>{{ $row['keterangan'] }}</td>
+                            <td class="text-right">
+                                {{ number_format($row['debit'], 0, ',', '.') }}
+                            </td>
+                            <td class="text-right">
+                                {{ number_format($row['kredit'], 0, ',', '.') }}
+                            </td>
+                            <td class="text-right">
+                                {{ number_format($row['saldo_berjalan'], 0, ',', '.') }}
+                            </td>
+                        </tr>
+
+                    @endforeach
+
+                </tbody>
+
+                <tfoot>
+
+                    <tr>
+                        <td colspan="3" class="text-right">
+                            <strong>Total Mutasi</strong>
+                        </td>
+
+                        <td class="text-right">
+                            {{ number_format($subTotalDebit,2,',','.') }}
+                        </td>
+
+                        <td class="text-right">
+                            {{ number_format($subTotalKredit,2,',','.') }}
+                        </td>
+
+                        <td class="text-right">
+                            {{ number_format($item['final_balance'],2,',','.') }}
+                        </td>
+                    </tr>
+
                 </tfoot>
+
             </table>
+
         </div>
+
     @empty
-        <p class="text-center" style="padding: 30px; color: #777;">Tidak ada transaksi buku besar yang berstatus 'posted' pada periode ini.</p>
+
+    <p>Tidak ada data.</p>
+
     @endforelse
 
 </body>

@@ -215,6 +215,7 @@ class GeneralJournalService
                     'tgl_transaksi' => $data['tgl_transaksi'],
                     'no_invoice'    => $data['no_invoice'],
                     'keterangan'    => $data['keterangan'],
+                    'arus'          => $data['cash_flow_activity'],
                     'status'        => $data['status'], // [BARU] Menyimpan perubahan status (draft/posted)
                     'created_by'    => Auth::id(),
                     'updated_at'    => now()

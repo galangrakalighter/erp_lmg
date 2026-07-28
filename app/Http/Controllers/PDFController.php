@@ -9,8 +9,7 @@ use App\Services\LedgerService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
 use App\Models\FilePdf;
-use App\Models\ProdukClient;
-use App\Models\ChartofAccount;
+use App\Models\ChartOfAccount;
 use Carbon\Carbon;
 class PDFController extends Controller
 {
@@ -123,7 +122,7 @@ class PDFController extends Controller
 
         $ledger = [];
 
-        $accounts = ChartofAccount::orderBy('kode')->get();
+        $accounts = ChartOfAccount::orderBy('kode')->get();
 
         foreach ($accounts as $account) {
 

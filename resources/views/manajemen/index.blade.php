@@ -62,7 +62,9 @@
                             <th>Tgl Posting</th>
                             <th>Link</th>
                             <th>Status</th>
+                            @if(Auth::user()->isAdmin || $divisi[0]->division_id == 1)
                             <th>Action</th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody class="small">
@@ -672,6 +674,7 @@
     $(document).ready(function() {
         // Handle Filter Form
         const kategoriId = "{{ $kategory->id }}";
+        const isContentCreator = {{ (Auth::user()->isAdmin || $divisi[0]->division_id == 1) ? 'false' : 'true' }};
 
         const table = $('#tableManajemenKonten').DataTable({
             processing: true,
@@ -693,13 +696,12 @@
                 }, // Inspirasi
                 { data: 'type' }, // Type
                 { data: 'strategy' }, // Strategi
-                { data: 'funneling' }, // Strategi
+                { data: 'funneling' }, // Funneling
                 { data: 'pilar' }, // Pilar
                 { data: 'hooks' }, // Hook
                 { data: 'nama_body' }, // Body
                 { data: 'nama_cta' }, // CTA
                 
-                // LOGIKA KOLOM WARNA (Hanya jika kategori == 2)
                 ...(kategoriId == 2 ? [{ data: 'background' }] : []),
                 
                 { data: 'komposisi' }, // Komposisi
@@ -719,6 +721,8 @@
                         return `<span class="badge badge-${color}">${data}</span>`;
                     }
                 }, // Status
+
+                @if(Auth::user()->isAdmin || $divisi[0]->division_id == 1)
                 {
                     data: 'id',
                     render: (data, type, row) => {
@@ -726,15 +730,14 @@
                         return `
                             <div class="btn-group">
                                 <button class="btn btn-sm btn-warning" onclick="getDataEdit(${data})"><i class="fas fa-edit"></i></button>
-                                ${!isContentCreator ? `
-                                    <button class="btn btn-sm btn-danger" onclick="confirmDelete(${data})" title="Hapus Konten">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                ` : ''}
+                                <button class="btn btn-sm btn-danger" onclick="confirmDelete(${data})" title="Hapus Konten">
+                                    <i class="fas fa-trash"></i>
+                                </button>
                             </div>
                         `;
                     }
-                } // Action
+                }
+                @endif
             ],
             // Opsi tambahan agar tabel enak dilihat jika kolomnya banyak
             columnDefs: [

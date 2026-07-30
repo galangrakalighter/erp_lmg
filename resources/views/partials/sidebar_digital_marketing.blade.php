@@ -6,8 +6,7 @@
     aria-labelledby="headingDM" data-parent="#collapseDivisi">
     <div class="collapse-container px-2">
 
-        
-        @if ($isSuperAdmin || ($myDivision->name == "Digital Marketing" && $myRole->level < 3))
+        @if ($isSuperAdmin || (($myDivision->name == "Digital Marketing" || $myDivision->name == "Ecommerce") && $myRole->level < 3))
             <div class="brand-sub-header text-danger mb-2 px-2">
                 <i class="fas fa-store mr-2"></i> MR. CREPE
             </div>
@@ -17,7 +16,6 @@
                 </a>
             </div>
         
-            
             <a class="category-dropdown-link d-flex align-items-center justify-content-between p-2 rounded text-decoration-none text-dark transition-hover {{ !$isMarketingPage ? 'collapsed' : '' }}" 
                 data-toggle="collapse" 
                 data-target="#cat_dm" 
@@ -29,11 +27,12 @@
 
         <div id="cat_dm" class="collapse {{ $isMarketingPage ? 'show' : '' }} ml-2 border-left-custom">
             @foreach ($digitalMarketingProduk as $client)
-                @if($myDivision->name == "Digital Marketing" || $isSuperAdmin)
+                @if($myDivision->name == "Digital Marketing" || $myDivision->name == "Ecommerce" || $isSuperAdmin)
                     @php
                         $hasClientAccess = in_array($client->client_id, $myClientIds);
                         $isPowerUser = $isSuperAdmin || $myRole->role_name == "Performance & Reporting";
-                        $canOpen = $isPowerUser || (in_array(1, $myDivision->pluck('id')->toArray()) && $hasClientAccess);
+                        // Jika division Ecommerce, kita berikan izin canOpen bernilai true agar bisa melihat semua isi sidebar
+                        $canOpen = $isPowerUser || $myDivision->name == "Ecommerce" || (in_array(1, $myDivision->pluck('id')->toArray()) && $hasClientAccess);
                         $isActiveClient = $currentProduct == $client->client_id;
                     @endphp
 

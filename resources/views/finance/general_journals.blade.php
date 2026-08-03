@@ -106,8 +106,9 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form id="formTambahJurnal" action="{{ route('general_journal.store') }}" method="POST">
+            <form id="formTambahJurnal" action="{{ route('general_journal.store', $id) }}" method="POST">
                 @csrf
+                <input type="hidden" name="perusahaan" value={{ $id }}>
                 <div class="modal-body text-dark">
                     <!-- Form Atas (Header Jurnal) -->
                     <div class="row border-bottom pb-3 mb-3">
@@ -242,6 +243,7 @@
             <form id="formEditJurnal" method="POST">
                 @csrf
                 @method('PUT')
+                <input type="hidden" name="perusahaan" value={{ $id }}>
                 <div class="modal-body text-dark">
                     <!-- Form Atas (Header Jurnal) -->
                     <div class="row border-bottom pb-3 mb-3">
@@ -569,7 +571,7 @@
         if (search) params.append('search', search);
         if (status) params.append('status', status);
 
-        let url = '{{ route("general_journal.data") }}?' + params.toString();
+        let url = '{{ route("general_journal.data", $id) }}?' + params.toString();
 
         fetch(url, {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }

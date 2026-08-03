@@ -14,7 +14,8 @@ class AdjustmentJournal extends Model
         'no_jurnal',
         'tgl_transaksi',
         'keterangan',
-        'create_by'
+        'create_by',
+        'perusahaan'
     ];
 
     public function details()

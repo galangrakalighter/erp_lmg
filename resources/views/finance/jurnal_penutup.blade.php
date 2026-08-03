@@ -16,7 +16,7 @@
             </div>
         </div>
         <div class="card-body">
-            <form action="{{ route('Ledger.jurnal_penutup') }}" method="GET" id="filterForm" class="mb-4">
+            <form action="{{ route('Ledger.jurnal_penutup', $id) }}" method="GET" id="filterForm" class="mb-4">
                 <div class="row align-items-end">
                     <div class="col-md-3">
                         <label class="form-label">Pilih Periode</label>
@@ -26,7 +26,7 @@
                     </div>
                     <div class="col-md-3">
                         {{-- Tombol tampilkan sekarang bisa disembunyikan atau dihilangkan jika diinginkan --}}
-                        <a href="{{ route('Ledger.jurnal_penutup') }}" class="btn btn-secondary">Reset</a>
+                        <a href="{{ route('Ledger.jurnal_penutup', $id) }}" class="btn btn-secondary">Reset</a>
                     </div>
                 </div>
             </form>
@@ -104,7 +104,7 @@
 
 <div class="modal fade" id="confirmLockModal" tabindex="-1">
     <div class="modal-dialog">
-        <form action="{{ route('Ledger.lock_periode') }}" method="POST">
+        <form action="{{ route('Ledger.lock_periode', $id) }}" method="POST">
             @csrf
             <input type="hidden" name="periode" value="{{ $periode }}">
             <div class="modal-content">

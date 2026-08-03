@@ -25,11 +25,12 @@ Route::get('kpi-data/{id}/{id_user}', [App\Http\Controllers\HCOverviewController
 Route::get('kpi-data-daily/{id}/{id_user}', [App\Http\Controllers\HCOverviewController::class, 'getKPIDataDaily'])->name('kpi.data-daily');
 Route::get('get-users/{id}/{id_user}', [App\Http\Controllers\HCOverviewController::class, 'getUsers'])->name('kpi.getUser');
 Route::get('/get-data-division/{user}/{division}', [App\Http\Controllers\ProdukController::class, 'getDataDivision'])->name('client.getDataDivision');
+Route::get('/get-data-perusahaan', [App\Http\Controllers\PerusahaanController::class, 'getDataPerusahaan'])->name('perusahaan.getDataPerusahaan');
 Route::post('/produk/{divisi}', [App\Http\Controllers\ProdukController::class, 'tambahDataClient'])->name('client.tambahDataClient');
 Route::PUT('/produk/{id}', [App\Http\Controllers\ProdukController::class, 'updateDataClient'])->name('client.updateDataClient');
 Route::DELETE('/produk/{id}', [App\Http\Controllers\ProdukController::class, 'hapusDataClient'])->name('client.hapusDataClient');
 Route::get('/produk-get/{id}', [App\Http\Controllers\ProdukController::class, 'getProduk']);
-Route::get('/invoices', [App\Http\Controllers\InvoiceController::class, 'getInvoiceData'])->name('api.invoices.data');
+Route::get('/invoices/{id}', [App\Http\Controllers\InvoiceController::class, 'getInvoiceData'])->name('api.invoices.data');
 Route::get('/get-user-divisions', [App\Http\Controllers\UserController::class, 'getUserDivision']);
 Route::get('/get-data-payroll', [App\Http\Controllers\PayrollController::class, 'getDataPayroll']);
 Route::get('audit-trails', [App\Http\Controllers\DashboardController::class, 'getDataAudit'])->name('api.audit.index');

@@ -7,7 +7,7 @@
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800 font-weight-bold">Dashboard Keuangan Owner</h1>
         
-        <form action="{{ route('finance.dashboard') }}" method="GET" class="form-inline">
+        <form action="{{ route('finance.dashboard', $id) }}" method="GET" class="form-inline">
             <label for="periode" class="mr-2 font-weight-bold text-secondary small">Filter Periode:</label>
             <input type="month" name="periode" id="periode" class="form-control form-control-sm shadow-sm" 
                    value="{{ $periode }}" onchange="this.form.submit()">
@@ -155,7 +155,7 @@
                         Halaman ini dikhususkan bagi Owner untuk memantau indikator kesehatan finansial secara langsung berdasarkan jurnal umum perusahaan.
                     </p>
                     <hr>
-                    <a href="{{ route('Ledger.jurnal_penutup') }}" class="btn btn-outline-primary btn-sm btn-block mb-2">
+                    <a href="{{ route('Ledger.jurnal_penutup', $id) }}" class="btn btn-outline-primary btn-sm btn-block mb-2">
                         <i class="fas fa-file-invoice-dollar mr-2"></i>Lihat Jurnal Penutup
                     </a>
                 </div>

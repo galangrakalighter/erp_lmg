@@ -14,7 +14,7 @@ class GeneralJournalService
     /**
      * Mengambil Semua Data Jurnal (Gabungan Header & Detail)
      */
-    public function getAllJournals(Request $request)
+    public function getAllJournals(Request $request, $id)
     {
         // Menggunakan Raw SQL Query Builder agar sesuai dengan skema struktur database PostgreSQL kamu
         $query = DB::table('general_journals as gj')
@@ -53,6 +53,8 @@ class GeneralJournalService
                 ->orWhereRaw('LOWER(coa.nama_akun) like ?', ['%' . $search . '%']);
             });
         }
+
+        $query->where('gj.perusahaan', $id);
 
         // Diurutkan berdasarkan tanggal terbaru, nomor jurnal terbaru, 
         // lalu baris dengan debit terbesar/ada isinya didahulukan (descending pada kolom debit)
@@ -107,7 +109,8 @@ class GeneralJournalService
                 'status'        => $data['status'], // [BARU] Menyimpan status 'draft' atau 'posted' secara dinamis dari form
                 'created_by'    => Auth::id(),
                 'created_at'    => Carbon::now(),
-                'updated_at'    => Carbon::now()
+                'updated_at'    => Carbon::now(),
+                'perusahaan'    => $data['perusahaan']
             ]);
 
             // Simpan Ke Tabel Detail (general_journal_details) looping per baris akun

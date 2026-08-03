@@ -2,7 +2,7 @@
     <thead>
         <tr>
             <th colspan="4" style="text-align:center; font-size:16px; font-weight:bold; background-color:#ffffff; height:30px; vertical-align:middle;">
-                LAPORAN ARUS KAS - {{ \Carbon\Carbon::parse($periode.'-01')->format('F Y') }}
+                LAPORAN KEUANGAN - {{ \Carbon\Carbon::parse($periode.'-01')->format('F Y') }}
             </th>
         </tr>
         <tr style="background-color:#4472c4; color:#ffffff; font-weight:bold; text-align:center; height:25px;">

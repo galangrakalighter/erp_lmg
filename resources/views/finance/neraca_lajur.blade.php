@@ -9,18 +9,7 @@
         <div>
             <form action="{{ url()->current() }}" method="GET" class="form-inline">
                 <div class="form-group mr-2">
-                    <input type="month" name="periode" class="form-control" value="{{ $periode }}">
-                </div>
-                <div class="btn-group" role="group">
-                    <button type="submit" class="btn btn-primary">Filter</button>
-                    
-                    <a href="{{ url('finance/report/worksheet/export-laba-rugi?periode=' . $periode) }}" class="btn btn-success">
-                        <i class="fas fa-file-excel mr-1"></i> Export Laba Rugi
-                    </a>
-                    
-                    <a href="{{ url('finance/report/worksheet/export-neraca?periode=' . $periode) }}" class="btn btn-info text-white">
-                        <i class="fas fa-file-excel mr-1"></i> Export Neraca
-                    </a>
+                    <input type="month" name="periode" class="form-control" value="{{ $periode }}" onchange="this.form.submit()">
                 </div>
             </form>
         </div>

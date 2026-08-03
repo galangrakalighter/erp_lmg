@@ -75,19 +75,23 @@ class DashboardController extends Controller
         return view('hc.kpi', compact('title', 'listProject', 'listBawahan', 'listDivisi'));
     }
 
-    public function finance_dashboard(Request $request){
+    public function finance_dashboard(Request $request, $id){
         $periode = $request->get('periode', date('Y-m'));
         $year    = date('Y', strtotime($periode));
         $month   = date('m', strtotime($periode));
 
         $title = 'Dashboard Finance';
 
+        $perusahaan_baru = DB::table('perusahaan')->where('id', $id)->first();
+
         // 1. HITUNG PROFIT BERSIH (Pendapatan - Beban)
         // Sesuai nilai option HTML: 'pendapatan' dan 'beban'
         $totalPendapatan = DB::table('general_journal_details as gjd')
             ->join('general_journals as gj', 'gj.id', '=', 'gjd.general_journal_id')
             ->join('chart_of_account as coa', 'coa.id', '=', 'gjd.chart_of_account_id')
-            ->where('coa.type', 'pendapatan') 
+            ->where('coa.type', 'pendapatan')
+            ->where('gj.perusahaan', $id) 
+            ->where('coa.perusahaan', $id)
             ->whereYear('gj.tgl_transaksi', $year)
             ->whereMonth('gj.tgl_transaksi', $month)
             ->sum(DB::raw('gjd.kredit - gjd.debit'));
@@ -96,6 +100,8 @@ class DashboardController extends Controller
             ->join('general_journals as gj', 'gj.id', '=', 'gjd.general_journal_id')
             ->join('chart_of_account as coa', 'coa.id', '=', 'gjd.chart_of_account_id')
             ->where('coa.type', 'beban') 
+            ->where('gj.perusahaan', $id)
+            ->where('coa.perusahaan', $id)
             ->whereYear('gj.tgl_transaksi', $year)
             ->whereMonth('gj.tgl_transaksi', $month)
             ->sum(DB::raw('gjd.debit - gjd.kredit'));
@@ -109,6 +115,8 @@ class DashboardController extends Controller
             ->join('general_journals as gj', 'gj.id', '=', 'gjd.general_journal_id')
             ->join('chart_of_account as coa', 'coa.id', '=', 'gjd.chart_of_account_id')
             ->where('coa.type', 'aset') 
+            ->where('gj.perusahaan', $id)
+            ->where('coa.perusahaan', $id)
             ->whereYear('gj.tgl_transaksi', $year)
             ->whereMonth('gj.tgl_transaksi', $month)
             ->sum('gjd.debit');
@@ -117,6 +125,8 @@ class DashboardController extends Controller
             ->join('general_journals as gj', 'gj.id', '=', 'gjd.general_journal_id')
             ->join('chart_of_account as coa', 'coa.id', '=', 'gjd.chart_of_account_id')
             ->where('coa.type', 'aset')
+            ->where('gj.perusahaan', $id)
+            ->where('coa.perusahaan', $id)
             ->whereYear('gj.tgl_transaksi', $year)
             ->whereMonth('gj.tgl_transaksi', $month)
             ->sum('gjd.kredit');
@@ -134,6 +144,7 @@ class DashboardController extends Controller
                 DB::raw('COALESCE(SUM(gjd.debit - gjd.kredit), 0) as balance')
             )
             ->where('coa.type', 'aset') // Mengambil dari kategori aset
+            ->where('coa.perusahaan', $id)
             ->groupBy('coa.id', 'coa.kode', 'coa.nama_akun', 'coa.type')
             ->get();
 
@@ -149,7 +160,9 @@ class DashboardController extends Controller
             'netCashflow',
             'mainBalances',
             'totalSaldoUtama',
-            'title'
+            'perusahaan_baru',
+            'title',
+            'id'
         ));
     }
 

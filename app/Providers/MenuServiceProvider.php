@@ -102,6 +102,8 @@ class MenuServiceProvider extends ServiceProvider
             ->where('produk_client.status', 1)
             ->get();
 
+            $perusahaanFinance = DB::table('perusahaan')->where('status', true)->get();
+
             $view->with([
                 'businessDevProduk' => $businessDevProduk,
                 'digitalMarketingProduk' => $digitalMarketingProduk,
@@ -114,7 +116,8 @@ class MenuServiceProvider extends ServiceProvider
                 'myClientIds' => $myClientIds,
                 'mcnProduk' => $mcnProduk,
                 'techProduk' => $techProduk,
-                'ecommerceProduk' => $ecommerceProduk
+                'ecommerceProduk' => $ecommerceProduk,
+                'perusahaan' => $perusahaanFinance
             ]);
         });
     }

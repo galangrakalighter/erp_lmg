@@ -23,17 +23,17 @@ class GeneralJournalController extends Controller
     /**
      * Menampilkan Halaman Utama Jurnal Umum
      */
-    public function index()
+    public function index($id)
     {
         $title = "General Journal";
 
         // Ambil data COA yang aktif untuk dilempar ke modal tambah jurnal
-        $accounts = ChartOfAccount::where('is_active', true)->orderBy('kode', 'asc')->get();
+        $accounts = ChartOfAccount::where('is_active', true)->where('perusahaan', $id)->orderBy('kode', 'asc')->get();
 
-        return view('finance.general_journals', compact('accounts', 'title'));
+        return view('finance.general_journals', compact('accounts', 'title', 'id'));
     }
 
-    public function getGeneralJournalData(Request $request)
+    public function getGeneralJournalData(Request $request, $id)
     {
         // Ambil periode dari request (asumsi format YYYY-MM)
         $periode = date('Y-m', strtotime($request->start_date ?? date('Y-m-d')));
@@ -44,7 +44,7 @@ class GeneralJournalController extends Controller
             ->where('is_locked', true)
             ->exists();
 
-        $journals = $this->journalService->getAllJournals($request);
+        $journals = $this->journalService->getAllJournals($request, $id);
 
         return response()->json([
             'journals' => $journals,
@@ -81,6 +81,7 @@ class GeneralJournalController extends Controller
                 'items.*.keterangan_item'     => 'nullable|string|max:255',
                 'items.*.debit'               => 'required|numeric|min:0',
                 'items.*.kredit'              => 'required|numeric|min:0',
+                'perusahaan'                  => 'required'
             ]);
 
             // 2. Kirim ke Service Layer
@@ -157,6 +158,7 @@ class GeneralJournalController extends Controller
             'items.*.keterangan_item'     => 'nullable|string|max:255',
             'items.*.debit'               => 'required|numeric|min:0',
             'items.*.kredit'              => 'required|numeric|min:0',
+            'perusahaan'                  => 'required'
         ]);
 
         // 2. Kirim ke Service Layer untuk pemrosesan Database Transaction

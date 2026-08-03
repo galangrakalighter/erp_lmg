@@ -150,7 +150,7 @@ class PDFController extends Controller
         return $pdf->stream('Buku-Besar-'.$periode.'.pdf');
     }
 
-    public function exportAdjustmen(Request $request){
+    public function exportAdjustmen(Request $request, $id){
         $periodeInput = $request->input('periode', date('Y-m'));
         $startDate = Carbon::createFromFormat('Y-m', $periodeInput)->startOfMonth()->toDateString();
         $endDate = Carbon::createFromFormat('Y-m', $periodeInput)->endOfMonth()->toDateString();
@@ -158,6 +158,7 @@ class PDFController extends Controller
         // Ambil data jurnal penyesuaian berdasarkan rentang tanggal periode
         $journals = \App\Models\AdjustmentJournal::with(['details.account'])
             ->whereBetween('tgl_transaksi', [$startDate, $endDate])
+            ->where('perusahaan', $id)
             ->orderBy('tgl_transaksi', 'asc')
             ->get();
 

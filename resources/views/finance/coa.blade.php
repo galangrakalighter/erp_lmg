@@ -97,8 +97,9 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form action="{{ route('finance_coa.store') }}" method="POST">
+            <form action="{{ route('finance_coa.store', $id) }}" method="POST">
                 @csrf
+                <input type="hidden" name="perusahaan" value={{ $id }}>
                 <div class="modal-body text-left">
                     <div class="form-group">
                         <label class="font-weight-bold text-dark small">Kode Akun</label>
@@ -170,6 +171,7 @@
             <form id="formEditCoa" method="POST">
                 @csrf
                 @method('PUT')
+                <input type="hidden" name="perusahaan" value={{ $id }}>
                 <div class="modal-body text-left">
                     <div class="form-group">
                         <label class="font-weight-bold text-dark small">Kode Akun</label>
@@ -279,7 +281,7 @@
         if (categoryFilter) params.append('category', categoryFilter);
         if (searchFilter) params.append('search', searchFilter);
 
-        let url = '{{ route("finance_coa.data") }}?' + params.toString();
+        let url = '{{ route("finance_coa.data", $id) }}?' + params.toString();
 
         fetch(url, {
             headers: {

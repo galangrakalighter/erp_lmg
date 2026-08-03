@@ -51,7 +51,7 @@
         @endphp
         
         <div class="col-xl-3 col-md-6 mb-4">
-            <a href="{{ route('finance_ledger.show', ['finance_ledger' => $account->id, 'periode' => $periode]) }}" 
+            <a href="{{ route('finance_ledger.show', ['perusahaan' => $id, 'id' => $account->id, 'periode' => $periode]) }}" 
                class="account-card card shadow-sm border-0 border-left-{{ $borderColor }} h-100">
                 
                 <div class="card-body py-3">

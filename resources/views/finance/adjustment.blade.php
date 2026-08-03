@@ -9,7 +9,7 @@
             @php $currentPeriod = date('Y-m'); @endphp
             <div>
                 {{-- Tombol Export PDF --}}
-                <a href="{{ route('adjustment_journal.export-pdf', ['periode' => request('periode', date('Y-m'))]) }}" target="_blank" class="btn btn-danger btn-sm shadow-sm mr-1">
+                <a href="{{ route('adjustment_journal.export-pdf', ['id' => $id,'periode' => request('periode', date('Y-m'))]) }}" target="_blank" class="btn btn-danger btn-sm shadow-sm mr-1">
                     <i class="fas fa-file-pdf fa-sm mr-1"></i> Export PDF
                 </a>
 
@@ -148,14 +148,14 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form action="{{ route('adjustment_journal.store') }}" method="POST" id="formModalJournal">
+            <form action="{{ route('adjustment_journal.store', $id) }}" method="POST" id="formModalJournal">
                 @csrf
                 <div class="modal-body text-left bg-light">
                     
                     <div class="row bg-white p-3 rounded shadow-sm mb-3 mx-1">
                         <div class="col-md-3 mb-2">
                             <label class="small font-weight-bold text-dark">No. Jurnal</label>
-                            <input type="text" class="form-control form-control-sm" name="journal_number" value="AJ-{{ date('Ymd') }}-XXXX" readonly>
+                            <input type="text" class="form-control form-control-sm" name="journal_number" value="AJ-{{ date('Ymd') }}-{{ str_pad($jumlah + 1, 4, '0', STR_PAD_LEFT) }}" readonly>
                         </div>
                         <div class="col-md-3 mb-2">
                             <label class="small font-weight-bold text-dark">Tanggal Jurnal</label>
@@ -166,6 +166,8 @@
                             <input type="text" class="form-control form-control-sm border-primary" name="description" placeholder="Contoh: Penyesuaian sewa dibayar dimuka..." required>
                         </div>
                     </div>
+
+                    <input type="hidden" name="perusahaan" value="{{ $id }}">
 
                     <div class="card shadow-sm">
                         <div class="card-header d-flex justify-content-between align-items-center bg-white py-2">

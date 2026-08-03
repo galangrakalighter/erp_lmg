@@ -10,7 +10,7 @@ class ChartOfAccountService
     /**
      * Mengambil daftar akun dengan opsional filter tipe
      */
-    public function getAllAccounts(Request $request)
+    public function getAllAccounts(Request $request, $id)
     {
         // 1. Inisialisasi query murni menggunakan nama tabel dari Model (tanpa public.)
         $query = ChartOfAccount::query()
@@ -57,6 +57,8 @@ class ChartOfAccountService
             });
         }
 
+        $query->where('chart_of_account.perusahaan', $id);
+
         // Urutkan berdasarkan kode COA
         return $query->orderBy('chart_of_account.kode', 'asc')->get();
     }
@@ -76,6 +78,7 @@ class ChartOfAccountService
                 'type'      => $data['type'],
                 'category'  => $data['category'],
                 'is_active' => $data['is_active'] ?? true,
+                'perusahaan' => (int)$data['perusahaan']
             ]);
 
             // 2. Ambil nilai saldo dan periode dari form modal
@@ -90,6 +93,7 @@ class ChartOfAccountService
                     'periode'             => $openingPeriode,
                     'chart_of_account_id' => $coa->id, // Mengambil ID dari model Eloquent di atas
                     'saldo'               => $openingSaldo,
+                    'perusahaan'          => $data['perusahaan'],
                     'created_at'          => now(),
                     'updated_at'          => now()
                 ]);
@@ -147,7 +151,8 @@ class ChartOfAccountService
                 DB::table('opening_balances')->updateOrInsert(
                     [
                         'periode'             => $openingPeriode,
-                        'chart_of_account_id' => $coa->id
+                        'chart_of_account_id' => $coa->id,
+                        'perusahaan' => $data['perusahaan'],
                     ],
                     [
                         'saldo'      => $openingSaldo,

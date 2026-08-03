@@ -12,7 +12,8 @@ class ChartOfAccount extends Model
         'nama_akun',
         'type',
         'is_active',
-        'category'
+        'category',
+        'perusahaan'
     ];
 
     public $timestamps = false;

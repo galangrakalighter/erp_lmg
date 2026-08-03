@@ -26,7 +26,7 @@ class InvoiceController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index($id)
     {
         $title = "Pembayaran";
         $customers = DB::table('client_division')
@@ -35,15 +35,16 @@ class InvoiceController extends Controller
             ->where('client_division.division_id', 6)
             ->where('produk_client.status', 1)
             ->get();
-        $accountPendapatan = ChartOfAccount::where('category', 'pendapatan')->where('is_active', true)->get();
-        $accountPiutang = ChartOfAccount::where('category', 'beban')->where('is_active', true)->get();
-        return view('finance.invoice', compact('title', 'customers', 'accountPendapatan', 'accountPiutang'));
+        $accountPendapatan = ChartOfAccount::where('category', 'pendapatan')->where('perusahaan', $id)->where('is_active', true)->get();
+        $accountPiutang = ChartOfAccount::where('category', 'beban')->where('perusahaan', $id)->where('is_active', true)->get();
+        return view('finance.invoice', compact('title', 'customers', 'accountPendapatan', 'accountPiutang', 'id'));
     }
 
-    public function getInvoiceData()
+    public function getInvoiceData($id)
     {
         // Mengambil data dengan relasi
         $invoices = Invoice::with(['payments'])
+        ->where('perusahaan', $id)
         ->orderBy('due_date', 'asc')
         ->get()
         ->map(function ($invoice) {
@@ -55,8 +56,7 @@ class InvoiceController extends Controller
                 'due_date'      => \Carbon\Carbon::parse($invoice->due_date)->format('d M Y'),
                 'total_amount'  => number_format($invoice->total_amount, 0, ',', '.'),
                 'remaining'     => number_format($invoice->remaining, 0, ',', '.'),
-                'status'        => $invoice->status,
-                'payment_route' => route('invoice.create', $invoice->id) // Pastikan nama route ini benar!
+                'status'        => $invoice->status
             ];
         });
 
@@ -128,6 +128,7 @@ class InvoiceController extends Controller
             'keterangan' => $request->keterangan ?? 'Pembayaran Invoice #' . $invoice->id,
             'cash_flow_activity' => 'operasional',
             'status' => 'draft',
+            'perusahaan' => $invoice->perusahaan,
             'items' => [
                 [
                     'chart_of_account_id' => $request->coa,
@@ -188,13 +189,14 @@ class InvoiceController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(Request $request, $id)
     {
         // 1. Proteksi Periode: Cek apakah periode bulan ini terkunci
         $currentDate = now()->toDateString();
         $periode = date('Y-m', strtotime($currentDate));
         $isLocked = DB::table('period_locks')
             ->where('periode', $periode)
+            ->where('perusahaan', $id)
             ->where('is_locked', true)
             ->exists();
 
@@ -207,20 +209,21 @@ class InvoiceController extends Controller
         $data = $request->validate([
             'customer_id'  => 'required',
             'total_amount' => 'required|numeric',
-            'due_date'     => 'required|date'
+            'due_date'     => 'required|date',
         ]);
 
         $customer = ProdukClient::findOrFail($request->customer_id);
         $customerCode = $customer->nama; 
 
         $tanggalFormat = date('Ymd');
-        $jumlahInvoiceCustomer = \App\Models\Invoice::where('customer_id', $request->customer_id)->count() + 1;
+        $jumlahInvoiceCustomer = \App\Models\Invoice::where('customer_id', $request->customer_id)->where('perusahaan', $id)->count() + 1;
         $urutanInvoice = sprintf('%04d', $jumlahInvoiceCustomer);
 
         $noInvoice = "INV/{$tanggalFormat}/{$customerCode}/{$urutanInvoice}";
         $data['no_invoice'] = $noInvoice;
         $data['paid_amount'] = 0;
         $data['status'] = 'unpaid';
+        $data['perusahaan'] = $id;
 
         $dataBaru = [
             'tgl_transaksi' => $currentDate,
@@ -228,6 +231,7 @@ class InvoiceController extends Controller
             'keterangan' => $request->keterangan ?? 'Pembuatan Invoice #' . $noInvoice,
             'cash_flow_activity' => 'operasional',
             'status' => 'draft',
+            'perusahaan' => $id,
             'items' => [
                 [
                     'chart_of_account_id' => $request->coa,
@@ -269,14 +273,18 @@ class InvoiceController extends Controller
         }
     }
 
-    public function list_client(Request $request)
+    public function list_client(Request $request, $id)
     {
         $title = 'Profit Per Client';
         $viewMode = $request->input('view', 'off'); // 'on' atau 'off'
 
         // Ambil data client yang minimal punya 1 invoice beserta relasinya
-        $clients = ProdukClient::has('invoices')
-            ->with('invoices.payments')
+        $clients = ProdukClient::whereHas('invoices', function ($query) use ($id) {
+                $query->where('perusahaan', $id);
+            })
+            ->with(['invoices' => function ($query) use ($id) {
+                $query->where('perusahaan', $id)->with('payments');
+            }])
             ->get()
             ->map(function ($client) {
                 $totalInvoice = $client->invoices->sum('total_amount');
@@ -352,6 +360,7 @@ class InvoiceController extends Controller
         $invoiceDate = $invoice->created_at ? date('Y-m', strtotime($invoice->created_at)) : date('Y-m');
         $isLocked = DB::table('period_locks')
             ->where('periode', $invoiceDate)
+            ->where('perusahaan', $invoice->perusahaan)
             ->where('is_locked', true)
             ->exists();
 
@@ -398,6 +407,7 @@ class InvoiceController extends Controller
         $invoiceDate = $invoice->created_at ? date('Y-m', strtotime($invoice->created_at)) : date('Y-m');
         $isLocked = DB::table('period_locks')
             ->where('periode', $invoiceDate)
+            ->where('perusahaan', $invoice->perusahaan)
             ->where('is_locked', true)
             ->exists();
 

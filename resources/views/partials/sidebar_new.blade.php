@@ -557,79 +557,98 @@
                         </div>
                     @endif
                     <div class="client-item-wrapper mb-2">
-                        <a class="client-dropdown-link-out-div {{ Route::is('finance.dashboard') ? 'active' : '' }}" href="{{ route('finance.dashboard') }}">
-                            <span>Dashboard</span>
-                        </a>
-                    </div>
-                    <div class="client-item-wrapper mb-2">
-                        <a class="client-dropdown-link-out-div {{ Route::is('finance_coa.index') ? 'active' : '' }}" href="{{ route('finance_coa.index') }}">
-                            <span>Daftar Akun</span>
-                        </a>
-                    </div>
-                    
-                    <div class="client-item-wrapper mb-2">
-                        <a class="client-dropdown-link-out-div {{ Route::is('general_journal.index') ? 'active' : '' }}" href="{{ route('general_journal.index') }}">
-                            <span>Jurnal Umum</span>
-                        </a>
-                    </div>
-                    
-                    <div class="client-item-wrapper mb-2">
-                        <a class="client-dropdown-link-out-div {{ Route::is('finance_ledger.list_account') ? 'active' : '' }}" href="{{ route('finance_ledger.list_account') }}">
-                            <span>Buku Besar</span>
-                        </a>
-                    </div>
-                    
-                    <div class="client-item-wrapper mb-2">
-                        <a class="client-dropdown-link-out-div {{ Route::is('Ledger.neraca_saldo') ? 'active' : '' }}" href="{{ route('Ledger.neraca_saldo') }}">
-                            <span>Neraca Saldo</span>
-                        </a>
-                    </div>
-                    
-                    <div class="client-item-wrapper mb-2">
-                        <a class="client-dropdown-link-out-div {{ Route::is('adjustment_journal.index') ? 'active' : '' }}" href="{{ route('adjustment_journal.index') }}">
-                            <span>Jurnal Penyesuaian</span>
+                        <a class="client-dropdown-link-out-div {{ Route::is('perusahaan.index') ? 'active' : '' }}" href="{{ route('perusahaan.index') }}">
+                            <span>Perusahaan</span>
                         </a>
                     </div>
 
-                    <div class="client-item-wrapper mb-2">
-                        <a class="client-dropdown-link-out-div {{ Route::is('Ledger.neraca_lajur') ? 'active' : '' }}" href="{{ route('Ledger.neraca_lajur') }}">
-                            <span>Neraca Lajur</span>
+                    @foreach ($perusahaan as $pe)
+                        <a class="category-dropdown-link-out-div collapsed mb-3 d-block" data-toggle="collapse" data-target="#cat_perusahaan_{{ $pe->id }}">
+                            <span><i class="fas fa-folder-open mr-2 text-info"></i>{{ $pe->nama_perusahaan }}</span>
                         </a>
-                    </div>
-                    
-                    <div class="client-item-wrapper mb-2">
-                        <a class="client-dropdown-link-out-div {{ Route::is('Ledger.arus_kas') ? 'active' : '' }}" href="{{ route('Ledger.arus_kas') }}">
-                            <span>Laporan Arus Kas</span>
-                        </a>
-                    </div>
-                    
-                    <div class="client-item-wrapper mb-2">
-                        <a class="client-dropdown-link-out-div {{ Route::is('Ledger.jurnal_penutup') ? 'active' : '' }}" href="{{ route('Ledger.jurnal_penutup') }}">
-                            <span>Jurnal Penutup</span>
-                        </a>
-                    </div>
-                    <div class="client-item-wrapper mb-2">
-                        <a class="client-dropdown-link-out-div {{ Route::is('invoice.index') ? 'active' : '' }}" href="{{ route('invoice.index') }}">
-                            <span>Pembayaran</span>
-                        </a>
-                    </div>
-                    <div class="client-item-wrapper mb-2">
-                        <a class="client-dropdown-link-out-div {{ Route::is('profit.list') ? 'active' : '' }}" href="{{ route('profit.list') }}">
-                            <span>Profit</span>
-                        </a>
-                    </div>
-                    <div class="client-item-wrapper mb-2">
-                        <a class="client-dropdown-link-out-div {{ Route::is('payroll.index') ? 'active' : '' }}" href="{{ route('payroll.index') }}">
-                            <span>Payroll</span>
-                        </a>
-                    </div>
-                    @if(Auth::user()->isAdmin == true)
-                    <div class="client-item-wrapper mb-2">
-                        <a class="client-dropdown-link-out-div {{ Route::is('audit.index') ? 'active' : '' }}" href="{{ route('audit.index') }}">
-                            <span>Audit</span>
-                        </a>
-                    </div>
-                    @endif
+
+                        <div id="cat_perusahaan_{{ $pe->id }}" class="collapse ml-2 border-left-custom mb-2">
+                            <div class="client-item-wrapper mb-2">
+                                <a class="client-dropdown-link-out-div {{ Route::is('finance.dashboard') ? 'active' : '' }}" href="{{ route('finance.dashboard', $pe->id) }}">
+                                    <span>Dashboard</span>
+                                </a>
+                            </div>
+
+                            <div class="client-item-wrapper mb-2">
+                                <a class="client-dropdown-link-out-div {{ Route::is('finance_coa.index') ? 'active' : '' }}" href="{{ route('finance_coa.index', $pe->id) }}">
+                                    <span>Daftar Akun</span>
+                                </a>
+                            </div>
+                            
+                            <div class="client-item-wrapper mb-2">
+                                <a class="client-dropdown-link-out-div {{ Route::is('general_journal.index') ? 'active' : '' }}" href="{{ route('general_journal.index', $pe->id) }}">
+                                    <span>Jurnal Umum</span>
+                                </a>
+                            </div>
+                            
+                            <div class="client-item-wrapper mb-2">
+                                <a class="client-dropdown-link-out-div {{ Route::is('finance_ledger.list_account') ? 'active' : '' }}" href="{{ route('finance_ledger.list_account', $pe->id) }}">
+                                    <span>Buku Besar</span>
+                                </a>
+                            </div>
+                            
+                            <div class="client-item-wrapper mb-2">
+                                <a class="client-dropdown-link-out-div {{ Route::is('Ledger.neraca_saldo') ? 'active' : '' }}" href="{{ route('Ledger.neraca_saldo', $pe->id) }}">
+                                    <span>Neraca Saldo</span>
+                                </a>
+                            </div>
+                            
+                            <div class="client-item-wrapper mb-2">
+                                <a class="client-dropdown-link-out-div {{ Route::is('adjustment_journal.index') ? 'active' : '' }}" href="{{ route('adjustment_journal.index', $pe->id) }}">
+                                    <span>Jurnal Penyesuaian</span>
+                                </a>
+                            </div>
+
+                            <div class="client-item-wrapper mb-2">
+                                <a class="client-dropdown-link-out-div {{ Route::is('Ledger.neraca_lajur') ? 'active' : '' }}" href="{{ route('Ledger.neraca_lajur', $pe->id) }}">
+                                    <span>Neraca Lajur</span>
+                                </a>
+                            </div>
+                            
+                            <div class="client-item-wrapper mb-2">
+                                <a class="client-dropdown-link-out-div {{ Route::is('Ledger.arus_kas') ? 'active' : '' }}" href="{{ route('Ledger.arus_kas', $pe->id) }}">
+                                    <span>Laporan Keuangan</span>
+                                </a>
+                            </div>
+                            
+                            <div class="client-item-wrapper mb-2">
+                                <a class="client-dropdown-link-out-div {{ Route::is('Ledger.jurnal_penutup') ? 'active' : '' }}" href="{{ route('Ledger.jurnal_penutup', $pe->id) }}">
+                                    <span>Jurnal Penutup</span>
+                                </a>
+                            </div>
+
+                            <div class="client-item-wrapper mb-2">
+                                <a class="client-dropdown-link-out-div {{ Route::is('invoice.index') ? 'active' : '' }}" href="{{ route('invoice.index', $pe->id) }}">
+                                    <span>Pembayaran</span>
+                                </a>
+                            </div>
+
+                            <div class="client-item-wrapper mb-2">
+                                <a class="client-dropdown-link-out-div {{ Route::is('profit.list') ? 'active' : '' }}" href="{{ route('profit.list', $pe->id) }}">
+                                    <span>Profit</span>
+                                </a>
+                            </div>
+
+                            <div class="client-item-wrapper mb-2">
+                                <a class="client-dropdown-link-out-div {{ Route::is('payroll.index') ? 'active' : '' }}" href="{{ route('payroll.index', $pe->id) }}">
+                                    <span>Payroll</span>
+                                </a>
+                            </div>
+
+                            @if(Auth::user()->isAdmin == true)
+                            <div class="client-item-wrapper mb-2">
+                                <a class="client-dropdown-link-out-div {{ Route::is('audit.index') ? 'active' : '' }}" href="{{ route('audit.index', $pe->id) }}">
+                                    <span>Audit</span>
+                                </a>
+                            </div>
+                            @endif
+                        </div>
+                    @endforeach
                 </div>
             </div>
         </li>

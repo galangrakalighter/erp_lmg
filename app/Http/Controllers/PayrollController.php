@@ -19,15 +19,15 @@ class PayrollController extends Controller
         $this->journalService = $journalService;
     }
 
-    public function index(){
+    public function index($id){
         $title = 'Payroll';
 
         $user = User::where('isAdmin', false)->get();
 
-        $account = ChartOfAccount::whereIn('category', ['kewajiban', 'beban'])->where('is_active', true)->get();
-        $accountKewajiban = ChartOfAccount::where('category', 'kewajiban')->where('is_active', true)->get();
+        $account = ChartOfAccount::whereIn('category', ['kewajiban', 'beban'])->where('perusahaan', $id)->where('is_active', true)->get();
+        $accountKewajiban = ChartOfAccount::where('category', 'kewajiban')->where('perusahaan', $id)->where('is_active', true)->get();
 
-        return view('finance.payroll', compact('title', 'user', 'account', 'accountKewajiban'));
+        return view('finance.payroll', compact('title', 'user', 'account', 'accountKewajiban', 'id'));
     }
 
     public function store(Request $request)
@@ -41,6 +41,7 @@ class PayrollController extends Controller
             'status'       => 'required|string',
             'keterangan'   => 'nullable|string',
             'coa'          => 'required|integer|exists:chart_of_account,id',
+            'perusahaan'   => 'required'
         ]);
 
         // 2. Proteksi Periode: Cek apakah periode tanggal payroll terkunci
@@ -57,7 +58,7 @@ class PayrollController extends Controller
         }
 
         $tanggalFormat = date('Ymd', strtotime($request->payroll_date));
-        $jumlahPayrol = Payrol::where('user_id', $request->user_id)->count() + 1;
+        $jumlahPayrol = Payrol::where('user_id', $request->user_id)->where('perusahaan', $request->perusahaan)->count() + 1;
         $urutanInvoice = sprintf('%04d', $jumlahPayrol);
 
         $noInvoice = "PYR/{$tanggalFormat}/{$request->user_id}/{$urutanInvoice}";
@@ -72,7 +73,8 @@ class PayrollController extends Controller
             'paid_amount'  => $paidAmount,
             'status'       => $request->status,
             'keterangan'   => $request->keterangan,
-            'invoice'      => $noInvoice
+            'invoice'      => $noInvoice,
+            'perusahaan'   => $request->perusahaan 
         ];
 
         $dataBaru = [
@@ -81,6 +83,7 @@ class PayrollController extends Controller
             'keterangan'         => $request->keterangan ?? 'Payroll ' . $noInvoice,
             'cash_flow_activity' => 'operasional',
             'status'             => 'draft',
+            'perusahaan'         => $request->perusahaan,
             'items'              => [
                 [
                     'chart_of_account_id' => $request->coa,
@@ -319,7 +322,7 @@ class PayrollController extends Controller
         ]);
     }
 
-    public function payment(Request $request)
+    public function payment(Request $request, $id)
     {
         // 1. Validasi Input Data
         $request->validate([
@@ -363,6 +366,7 @@ class PayrollController extends Controller
             'keterangan'         => $keterangan,
             'cash_flow_activity' => 'operasional',
             'status'             => 'draft',
+            'perusahaan'         => $invoice->perusahaan,
             'items'              => [
                 [
                     'chart_of_account_id' => $request->coa,

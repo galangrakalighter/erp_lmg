@@ -2,7 +2,7 @@
 @section('content')
 
     <div class="mb-4">
-        <a href="{{ route('finance_ledger.list_account', ['periode' => $periode]) }}" class="btn btn-sm btn-light border shadow-sm mb-3">
+        <a href="{{ route('finance_ledger.list_account', ['id' => $id_perusahaan, 'periode' => $periode]) }}" class="btn btn-sm btn-light border shadow-sm mb-3">
             <i class="fas fa-arrow-left mr-1"></i> Kembali ke Pilih Akun
         </a>
         

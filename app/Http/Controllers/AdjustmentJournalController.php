@@ -13,17 +13,20 @@ class AdjustmentJournalController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index($id)
     {
         $title = "Ayat Jurnal Penyesuaian";
-        $accounts = ChartOfAccount::where('is_active', true)->orderBy('kode', 'asc')->get();
+        $accounts = ChartOfAccount::where('is_active', true)->where('perusahaan', $id)->orderBy('kode', 'asc')->get();
         
         $journals = AdjustmentJournal::with(['details.account'])
+                        ->where('adjustment_journals.perusahaan', $id)
                         ->orderBy('tgl_transaksi', 'desc')
                         ->orderBy('created_at', 'desc')
                         ->get();
 
-        return view('finance.adjustment', compact('title', 'accounts', 'journals'));
+        $jumlah = count($journals);
+
+        return view('finance.adjustment', compact('title', 'accounts', 'journals', 'id', 'jumlah'));
     }
 
     /**
@@ -58,6 +61,7 @@ class AdjustmentJournalController extends Controller
             'items.*.chart_of_account_id' => 'required|exists:chart_of_account,id',
             'items.*.debit' => 'required|numeric|min:0',
             'items.*.kredit' => 'required|numeric|min:0',
+            'perusahaan' => 'required'
         ]);
 
         // Validasi tambahan: Memastikan total Debit dan Kredit balance di sisi server
@@ -71,23 +75,13 @@ class AdjustmentJournalController extends Controller
         try {
             DB::beginTransaction();
 
-            // 1. Generate nomor jurnal otomatis (Contoh: AJ-20260619-0001)
-            $dateString = date('Ymd', strtotime($request->date));
-            $latestJournal = AdjustmentJournal::where('no_jurnal', 'LIKE', "AJ-{$dateString}-%")->latest()->first();
-            
-            $nextSequence = 1;
-            if ($latestJournal) {
-                $lastNumber = explode('-', $latestJournal->journal_number);
-                $nextSequence = ((int) end($lastNumber)) + 1;
-            }
-            $journalNumber = "AJ-{$dateString}-" . str_pad($nextSequence, 4, '0', STR_PAD_LEFT);
-
             // 2. Simpan Data Header Jurnal
             $journal = AdjustmentJournal::create([
-                'no_jurnal' => $journalNumber,
+                'no_jurnal' => $request->journal_number,
                 'tgl_transaksi'  => $request->date,
                 'keterangan'     => $request->description,
                 'type'           => 'adjustment', // Penanda jenis jurnal jika digabung dengan umum
+                'perusahaan'     => (int)$request->perusahaan,
             ]);
 
             // 3. Simpan Rincian / Detail Akun
@@ -105,14 +99,14 @@ class AdjustmentJournalController extends Controller
             AuditService::log(
                 'CREATED',
                 'Jurnal Penyesuaian',
-                'Membuat jurnal penyesuaian baru dengan nomor: ' . $journalNumber,
+                'Membuat jurnal penyesuaian baru dengan nomor: ' . $request->journal_number,
                 null,
                 [
                     'header'  => $journal->toArray(),
                     'details' => $detailData
                 ]
             );
-            return redirect()->back()->with('success', "Jurnal {$journalNumber} berhasil dibuat!");
+            return redirect()->back()->with('success', "Jurnal {$request->journal_number} berhasil dibuat!");
 
         } catch (\Exception $e) {
             DB::rollBack();

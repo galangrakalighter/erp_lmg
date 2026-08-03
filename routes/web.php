@@ -54,6 +54,7 @@ Route::middleware('auth')->group(function() {
     Route::post('cms/produk/delete/{id}', [App\Http\Controllers\ProdukController::class, 'destroy'])->name('produk_delete');
 
     Route::get('client/{division}', [App\Http\Controllers\ProdukController::class, 'indexDivision'])->name('client.produk_divisi');
+    Route::resource('perusahaan', App\Http\Controllers\PerusahaanController::class);
     
     // Hook
     Route::get('cms_{nama}/hook', [App\Http\Controllers\HookController::class, 'index'])->name('cms.hook');
@@ -184,7 +185,7 @@ Route::middleware('auth')->group(function() {
     // Dashboard HC
     Route::get('dashboard_hc', [App\Http\Controllers\DashboardController::class, 'dashboard'])->name('overview.dashboard');
     Route::get('dashboard_kpi', [App\Http\Controllers\DashboardController::class, 'kpi_dashboard'])->name('overview.dashboard_kpi');
-    Route::get('dashboard_finance', [App\Http\Controllers\DashboardController::class, 'finance_dashboard'])->name('finance.dashboard');
+    Route::get('dashboard_finance/{id}', [App\Http\Controllers\DashboardController::class, 'finance_dashboard'])->name('finance.dashboard');
     Route::get('audit', [App\Http\Controllers\DashboardController::class, 'audit'])->name('audit.index');
     Route::get('/kpi/stats', [App\Http\Controllers\KPIController::class, 'getKpiStats']);
     Route::get('/task/stats', [App\Http\Controllers\KPIController::class, 'getTaskStats']);
@@ -202,7 +203,7 @@ Route::middleware('auth')->group(function() {
     Route::delete('kpi/{id}', [App\Http\Controllers\HCOverviewController::class, 'deleteKPI'])->name('kpi.destroy');
     Route::get('/journals/export-pdf', [App\Http\Controllers\PDFController::class, 'exportGeneralJournal'])->name('journals.export-pdf');
     Route::get('/finance-ledger/export-pdf', [App\Http\Controllers\PDFController::class, 'exportBukuBesar'])->name('ledger.export-pdf');
-    Route::get('/adjustment-journal/export-pdf', [App\Http\Controllers\PDFController::class, 'exportAdjustmen'])->name('adjustment_journal.export-pdf');
+    Route::get('/adjustment-journal/export-pdf/{id}', [App\Http\Controllers\PDFController::class, 'exportAdjustmen'])->name('adjustment_journal.export-pdf');
     // Route::get('/payment', function(){
     //     $title = "Payment - ";
     //     return view('payment.index', compact('title'));
@@ -210,30 +211,52 @@ Route::middleware('auth')->group(function() {
 
     // Route::post('/payment/get-token', [App\Http\Controllers\HCDailyController::class, 'getPaymentToken'])->name('payment.getToken');
 
-    Route::get('/finance_coa/data/akun', [App\Http\Controllers\COAController::class, 'getCoaData'])->name('finance_coa.data');
-    Route::get('/general_journal/data/jurnal', [App\Http\Controllers\GeneralJournalController::class, 'getGeneralJournalData'])->name('general_journal.data');
-    Route::resource('finance_coa', App\Http\Controllers\COAController::class);
-    Route::resource('general_journal', App\Http\Controllers\GeneralJournalController::class);
-    Route::resource('adjustment_journal', App\Http\Controllers\AdjustmentJournalController::class);
-    Route::get('/neraca-saldo', [App\Http\Controllers\LedgerController::class, 'neracaSaldo'])->name('Ledger.neraca_saldo');
+    Route::get('/finance_coa/data/akun/{id}', [App\Http\Controllers\COAController::class, 'getCoaData'])->name('finance_coa.data');
+    Route::get('/general_journal/data/jurnal/{id}', [App\Http\Controllers\GeneralJournalController::class, 'getGeneralJournalData'])->name('general_journal.data');
+    
+    Route::get('finance_coa/{id}', [App\Http\Controllers\COAController::class, 'index'])->name('finance_coa.index');
+    Route::post('finance_coa/{id}', [App\Http\Controllers\COAController::class, 'store'])->name('finance_coa.store');
+    Route::put('finance_coa/{id}', [App\Http\Controllers\COAController::class, 'update'])->name('finance_coa.update');
+    Route::delete('finance_coa/{id}', [App\Http\Controllers\COAController::class, 'destroy'])->name('finance_coa.destroy');
+    
+    Route::get('general_journal/{id}', [App\Http\Controllers\GeneralJournalController::class, 'index'])->name('general_journal.index');
+    Route::post('general_journal/{id}', [App\Http\Controllers\GeneralJournalController::class, 'store'])->name('general_journal.store');
+    Route::put('general_journal/{id}', [App\Http\Controllers\GeneralJournalController::class, 'update'])->name('general_journal.update');
+    Route::delete('general_journal/{id}', [App\Http\Controllers\GeneralJournalController::class, 'destroy'])->name('general_journal.destroy');
+    
+    Route::get('adjustment_journal/{id}', [App\Http\Controllers\AdjustmentJournalController::class, 'index'])->name('adjustment_journal.index');
+    Route::post('adjustment_journal/{id}', [App\Http\Controllers\AdjustmentJournalController::class, 'store'])->name('adjustment_journal.store');
+    Route::put('adjustment_journal/{id}', [App\Http\Controllers\AdjustmentJournalController::class, 'update'])->name('adjustment_journal.update');
+    Route::delete('adjustment_journal/{id}', [App\Http\Controllers\AdjustmentJournalController::class, 'destroy'])->name('adjustment_journal.destroy');
+    
+    Route::get('invoice/{id}', [App\Http\Controllers\InvoiceController::class, 'index'])->name('invoice.index');
+    Route::post('invoice/{id}', [App\Http\Controllers\InvoiceController::class, 'store'])->name('invoice.store');
+    Route::put('invoice/{id}', [App\Http\Controllers\InvoiceController::class, 'update'])->name('invoice.update');
+    Route::delete('invoice/{id}', [App\Http\Controllers\InvoiceController::class, 'destroy'])->name('invoice.destroy');
+    
+    Route::get('payroll/{id}', [App\Http\Controllers\PayrollController::class, 'index'])->name('payroll.index');
+    Route::post('payroll/{id}', [App\Http\Controllers\PayrollController::class, 'store'])->name('payroll.store');
+    Route::put('payroll/{id}', [App\Http\Controllers\PayrollController::class, 'update'])->name('payroll.update');
+    Route::delete('payroll/{id}', [App\Http\Controllers\PayrollController::class, 'destroy'])->name('payroll.destroy');
+    // Route::post('/payroll/payment', [App\Http\Controllers\PayrollController::class, 'baru'])->name('payroll.payment_baru');
+    Route::post('/payroll/payment/{id}', [App\Http\Controllers\PayrollController::class, 'payment'])->name('payroll.payment_baru');
+    
+    Route::get('/neraca-saldo/{id}', [App\Http\Controllers\LedgerController::class, 'neracaSaldo'])->name('Ledger.neraca_saldo');
     Route::get('/neraca-saldo/export', [App\Http\Controllers\LedgerController::class, 'exportExcel'])->name('Ledger.export_neraca_saldo');
     Route::get('/opening-balance', [App\Http\Controllers\OpeningBalanceController::class, 'index'])->name('opening-balance.index');
-    Route::get('/neraca-lajur', [App\Http\Controllers\LedgerController::class, 'neracaLajur'])->name('Ledger.neraca_lajur');
-    Route::get('/arus-kas', [App\Http\Controllers\LedgerController::class, 'arus_kas'])->name('Ledger.arus_kas');
-    Route::get('/jurnal-penutup', [App\Http\Controllers\LedgerController::class, 'jurnal_penutup'])->name('Ledger.jurnal_penutup');
-    Route::post('/jurnal-tutup', [App\Http\Controllers\LedgerController::class, 'lockPeriode'])->name('Ledger.lock_periode');
-    Route::post('/payroll/payment', [App\Http\Controllers\PayrollController::class, 'payment'])->name('payroll.payment');
-    Route::get('finance/report/worksheet/export-laba-rugi', [App\Http\Controllers\LedgerController::class, 'export_laba_rugi']);
-    Route::get('finance/report/worksheet/export-neraca', [App\Http\Controllers\LedgerController::class, 'export_neraca']);
-    Route::get('finance/report/cash-flow/export', [App\Http\Controllers\LedgerController::class, 'export_cash_flow']);
+    Route::get('/neraca-lajur/{id}', [App\Http\Controllers\LedgerController::class, 'neracaLajur'])->name('Ledger.neraca_lajur');
+    Route::get('/arus-kas/{id}', [App\Http\Controllers\LedgerController::class, 'arus_kas'])->name('Ledger.arus_kas');
+    Route::get('/jurnal-penutup/{id}', [App\Http\Controllers\LedgerController::class, 'jurnal_penutup'])->name('Ledger.jurnal_penutup');
+    Route::post('/jurnal-tutup/{id}', [App\Http\Controllers\LedgerController::class, 'lockPeriode'])->name('Ledger.lock_periode');
+    Route::get('finance/report/worksheet/export-laba-rugi/{id}', [App\Http\Controllers\LedgerController::class, 'export_laba_rugi']);
+    Route::get('finance/report/worksheet/export-neraca/{id}', [App\Http\Controllers\LedgerController::class, 'export_neraca']);
+    Route::get('finance/report/cash-flow/export/{id}', [App\Http\Controllers\LedgerController::class, 'export_cash_flow']);
     Route::post('/invoice/payment/{id}', [App\Http\Controllers\InvoiceController::class, 'payment'])->name('invoices.payment');
     Route::get('/invoice/pdf/{id}', [App\Http\Controllers\InvoiceController::class, 'generatePdf'])->name('invoices.generate_pdf');
-    Route::get('finance_ledger/list_account', [App\Http\Controllers\LedgerController::class, 'pilih_akun'])->name('finance_ledger.list_account');
-    Route::get('profit/list', [App\Http\Controllers\InvoiceController::class, 'list_client'])->name('profit.list');
+    Route::get('finance_ledger/list_account/{id}', [App\Http\Controllers\LedgerController::class, 'pilih_akun'])->name('finance_ledger.list_account');
+    Route::get('finance_ledger/show/{perusahaan}/{id}', [App\Http\Controllers\LedgerController::class, 'show'])->name('finance_ledger.show');
+    Route::get('profit/list/{id}', [App\Http\Controllers\InvoiceController::class, 'list_client'])->name('profit.list');
     Route::get('profit/detail/{id}', [App\Http\Controllers\InvoiceController::class, 'detail'])->name('profit.detail');
-    Route::resource('payroll', App\Http\Controllers\PayrollController::class);
-    Route::resource('finance_ledger', App\Http\Controllers\LedgerController::class);
-    Route::resource('invoice', App\Http\Controllers\InvoiceController::class);
     Route::get("/PDF/{id_produk}", [App\Http\Controllers\PDFController::class, 'index'])->name('PDF');
     Route::resource('PDF', App\Http\Controllers\PDFController::class);
     Route::post('/opening-balance/save', [App\Http\Controllers\OpeningBalanceController::class, 'save'])->name('opening-balance.save');

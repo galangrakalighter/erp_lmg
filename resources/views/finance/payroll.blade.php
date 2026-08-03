@@ -11,16 +11,6 @@
         </button>
     </div>
 
-    <!-- Alert Success -->
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-    @endif
-
     <!-- Tabel Daftar Keseluruhan Payroll -->
     <div class="card shadow-sm mb-4">
         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
@@ -66,8 +56,9 @@
     <div class="modal fade" id="addPayrollModal" tabindex="-1" role="dialog" aria-labelledby="addPayrollModalLabel" aria-hidden="true">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
-                <form id="addPayrollForm" action="{{ route('payroll.store') }}" method="POST">
+                <form id="addPayrollForm" action="{{ route('payroll.store', $id) }}" method="POST">
                     @csrf
+                    <input type="hidden" name="perusahaan" value="{{ $id }}">
                     <div class="modal-header bg-primary text-white">
                         <h5 class="modal-title" id="addPayrollModalLabel">Tambah Data Payroll</h5>
                         <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
@@ -144,7 +135,7 @@
     <div class="modal fade" id="paymentModal" tabindex="-1" role="dialog" aria-labelledby="paymentModalLabel" aria-hidden="true">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
-                <form id="paymentForm" action="{{ route('payroll.payment') }}" method="POST">
+                <form id="paymentForm" action="{{ route('payroll.payment_baru', $id) }}" method="POST">
                     @csrf
                     <div class="modal-header bg-success text-white">
                         <h5 class="modal-title" id="paymentModalLabel">Form Pembayaran Gaji</h5>

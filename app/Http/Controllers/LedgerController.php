@@ -25,7 +25,7 @@ class LedgerController extends Controller
         $this->trialBalanceService = $trialBalanceService;
     }
 
-    public function pilih_akun(Request $request)
+    public function pilih_akun(Request $request, $id)
     {
         $title = "Pilih Akun Buku Besar";
         $periode = $request->input('periode', date('Y-m'));
@@ -54,6 +54,7 @@ class LedgerController extends Controller
                     ->whereRaw("to_char(ju.tgl_transaksi, 'YYYY-MM') = ?", [$periode]);
             })
             ->where('public.chart_of_account.is_active', true)
+            ->where('public.chart_of_account.perusahaan', $id)
             ->groupBy(
                 'public.chart_of_account.id', 
                 'public.chart_of_account.kode', 
@@ -81,11 +82,12 @@ class LedgerController extends Controller
             return $account;
         });
 
-        return view('finance.bb.pilih_akun', compact('title', 'accounts', 'periode'));
+        return view('finance.bb.pilih_akun', compact('title', 'accounts', 'periode', 'id'));
     }
 
-    public function show(Request $request, $id)
+    public function show(Request $request, $perusahaan, $id)
     {
+        $id_perusahaan = (int)$perusahaan;
         $title = "Detail Buku Besar";
         
         // Ambil parameter periode dari URL, default ke bulan berjalan jika kosong
@@ -94,16 +96,16 @@ class LedgerController extends Controller
         // Panggil fungsi hitung dari Service
         $ledgerData = $this->ledgerService->getAccountLedger((int) $id, $periode);
 
-        return view('finance.bb.show', compact('title', 'periode', 'ledgerData'));
+        return view('finance.bb.show', compact('title', 'periode', 'ledgerData', 'id_perusahaan'));
     }
 
-    public function neracaSaldo(Request $request)
+    public function neracaSaldo(Request $request, $id)
     {
         $title = "Neraca Saldo";
         $periode = $request->input('periode', date('Y-m'));
 
         // Panggil data langsung dari Service
-        $data = $this->trialBalanceService->getTrialBalance($periode);
+        $data = $this->trialBalanceService->getTrialBalance($periode, $id);
 
         return view('finance.neraca_saldo', [
             'title'            => $title,
@@ -125,7 +127,7 @@ class LedgerController extends Controller
         );
     }
 
-    public function neracaLajur(Request $request, TrialBalanceService $trialBalanceService)
+    public function neracaLajur(Request $request, TrialBalanceService $trialBalanceService, $id)
     {
         $title = "Neraca Lajur";
         
@@ -133,7 +135,7 @@ class LedgerController extends Controller
         $periode = $request->get('periode', date('Y-m'));
 
         // 1. Ambil data Neraca Saldo ter-update langsung dari Service terintegrasi
-        $trialBalanceData = $trialBalanceService->getTrialBalance($periode);
+        $trialBalanceData = $trialBalanceService->getTrialBalance($periode, $id);
         $reportData = $trialBalanceData['report_data'] ?? [];
 
         // Meringkas data Neraca Saldo ke dalam format keyBy 'kode' agar mudah di-lookup
@@ -148,6 +150,7 @@ class LedgerController extends Controller
                 DB::raw('SUM(kredit) as total_kredit')
             )
             ->whereRaw("to_char(adjustment_journals.tgl_transaksi, 'YYYY-MM') = ?", [$periode])
+            ->where('perusahaan', $id)
             ->groupBy('chart_of_account_id')
             ->get()
             ->keyBy('chart_of_account_id');
@@ -155,6 +158,7 @@ class LedgerController extends Controller
         // 3. Ambil seluruh data COA aktif (Akun baru tanpa transaksi akan tetap masuk ke sini)
         $coas = DB::table('chart_of_account')
             ->where('is_active', true)
+            ->where('perusahaan', $id)
             ->orderBy('kode', 'asc')
             ->get();
 
@@ -238,9 +242,9 @@ class LedgerController extends Controller
         return view('finance.neraca_lajur', compact('worksheetData', 'totals', 'lr_balance', 'title', 'periode'));
     }
 
-    public function arus_kas(Request $request)
+    public function arus_kas(Request $request, $id)
     {
-        $title = "Laporan Arus Kas (Metode Langsung)";
+        $title = "Laporan Keuangan (Metode Langsung)";
         
         // Filter periode bulanan (YYYY-MM), default bulan berjalan saat ini
         $periode = $request->get('periode', date('Y-m'));
@@ -252,6 +256,7 @@ class LedgerController extends Controller
                 $query->whereRaw('LOWER(nama_akun) LIKE ?', ['%kas%'])
                     ->orWhereRaw('LOWER(nama_akun) LIKE ?', ['%bank%']);
             })
+            ->where('perusahaan', $id)
             ->whereRaw('LOWER(nama_akun) NOT LIKE ?', ['%brankas%'])
             ->pluck('id')
             ->toArray();
@@ -269,6 +274,7 @@ class LedgerController extends Controller
         $totalSaldoAwal = DB::table('opening_balances')
             ->where('periode', $periode)
             ->whereIn('chart_of_account_id', $cashCoaIds)
+            ->where('perusahaan', $id)
             ->sum('saldo') ?? 0;
 
         // 3. Query Utama: Ditambahkan pengambilan kolom general_journals.arus
@@ -281,6 +287,7 @@ class LedgerController extends Controller
             ->join('chart_of_account as coa_lawan', 'jd_lawan.chart_of_account_id', '=', 'coa_lawan.id')
             ->whereRaw("to_char(general_journals.tgl_transaksi, 'YYYY-MM') = ?", [$periode])
             ->whereIn('jd_kas.chart_of_account_id', $cashCoaIds)
+            ->where('general_journals.perusahaan', $id)
             ->whereNotIn('jd_lawan.chart_of_account_id', $cashCoaIds)
             ->select(
                 'general_journals.arus as jenis_arus_kas', // Mengambil kolom tipe arus kas dari header jurnal
@@ -333,15 +340,15 @@ class LedgerController extends Controller
         return view('finance.report_cash_flow', compact(
             'title', 'periode', 'operasional', 'investasi', 'pendanaan',
             'totalOperasional', 'totalInvestasi', 'totalPendanaan',
-            'totalSaldoAwal', 'kenaikanPenurunanBersih', 'totalSaldoAkhir'
+            'totalSaldoAwal', 'kenaikanPenurunanBersih', 'totalSaldoAkhir', 'id'
         ));
     }
 
     // Export Excel
-    private function getWorksheetData($periode, TrialBalanceService $trialBalanceService)
+    private function getWorksheetData($id, $periode, TrialBalanceService $trialBalanceService)
     {
         // 1. Ambil data dari Service (Sama persis dengan cara di neracaLajur)
-        $trialBalanceData = $trialBalanceService->getTrialBalance($periode);
+        $trialBalanceData = $trialBalanceService->getTrialBalance($periode, $id);
         $reportData = $trialBalanceData['report_data'] ?? [];
         $trialBalanceKeyed = collect($reportData)->keyBy('kode');
 
@@ -350,11 +357,12 @@ class LedgerController extends Controller
             ->join('adjustment_journals', 'adjustment_journal_details.adjustment_journal_id', '=', 'adjustment_journals.id')
             ->select('chart_of_account_id', DB::raw('SUM(debit) as total_debit'), DB::raw('SUM(kredit) as total_kredit'))
             ->whereRaw("to_char(adjustment_journals.tgl_transaksi, 'YYYY-MM') = ?", [$periode])
+            ->where('adjustment_journals.perusahaan', $id)
             ->groupBy('chart_of_account_id')
             ->get()
             ->keyBy('chart_of_account_id');
 
-        $coas = DB::table('chart_of_account')->where('is_active', true)->orderBy('kode', 'asc')->get();
+        $coas = DB::table('chart_of_account')->where('is_active', true)->where('perusahaan', $id)->orderBy('kode', 'asc')->get();
         
         $worksheetData = [];
         $totals = ['ns_debit'=>0,'ns_kredit'=>0,'aj_debit'=>0,'aj_kredit'=>0,'nsd_debit'=>0,'nsd_kredit'=>0,'lr_debit'=>0,'lr_kredit'=>0,'n_debit'=>0,'n_kredit'=>0];
@@ -399,12 +407,12 @@ class LedgerController extends Controller
         return ['worksheetData' => $worksheetData, 'totals' => $totals, 'lr_balance' => $totals['lr_kredit'] - $totals['lr_debit']];
     }
 
-    public function export_laba_rugi(Request $request, TrialBalanceService $trialBalanceService)
+    public function export_laba_rugi(Request $request, TrialBalanceService $trialBalanceService, $id)
     {
         $periode = $request->get('periode', date('Y-m'));
         
         // Memanggil helper yang sama agar data sinkron dengan Web
-        $data = $this->getWorksheetData($periode, $trialBalanceService);
+        $data = $this->getWorksheetData($id, $periode, $trialBalanceService);
 
         // Filter khusus untuk akun Laba Rugi (kode 4, 5, 6)
         $labaRugiMurni = collect($data['worksheetData'])->filter(function ($row) {
@@ -438,12 +446,12 @@ class LedgerController extends Controller
         }, $fileName);
     }
 
-    public function export_neraca(Request $request, TrialBalanceService $trialBalanceService)
+    public function export_neraca(Request $request, TrialBalanceService $trialBalanceService, $id)
     {
         $periode = $request->get('periode', date('Y-m'));
     
         // Panggil helper yang sudah sinkron
-        $data = $this->getWorksheetData($periode, $trialBalanceService);
+        $data = $this->getWorksheetData($id , $periode, $trialBalanceService);
 
         // Tambahkan filter: hanya ambil akun yang memiliki nilai di n_debit atau n_kredit
         $neracaMurni = collect($data['worksheetData'])
@@ -483,7 +491,7 @@ class LedgerController extends Controller
         }, $fileName);
     }
 
-    public function export_cash_flow(Request $request)
+    public function export_cash_flow(Request $request, $id)
     {
         $periode = $request->get('periode', date('Y-m'));
 
@@ -494,12 +502,14 @@ class LedgerController extends Controller
                 $query->whereRaw('LOWER(nama_akun) LIKE ?', ['%kas%'])
                     ->orWhereRaw('LOWER(nama_akun) LIKE ?', ['%bank%']);
             })
+            ->where('perusahaan', $id)
             ->whereRaw('LOWER(nama_akun) NOT LIKE ?', ['%brankas%'])
             ->pluck('id')->toArray();
 
         $totalSaldoAwal = DB::table('opening_balances')
             ->where('periode', $periode)
             ->whereIn('chart_of_account_id', $cashCoaIds)
+            ->where('perusahaan', $id)
             ->sum('saldo') ?? 0;
 
         $journalTransactions = DB::table('general_journal_details as jd_kas')
@@ -512,6 +522,7 @@ class LedgerController extends Controller
             ->whereRaw("to_char(general_journals.tgl_transaksi, 'YYYY-MM') = ?", [$periode])
             ->whereIn('jd_kas.chart_of_account_id', $cashCoaIds)
             ->whereNotIn('jd_lawan.chart_of_account_id', $cashCoaIds)
+            ->where('general_journals.perusahaan', $id)
             ->select('general_journals.arus', 'coa_lawan.kode', 'coa_lawan.nama_akun', 
                     DB::raw('SUM(jd_kas.debit) as kas_masuk'), DB::raw('SUM(jd_kas.kredit) as kas_keluar'))
             ->groupBy('general_journals.arus', 'coa_lawan.kode', 'coa_lawan.nama_akun')
@@ -559,14 +570,15 @@ class LedgerController extends Controller
         }, $fileName);
     }
 
-    public function jurnal_penutup(Request $request, TrialBalanceService $trialBalanceService)
+    public function jurnal_penutup(Request $request, TrialBalanceService $trialBalanceService, $id)
     {
         $periode = $request->get('periode', date('Y-m'));
-        $lrData = $this->getLabaRugiData($request, $trialBalanceService);
+        $lrData = $this->getLabaRugiData($request, $trialBalanceService, $id);
         // Jika tidak ada data, kirim variabel kosong dengan nilai 0
         $title = "Jurnal Penutup";
         $isLocked = DB::table('period_locks')
             ->where('periode', $periode)
+            ->where('perusahaan', $id)
             ->where('is_locked', true)
             ->exists();
         
@@ -574,7 +586,7 @@ class LedgerController extends Controller
             return view('finance.jurnal_penutup', [
                 'periode' => $periode, 'data' => [], 'modals' => 0, 'pendapatan' => 0, 
                 'jumlah' => 0, 'totalDebet' => 0, 'totalKredit' => 0, 'lr_balance' => 0,
-                'title' => $title, 'isLocked' => $isLocked
+                'title' => $title, 'isLocked' => $isLocked, 'id' => $id
             ]);
         }
 
@@ -594,11 +606,11 @@ class LedgerController extends Controller
             'periode' => $periode, 'pendapatan' => $pendapatans, 'totals' => $lrData['totals'],
             'lr_balance' => $lrData['balance'], 'modals' => $modal, 'data' => $data,
             'totalKredit' => $totalKredit, 'totalDebet' => $totalDebet, 'jumlah' => $jumlah,
-            'title' => $title, 'isLocked' => $isLocked,
+            'title' => $title, 'isLocked' => $isLocked, 'id' => $id
         ]);
     }
 
-    public function lockPeriode(Request $request)
+    public function lockPeriode(Request $request, $id)
     {
         $request->validate(['periode' => 'required']);
 
@@ -615,7 +627,8 @@ class LedgerController extends Controller
                 'locked_at'  => now(),
                 'locked_by'  => Auth::id(),
                 'updated_at' => now(),
-                'created_at' => $oldLock ? $oldLock->created_at : now()
+                'created_at' => $oldLock ? $oldLock->created_at : now(),
+                'perusahaan' => $id
             ]
         );
 
@@ -634,13 +647,13 @@ class LedgerController extends Controller
         return redirect()->back()->with('success', 'Periode ' . $periode . ' berhasil ditutup.');
     }
 
-    private function getLabaRugiData($request, $trialBalanceService)
+    private function getLabaRugiData($request, $trialBalanceService, $id)
     {
         $periode = $request->get('periode', date('Y-m'));
         $startDate = $periode . '-01';
         $endDate = date('Y-m-d', strtotime($startDate . ' +1 month'));
         // 1. Ambil data dari Neraca Saldo
-        $reportData = collect($trialBalanceService->getTrialBalance($periode)['report_data'] ?? [])->keyBy('kode');
+        $reportData = collect($trialBalanceService->getTrialBalance($periode, $id)['report_data'] ?? [])->keyBy('kode');
         
         // 2. Ambil semua akun yang memiliki transaksi di periode ini
         $lastDetails = DB::table('general_journal_details')
@@ -648,6 +661,7 @@ class LedgerController extends Controller
             ->selectRaw('DISTINCT ON (chart_of_account_id) chart_of_account_id, keterangan_item')
             ->where('general_journals.tgl_transaksi', '>=', $startDate)
             ->where('general_journals.tgl_transaksi', '<', $endDate)
+            ->where('general_journals.perusahaan', $id)
             ->whereNotNull('keterangan_item')
             ->orderBy('chart_of_account_id')
             ->orderBy('general_journals.tgl_transaksi', 'desc')
@@ -660,6 +674,7 @@ class LedgerController extends Controller
             ->select('chart_of_account_id', DB::raw('SUM(debit) as total_debit'), DB::raw('SUM(kredit) as total_kredit'))
             ->where('adjustment_journals.tgl_transaksi', '>=', $startDate)
             ->where('adjustment_journals.tgl_transaksi', '<', $endDate)
+            ->where('adjustment_journals.perusahaan', $id)
             ->groupBy('chart_of_account_id')
             ->get()
             ->keyBy('chart_of_account_id');

@@ -12,15 +12,20 @@
         
         <form action="{{ url()->current() }}" method="GET" class="d-flex flex-wrap align-items-center gap-2 mt-3 mt-sm-0">
             <input type="month" name="periode" value="{{ $periode }}" 
-                class="form-control form-control-sm bg-white font-weight-medium text-dark shadow-sm" style="width: auto;">
-            
-            <button type="submit" class="btn btn-primary btn-sm shadow-sm px-3">
-                Filter
-            </button>
+                class="form-control form-control-sm bg-white font-weight-medium text-dark shadow-sm" style="width: auto;"
+                onchange="this.form.submit()">
 
-            <a href="{{ url('finance/report/cash-flow/export?periode=' . $periode) }}" 
-            class="btn btn-success btn-sm shadow-sm px-3">
-                <i class="fas fa-file-excel mr-1"></i> Export Excel
+            <a href="{{ url('finance/report/cash-flow/export/'. $id .'?periode=' . $periode) }}" 
+            class="btn btn-success btn-sm shadow-sm px-3" target="_blank">
+                <i class="fas fa-file-excel mr-1"></i> Export Arus Kas
+            </a>
+
+            <a href="{{ url('finance/report/worksheet/export-laba-rugi/'. $id .'?periode=' . $periode) }}" target="_blank" class="btn btn-success btn-sm shadow-sm px-3">
+                <i class="fas fa-file-excel mr-1"></i> Export Laba Rugi
+            </a>
+            
+            <a href="{{ url('finance/report/worksheet/export-neraca/'. $id .'?periode=' . $periode) }}" target="_blank" class="btn btn-info btn-sm shadow-sm px-3 text-white">
+                <i class="fas fa-file-excel mr-1"></i> Export Neraca
             </a>
 
             {{-- <a href="{{ url('finance/report/cash-flow/export-pdf?periode=' . $periode) }}" target="_blank"

@@ -13,7 +13,7 @@ class TrialBalanceService
     /**
      * Mengambil Semua Data Jurnal (Gabungan Header & Detail)
      */
-    public function getTrialBalance(string $periode): array
+    public function getTrialBalance(string $periode, int $id): array
     {
         // 1. Query gabungan untuk mengambil COA, Saldo Awal, dan akumulasi mutasi POSTED
         $balances = DB::table('public.chart_of_account as coa')
@@ -40,6 +40,7 @@ class TrialBalanceService
                      ->whereRaw("to_char(ju.tgl_transaksi, 'YYYY-MM') = ?", [$periode]);
             })
             ->where('coa.is_active', true)
+            ->where('coa.perusahaan', $id)
             ->groupBy('coa.id', 'coa.kode', 'coa.nama_akun', 'coa.type', 'coa.category', 'ob.saldo')
             ->orderBy('coa.kode', 'asc')
             ->get();

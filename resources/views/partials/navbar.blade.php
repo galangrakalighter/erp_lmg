@@ -34,8 +34,8 @@
 
     @if(isset($produk) && (request()->routeIs('manajemen*') || request()->routeIs('branding*') || request()->routeIs('market_research*')))
         <li class="nav-item d-flex align-items-center mr-2">
-            <a href="{{ route('invoice.download', ['id' => $produk->id, 'halaman' => $halaman]) }}" 
-               class="btn btn-primary btn-sm rounded shadow-sm">
+            <a href="{{ route('invoice.download', array_merge(['id' => $produk->id, 'halaman' => $halaman], request()->only(['start_date', 'end_date']))) }}" 
+            class="btn btn-primary btn-sm rounded shadow-sm">
                 <i class="fas fa-file-pdf mr-1"></i> Download PDF
             </a>
         </li>

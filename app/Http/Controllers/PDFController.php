@@ -22,11 +22,13 @@ class PDFController extends Controller
         $this->ledgerService = $ledgerService;
     }
 
-    public function exportPDF($id, $halaman){
+    public function exportPDF(Request $request, $id, $halaman){
         $produk = DB::table('produk_client')->where('id', (int)$id)->first();
+        $startDate = $request->get('start_date');
+        $endDate = $request->get('end_date');
         switch ($halaman) {
             case "Manajemen Konten":
-                $data = $this->pdf->getDataManajemen($produk->id);
+                $data = $this->pdf->getDataManajemen($produk->id, $startDate, $endDate);
                 $kategory = DB::table("kategori_jasa")->where('id', $produk->kategori_jasa_id)->first();
                 $pdf = Pdf::loadView('pdf.manajemen', compact('data', 'kategory'))
                 ->setPaper('a4', 'landscape');

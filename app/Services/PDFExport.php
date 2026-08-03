@@ -9,8 +9,12 @@ class PDFExport
     /**
      * Mengambil media dengan penambahan Timeout 120 detik
      */
-    public function getDataManajemen($id)
+    public function getDataManajemen($id, $startDate = null, $endDate = null)
     {
+        $startDate = !empty($startDate) ? $startDate : now()->startOfMonth()->toDateString();
+        
+        $endDate = !empty($endDate) ? $endDate : now()->endOfMonth()->toDateString();
+
         $query = DB::table("data_jasa")
             ->join('type_produk', 'type_produk.id', '=', 'data_jasa.type_produk_id')
             ->join('strategy', 'strategy.id', '=', 'data_jasa.strategy_id')
@@ -20,10 +24,20 @@ class PDFExport
             ->join('jenis_body', 'jenis_body.id', '=', 'data_jasa.body_id')
             ->join('jenis_cta', 'jenis_cta.id', '=', 'data_jasa.cta_id')
             ->where('data_jasa.produk_client_id', $id)
-            ->select('data_jasa.*', 'type_produk.type', 'strategy.strategy', 'status.nama_status', 'pilar.pilar', 'hooks.hooks', 'jenis_body.nama_body', 'jenis_cta.nama_cta')
-            ->orderBy('data_jasa.tanggal_posting', 'ASC')->get();
+            ->whereBetween('data_jasa.tanggal_posting', [$startDate, $endDate]);
 
-        return $query;
+        return $query->select(
+                'data_jasa.*', 
+                'type_produk.type', 
+                'strategy.strategy', 
+                'status.nama_status', 
+                'pilar.pilar', 
+                'hooks.hooks', 
+                'jenis_body.nama_body', 
+                'jenis_cta.nama_cta'
+            )
+            ->orderBy('data_jasa.tanggal_posting', 'ASC')
+            ->get();
     }
 
     public function getDataMarket($id)

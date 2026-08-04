@@ -188,7 +188,7 @@ class PDFController extends Controller
         $request->validate([
             'nama_file' => 'required|string|max:255',
             'client'    => 'required|exists:divisions,id',
-            'pdf'       => 'required|mimes:pdf|max:10240', // Maksimal 10MB
+            'pdf'       => 'required|mimes:pdf', // Maksimal 10MB
         ]);
 
         // Folder berdasarkan ID client

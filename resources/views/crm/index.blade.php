@@ -74,12 +74,12 @@
                     <tbody class="text-dark">
                         @foreach($leads as $lead)
                         <tr>
-                            <td>{{ $loop->iteration }}</td>
-                            <td class="text-nowrap italic">
+                            <td class="align-middle">{{ $loop->iteration }}</td>
+                            <td class="text-nowrap italic align-middle">
                                 {{ $lead->tanggal_chat ? $lead->tanggal_chat->format('Y-m-d') : '-' }}
                             </td>
-                            <td class="font-weight-bold text-left">{{ $lead->name ?? 'No Name' }}</td>
-                            <td>
+                            <td class="font-weight-bold text-left align-middle">{{ $lead->name ?? 'No Name' }}</td>
+                            <td class="align-middle">
                                 @if($lead->phone)
                                 <a href="https://wa.me/{{ $lead->phone }}" target="_blank" class="text-decoration-none">
                                     <small class="badge badge-light border text-primary">
@@ -91,11 +91,25 @@
                                 <span class="text-muted small">-</span>
                                 @endif
                             </td>
-                            <td class="text-left small italic">{{ Str::limit($lead->layanan, 50) }}</td>
-                            <td class="font-weight-bold text-success text-nowrap">
+                            
+                            {{-- BAGIAN LAYANAN YANG DIPERBARUI --}}
+                            <td class="text-left align-middle">
+                                @if($lead->layanan)
+                                    <span class="badge badge-pill badge-light border px-3 py-2 text-secondary font-weight-normal shadow-sm" 
+                                        title="{{ $lead->layanan }}" 
+                                        style="font-size: 0.8rem; display: inline-flex; align-items: center; max-width: 220px;">
+                                        <i class="fas fa-layer-group text-info mr-1.5 flex-shrink-0"></i>
+                                        <span class="text-truncate">{{ $lead->layanan }}</span>
+                                    </span>
+                                @else
+                                    <span class="text-muted small">-</span>
+                                @endif
+                            </td>
+
+                            <td class="font-weight-bold text-success text-nowrap align-middle">
                                 {{ $lead->project_value ?? 'Rp 0' }}
                             </td>
-                            <td>
+                            <td class="align-middle">
                                 {{-- Menggunakan class badge Bootstrap sesuai stage --}}
                                 @php
                                     $badgeClass = [
@@ -110,7 +124,7 @@
                                     {{ $stages[$lead->project_stage]['label'] ?? 'Unknown' }}
                                 </span>
                             </td>
-                            <td class="text-nowrap">
+                            <td class="text-nowrap align-middle">
                                 <button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#editModal_{{ $lead->id }}">
                                     <i class="fas fa-edit fa-sm"></i>
                                 </button>

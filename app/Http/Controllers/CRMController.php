@@ -14,13 +14,15 @@ class CRMController extends Controller
         $title = "CRM";
         $filter_layanan = CRM::whereNotNull('layanan')->distinct()->pluck('layanan');
 
+        // Set default tanggal jika request kosong (2 hari terakhir: kemarin s/d hari ini)
+        $startDate = $request->start_date ?? now()->subDay()->toDateString();
+        $endDate = $request->end_date ?? now()->toDateString();
+
         $leads = CRM::whereNotNull('tanggal_chat')
-            // Filter Tanggal
-            ->when($request->start_date, function($query) use ($request) {
-                $query->whereDate('tanggal_chat', '>=', $request->start_date);
-            })
-            ->when($request->end_date, function($query) use ($request) {
-                $query->whereDate('tanggal_chat', '<=', $request->end_date);
+            // Filter Tanggal (Default 2 hari terakhir jika tidak difilter manual)
+            ->when(true, function($query) use ($startDate, $endDate, $request) {
+                $query->whereDate('tanggal_chat', '>=', $request->start_date ?? $startDate)
+                    ->whereDate('tanggal_chat', '<=', $request->end_date ?? $endDate);
             })
             // Filter Layanan
             ->when($request->layanan, function($query) use ($request) {
@@ -40,6 +42,7 @@ class CRMController extends Controller
             4 => ['label' => 'Schedule', 'color' => 'badge-secondary'],
             5 => ['label' => 'Completed', 'color' => 'badge-success'],
         ];
+
         return view('crm.index', compact('title', 'leads', 'stages', 'filter_layanan'));
     }
 

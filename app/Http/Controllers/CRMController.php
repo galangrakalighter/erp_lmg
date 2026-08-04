@@ -18,8 +18,24 @@ class CRMController extends Controller
         $startDate = $request->start_date ?? now()->subDay()->toDateString();
         $endDate = $request->end_date ?? now()->toDateString();
 
+        $excludedPhones = [
+            '62882001850221',
+            '62895428171038',
+            '6289637277465',
+            '6283820602669',
+            '6287837979874',
+            '6283829287212',
+            '6281252795716',
+            '6285158860657',
+            '6282142644868',
+            '6285793602782',
+            '62895365042133',
+            '6287794444957'
+        ];
+
         $leads = CRM::whereNotNull('tanggal_chat')
             // Filter Tanggal (Default 2 hari terakhir jika tidak difilter manual)
+            ->whereNotIn('phone', $excludedPhones)
             ->when(true, function($query) use ($startDate, $endDate, $request) {
                 $query->whereDate('tanggal_chat', '>=', $request->start_date ?? $startDate)
                     ->whereDate('tanggal_chat', '<=', $request->end_date ?? $endDate);

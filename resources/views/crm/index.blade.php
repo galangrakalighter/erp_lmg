@@ -17,18 +17,18 @@
                 <div class="row align-items-end">
                     <div class="col-md-2">
                         <label class="small font-weight-bold text-dark">Dari Tanggal:</label>
-                        {{-- request('start_date') sudah benar untuk mempertahankan nilai input date --}}
-                        <input type="date" name="start_date" class="form-control form-control-sm" value="{{ request('start_date') }}">
+                        {{-- Default ke kemarin jika request start_date kosong --}}
+                        <input type="date" name="start_date" class="form-control form-control-sm" value="{{ request('start_date', now()->subDay()->toDateString()) }}">
                     </div>
                     <div class="col-md-2">
                         <label class="small font-weight-bold text-dark">Sampai Tanggal:</label>
-                        <input type="date" name="end_date" class="form-control form-control-sm" value="{{ request('end_date') }}">
+                        {{-- Default ke hari ini jika request end_date kosong --}}
+                        <input type="date" name="end_date" class="form-control form-control-sm" value="{{ request('end_date', now()->toDateString()) }}">
                     </div>
                     <div class="col-md-2">
                         <label class="small font-weight-bold text-dark">Layanan:</label>
                         <select name="layanan" class="form-control form-control-sm">
                             <option value="">Semua Layanan</option>
-                            {{-- Tambahkan ternary operator untuk mengecek request('layanan') --}}
                             <option value="LGTR Digital Marketing" {{ request('layanan') == 'LGTR Digital Marketing' ? 'selected' : '' }}>LGTR Digital Marketing</option>
                             <option value="Eikyoo MCN" {{ request('layanan') == 'Eikyoo MCN' ? 'selected' : '' }}>Eikyoo MCN</option>
                             <option value="Lighter Tech" {{ request('layanan') == 'Lighter Tech' ? 'selected' : '' }}>Lighter Tech</option>
@@ -63,6 +63,7 @@
                         <tr>
                             <th>No</th>
                             <th>Tanggal Chat</th>
+                            <th>Pertama Kali Chat</th>
                             <th>Client Name</th>
                             <th>No Telp</th>
                             <th>Layanan</th>
@@ -76,7 +77,11 @@
                         <tr>
                             <td class="align-middle">{{ $loop->iteration }}</td>
                             <td class="text-nowrap italic align-middle">
-                                {{ $lead->tanggal_chat ? $lead->tanggal_chat->format('Y-m-d') : '-' }}
+                                {{ $lead->tanggal_chat ? $lead->tanggal_chat->format('d M Y, H:i') . ' WIB' : '-' }}
+                            </td>
+                            <!-- Kolom Pertama Kali Chat (created_at) -->
+                            <td class="text-nowrap align-middle">
+                                {{ $lead->created_at ? $lead->created_at->format('d M Y, H:i') . ' WIB' : '-' }}
                             </td>
                             <td class="font-weight-bold text-left align-middle">{{ $lead->name ?? 'No Name' }}</td>
                             <td class="align-middle">
@@ -92,7 +97,7 @@
                                 @endif
                             </td>
                             
-                            {{-- BAGIAN LAYANAN YANG DIPERBARUI --}}
+                            {{-- BAGIAN LAYANAN --}}
                             <td class="text-left align-middle">
                                 @if($lead->layanan)
                                     <span class="badge badge-pill badge-light border px-3 py-2 text-secondary font-weight-normal shadow-sm" 
@@ -110,7 +115,6 @@
                                 {{ $lead->project_value ?? 'Rp 0' }}
                             </td>
                             <td class="align-middle">
-                                {{-- Menggunakan class badge Bootstrap sesuai stage --}}
                                 @php
                                     $badgeClass = [
                                         1 => 'badge-primary', // In Progress

@@ -4,11 +4,11 @@
         <div class="col-lg-6">
             <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
                 <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-image mr-2"></i>4P Analyze</h6>
-                @if($role == 'Advertising' || $role == 'Busines Unit Head' || $role == 'Super Admin')
+                {{-- @if($role == 'Advertising' || $role == 'Busines Unit Head' || $role == 'Super Admin') --}}
                 <button type="button" class="btn btn-sm btn-primary shadow-sm" data-toggle="modal" data-target="#tambahModalAnalyze4P">
                     <i class="fas fa-plus fa-sm text-white-50 mr-1"></i> Tambah
                 </button>
-                @endif
+                {{-- @endif --}}
             </div>
             <div class="card card-body h-100">
                 <div class="table-responsive">

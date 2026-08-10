@@ -6,11 +6,11 @@
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
                     <h6 class="m-0 font-weight-bold text-dark"><i class="fas fa-fingerprint mr-2"></i>Brand Identify</h6>
-                    @if($role == 'Advertising' && !$identify || $role == 'Busines Unit Head' && !$identify || $role == 'Super Admin' && !$identify)
+                    {{-- @if($role == 'Advertising' && !$identify || $role == 'Busines Unit Head' && !$identify || $role == 'Super Admin' && !$identify) --}}
                     <button type="button" class="btn btn-sm btn-primary shadow-sm" data-toggle="modal" data-target="#tambahModalIdentify">
                         <i class="fas fa-plus fa-sm text-white-50 mr-1"></i> Tambah
                     </button>
-                    @endif
+                    {{-- @endif --}}
                 </div>
                 <div class="card-body">
                     @if ($identify)

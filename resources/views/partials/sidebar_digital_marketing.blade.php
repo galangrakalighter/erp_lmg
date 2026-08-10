@@ -17,13 +17,13 @@
             </div>
         @endif
 
-            <a class="category-dropdown-link d-flex align-items-center justify-content-between p-2 rounded text-decoration-none text-dark transition-hover {{ !$isMarketingPage ? 'collapsed' : '' }}" 
-                data-toggle="collapse" 
-                data-target="#cat_dm" 
-                aria-expanded="{{ $isMarketingPage ? 'true' : 'false' }}">
-                <span><i class="fas fa-folder-open mr-2 text-warning"></i>Client</span>
-                <i class="fas fa-caret-down arrow-icon-xs"></i>
-            </a>
+        <a class="category-dropdown-link d-flex align-items-center justify-content-between p-2 rounded text-decoration-none text-dark transition-hover {{ !$isMarketingPage ? 'collapsed' : '' }}" 
+            data-toggle="collapse" 
+            data-target="#cat_dm" 
+            aria-expanded="{{ $isMarketingPage ? 'true' : 'false' }}">
+            <span><i class="fas fa-folder-open mr-2 text-warning"></i>Client</span>
+            <i class="fas fa-caret-down arrow-icon-xs"></i>
+        </a>
 
         <div id="cat_dm" class="collapse {{ $isMarketingPage ? 'show' : '' }} ml-2 border-left-custom">
             @foreach ($digitalMarketingProduk as $client)

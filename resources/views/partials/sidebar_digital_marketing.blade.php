@@ -6,7 +6,7 @@
     aria-labelledby="headingDM" data-parent="#collapseDivisi">
     <div class="collapse-container px-2">
 
-        @if ($isSuperAdmin || (($myDivision->name == "Digital Marketing" || $myDivision->name == "Ecommerce") && $myRole->level < 5))
+        @if ($isSuperAdmin || (($myDivision->name == "Digital Marketing" || $myDivision->name == "Ecommerce") && $myRole->level < 3))
             <div class="brand-sub-header text-danger mb-2 px-2">
                 <i class="fas fa-store mr-2"></i> MR. CREPE
             </div>
@@ -15,15 +15,15 @@
                     <i class="fas fa-cog mr-2"></i> <span>Dashboard CMS</span>
                 </a>
             </div>
-        
+        @endif
+
             <a class="category-dropdown-link d-flex align-items-center justify-content-between p-2 rounded text-decoration-none text-dark transition-hover {{ !$isMarketingPage ? 'collapsed' : '' }}" 
                 data-toggle="collapse" 
                 data-target="#cat_dm" 
-            aria-expanded="{{ $isMarketingPage ? 'true' : 'false' }}">
+                aria-expanded="{{ $isMarketingPage ? 'true' : 'false' }}">
                 <span><i class="fas fa-folder-open mr-2 text-warning"></i>Client</span>
                 <i class="fas fa-caret-down arrow-icon-xs"></i>
             </a>
-        @endif
 
         <div id="cat_dm" class="collapse {{ $isMarketingPage ? 'show' : '' }} ml-2 border-left-custom">
             @foreach ($digitalMarketingProduk as $client)

@@ -65,6 +65,7 @@ class PayrollController extends Controller
         
         $paidAmount = (float) ($request->paid_amount ?? 0);
         $totalAmount = (float) $request->total_amount;
+        $total = $paidAmount + $totalAmount;
 
         $data = [
             'user_id'      => $request->user_id,
@@ -88,8 +89,8 @@ class PayrollController extends Controller
                 [
                     'chart_of_account_id' => $request->coa,
                     'keterangan_item'     => $request->keterangan ?? 'Gaji & Tunjangan Karyawan',
-                    'debit'               => $paidAmount,
-                    'kredit'              => $totalAmount
+                    'debit'               => 0,
+                    'kredit'              => $total
                 ]
             ]
         ];
@@ -371,8 +372,8 @@ class PayrollController extends Controller
                 [
                     'chart_of_account_id' => $request->coa,
                     'keterangan_item'     => $keterangan,
-                    'debit'               => $amount,
-                    'kredit'              => 0
+                    'debit'               => 0,
+                    'kredit'              => $amount
                 ]
             ]
         ];

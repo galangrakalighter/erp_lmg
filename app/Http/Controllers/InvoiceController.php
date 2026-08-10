@@ -36,7 +36,7 @@ class InvoiceController extends Controller
             ->where('produk_client.status', 1)
             ->get();
         $accountPendapatan = ChartOfAccount::where('category', 'pendapatan')->where('perusahaan', $id)->where('is_active', true)->get();
-        $accountPiutang = ChartOfAccount::where('category', 'beban')->where('perusahaan', $id)->where('is_active', true)->get();
+        $accountPiutang = ChartOfAccount::where('category', 'aset')->where('perusahaan', $id)->where('is_active', true)->get();
         return view('finance.invoice', compact('title', 'customers', 'accountPendapatan', 'accountPiutang', 'id'));
     }
 

@@ -126,8 +126,11 @@ class ManajemenKontenController extends Controller
                 }
             } else {
                 // DEFAULT: Jika filter kosong, tampilkan bulan sekarang saja
-                $query->whereMonth('data_jasa.tanggal_posting', date('m'))
-                    ->whereYear('data_jasa.tanggal_posting', date('Y'));
+                $query->where(function($q) {
+                    $q->whereMonth('data_jasa.tanggal_posting', date('m'))
+                    ->whereYear('data_jasa.tanggal_posting', date('Y'))
+                    ->orWhereNull('data_jasa.tanggal_posting');
+                });
             }
 
             $data = $query->orderBy('data_jasa.tanggal_posting', 'ASC')->get();

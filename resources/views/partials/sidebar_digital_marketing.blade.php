@@ -6,7 +6,7 @@
     aria-labelledby="headingDM" data-parent="#collapseDivisi">
     <div class="collapse-container px-2">
 
-        @if ($isSuperAdmin || (($myDivision->name == "Digital Marketing" || $myDivision->name == "Ecommerce") && $myRole->level < 3))
+        @if ($isSuperAdmin || (($myDivision->name == "Digital Marketing" || $myDivision->name == "Ecommerce") && $myRole->level < 5))
             <div class="brand-sub-header text-danger mb-2 px-2">
                 <i class="fas fa-store mr-2"></i> MR. CREPE
             </div>

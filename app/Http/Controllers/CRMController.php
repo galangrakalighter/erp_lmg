@@ -20,7 +20,7 @@ class CRMController extends Controller
 
         $excludedPhones = [
             '62882001850221',
-            '62895428171038',
+            // '62895428171038',
             '6289637277465',
             '6283820602669',
             '6287837979874',
@@ -33,30 +33,24 @@ class CRMController extends Controller
             '6287794444957'
         ];
 
-        $leads = CRM::whereNotNull('tanggal_chat')
-            // Filter Tanggal (Default 2 hari terakhir jika tidak difilter manual)
+        $leads = CRM::whereNotNull('chat_terbaru')
             ->whereNotIn('phone', $excludedPhones)
             ->when(true, function($query) use ($startDate, $endDate, $request) {
-                $query->whereDate('tanggal_chat', '>=', $request->start_date ?? $startDate)
-                    ->whereDate('tanggal_chat', '<=', $request->end_date ?? $endDate);
+                $query->whereDate('chat_terbaru', '>=', $request->start_date ?? $startDate)
+                    ->whereDate('chat_terbaru', '<=', $request->end_date ?? $endDate);
             })
-            // Filter Layanan
             ->when($request->layanan, function($query) use ($request) {
                 $query->where('layanan', $request->layanan);
             })
-            // Filter Stage
             ->when($request->stage, function($query) use ($request) {
-                $query->where('project_stage', $request->stage);
+                $query->where('status', $request->stage);
             })
-            ->orderBy('tanggal_chat', 'desc')
+            ->orderBy('chat_terbaru', 'desc')
             ->get();
 
         $stages = [
             1 => ['label' => 'In Progress', 'color' => 'badge-primary'],
-            2 => ['label' => 'Follow Up', 'color' => 'badge-warning text-white'],
-            3 => ['label' => 'Lost', 'color' => 'badge-danger'],
-            4 => ['label' => 'Schedule', 'color' => 'badge-secondary'],
-            5 => ['label' => 'Completed', 'color' => 'badge-success'],
+            2 => ['label' => 'Meeting Schedule', 'color' => 'badge-warning text-white'],
         ];
 
         return view('crm.index', compact('title', 'leads', 'stages', 'filter_layanan'));

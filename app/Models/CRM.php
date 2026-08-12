@@ -7,19 +7,28 @@ use Illuminate\Database\Eloquent\Model;
 class CRM extends Model
 {
     protected $connection = 'pgsql_supabase';
-    protected $table = "crm";
+    protected $table = "crm_baru";
     protected $fillable = [
-        "tanggal_chat",
-        "name",
+        "session_id",
+        "nama",
+        "nama_usaha",
         "email",
-        "id_proteksi",
-        "project_stage",
+        "sosial_media",
+        "website",
+        "budget",
+        "kategori",
+        "hot_prospek",
+        "meeting",
+        "created_at",
+        "chat_terbaru",
         "phone",
         "layanan",
-        "chat_ketiga",
-        "project_value"
+        "status",
+        "link_meet",
     ];
     protected $casts = [
-        'tanggal_chat' => 'datetime',
+        'chat_terbaru' => 'datetime',
+        'meeting' => 'datetime', // 'meeting' sekarang otomatis jadi objek Carbon
+        'created_at' => 'datetime',
     ];
 }

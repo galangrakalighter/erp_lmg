@@ -19,7 +19,7 @@ class CRMController extends Controller
         $endDate = $request->end_date ?? now()->toDateString();
 
         $excludedPhones = [
-            '62882001850221',
+            // '62882001850221',
             // '62895428171038',
             '6289637277465',
             '6283820602669',

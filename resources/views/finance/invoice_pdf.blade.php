@@ -104,7 +104,11 @@
                 }
             @endphp
 
-            @foreach($invoice->items as $index => $item)
+            @php
+                $items = is_string($invoice->items) ? json_decode($invoice->items, true) : ($invoice->items ?? []);
+            @endphp
+
+            @foreach($items as $index => $item)
                 @php 
                     $price = $item['price'] ?? 0;
                     $grandTotal += $price;

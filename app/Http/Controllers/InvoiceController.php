@@ -65,17 +65,19 @@ class InvoiceController extends Controller
 
     public function generatePdf($id)
     {
-        $invoice = Invoice::findOrFail($id);
+        $invoice = Invoice::with('customer')->findOrFail($id);
                 
         $pdf = Pdf::loadView('finance.invoice_pdf', [
+            'invoice'        => $invoice, // Kirim objek invoice agar bisa di-loop items-nya
             'invoice_number' => $invoice->no_invoice,
             'invoice_date'   => \Carbon\Carbon::parse($invoice->created_at)->format('d M Y'),
             'due_date'       => \Carbon\Carbon::parse($invoice->due_date)->format('d M Y'),
-            'client_company' => $invoice->customer->nama, 
+            'client_company' => $invoice->customer->nama ?? '-', 
             'amount'         => $invoice->total_amount,
             'bank_name'      => 'Bank BCA', 
             'account_name'   => 'Lighter Media Group',
-            'account_number' => '1234567890'
+            'account_number' => '1234567890',
+            'terbilang'      => 'delapan puluh ribu empat ratus tujuh rupiah' // Bisa disesuaikan dengan helper terbilang jika ada
         ]);
 
         // Ganti karakter '/' atau '\' dengan '_' atau '-' agar aman dijadikan nama file
@@ -210,6 +212,7 @@ class InvoiceController extends Controller
             'customer_id'  => 'required',
             'total_amount' => 'required|numeric',
             'due_date'     => 'required|date',
+            'items_json'   => 'required|string',
         ]);
 
         $customer = ProdukClient::findOrFail($request->customer_id);
@@ -224,6 +227,10 @@ class InvoiceController extends Controller
         $data['paid_amount'] = 0;
         $data['status'] = 'unpaid';
         $data['perusahaan'] = $id;
+
+        $data['items'] = $request->items_json;
+        
+        unset($data['items_json']);
 
         $dataBaru = [
             'tgl_transaksi' => $currentDate,
@@ -243,7 +250,7 @@ class InvoiceController extends Controller
         ];
 
         try {
-            // Eksekusi penyimpanan jurnal dan invoice dalam satu database transaction atau berurutan
+            // Eksekusi penyimpanan jurnal dan invoice dalam satu database transaction
             DB::beginTransaction();
 
             $journalId = $this->journalService->storeJournal($dataBaru);

@@ -169,6 +169,7 @@
                                     $statusBadge = [
                                         1 => 'badge-primary', 
                                         2 => 'badge-warning text-white', 
+                                        3 => 'badge-success text-white', 
                                     ][$lead->status] ?? 'badge-light';
                                 @endphp
                                 <span class="badge {{ $statusBadge }} px-3 py-2 text-uppercase" style="font-size: 0.7rem;">

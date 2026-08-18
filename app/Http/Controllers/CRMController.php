@@ -51,7 +51,7 @@ class CRMController extends Controller
         $stages = [
             1 => ['label' => 'In Progress', 'color' => 'badge-primary'],
             2 => ['label' => 'Meeting Schedule', 'color' => 'badge-warning text-white'],
-            3 => ['label' => 'Meeting', 'color' => 'badge-success text-white'],
+            3 => ['label' => 'Meeting Confirmed', 'color' => 'badge-success text-white'],
         ];
 
         return view('crm.index', compact('title', 'leads', 'stages', 'filter_layanan'));

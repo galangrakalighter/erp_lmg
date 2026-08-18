@@ -63,13 +63,16 @@
                             <th>Chat Terbaru</th>
                             <th>Pertama Kali Chat</th>
                             <th>Nama Client</th>
+                            <th>Kategori Lead</th>
                             <th>Email Client</th>
                             <th>Nama Usaha</th>
                             <th>No Telp</th>
                             <th>Layanan</th>
+                            <th>Kendala</th>
+                            <th>Kebutuhan</th>
+                            <th style="min-width: 200px;">Kesimpulan</th> {{-- Berikan min-width agar proporsional --}}
                             <th>Jadwal Meeting</th>
                             <th>Status</th>
-                            <th>Hot Prospek</th>
                             <th>Action</th>
                         </tr>
                     </thead>
@@ -78,25 +81,25 @@
                         <tr>
                             <td class="align-middle">{{ $loop->iteration }}</td>
                             
-                            {{-- Chat Terbaru (chat_terbaru) --}}
+                            {{-- Chat Terbaru --}}
                             <td class="text-nowrap italic align-middle">
-                                {{ $lead->chat_terbaru ? $lead->chat_terbaru->format('d M Y, H:i') . ' WIB' : '-' }}
+                                {{ $lead->chat_terbaru ? $lead->chat_terbaru->setTimezone('Asia/Jakarta')->format('d M Y, H:i') . ' WIB' : '-' }}
                             </td>
-                            
-                            {{-- Pertama Kali Chat (created_at) --}}
+
+                            {{-- Pertama Kali Chat --}}
                             <td class="text-nowrap align-middle">
-                                {{ $lead->created_at ? $lead->created_at->format('d M Y, H:i') . ' WIB' : '-' }}
+                                {{ $lead->created_at ? $lead->created_at->setTimezone('Asia/Jakarta')->format('d M Y, H:i') . ' WIB' : '-' }}
                             </td>
                             
-                            {{-- Nama Client (nama) --}}
+                            {{-- Nama Client --}}
                             <td class="font-weight-bold text-left align-middle">{{ $lead->nama ?? 'No Name' }}</td>
-                            
+                            <td class="font-weight-bold text-left align-middle">{{ $lead->kategori ?? '-' }}</td>
                             <td class="font-weight-bold text-left align-middle">{{ $lead->email ?? '-' }}</td>
 
-                            {{-- Nama Usaha (nama_usaha) --}}
+                            {{-- Nama Usaha --}}
                             <td class="text-left align-middle">{{ $lead->nama_usaha ?? '-' }}</td>
 
-                            {{-- No Telepon (phone) --}}
+                            {{-- No Telepon --}}
                             <td class="align-middle">
                                 @if($lead->phone)
                                 <a href="https://wa.me/{{ $lead->phone }}" target="_blank" class="text-decoration-none">
@@ -124,7 +127,26 @@
                                 @endif
                             </td>
 
-                            {{-- Jadwal Meeting (meeting) --}}
+                            <td class="font-weight-bold text-left align-middle">{{ $lead->kendala ?? '-' }}</td>
+                            <td class="font-weight-bold text-left align-middle">{{ $lead->kebutuhan ?? '-' }}</td>
+                            
+                            {{-- Kesimpulan (Dibuat Truncate + Tombol Lihat Full) --}}
+                            <td class="text-left align-middle">
+                                @if($lead->kesimpulan)
+                                    <div style="max-height: 75px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; font-size: 0.85rem;" title="{{ $lead->kesimpulan }}">
+                                        {{ $lead->kesimpulan }}
+                                    </div>
+                                    @if(strlen($lead->kesimpulan) > 100)
+                                        <button type="button" class="btn btn-link btn-sm p-0 mt-1" style="font-size: 0.75rem;" data-toggle="modal" data-target="#detailKesimpulanModal_{{ $lead->id }}">
+                                            Selengkapnya...
+                                        </button>
+                                    @endif
+                                @else
+                                    <span class="text-muted small">-</span>
+                                @endif
+                            </td>
+
+                            {{-- Jadwal Meeting --}}
                             <td class="text-nowrap align-middle">
                                 @if($lead->meeting)
                                     <span class="small font-weight-bold text-success">
@@ -141,12 +163,12 @@
                                 @endif
                             </td>
 
-                            {{-- Status (status) --}}
+                            {{-- Status --}}
                             <td class="align-middle">
                                 @php
                                     $statusBadge = [
-                                        1 => 'badge-primary', // In Progress
-                                        2 => 'badge-warning text-white', // Meeting Schedule
+                                        1 => 'badge-primary', 
+                                        2 => 'badge-warning text-white', 
                                     ][$lead->status] ?? 'badge-light';
                                 @endphp
                                 <span class="badge {{ $statusBadge }} px-3 py-2 text-uppercase" style="font-size: 0.7rem;">
@@ -154,24 +176,12 @@
                                 </span>
                             </td>
 
-                            <td class="align-middle text-center">
-                                @if($lead->hot_prospek)
-                                    <span class="badge badge-success px-2 py-1">
-                                        <i class="fas fa-check mr-1"></i> Yes
-                                    </span>
-                                @else
-                                    <span class="badge badge-secondary px-2 py-1" style="opacity: 0.6;">
-                                        <i class="fas fa-times mr-1"></i> No
-                                    </span>
-                                @endif
-                            </td>
-
                             {{-- Action Buttons --}}
                             <td class="text-nowrap align-middle">
-                                <button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#editModal_{{ $lead->id }}">
+                                <button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#editModal_{{ $lead->id }}" title="Edit">
                                     <i class="fas fa-edit fa-sm"></i>
                                 </button>
-                                <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#deleteModal_{$lead->id }}">
+                                <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#deleteModal_{{ $lead->id }}" title="Hapus">
                                     <i class="fas fa-trash fa-sm"></i>
                                 </button>
                             </td>
@@ -181,6 +191,30 @@
                 </table>
             </div>
         </div>
-    </div>
+   </div>
+
+   {{-- MODAL POPUP KESIMPULAN LENGKAP (Opsional untuk setiap lead yang panjang) --}}
+   @foreach($leads as $lead)
+       @if($lead->kesimpulan && strlen($lead->kesimpulan) > 100)
+       <div class="modal fade" id="detailKesimpulanModal_{{ $lead->id }}" tabindex="-1" role="dialog" aria-hidden="true">
+           <div class="modal-dialog" role="document">
+               <div class="modal-content">
+                   <div class="modal-header">
+                       <h5 class="modal-title font-weight-bold text-primary" style="font-size: 1rem;">Kesimpulan Lead: {{ $lead->nama ?? 'Client' }}</h5>
+                       <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                           <span aria-hidden="true">&times;</span>
+                       </button>
+                   </div>
+                   <div class="modal-body text-left">
+                       <p style="white-space: pre-line; font-size: 0.9rem;">{{ $lead->kesimpulan }}</p>
+                   </div>
+                   <div class="modal-footer">
+                       <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Tutup</button>
+                   </div>
+               </div>
+           </div>
+       </div>
+       @endif
+   @endforeach
 
 @endsection

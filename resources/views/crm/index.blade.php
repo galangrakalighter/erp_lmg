@@ -70,6 +70,7 @@
                             <th>Layanan</th>
                             <th>Kendala</th>
                             <th>Kebutuhan</th>
+                            <th>Sosial Media</th>
                             <th style="min-width: 200px;">Kesimpulan</th> {{-- Berikan min-width agar proporsional --}}
                             <th>Jadwal Meeting</th>
                             <th>Status</th>
@@ -129,6 +130,7 @@
 
                             <td class="font-weight-bold text-left align-middle">{{ $lead->kendala ?? '-' }}</td>
                             <td class="font-weight-bold text-left align-middle">{{ $lead->kebutuhan ?? '-' }}</td>
+                            <td class="font-weight-bold text-left align-middle social-column" data-social="{{ $lead->sosial_media }}">{{ $lead->sosial_media ?? '-' }}</td>
                             
                             {{-- Kesimpulan (Dibuat Truncate + Tombol Lihat Full) --}}
                             <td class="text-left align-middle">
@@ -217,5 +219,67 @@
        </div>
        @endif
    @endforeach
+
+   <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const socialCells = document.querySelectorAll(".social-column");
+
+            socialCells.forEach(cell => {
+                const rawText = cell.getAttribute("data-social");
+                if (!rawText || rawText === "-") return;
+
+                // Pisahkan berdasarkan koma
+                const items = rawText.split(",");
+                let htmlLinks = [];
+
+                items.forEach(item => {
+                    item = item.trim();
+                    if (!item) return;
+
+                    let url = "#";
+                    let label = item;
+
+                    // Cek apakah sudah berupa URL valid
+                    if (item.startsWith("http://") || item.startsWith("https://")) {
+                        url = item;
+                        // Rapikan label jika dari Instagram/TikTok
+                        if (item.includes("instagram.com")) {
+                            try {
+                                const path = new URL(item).pathname;
+                                label = "Instagram (" + path.replace(/\//g, "") + ")";
+                            } catch (e) {
+                                label = "Instagram Link";
+                            }
+                        } else if (item.includes("tiktok.com")) {
+                            try {
+                                const path = new URL(item).pathname;
+                                label = "TikTok (" + path.replace(/\//g, "") + ")";
+                            } catch (e) {
+                                label = "TikTok Link";
+                            }
+                        } else {
+                            try {
+                                label = new URL(item).hostname;
+                            } catch (e) {
+                                label = item;
+                            }
+                        }
+                    } 
+                    // Cek jika formatnya handle seperti @hey.livcoffee
+                    else if (item.startsWith("@")) {
+                        const cleanHandle = item.replace("@", "");
+                        url = "https://www.instagram.com/" + cleanHandle; // Sesuaikan default platform
+                        label = item;
+                    }
+
+                    // Buat elemen anchor
+                    htmlLinks.push(`<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-primary mr-2">${label}</a>`);
+                });
+
+                // Masukkan kembali ke dalam sel tabel
+                cell.innerHTML = htmlLinks.length > 0 ? htmlLinks.join(" | ") : "-";
+            });
+        });
+   </script>
 
 @endsection

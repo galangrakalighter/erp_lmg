@@ -117,7 +117,8 @@ class MenuServiceProvider extends ServiceProvider
                 'mcnProduk' => $mcnProduk,
                 'techProduk' => $techProduk,
                 'ecommerceProduk' => $ecommerceProduk,
-                'perusahaan' => $perusahaanFinance
+                'perusahaan' => $perusahaanFinance,
+                'auth' => $user
             ]);
         });
     }

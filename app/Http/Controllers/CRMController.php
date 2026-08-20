@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\CRM;
+use App\Models\historyChat;
 class CRMController extends Controller
 {
     /**
@@ -55,6 +56,67 @@ class CRMController extends Controller
         ];
 
         return view('crm.index', compact('title', 'leads', 'stages', 'filter_layanan'));
+    }
+
+    public function getHistory($leadId)
+    {
+        try {
+            $lead = CRM::find($leadId);
+
+            if (!$lead) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Lead tidak ditemukan.'
+                ], 404);
+            }
+
+            // Ambil history chat dari Supabase berdasarkan nomor telepon/session_id
+            $chats = historyChat::where('session_id', $lead->session_id)
+                        ->orderBy('created_at', 'asc')
+                        ->get()
+                        ->map(function ($chat) use ($lead) {
+                            $msgData = $chat->message; // Sudah berbentuk array karena $casts di model
+                            $type = $msgData['type'] ?? '';
+                            
+                            $textContent = '';
+                            $isMe = false;
+
+                            if ($type === 'ai') {
+                                $isMe = true;
+                                // Untuk 'ai', field 'content' berisi string JSON yang harus di-decode lagi
+                                $rawContent = $msgData['content'] ?? '';
+                                
+                                if (is_string($rawContent)) {
+                                    $decodedContent = json_decode($rawContent, true);
+                                    // Ambil teks pesan dari sub-key "message" di dalam inner JSON
+                                    $textContent = $decodedContent['message'] ?? $rawContent;
+                                } else {
+                                    $textContent = $rawContent;
+                                }
+                            } else {
+                                // Untuk 'human', 'content' langsung berisi teks pesan dari customer
+                                $isMe = false;
+                                $textContent = $msgData['content'] ?? '';
+                            }
+
+                            return [
+                                'sender' => $isMe ? 'me' : 'client',
+                                'message' => $textContent,
+                                'created_at' => $chat->created_at ? $chat->created_at->setTimezone('Asia/Jakarta')->format('d M Y, H:i') : '-'
+                            ];
+                        });
+
+            return response()->json([
+                'success' => true,
+                'chats' => $chats
+            ]);
+
+        } catch (\Exception $e){
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil data: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

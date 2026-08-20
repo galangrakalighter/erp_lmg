@@ -34,3 +34,4 @@ Route::get('/invoices/{id}', [App\Http\Controllers\InvoiceController::class, 'ge
 Route::get('/get-user-divisions', [App\Http\Controllers\UserController::class, 'getUserDivision']);
 Route::get('/get-data-payroll', [App\Http\Controllers\PayrollController::class, 'getDataPayroll']);
 Route::get('audit-trails', [App\Http\Controllers\DashboardController::class, 'getDataAudit'])->name('api.audit.index');
+Route::get('/whatsapp/history/{leadId}', [App\Http\Controllers\CRMController::class, 'getHistory']);

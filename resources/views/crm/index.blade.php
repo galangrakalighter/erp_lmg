@@ -181,6 +181,10 @@
 
                             {{-- Action Buttons --}}
                             <td class="text-nowrap align-middle">
+                                <button type="button" class="btn btn-success btn-sm" onclick="loadChatHistory('{{ $lead->id }}', '{{ $lead->phone }}', '{{ $lead->nama }}')" title="History Chat WhatsApp">
+                                    <i class="fab fa-whatsapp fa-sm"></i>
+                                </button>
+                                
                                 <button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#editModal_{{ $lead->id }}" title="Edit">
                                     <i class="fas fa-edit fa-sm"></i>
                                 </button>
@@ -219,6 +223,34 @@
        </div>
        @endif
    @endforeach
+
+   <div class="modal fade" id="chatHistoryModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title font-weight-bold" id="chatModalTitle" style="font-size: 1rem;">
+                        <i class="fab fa-whatsapp mr-1"></i> History Chat WhatsApp
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body text-left bg-light" id="chatModalBody" style="max-height: 400px; overflow-y: auto;">
+                    <!-- Konten chat akan dimuat otomatis lewat API -->
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-spinner fa-spin fa-2x mb-2 text-success"></i>
+                        <p class="small mb-0">Memuat riwayat chat...</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a href="#" id="chatModalWhatsAppLink" target="_blank" class="btn btn-success btn-sm">
+                        <i class="fab fa-whatsapp mr-1"></i> Buka WhatsApp Web
+                    </a>
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
    <script>
         document.addEventListener("DOMContentLoaded", function () {
@@ -280,6 +312,68 @@
                 cell.innerHTML = htmlLinks.length > 0 ? htmlLinks.join(" | ") : "-";
             });
         });
+
+        function loadChatHistory(leadId, phone, name) {
+            // 1. Set judul modal dan link WhatsApp Web secara instan
+            document.getElementById('chatModalTitle').innerHTML = `<i class="fab fa-whatsapp mr-1"></i> History Chat WhatsApp: ${name || 'Client'}`;
+            const waLink = document.getElementById('chatModalWhatsAppLink');
+            
+            if (phone && phone !== '-') {
+                waLink.href = `https://wa.me/${phone}`;
+                waLink.style.display = 'inline-block';
+            } else {
+                waLink.style.display = 'none';
+            }
+
+            // 2. Tampilkan indikator loading di dalam modal
+            const modalBody = document.getElementById('chatModalBody');
+            modalBody.innerHTML = `
+                <div class="id-loading text-center text-muted py-4">
+                    <i class="fas fa-spinner fa-spin fa-2x mb-2 text-success"></i>
+                    <p class="small mb-0">Mengambil data dari server...</p>
+                </div>
+            `;
+
+            // 3. Munculkan modalnya
+            $('#chatHistoryModal').modal('show');
+
+            // 4. Lakukan Request API (Sesuaikan URL endpoint API Anda di sini)
+            fetch(`/api/whatsapp/history/${leadId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.chats && data.chats.length > 0) {
+                        let html = '';
+                        data.chats.forEach(chat => {
+                            let isMe = chat.sender === 'me';
+                            html += `
+                                <div class="p-2 mb-2 rounded ${isMe ? 'bg-success text-white ml-auto' : 'bg-white border'}" style="max-width: 80%; ${isMe ? 'margin-left: auto;' : ''}">
+                                    <small class="d-block font-weight-bold">${isMe ? 'Admin' : name}</small>
+                                    <p class="mb-1" style="font-size: 0.9rem;">${chat.message}</p>
+                                    <small class="${isMe ? 'text-light' : 'text-muted'}" style="font-size: 0.7rem;">${chat.created_at}</small>
+                                </div>
+                            `;
+                        });
+                        modalBody.innerHTML = html;
+                    } else {
+                        modalBody.innerHTML = `
+                            <div class="text-center text-muted py-4">
+                                <i class="fas fa-comments fa-2x mb-2"></i>
+                                <p class="small mb-0">Belum ada riwayat chat tersimpan.</p>
+                                <small class="text-muted">Nomor WhatsApp: ${phone || '-'}</small>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching chat:', error);
+                    modalBody.innerHTML = `
+                        <div class="text-center text-danger py-4">
+                            <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                            <p class="small mb-0">Gagal memuat riwayat chat dari server.</p>
+                        </div>
+                    `;
+                });
+        }
    </script>
 
 @endsection

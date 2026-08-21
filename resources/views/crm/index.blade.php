@@ -224,6 +224,343 @@
        @endif
    @endforeach
 
+    @foreach($leads as $lead)
+        <div class="modal fade"
+            id="editModal_{{ $lead->id }}"
+            tabindex="-1"
+            role="dialog"
+            aria-labelledby="editModalLabel_{{ $lead->id }}"
+            aria-hidden="true">
+
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+
+                    <form action="{{ route('crm.update', $lead->id) }}" method="POST">
+                        @csrf
+                        @method('PUT')
+
+                        {{-- Modal Header --}}
+                        <div class="modal-header bg-warning">
+                            <h5 class="modal-title font-weight-bold text-dark"
+                                id="editModalLabel_{{ $lead->id }}">
+                                <i class="fas fa-edit mr-1"></i>
+                                Edit Lead: {{ $lead->nama ?? 'Client' }}
+                            </h5>
+
+                            <button type="button"
+                                    class="close"
+                                    data-dismiss="modal"
+                                    aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+
+                        {{-- Modal Body --}}
+                        <div class="modal-body">
+                            <div class="row">
+
+                                {{-- Nama Client --}}
+                                <div class="col-md-6 mb-3">
+                                    <label class="small font-weight-bold">
+                                        Nama Client
+                                    </label>
+
+                                    <input type="text"
+                                        name="nama"
+                                        class="form-control form-control-sm"
+                                        value="{{ old('nama', $lead->nama) }}"
+                                        required>
+                                </div>
+
+                                {{-- Kategori --}}
+                                <div class="col-md-6 mb-3">
+                                    <label class="small font-weight-bold">
+                                        Kategori Lead
+                                    </label>
+
+                                    <input type="text"
+                                        name="kategori"
+                                        class="form-control form-control-sm"
+                                        value="{{ old('kategori', $lead->kategori) }}">
+                                </div>
+
+                                {{-- Email --}}
+                                <div class="col-md-6 mb-3">
+                                    <label class="small font-weight-bold">
+                                        Email Client
+                                    </label>
+
+                                    <input type="email"
+                                        name="email"
+                                        class="form-control form-control-sm"
+                                        value="{{ old('email', $lead->email) }}">
+                                </div>
+
+                                {{-- Phone --}}
+                                <div class="col-md-6 mb-3">
+                                    <label class="small font-weight-bold">
+                                        No. Telepon
+                                    </label>
+
+                                    <input type="text"
+                                        name="phone"
+                                        class="form-control form-control-sm"
+                                        value="{{ old('phone', $lead->phone) }}">
+                                </div>
+
+                                {{-- Nama Usaha --}}
+                                <div class="col-md-6 mb-3">
+                                    <label class="small font-weight-bold">
+                                        Nama Usaha
+                                    </label>
+
+                                    <input type="text"
+                                        name="nama_usaha"
+                                        class="form-control form-control-sm"
+                                        value="{{ old('nama_usaha', $lead->nama_usaha) }}">
+                                </div>
+
+                                {{-- Layanan --}}
+                                <div class="col-md-6 mb-3">
+                                    <label class="small font-weight-bold">
+                                        Layanan
+                                    </label>
+
+                                    <input type="text"
+                                        name="layanan"
+                                        class="form-control form-control-sm"
+                                        value="{{ old('layanan', $lead->layanan) }}">
+                                </div>
+
+                                {{-- Kendala --}}
+                                <div class="col-md-6 mb-3">
+                                    <label class="small font-weight-bold">
+                                        Kendala
+                                    </label>
+
+                                    <textarea name="kendala"
+                                            class="form-control form-control-sm"
+                                            rows="3">{{ old('kendala', $lead->kendala) }}</textarea>
+                                </div>
+
+                                {{-- Kebutuhan --}}
+                                <div class="col-md-6 mb-3">
+                                    <label class="small font-weight-bold">
+                                        Kebutuhan
+                                    </label>
+
+                                    <textarea name="kebutuhan"
+                                            class="form-control form-control-sm"
+                                            rows="3">{{ old('kebutuhan', $lead->kebutuhan) }}</textarea>
+                                </div>
+
+                                {{-- Sosial Media --}}
+                                <div class="col-md-12 mb-3">
+                                    <label class="small font-weight-bold">
+                                        Sosial Media
+                                    </label>
+
+                                    <input type="text"
+                                        name="sosial_media"
+                                        class="form-control form-control-sm"
+                                        value="{{ old('sosial_media', $lead->sosial_media) }}">
+
+                                    <small class="text-muted">
+                                        Pisahkan beberapa sosial media dengan koma (,)
+                                    </small>
+                                </div>
+
+                                {{-- Kesimpulan --}}
+                                <div class="col-md-12 mb-3">
+                                    <label class="small font-weight-bold">
+                                        Kesimpulan
+                                    </label>
+
+                                    <textarea name="kesimpulan"
+                                            class="form-control form-control-sm"
+                                            rows="5">{{ old('kesimpulan', $lead->kesimpulan) }}</textarea>
+                                </div>
+
+                                {{-- Jadwal Meeting --}}
+                                <div class="col-md-6 mb-3">
+                                    <label class="small font-weight-bold">
+                                        Jadwal Meeting
+                                    </label>
+
+                                    <input type="datetime-local"
+                                        name="meeting"
+                                        class="form-control form-control-sm"
+                                        value="{{ $lead->meeting
+                                            ? $lead->meeting
+                                                ->setTimezone('Asia/Jakarta')
+                                                ->format('Y-m-d\TH:i')
+                                            : '' }}">
+                                </div>
+
+                                {{-- Link Meeting --}}
+                                <div class="col-md-6 mb-3">
+                                    <label class="small font-weight-bold">
+                                        Link Meeting
+                                    </label>
+
+                                    <input type="url"
+                                        name="link_meet"
+                                        class="form-control form-control-sm"
+                                        value="{{ old('link_meet', $lead->link_meet) }}"
+                                        placeholder="https://meet.google.com/...">
+                                </div>
+
+                                {{-- Status --}}
+                                <div class="col-md-6 mb-3">
+                                    <label class="small font-weight-bold">
+                                        Status
+                                    </label>
+
+                                    <select name="status"
+                                            class="form-control form-control-sm"
+                                            required>
+
+                                        @foreach($stages as $id => $stage)
+                                            <option value="{{ $id }}"
+                                                {{ old('status', $lead->status) == $id ? 'selected' : '' }}>
+                                                {{ $stage['label'] }}
+                                            </option>
+                                        @endforeach
+
+                                    </select>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        {{-- Modal Footer --}}
+                        <div class="modal-footer">
+                            <button type="button"
+                                    class="btn btn-secondary btn-sm"
+                                    data-dismiss="modal">
+
+                                <i class="fas fa-times mr-1"></i>
+                                Batal
+                            </button>
+
+                            <button type="submit"
+                                    class="btn btn-warning btn-sm">
+
+                                <i class="fas fa-save mr-1"></i>
+                                Simpan Perubahan
+                            </button>
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    @endforeach
+
+    @foreach($leads as $lead)
+        <div class="modal fade"
+            id="deleteModal_{{ $lead->id }}"
+            tabindex="-1"
+            role="dialog"
+            aria-labelledby="deleteModalLabel_{{ $lead->id }}"
+            aria-hidden="true">
+
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+
+                    <form action="{{ route('crm.destroy', $lead->id) }}" method="POST">
+                        @csrf
+                        @method('DELETE')
+
+                        {{-- Modal Header --}}
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title font-weight-bold"
+                                id="deleteModalLabel_{{ $lead->id }}">
+
+                                <i class="fas fa-trash mr-1"></i>
+                                Hapus Lead
+                            </h5>
+
+                            <button type="button"
+                                    class="close text-white"
+                                    data-dismiss="modal"
+                                    aria-label="Close">
+
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+
+                        {{-- Modal Body --}}
+                        <div class="modal-body text-center py-4">
+
+                            <div class="mb-3">
+                                <i class="fas fa-exclamation-triangle text-danger"
+                                style="font-size: 3rem;">
+                                </i>
+                            </div>
+
+                            <h5 class="font-weight-bold">
+                                Yakin ingin menghapus lead ini?
+                            </h5>
+
+                            <p class="text-muted mb-1">
+                                Data lead berikut akan dihapus:
+                            </p>
+
+                            {{-- Informasi Lead --}}
+                            <div class="alert alert-light border mt-3 mb-0">
+
+                                <strong>
+                                    {{ $lead->nama ?? 'No Name' }}
+                                </strong>
+
+                                @if($lead->phone)
+                                    <br>
+
+                                    <small class="text-muted">
+                                        {{ $lead->phone }}
+                                    </small>
+                                @endif
+
+                            </div>
+
+                            <small class="text-danger d-block mt-3">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Data yang sudah dihapus tidak dapat dikembalikan.
+                            </small>
+
+                        </div>
+
+                        {{-- Modal Footer --}}
+                        <div class="modal-footer justify-content-center">
+
+                            <button type="button"
+                                    class="btn btn-secondary btn-sm px-4"
+                                    data-dismiss="modal">
+
+                                <i class="fas fa-times mr-1"></i>
+                                Batal
+                            </button>
+
+                            <button type="submit"
+                                    class="btn btn-danger btn-sm px-4">
+
+                                <i class="fas fa-trash mr-1"></i>
+                                Ya, Hapus
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    @endforeach
+
+
+
    <div class="modal fade" id="chatHistoryModal" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">

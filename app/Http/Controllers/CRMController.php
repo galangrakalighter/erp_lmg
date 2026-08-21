@@ -154,14 +154,36 @@ class CRMController extends Controller
     /**
      * Update the specified resource in storage.
      */
+    
     public function update(Request $request, string $id)
     {
-        CRM::where("id", $id)->update([
-            "project_value" => $request->project_value,
-            "project_stage" => $request->project_stage_id
+        // Cari data CRM
+        $crm = CRM::findOrFail($id);
+
+        // Validasi data
+        $validated = $request->validate([
+            'nama' => 'required|string|max:255',
+            'kategori' => 'nullable|string|max:255',
+            'email' => 'nullable|email|max:255',
+            'phone' => 'nullable|string|max:50',
+            'nama_usaha' => 'nullable|string|max:255',
+            'layanan' => 'nullable|string|max:255',
+            'kendala' => 'nullable|string',
+            'kebutuhan' => 'nullable|string',
+            'sosial_media' => 'nullable|string',
+            'kesimpulan' => 'nullable|string',
+            'meeting' => 'nullable|date',
+            'link_meet' => 'nullable|url|max:500',
+            'status' => 'required',
         ]);
 
-        return redirect()->back()->with('success', "Data CRM Telah Di Perbarui");
+        // Update data CRM
+        $crm->update($validated);
+
+        // Kembali ke halaman sebelumnya
+        return redirect()
+            ->back()
+            ->with('success', 'Data CRM telah diperbarui.');
     }
 
     /**

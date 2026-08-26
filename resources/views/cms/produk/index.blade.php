@@ -63,6 +63,19 @@
                     </div>
 
                     <div class="modal-body p-4" style="background-color: #f8f9fc;">
+                        <div class="alert alert-light border d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4" role="alert">
+                            <div class="text-dark mb-2 mb-md-0">
+                                <i class="fas fa-info-circle text-primary mr-2"></i>
+                                Lihat dokumentasi jika membutuhkan panduan sebelum menambahkan produk jasa.
+                            </div>
+                            <a href="{{ route('docs') }}"
+                               class="btn btn-sm btn-outline-primary font-weight-bold"
+                               target="_blank"
+                               rel="noopener noreferrer">
+                                <i class="fas fa-book-open mr-1"></i>Buka Dokumentasi
+                            </a>
+                        </div>
+
                         <div class="section-title mb-3 d-flex align-items-center">
                             <div class="bg-primary mr-2" style="width: 4px; height: 18px; border-radius: 2px;"></div>
                             <h6 class="text-primary font-weight-bold mb-0">Informasi Dasar</h6>

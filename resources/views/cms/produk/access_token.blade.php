@@ -1,5 +1,5 @@
-@include('partials.header')
-
+@extends('layout.app')
+@section('content')
 <style>
     :root {
         --bs-primary: #4f46e5;
@@ -309,4 +309,4 @@
     document.addEventListener('DOMContentLoaded', updateUI);
 </script>
 
-@include('partials.footer')
+@endsection

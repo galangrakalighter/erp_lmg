@@ -244,103 +244,224 @@ class LedgerController extends Controller
 
     public function arus_kas(Request $request, $id)
     {
-        $title = "Laporan Keuangan (Metode Langsung)";
-        
-        // Filter periode bulanan (YYYY-MM), default bulan berjalan saat ini
-        $periode = $request->get('periode', date('Y-m'));
+        $title = 'Laporan Keuangan (Metode Langsung)';
+        $periode = $request->input('periode', date('Y-m'));
 
-        // 1. Ambil ID semua akun yang merupakan Kas atau Bank berdasarkan string nama akun
-        $cashCoaIds = DB::table('chart_of_account')
-            ->where('is_active', true)
-            ->where(function($query) {
-                $query->whereRaw('LOWER(nama_akun) LIKE ?', ['%kas%'])
-                    ->orWhereRaw('LOWER(nama_akun) LIKE ?', ['%bank%']);
-            })
-            ->where('perusahaan', $id)
-            ->whereRaw('LOWER(nama_akun) NOT LIKE ?', ['%brankas%'])
-            ->pluck('id')
-            ->toArray();
-
-        // Jika tidak ada COA yang memenuhi kriteria, kembalikan ke view dengan data kosong
-        if (empty($cashCoaIds)) {
-            return view('finance.report_cash_flow', [
-                'title' => $title, 'periode' => $periode, 'operasional' => [], 'investasi' => [], 'pendanaan' => [],
-                'totalOperasional' => 0, 'totalInvestasi' => 0, 'totalPendanaan' => 0,
-                'totalSaldoAwal' => 0, 'kenaikanPenurunanBersih' => 0, 'totalSaldoAkhir' => 0
-            ])->with('error', 'Tidak ada akun Kas atau Bank yang terdeteksi dalam sistem.');
+        // Validasi format periode YYYY-MM.
+        if (!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $periode)) {
+            $periode = date('Y-m');
         }
 
-        // 2. Hitung Saldo Awal Akumulatif dari tabel opening_balances
-        $totalSaldoAwal = DB::table('opening_balances')
-            ->where('periode', $periode)
-            ->whereIn('chart_of_account_id', $cashCoaIds)
-            ->where('perusahaan', $id)
-            ->sum('saldo') ?? 0;
+        [$tahun, $bulan] = array_map('intval', explode('-', $periode));
 
-        // 3. Query Utama: Ditambahkan pengambilan kolom general_journals.arus
-        $journalTransactions = DB::table('general_journal_details as jd_kas')
-            ->join('general_journals', 'jd_kas.general_journal_id', '=', 'general_journals.id')
-            ->join('general_journal_details as jd_lawan', function($join) {
-                $join->on('jd_kas.general_journal_id', '=', 'jd_lawan.general_journal_id')
-                    ->on('jd_kas.id', '!=', 'jd_lawan.id');
-            })
-            ->join('chart_of_account as coa_lawan', 'jd_lawan.chart_of_account_id', '=', 'coa_lawan.id')
-            ->whereRaw("to_char(general_journals.tgl_transaksi, 'YYYY-MM') = ?", [$periode])
-            ->whereIn('jd_kas.chart_of_account_id', $cashCoaIds)
-            ->where('general_journals.perusahaan', $id)
-            ->whereNotIn('jd_lawan.chart_of_account_id', $cashCoaIds)
+        /*
+        * Ambil akun Kas dan Bank.
+        * Kolom type:
+        * D = saldo normal debit
+        * K = saldo normal kredit
+        */
+        $cashAccounts = DB::table('chart_of_account')
+            ->where('perusahaan', $id)
+            ->where('is_active', true)
             ->select(
-                'general_journals.arus as jenis_arus_kas', // Mengambil kolom tipe arus kas dari header jurnal
-                'coa_lawan.kode as kode_lawan',
-                'coa_lawan.nama_akun as nama_lawan',
-                DB::raw('SUM(jd_kas.debit) as kas_masuk'),
-                DB::raw('SUM(jd_kas.kredit) as kas_keluar')
+                'id',
+                'kode',
+                'nama_akun',
+                'type'
             )
-            ->groupBy('general_journals.arus', 'coa_lawan.kode', 'coa_lawan.nama_akun')
-            ->orderBy('coa_lawan.kode', 'asc')
+            ->orderBy('kode')
             ->get();
-        
-        // 4. Pengelompokkan Data ke dalam 3 Aktivitas Arus Kas
-        $operasional = [];
-        $investasi = [];
-        $pendanaan = [];
+
+        /*
+        * Jika akun Kas/Bank tidak ditemukan.
+        */
+        if ($cashAccounts->isEmpty()) {
+            return view('finance.report_cash_flow', [
+                'id'                      => $id,
+                'title'                   => $title,
+                'periode'                 => $periode,
+                'operasional'             => [],
+                'investasi'               => [],
+                'pendanaan'               => [],
+                'totalOperasional'        => 0,
+                'totalInvestasi'          => 0,
+                'totalPendanaan'          => 0,
+                'totalSaldoAwal'          => 0,
+                'kenaikanPenurunanBersih' => 0,
+                'totalSaldoAkhir'         => 0,
+            ])->with(
+                'error',
+                'Tidak ada akun Kas atau Bank yang terdeteksi dalam sistem.'
+            );
+        }
+
+        $cashCoaIds = $cashAccounts
+            ->pluck('id')
+            ->map(fn ($accountId) => (int) $accountId)
+            ->all();
+
+        /*
+        * Ambil saldo awal menggunakan LedgerService.
+        * Dengan begitu hasilnya sama dengan saldo awal pada Buku Besar.
+        */
+        $totalSaldoAwal = $cashAccounts->sum(
+            function ($account) use ($periode) {
+                $ledgerData = $this->ledgerService->getAccountLedger(
+                    (int) $account->id,
+                    $periode
+                );
+
+                return (float) ($ledgerData['opening_balance'] ?? 0);
+            }
+        );
+
+        /*
+        * Ambil mutasi langsung dari detail akun Kas/Bank.
+        *
+        * Tidak menggunakan self-join ke akun lawan karena dapat
+        * menyebabkan nilai debit/kredit terduplikasi pada jurnal majemuk.
+        */
+        $journalTransactions = DB::table('general_journal_details as jd')
+            ->join(
+                'general_journals as gj',
+                'jd.general_journal_id',
+                '=',
+                'gj.id'
+            )
+            ->join(
+                'chart_of_account as coa',
+                'jd.chart_of_account_id',
+                '=',
+                'coa.id'
+            )
+            ->where('gj.perusahaan', $id)
+            ->whereIn('jd.chart_of_account_id', $cashCoaIds)
+            ->whereYear('gj.tgl_transaksi', $tahun)
+            ->whereMonth('gj.tgl_transaksi', $bulan)
+            ->select(
+                DB::raw(
+                    "LOWER(TRIM(COALESCE(gj.arus, ''))) AS jenis_arus_kas"
+                ),
+                'coa.id as account_id',
+                'coa.kode',
+                'coa.nama_akun',
+                'coa.type',
+                DB::raw(
+                    'SUM(COALESCE(jd.debit, 0)) AS total_debit'
+                ),
+                DB::raw(
+                    'SUM(COALESCE(jd.kredit, 0)) AS total_kredit'
+                )
+            )
+            ->groupBy(
+                DB::raw(
+                    "LOWER(TRIM(COALESCE(gj.arus, '')))"
+                ),
+                'coa.id',
+                'coa.kode',
+                'coa.nama_akun',
+                'coa.type'
+            )
+            ->orderBy('coa.kode')
+            ->get();
+
+        /*
+        * Siapkan kelompok aktivitas arus kas.
+        */
+        $kelompok = [
+            'operasional' => [],
+            'investasi'   => [],
+            'pendanaan'   => [],
+        ];
 
         foreach ($journalTransactions as $trx) {
-            // Murni pergerakan uang fisik pada Kas/Bank: Debit mengurangi Kredit
-            $netAmount = $trx->kas_masuk - $trx->kas_keluar;
+            $totalDebit = (float) $trx->total_debit;
+            $totalKredit = (float) $trx->total_kredit;
+            $type = strtoupper(trim((string) $trx->type));
 
-            if (round($netAmount, 2) == 0) continue;
-
-            $itemData = [
-                'kode' => $trx->kode_lawan,
-                'nama_akun' => $trx->nama_lawan,
-                'jumlah' => $netAmount
-            ];
-
-            // LOGIKA KLASIFIKASI BARU: Murni berdasarkan input kolom 'arus' dari Jurnal Umum
-            if ($trx->jenis_arus_kas === 'operasional') {
-                $operasional[] = $itemData;
-            } 
-            elseif ($trx->jenis_arus_kas === 'investasi') {
-                $investasi[] = $itemData;
-            } 
-            elseif ($trx->jenis_arus_kas === 'pendanaan') {
-                $pendanaan[] = $itemData;
+            /*
+            * Normalisasi mutasi berdasarkan tipe saldo normal akun:
+            *
+            * D: debit menambah saldo, kredit mengurangi saldo.
+            * K: kredit menambah saldo, debit mengurangi saldo.
+            */
+            if ($type === 'K') {
+                $netAmount = $totalKredit - $totalDebit;
+            } else {
+                $netAmount = $totalDebit - $totalKredit;
             }
+
+            // Abaikan mutasi bernilai nol.
+            if (abs($netAmount) < 0.005) {
+                continue;
+            }
+
+            $jenisArus = strtolower(
+                trim((string) $trx->jenis_arus_kas)
+            );
+
+            /*
+            * Jika kolom arus kosong atau tidak valid, masukkan sementara
+            * ke aktivitas operasional agar mutasinya tidak hilang.
+            */
+            if (!array_key_exists($jenisArus, $kelompok)) {
+                $jenisArus = 'operasional';
+            }
+
+            $kelompok[$jenisArus][] = [
+                'kode'         => $trx->kode,
+                'nama_akun'    => $trx->nama_akun,
+                'type'         => $type,
+                'total_debit'  => $totalDebit,
+                'total_kredit' => $totalKredit,
+                'jumlah'       => $netAmount,
+            ];
         }
 
-        // 5. Kalkulasi Total Akhir
-        $totalOperasional = collect($operasional)->sum('jumlah');
-        $totalInvestasi = collect($investasi)->sum('jumlah');
-        $totalPendanaan = collect($pendanaan)->sum('jumlah');
+        $operasional = $kelompok['operasional'];
+        $investasi = $kelompok['investasi'];
+        $pendanaan = $kelompok['pendanaan'];
 
-        $kenaikanPenurunanBersih = $totalOperasional + $totalInvestasi + $totalPendanaan;
-        $totalSaldoAkhir = $totalSaldoAwal + $kenaikanPenurunanBersih;
+        /*
+        * Hitung total setiap aktivitas.
+        */
+        $totalOperasional = (float) collect($operasional)
+            ->sum('jumlah');
+
+        $totalInvestasi = (float) collect($investasi)
+            ->sum('jumlah');
+
+        $totalPendanaan = (float) collect($pendanaan)
+            ->sum('jumlah');
+
+        /*
+        * Hitung kenaikan/penurunan bersih.
+        */
+        $kenaikanPenurunanBersih =
+            $totalOperasional +
+            $totalInvestasi +
+            $totalPendanaan;
+
+        /*
+        * Hitung saldo akhir.
+        */
+        $totalSaldoAkhir =
+            $totalSaldoAwal +
+            $kenaikanPenurunanBersih;
 
         return view('finance.report_cash_flow', compact(
-            'title', 'periode', 'operasional', 'investasi', 'pendanaan',
-            'totalOperasional', 'totalInvestasi', 'totalPendanaan',
-            'totalSaldoAwal', 'kenaikanPenurunanBersih', 'totalSaldoAkhir', 'id'
+            'id',
+            'title',
+            'periode',
+            'operasional',
+            'investasi',
+            'pendanaan',
+            'totalOperasional',
+            'totalInvestasi',
+            'totalPendanaan',
+            'totalSaldoAwal',
+            'kenaikanPenurunanBersih',
+            'totalSaldoAkhir'
         ));
     }
 

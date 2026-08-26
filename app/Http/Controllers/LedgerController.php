@@ -247,34 +247,48 @@ class LedgerController extends Controller
         $title = 'Laporan Keuangan (Metode Langsung)';
         $periode = $request->input('periode', date('Y-m'));
 
-        // Validasi format periode YYYY-MM.
         if (!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $periode)) {
             $periode = date('Y-m');
         }
 
-        [$tahun, $bulan] = array_map('intval', explode('-', $periode));
+        [$tahun, $bulan] = array_map(
+            'intval',
+            explode('-', $periode)
+        );
 
         /*
-        * Ambil akun Kas dan Bank.
-        * Kolom type:
-        * D = saldo normal debit
-        * K = saldo normal kredit
+        * 1. Ambil akun Kas/Bank.
+        *
+        * Akun dengan kode 111... atau 113... merupakan akun Kas/Bank.
+        * Nama akun digunakan sebagai pengamanan tambahan.
         */
         $cashAccounts = DB::table('chart_of_account')
             ->where('perusahaan', $id)
             ->where('is_active', true)
+            ->where(function ($query) {
+                $query->where('kode', 'like', '111%')
+                    ->orWhere('kode', 'like', '113%')
+                    ->orWhereRaw(
+                        "LOWER(COALESCE(nama_akun, '')) LIKE ?",
+                        ['%kas%']
+                    )
+                    ->orWhereRaw(
+                        "LOWER(COALESCE(nama_akun, '')) LIKE ?",
+                        ['%bank%']
+                    );
+            })
+            ->whereRaw(
+                "LOWER(COALESCE(nama_akun, '')) NOT LIKE ?",
+                ['%brankas%']
+            )
             ->select(
                 'id',
                 'kode',
-                'nama_akun',
-                'type'
+                'nama_akun'
             )
             ->orderBy('kode')
             ->get();
 
-        /*
-        * Jika akun Kas/Bank tidak ditemukan.
-        */
         if ($cashAccounts->isEmpty()) {
             return view('finance.report_cash_flow', [
                 'id'                      => $id,
@@ -291,7 +305,7 @@ class LedgerController extends Controller
                 'totalSaldoAkhir'         => 0,
             ])->with(
                 'error',
-                'Tidak ada akun Kas atau Bank yang terdeteksi dalam sistem.'
+                'Tidak ada akun Kas atau Bank dengan kode 111 atau 113.'
             );
         }
 
@@ -301,72 +315,131 @@ class LedgerController extends Controller
             ->all();
 
         /*
-        * Ambil saldo awal menggunakan LedgerService.
-        * Dengan begitu hasilnya sama dengan saldo awal pada Buku Besar.
+        * 2. Saldo awal diambil dari LedgerService agar sama
+        * dengan saldo awal pada Buku Besar.
         */
         $totalSaldoAwal = $cashAccounts->sum(
-            function ($account) use ($periode) {
+            function ($cashAccount) use ($periode) {
                 $ledgerData = $this->ledgerService->getAccountLedger(
-                    (int) $account->id,
+                    (int) $cashAccount->id,
                     $periode
                 );
 
-                return (float) ($ledgerData['opening_balance'] ?? 0);
+                return (float) (
+                    $ledgerData['opening_balance'] ?? 0
+                );
             }
         );
 
         /*
-        * Ambil mutasi langsung dari detail akun Kas/Bank.
+        * 3. Ambil akun lawan dari jurnal yang mempunyai akun Kas/Bank.
         *
-        * Tidak menggunakan self-join ke akun lawan karena dapat
-        * menyebabkan nilai debit/kredit terduplikasi pada jurnal majemuk.
+        * Yang ditampilkan adalah akun lawan, bukan akun 111/113.
+        *
+        * Dari sisi akun lawan:
+        * - kredit = kas masuk;
+        * - debit  = kas keluar.
         */
-        $journalTransactions = DB::table('general_journal_details as jd')
+        $journalTransactions = DB::table(
+            'general_journal_details as jd_lawan'
+        )
             ->join(
                 'general_journals as gj',
-                'jd.general_journal_id',
+                'jd_lawan.general_journal_id',
                 '=',
                 'gj.id'
             )
             ->join(
-                'chart_of_account as coa',
-                'jd.chart_of_account_id',
+                'chart_of_account as coa_lawan',
+                'jd_lawan.chart_of_account_id',
                 '=',
-                'coa.id'
+                'coa_lawan.id'
             )
             ->where('gj.perusahaan', $id)
-            ->whereIn('jd.chart_of_account_id', $cashCoaIds)
             ->whereYear('gj.tgl_transaksi', $tahun)
             ->whereMonth('gj.tgl_transaksi', $bulan)
+
+            /*
+            * Hanya jurnal yang memiliki detail akun Kas/Bank.
+            */
+            ->whereExists(function ($query) use ($cashCoaIds) {
+                $query->select(DB::raw(1))
+                    ->from('general_journal_details as jd_kas')
+                    ->whereColumn(
+                        'jd_kas.general_journal_id',
+                        'gj.id'
+                    )
+                    ->whereIn(
+                        'jd_kas.chart_of_account_id',
+                        $cashCoaIds
+                    );
+            })
+
+            /*
+            * Jangan jadikan akun Kas/Bank sebagai akun yang ditampilkan.
+            */
+            ->whereNotIn(
+                'jd_lawan.chart_of_account_id',
+                $cashCoaIds
+            )
+
+            /*
+            * Pengamanan tambahan:
+            * kode 111 dan 113 tidak boleh ditampilkan.
+            */
+            ->where('coa_lawan.kode', 'not like', '111%')
+            ->where('coa_lawan.kode', 'not like', '113%')
+
+            /*
+            * Nama yang mengandung Kas/Bank juga tidak ditampilkan.
+            */
+            ->whereRaw(
+                "LOWER(COALESCE(coa_lawan.nama_akun, '')) NOT LIKE ?",
+                ['%kas%']
+            )
+            ->whereRaw(
+                "LOWER(COALESCE(coa_lawan.nama_akun, '')) NOT LIKE ?",
+                ['%bank%']
+            )
             ->select(
                 DB::raw(
-                    "LOWER(TRIM(COALESCE(gj.arus, ''))) AS jenis_arus_kas"
+                    "LOWER(TRIM(COALESCE(gj.arus, ''))) " .
+                    'as jenis_arus_kas'
                 ),
-                'coa.id as account_id',
-                'coa.kode',
-                'coa.nama_akun',
-                'coa.type',
+                'coa_lawan.kode as kode_lawan',
+                'coa_lawan.nama_akun as nama_lawan',
+
+                /*
+                * Kredit akun lawan menunjukkan kas masuk.
+                */
                 DB::raw(
-                    'SUM(COALESCE(jd.debit, 0)) AS total_debit'
+                    'SUM(COALESCE(jd_lawan.kredit, 0)) ' .
+                    'as kas_masuk'
                 ),
+
+                /*
+                * Debit akun lawan menunjukkan kas keluar.
+                */
                 DB::raw(
-                    'SUM(COALESCE(jd.kredit, 0)) AS total_kredit'
+                    'SUM(COALESCE(jd_lawan.debit, 0)) ' .
+                    'as kas_keluar'
                 )
             )
             ->groupBy(
                 DB::raw(
                     "LOWER(TRIM(COALESCE(gj.arus, '')))"
                 ),
-                'coa.id',
-                'coa.kode',
-                'coa.nama_akun',
-                'coa.type'
+                'coa_lawan.kode',
+                'coa_lawan.nama_akun'
             )
-            ->orderBy('coa.kode')
+            ->orderBy(
+                'coa_lawan.kode',
+                'asc'
+            )
             ->get();
 
         /*
-        * Siapkan kelompok aktivitas arus kas.
+        * 4. Kelompokkan berdasarkan general_journals.arus.
         */
         $kelompok = [
             'operasional' => [],
@@ -375,46 +448,45 @@ class LedgerController extends Controller
         ];
 
         foreach ($journalTransactions as $trx) {
-            $totalDebit = (float) $trx->total_debit;
-            $totalKredit = (float) $trx->total_kredit;
-            $type = strtoupper(trim((string) $trx->type));
+            $kasMasuk = (float) $trx->kas_masuk;
+            $kasKeluar = (float) $trx->kas_keluar;
 
-            /*
-            * Normalisasi mutasi berdasarkan tipe saldo normal akun:
-            *
-            * D: debit menambah saldo, kredit mengurangi saldo.
-            * K: kredit menambah saldo, debit mengurangi saldo.
-            */
-            if ($type === 'K') {
-                $netAmount = $totalKredit - $totalDebit;
-            } else {
-                $netAmount = $totalDebit - $totalKredit;
-            }
+            $netAmount = $kasMasuk - $kasKeluar;
 
-            // Abaikan mutasi bernilai nol.
             if (abs($netAmount) < 0.005) {
                 continue;
             }
 
-            $jenisArus = strtolower(
-                trim((string) $trx->jenis_arus_kas)
-            );
+            $jenisArus = strtolower(trim(
+                (string) $trx->jenis_arus_kas
+            ));
 
             /*
-            * Jika kolom arus kosong atau tidak valid, masukkan sementara
-            * ke aktivitas operasional agar mutasinya tidak hilang.
+            * Hanya klasifikasi valid yang dimasukkan.
             */
             if (!array_key_exists($jenisArus, $kelompok)) {
-                $jenisArus = 'operasional';
+                continue;
+            }
+
+            /*
+            * Pengamanan terakhir agar kode 111 dan 113
+            * tidak masuk ke hasil.
+            */
+            $kodeAkun = trim((string) $trx->kode_lawan);
+
+            if (
+                str_starts_with($kodeAkun, '111') ||
+                str_starts_with($kodeAkun, '113')
+            ) {
+                continue;
             }
 
             $kelompok[$jenisArus][] = [
-                'kode'         => $trx->kode,
-                'nama_akun'    => $trx->nama_akun,
-                'type'         => $type,
-                'total_debit'  => $totalDebit,
-                'total_kredit' => $totalKredit,
-                'jumlah'       => $netAmount,
+                'kode'       => $kodeAkun,
+                'nama_akun'  => $trx->nama_lawan,
+                'kas_masuk'  => $kasMasuk,
+                'kas_keluar' => $kasKeluar,
+                'jumlah'     => $netAmount,
             ];
         }
 
@@ -423,7 +495,7 @@ class LedgerController extends Controller
         $pendanaan = $kelompok['pendanaan'];
 
         /*
-        * Hitung total setiap aktivitas.
+        * 5. Hitung total.
         */
         $totalOperasional = (float) collect($operasional)
             ->sum('jumlah');
@@ -434,20 +506,15 @@ class LedgerController extends Controller
         $totalPendanaan = (float) collect($pendanaan)
             ->sum('jumlah');
 
-        /*
-        * Hitung kenaikan/penurunan bersih.
-        */
         $kenaikanPenurunanBersih =
             $totalOperasional +
             $totalInvestasi +
             $totalPendanaan;
 
         /*
-        * Hitung saldo akhir.
+        * Tidak ditambah dengan saldo awal.
         */
-        $totalSaldoAkhir =
-            $totalSaldoAwal +
-            $kenaikanPenurunanBersih;
+        $totalSaldoAkhir = $kenaikanPenurunanBersih;
 
         return view('finance.report_cash_flow', compact(
             'id',
@@ -664,7 +731,7 @@ class LedgerController extends Controller
         $totalInvestasi = collect($investasi)->sum('jumlah');
         $totalPendanaan = collect($pendanaan)->sum('jumlah');
         $kenaikanPenurunanBersih = $totalOperasional + $totalInvestasi + $totalPendanaan;
-        $totalSaldoAkhir = $totalSaldoAwal + $kenaikanPenurunanBersih;
+        $totalSaldoAkhir = $kenaikanPenurunanBersih;
         // --- DOWNLOAD EXCEL (Pola yang sama dengan export_neraca Anda) ---
         $fileName = 'Laporan_Arus_Kas_' . \Carbon\Carbon::parse($periode)->format('Y_m') . '.xlsx';
         // dd($totalSaldoAkhir);

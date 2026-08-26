@@ -28,7 +28,8 @@ class LedgerService
                 'ji.debit',
                 'ji.kredit',
                 'ju.no_invoice',
-                'ju.status'
+                'ju.status',
+                'ju.arus'
             ])
             ->where('ji.chart_of_account_id', $coaId)
             ->where('ju.status', '=', 'posted')
@@ -61,7 +62,8 @@ class LedgerService
                 'keterangan'     => $row->keterangan_item,
                 'debit'          => $debit,
                 'kredit'         => $kredit,
-                'saldo_berjalan' => $currentBalance
+                'saldo_berjalan' => $currentBalance,
+                'arus' => $row->arus
             ];
         }
 

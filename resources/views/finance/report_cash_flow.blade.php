@@ -163,7 +163,7 @@
                 <tr style="background-color: #111827; color: #34d399; font-weight: 700; border-top: 1px solid #374151;">
                     <td colspan="2" style="padding: 0.75rem 1rem; text-align: right; text-transform: uppercase; font-size: 10px; letter-spacing: 0.05em;">Saldo Akhir Kas & Bank Riil</td>
                     <td colspan="2" style="padding: 0.75rem 1rem; text-align: right; font-size: 14px; font-family: monospace; letter-spacing: 0.025em;">
-                        {{ number_format($totalSaldoAkhir, 2, ',', '.') }}
+                        {{ number_format($kenaikanPenurunanBersih + $totalSaldoAwal, 2, ',', '.') }}
                     </td>
                 </tr>
 

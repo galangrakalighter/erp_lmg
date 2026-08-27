@@ -26,26 +26,56 @@ class AnalisisController extends Controller
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
 
-        $since = $startDate ? Carbon::createFromFormat('d M Y', $startDate)->startOfDay()->timestamp : null;
-        $until = $endDate ? Carbon::createFromFormat('d M Y', $endDate)->endOfDay()->timestamp : null;
-        $fetch = false;
-        if($since != null && $until != null){
-            $fetch = true;
-        }
+        $sinceDate = $startDate
+            ? Carbon::createFromFormat('d M Y', $startDate)->startOfDay()
+            : null;
+
+        $untilDate = $endDate
+            ? Carbon::createFromFormat('d M Y', $endDate)->endOfDay()
+            : null;
+
+        // Unix timestamp khusus pemanggilan API
+        $since = $sinceDate?->timestamp;
+        $until = $untilDate?->timestamp;
+        $fetch = $since !== null && $until !== null;
         
         $produkBaru = ProdukClient::findOrFail($produk);
         $title = 'Analisis Konten ' . $produkBaru->nama;
 
         
-        $data = DB::table("data_jasa")
-        ->join('type_produk', 'type_produk.id', '=', 'data_jasa.type_produk_id')
-        ->join('strategy', 'strategy.id', '=', 'data_jasa.strategy_id')
-        ->join('status', 'status.id', '=', 'data_jasa.status_id')
-        ->join('pilar', 'pilar.id', '=', 'data_jasa.pilar_id')
-        ->join('hooks', 'hooks.id', '=', 'data_jasa.hooks_id')
-        ->where('data_jasa.produk_client_id', $produk)
-        ->select('data_jasa.*', 'type_produk.type', 'strategy.strategy', 'status.nama_status', 'pilar.pilar', 'hooks.hooks')
-        ->paginate(10);
+
+        
+        $data = DB::table('data_jasa')
+            ->join('type_produk', 'type_produk.id', '=', 'data_jasa.type_produk_id')
+            ->join('strategy', 'strategy.id', '=', 'data_jasa.strategy_id')
+            ->join('status', 'status.id', '=', 'data_jasa.status_id')
+            ->join('pilar', 'pilar.id', '=', 'data_jasa.pilar_id')
+            ->join('hooks', 'hooks.id', '=', 'data_jasa.hooks_id')
+            ->where('data_jasa.produk_client_id', $produk)
+            ->when($sinceDate, function ($query) use ($sinceDate) {
+                $query->where(
+                    'data_jasa.tanggal_posting',
+                    '>=',
+                    $sinceDate->toDateTimeString()
+                );
+            })
+            ->when($untilDate, function ($query) use ($untilDate) {
+                $query->where(
+                    'data_jasa.tanggal_posting',
+                    '<=',
+                    $untilDate->toDateTimeString()
+                );
+            })
+            ->select(
+                'data_jasa.*',
+                'type_produk.type',
+                'strategy.strategy',
+                'status.nama_status',
+                'pilar.pilar',
+                'hooks.hooks'
+            )
+            ->orderBy('data_jasa.tanggal_posting', 'asc')
+            ->get();
         $index = array_search($platform, $produkBaru->access_token['platform']);
 
         switch ($platform) {

@@ -185,7 +185,7 @@
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0 dataTable" id="dataTable">
+                        <table class="table table-hover align-middle mb-0 dataTable" id="dataTableAnalisisBaru">
                             <thead class="text-nowrap">
                                 <tr>
                                     <th class="ps-4">No</th>
@@ -199,23 +199,21 @@
                                 </tr>
                             </thead>
                             <tbody style="font-size: 0.875rem;">
-                                @php
-                                    $no = 1;
-                                @endphp
                                 @foreach ($data as $item)
-                                <tr>
-                                    <th>{{ $no }}</th>
-                                    <th><a href="{{ $item->link }}">{{ $item->link }}</a></th>
-                                    <th>{{ $item->tanggal_posting }}</th>
-                                    <th>{{ $item->type }}</th>
-                                    <th>{{ $item->strategy }}</th>
-                                    <th>{{ $item->pilar }}</th>
-                                    <th>{{ $item->hooks }}</th>
-                                    <th>{{ $item->komposisi }}</th>
-                                </tr>
-                                @php
-                                    $no++;
-                                @endphp
+                                    <tr>
+                                        <th>{{ $loop->iteration }}</th>
+                                        <td>
+                                            <a href="{{ $item->link }}" target="_blank">
+                                                {{ $item->link }}
+                                            </a>
+                                        </td>
+                                        <td>{{ $item->tanggal_posting }}</td>
+                                        <td>{{ $item->type }}</td>
+                                        <td>{{ $item->strategy }}</td>
+                                        <td>{{ $item->pilar }}</td>
+                                        <td>{{ $item->hooks }}</td>
+                                        <td>{{ $item->komposisi }}</td>
+                                    </tr>
                                 @endforeach
                             </tbody>
                         </table>
@@ -524,6 +522,18 @@
 
         // 1. Inisialisasi DataTable
         const table = $('#insight_1').DataTable({
+            "pageLength": 10, // Menampilkan 10 data per halaman
+            "language": {
+                "emptyTable" : "Tidak Ada dalam Table Ini"
+            },
+            "columnDefs": [
+                { "orderable": false, "targets": [1] } // Nonaktifkan sorting untuk kolom URL
+            ],
+            "order": [[0, "asc"]], // Urutkan berdasarkan tanggal terbaru secara default
+            "dom": '<"d-flex justify-content-between align-items-center mb-3"lf>rt<"d-flex justify-content-between align-items-center mt-3"ip>'
+        });
+
+        const table3 = $('#dataTableAnalisisBaru').DataTable({
             "pageLength": 10, // Menampilkan 10 data per halaman
             "language": {
                 "emptyTable" : "Tidak Ada dalam Table Ini"

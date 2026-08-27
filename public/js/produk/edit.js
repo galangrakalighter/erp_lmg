@@ -76,9 +76,9 @@ function initializeEditSelect2() {
 }
 
 function buildEditModalHtml(res){
+    console.log(res);
     const p = res.produk;
     const opt = res.options;
-    const isAdmin = res.is_admin;
     const currentTeams = res.current_teams || [];
 
     let platformData = [];
@@ -180,19 +180,12 @@ function buildEditModalHtml(res){
             <div class="row">
                 <div class="col-md-6 form-group">
                     <label class="font-weight-bold small text-danger">Busines Unit Head (BUH)</label>
-                    ${isAdmin ? `
-                        <select name="buh_ids[]" id="edit-select-buh" class="form-control select2-multiple" multiple data-placeholder="Pilih BUH">
-                            ${(opt.buh || []).map(u => {
-                                const isSelected = currentTeams.some(t => (t.id || t) == u.id);
-                                return `<option value="${u.id}" ${isSelected ? 'selected' : ''}>${u.name}</option>`;
-                            }).join('')}
-                        </select>
-                    ` : `
-                        <input type="hidden" name="buh_ids[]" value="${p.user_id}">
-                        <div class="p-2 border rounded bg-white shadow-sm">
-                            ${(opt.buh || []).filter(u => currentTeams.some(t => (t.id || t) == u.id)).map(u => `<span class="badge badge-danger m-1">${u.name}</span>`).join('') || '<small class="text-muted">No DMM</small>'}
-                        </div>
-                    `}
+                    <select name="buh_ids[]" id="edit-select-buh" class="form-control select2-multiple" multiple data-placeholder="Pilih BUH">
+                        ${(opt.buh || []).map(u => {
+                            const isSelected = currentTeams.some(t => (t.id || t) == u.id);
+                            return `<option value="${u.id}" ${isSelected ? 'selected' : ''}>${u.name}</option>`;
+                        }).join('')}
+                    </select>
                 </div>
                 <div class="col-md-6 form-group">
                     <label class="font-weight-bold small text-warning">Digital Marketer (DM)</label>

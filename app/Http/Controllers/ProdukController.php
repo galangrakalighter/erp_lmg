@@ -90,7 +90,7 @@ class ProdukController extends Controller
             } else {
                 $kategori = KategoriJasa::where('id', $divisi[0]->division_id)->get();
                 if($folderName == "cms_LGTR"){
-                    $kategori = KategoriJasa::where('id', 2)->get();
+                    $kategori = KategoriJasa::where('id', 1)->get();
                 }
             }
             
@@ -133,7 +133,8 @@ class ProdukController extends Controller
     }
 
 
-    public function store(Request $request){
+    public function store(Request $request)
+    {
         $accessTokenArray = [
             'platform' => $request->platform,
             'access'   => $request->access,
@@ -142,82 +143,99 @@ class ProdukController extends Controller
         try {
             DB::beginTransaction();
 
-            // 1. Simpan Produk Baru
+            // 1. Simpan produk
             $produk = ProdukClient::create([
-                "kategori_jasa_id" => (int)$request->kategori_jasa_id,
-                "nama"             => $request->client,
-                "status"           => (int)$request->status,
-                "access_token"     => $accessTokenArray 
+                'kategori_jasa_id' => (int) $request->kategori_jasa_id,
+                'nama'              => $request->client,
+                'status'            => (int) $request->status,
+                'access_token'      => $accessTokenArray,
             ]);
 
-            // 2. Kumpulkan semu    a ID User dari input modal
-            $allUserIds = collect([
-                $request->buh_ids, 
-                $request->dm_ids,
-                $request->ads_ids,
-                $request->ccm_ids,
-                $request->cc_ids
-            ])->flatten()->filter()->unique();
+            // 2. Kumpulkan semua ID user dari form
+            $allUserIds = collect()
+                ->merge(collect($request->input('buh_ids', [])))
+                ->merge(collect($request->input('dm_ids', [])))
+                ->merge(collect($request->input('ads_ids', [])))
+                ->merge(collect($request->input('ccm_ids', [])))
+                ->merge(collect($request->input('cc_ids', [])));
 
-            // 3. Tambahkan Head of Division (HOD) secara otomatis berdasarkan divisi
-            $currentUserDivision = Auth::user()->userDivisions->first();
+            // 3. Tentukan user acuan untuk mencari HOD
+            $currentUserDivision = Auth::user()
+                ->userDivisions
+                ->first();
 
-            $targetUserId = ($currentUserDivision && $currentUserDivision->role_id != null) 
-                            ? Auth::user()->id 
-                            : ($request->buh_ids[0] ?? null);
+            $targetUserId = (
+                $currentUserDivision &&
+                $currentUserDivision->role_id !== null
+            )
+                ? Auth::id()
+                : collect($request->input('buh_ids', []))->first();
 
-            $hod = null;
+            // 4. Ambil hanya kolom user_id agar tidak ambigu
             if ($targetUserId) {
-                $hod = UserDivision::join('roles', 'roles.id', '=', 'user_division.role_id')
-                    ->where('user_id', $targetUserId)
+                $hod = UserDivision::query()
+                    ->where('user_division.user_id', $targetUserId)
+                    ->select('user_division.user_id')
                     ->first();
+
+                if ($hod) {
+                    // Tambahkan hanya user_id.
+                    // Jangan menambahkan $hod->id.
+                    $allUserIds->push((int) $hod->user_id);
+                }
             }
 
-            if ($hod) {
-                // Pastikan yang di-push adalah ID USER, bukan ID dari tabel user_division
-                $allUserIds->push((int)$hod->user_id); 
-            }
-            
-            if ($hod) {
-                $allUserIds->push((int)$hod->id);
+            // 5. Tambahkan user login jika bukan admin
+            if (!Auth::user()->isAdmin) {
+                $allUserIds->push((int) Auth::id());
             }
 
-            // 4. Tambahkan Auth User jika bukan Super Admin (agar pembuat punya akses)
-            if (Auth::user()->isAdmin == false) {
-                $allUserIds->push(Auth::user()->id);
+            // 6. unique harus dijalankan setelah seluruh ID ditambahkan
+            $allUserIds = $allUserIds
+                ->filter(fn ($userId) => $userId !== null && $userId !== '')
+                ->map(fn ($userId) => (int) $userId)
+                ->filter(fn ($userId) => $userId > 0)
+                ->unique()
+                ->values();
+
+            // 7. Cegah pasangan user_id dan client_id dimasukkan dua kali
+            foreach ($allUserIds as $userId) {
+                UserClient::firstOrCreate(
+                    [
+                        'user_id'   => $userId,
+                        'client_id' => (int) $produk->id,
+                    ],
+                    [
+                        'assigned_at' => now(),
+                    ]
+                );
             }
 
-            // 5. Simpan ke Tabel Pivot user_client menggunakan relasi
-            // Ini akan otomatis mengisi tabel user_client dengan user_id dan client_id
-            foreach($allUserIds as $id){
-                UserClient::insert([
-                    'user_id' => (int)$id,
-                    'client_id' => (int)$produk->id,
-                    'assigned_at' => now()
-                ]);
-            }
-
-            DB::table('client_division')->insert([
-                'client_id' => $produk->id,
-                'division_id' => $request->divisi,
-                'created_at' => now(),
-                'updated_at' => now()
+            DB::table('client_division')->insertOrIgnore([
+                'client_id'   => (int) $produk->id,
+                'division_id' => (int) $request->divisi,
+                'created_at'   => now(),
+                'updated_at'   => now(),
             ]);
 
             DB::commit();
-            return redirect()->back()->with('success', 'Produk dan Tim berhasil disimpan!');
 
-        } catch (\Exception $e) {
+            return redirect()
+                ->back()
+                ->with('success', 'Produk dan Tim berhasil disimpan!');
+        } catch (\Throwable $e) {
             DB::rollBack();
-            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+
+            return redirect()
+                ->back()
+                ->with('error', 'Terjadi kesalahan: '.$e->getMessage());
         }
     }
 
     public function update($id, Request $request)
     {
-        $id = (int)$id;
-        
-        // Siapkan array access_token
+        $id = (int) $id;
+
         $accessTokenArray = [
             'platform' => $request->platform,
             'access'   => $request->access,
@@ -226,53 +244,129 @@ class ProdukController extends Controller
         try {
             DB::beginTransaction();
 
-            // 1. Update Data Produk
+            // 1. Update data produk
             $produk = ProdukClient::findOrFail($id);
+
             $produk->update([
-                "kategori_jasa_id" => (int)$request->kategori_jasa_id,
-                "nama"             => $request->nama,
-                "status"           => (int)$request->status,
-                "access_token"     => $accessTokenArray 
+                'kategori_jasa_id' => (int) $request->kategori_jasa_id,
+                'nama'              => $request->nama,
+                'status'            => (int) $request->status,
+                'access_token'      => $accessTokenArray,
             ]);
 
-            // 2. Kumpulkan semua ID User dari input modal edit
-            $allUserIds = collect([
-                $request->buh_ids, 
-                $request->dm_ids,
-                $request->ads_ids,
-                $request->ccm_ids,
-                $request->cc_ids
-            ])->flatten()->filter()->unique();
+            // 2. Kumpulkan semua ID user dari form edit
+            $allUserIds = collect()
+                ->merge(collect($request->input('buh_ids', [])))
+                ->merge(collect($request->input('dm_ids', [])))
+                ->merge(collect($request->input('ads_ids', [])))
+                ->merge(collect($request->input('ccm_ids', [])))
+                ->merge(collect($request->input('cc_ids', [])));
 
-            // 3. Tambahkan Head of Division (HOD) secara otomatis
-            $targetUserId = (Auth::user()->isAdmin == false) 
-                            ? Auth::user()->id 
-                            : ($request->buh_ids[0] ?? null);
+            // 3. Tentukan user acuan
+            $targetUserId = !Auth::user()->isAdmin
+                ? Auth::id()
+                : collect($request->input('buh_ids', []))->first();
 
+            // 4. Tambahkan HOD
             if ($targetUserId) {
-                $hod = UserDivision::where('user_id', $targetUserId)->first();
+                $hod = UserDivision::query()
+                    ->where('user_division.user_id', $targetUserId)
+                    ->select('user_division.user_id')
+                    ->first();
+
                 if ($hod) {
-                    // Tambahkan ID user dari HOD tersebut (asumsi HOD adalah user di divisi yang sama)
-                    // Jika logic HOD Anda adalah user tertentu, sesuaikan query-nya di sini
-                    $allUserIds->push($hod->user_id);
+                    // Masukkan user_id, bukan id tabel user_division.
+                    $allUserIds->push((int) $hod->user_id);
                 }
             }
 
-            // 4. Pastikan pembuat/user login tetap punya akses jika bukan Admin
-            if (Auth::user()->isAdmin == false) {
-                $allUserIds->push(Auth::user()->id);
+            // 5. Pastikan user login tetap memiliki akses jika bukan admin
+            if (!Auth::user()->isAdmin) {
+                $allUserIds->push((int) Auth::id());
             }
 
-            // 5. Sinkronisasi Tabel Pivot (User Client)
-            // sync() akan menghapus yang lama dan mengganti dengan daftar ID yang baru
-            $produk->teams()->sync($allUserIds->unique()->toArray());
+            // 6. Bersihkan dan hilangkan ID duplikat
+            $allUserIds = $allUserIds
+                ->filter(function ($userId) {
+                    return $userId !== null && $userId !== '';
+                })
+                ->map(function ($userId) {
+                    return (int) $userId;
+                })
+                ->filter(function ($userId) {
+                    return $userId > 0;
+                })
+                ->unique()
+                ->values();
+
+            /*
+            * 7. Ambil ID user yang sudah tersimpan.
+            * Dipakai untuk membandingkan data lama dengan data baru.
+            */
+            $existingUserIds = UserClient::query()
+                ->where('client_id', $produk->id)
+                ->pluck('user_id')
+                ->map(function ($userId) {
+                    return (int) $userId;
+                });
+
+            /*
+            * 8. Cari perbedaannya.
+            *
+            * $userIdsToAdd:
+            * Ada di form baru, tetapi belum ada di database.
+            *
+            * $userIdsToDelete:
+            * Ada di database, tetapi sudah tidak dipilih di form.
+            *
+            * ID yang ada di keduanya tidak akan di-update.
+            */
+            $userIdsToAdd = $allUserIds
+                ->diff($existingUserIds)
+                ->values();
+
+            $userIdsToDelete = $existingUserIds
+                ->diff($allUserIds)
+                ->values();
+
+            // 9. Hapus hanya user yang sudah tidak dipilih
+            if ($userIdsToDelete->isNotEmpty()) {
+                UserClient::query()
+                    ->where('client_id', $produk->id)
+                    ->whereIn('user_id', $userIdsToDelete->all())
+                    ->delete();
+            }
+
+            // 10. Tambahkan hanya user yang belum tersimpan
+            foreach ($userIdsToAdd as $userId) {
+                UserClient::firstOrCreate(
+                    [
+                        'user_id'   => (int) $userId,
+                        'client_id' => (int) $produk->id,
+                    ],
+                    [
+                        'assigned_at' => now(),
+                    ]
+                );
+            }
 
             DB::commit();
-            return redirect()->back()->with('success', 'Perubahan produk dan tim berhasil diperbarui!');
 
-        } catch (\Exception $e) {
+            return redirect()
+                ->back()
+                ->with(
+                    'success',
+                    'Perubahan produk dan tim berhasil diperbarui!'
+                );
+        } catch (\Throwable $e) {
             DB::rollBack();
-            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+
+            return redirect()
+                ->back()
+                ->with(
+                    'error',
+                    'Terjadi kesalahan: '.$e->getMessage()
+                );
         }
     }
 

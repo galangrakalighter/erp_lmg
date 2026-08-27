@@ -155,7 +155,7 @@
 
                             <div class="col-md-6 form-group">
                                 <label class="font-weight-bold small text-primary">Digital Marketer (DM)</label>
-                                <select name="dm_ids[]" id="select-dm" class="form-control select2-multiple" multiple data-placeholder="Pilih DM" {{ Auth::user()->role == 'digital_marketing_manager' ? '' : 'disabled' }}>
+                                <select name="dm_ids[]" id="select-dm" class="form-control select2-multiple" multiple data-placeholder="Pilih DM" {{ $role == 'Busines Unit Head' ? '' : 'disabled' }}>
                                     @foreach ($dm as $d)
                                         @php $parentIdDm = $d->userDivisions->first()->parent_id ?? 0; @endphp
                                         <option value="{{ $d->id }}" data-parent="{{ $parentIdDm }}">{{ $d->email }}</option>
@@ -165,7 +165,7 @@
 
                             <div class="col-md-6 form-group">
                                 <label class="font-weight-bold small text-dark">Advertising (ADS)</label>
-                                <select name="ads_ids[]" id="select-ads" class="form-control select2-multiple" multiple data-placeholder="Pilih ADS" disabled>
+                                <select name="ads_ids[]" id="select-ads" class="form-control select2-multiple" multiple data-placeholder="Pilih ADS">
                                     @foreach ($ads as $s)
                                         @php $parentIScc = $s->userDivisions->first()->parent_id ?? 0; @endphp
                                         <option value="{{ $s->id }}" data-parent="{{ $parentIScc }}">{{ $s->email }}</option>
@@ -175,7 +175,7 @@
 
                             <div class="col-md-6 form-group">
                                 <label class="font-weight-bold small text-warning">Conten Creator Manage (CCM)</label>
-                                <select name="ccm_ids[]" id="select-ccm" class="form-control select2-multiple" multiple data-placeholder="Pilih CCM" disabled>
+                                <select name="ccm_ids[]" id="select-ccm" class="form-control select2-multiple" multiple data-placeholder="Pilih CCM">
                                     @foreach ($ccm as $c)
                                         @php $parentICc = $c->userDivisions->first()->parent_id ?? 0; @endphp
                                         <option value="{{ $c->id }}" data-parent="{{ $parentICc }}">{{ $c->email }}</option>
@@ -184,7 +184,7 @@
                             </div>
                             <div class="col-md-6 form-group">
                                 <label class="font-weight-bold small text-warning">Content Creator (CC)</label>
-                                <select name="cc_ids[]" id="select-cc" class="form-control select2-multiple" multiple data-placeholder="Pilih CC" disabled>
+                                <select name="cc_ids[]" id="select-cc" class="form-control select2-multiple" multiple data-placeholder="Pilih CC">
                                     @foreach ($cc as $c)
                                         @php $parentICc = $c->userDivisions->first()->parent_id ?? 0; @endphp
                                         <option value="{{ $c->id }}" data-parent="{{ $parentICc }}">{{ $c->email }}</option>

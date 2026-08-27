@@ -59,19 +59,19 @@ function initializeEditModal() {
 
 
 function initializeEditSelect2() {
+    $('#modalEditGlobal .select2-multiple').each(function () {
+        const $select = $(this);
 
-    $('.select2-multiple').select2({
-
-        theme:'bootstrap4',
-
-        width:'100%',
-
-        placeholder:function(){
-
-            return $(this).data('placeholder');
-
+        if ($select.hasClass('select2-hidden-accessible')) {
+            $select.select2('destroy');
         }
 
+        $select.select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            placeholder: $select.data('placeholder'),
+            dropdownParent: $('#modalEditGlobal')
+        });
     });
 }
 
@@ -189,37 +189,37 @@ function buildEditModalHtml(res){
                 </div>
                 <div class="col-md-6 form-group">
                     <label class="font-weight-bold small text-warning">Digital Marketer (DM)</label>
-                    <select name="dm_ids[]" id="edit-select-dm" class="form-control select2-multiple" multiple data-placeholder="Pilih DM" disabled>
+                    <select name="dm_ids[]" id="edit-select-dm" class="form-control select2-multiple" multiple data-placeholder="Pilih DM">
                         ${(opt.dm || []).map(u => {
                             const isSelected = currentTeams.some(t => (t.id || t) == u.id);
-                            return `<option value="${u.id}" data-parent="${u.parent}" ${isSelected ? 'selected' : ''}>${u.name}</option>`;
+                            return `<option value="${u.id}" data-parent="${u.parent != null ? u.parent : ''}" ${isSelected ? 'selected' : ''}>${u.name}</option>`;
                         }).join('')}
                     </select>
                 </div>
                 <div class="col-md-6 form-group">
                     <label class="font-weight-bold small text-dark">Advertising (ADS)</label>
-                    <select name="ads_ids[]" id="edit-select-ads" class="form-control select2-multiple" multiple data-placeholder="Pilih ADS" disabled>
+                    <select name="ads_ids[]" id="edit-select-ads" class="form-control select2-multiple" multiple data-placeholder="Pilih ADS">
                         ${(opt.ads || []).map(u => {
                             const isSelected = currentTeams.some(t => (t.id || t) == u.id);
-                            return `<option value="${u.id}" data-parent="${u.parent}" ${isSelected ? 'selected' : ''}>${u.name}</option>`;
+                            return `<option value="${u.id}" data-parent="${u.parent != null ? u.parent : ''}" ${isSelected ? 'selected' : ''}>${u.name}</option>`;
                         }).join('')}
                     </select>
                 </div>
                 <div class="col-md-6 form-group">
                     <label class="font-weight-bold small text-warning">Content Creator Manager (CCM)</label>
-                    <select name="ccm_ids[]" id="edit-select-ccm" class="form-control select2-multiple" multiple data-placeholder="Pilih CCM" disabled>
+                    <select name="ccm_ids[]" id="edit-select-ccm" class="form-control select2-multiple" multiple data-placeholder="Pilih CCM">
                         ${(opt.ccm || []).map(u => {
                             const isSelected = currentTeams.some(t => (t.id || t) == u.id);
-                            return `<option value="${u.id}" data-parent="${u.parent}" ${isSelected ? 'selected' : ''}>${u.name}</option>`;
+                            return `<option value="${u.id}" data-parent="${u.parent != null ? u.parent : ''}" ${isSelected ? 'selected' : ''}>${u.name}</option>`;
                         }).join('')}
                     </select>
                 </div>
                 <div class="col-md-6 form-group">
                     <label class="font-weight-bold small text-warning">Content Creator (CC)</label>
-                    <select name="cc_ids[]" id="edit-select-cc" class="form-control select2-multiple" multiple data-placeholder="Pilih CC" disabled>
+                    <select name="cc_ids[]" id="edit-select-cc" class="form-control select2-multiple" multiple data-placeholder="Pilih CC">
                         ${(opt.cc || []).map(u => {
                             const isSelected = currentTeams.some(t => (t.id || t) == u.id);
-                            return `<option value="${u.id}" data-parent="${u.parent}" ${isSelected ? 'selected' : ''}>${u.name}</option>`;
+                            return `<option value="${u.id}" data-parent="${u.parent != null ? u.parent : ''}" ${isSelected ? 'selected' : ''}>${u.name}</option>`;
                         }).join('')}
                     </select>
                 </div>
@@ -236,7 +236,7 @@ function buildEditModalHtml(res){
 
 }
 
-function setupEditHierarchy(){
+function setupEditHierarchyLegacy(){
 
     const buh = $('#edit-select-buh').val() || [];
     const ccm = $('#edit-select-ccm').val() || [];
@@ -433,6 +433,109 @@ function bindEditHierarchyEvent(){
 
     });
 
+}
+
+// Versi hierarki yang konsisten untuk semua browser/perangkat.
+// Deklarasi ini menggantikan setupEditHierarchy lama di atas.
+function setupEditHierarchy() {
+    const $buh = $('#edit-select-buh');
+    const $dm = $('#edit-select-dm');
+    const $ads = $('#edit-select-ads');
+    const $ccm = $('#edit-select-ccm');
+    const $cc = $('#edit-select-cc');
+
+    const normalizeIds = function (ids) {
+        return (ids || [])
+            .filter(function (id) {
+                return id !== null && id !== undefined && id !== '';
+            })
+            .map(function (id) {
+                return String(id);
+            });
+    };
+
+    const refreshSelect2 = function ($select) {
+        $select.trigger('change.select2');
+    };
+
+    const disableAndClear = function ($select) {
+        $select
+            .val(null)
+            .prop('disabled', true);
+
+        refreshSelect2($select);
+    };
+
+    const filterByParent = function ($select, parentIds) {
+        const allowedParentIds = normalizeIds(parentIds);
+
+        $select.find('option').each(function () {
+            const $option = $(this);
+            const parentId = $option.attr('data-parent');
+
+            // Data tanpa parent tetap ditampilkan agar perbedaan data API
+            // tidak menyebabkan seluruh pilihan terkunci.
+            if (parentId === undefined || parentId === null || parentId === '') {
+                $option.prop('disabled', false);
+                return;
+            }
+
+            const allowed = allowedParentIds.indexOf(String(parentId)) !== -1;
+
+            $option.prop('disabled', !allowed);
+
+            if (!allowed) {
+                $option.prop('selected', false);
+            }
+        });
+
+        refreshSelect2($select);
+    };
+
+    const refreshFromCcm = function () {
+        const ccmIds = normalizeIds($ccm.val());
+
+        if (ccmIds.length === 0) {
+            disableAndClear($cc);
+            return;
+        }
+
+        $cc.prop('disabled', false);
+        filterByParent($cc, ccmIds);
+    };
+
+    const refreshFromBuh = function () {
+        const buhIds = normalizeIds($buh.val());
+
+        if (buhIds.length === 0) {
+            disableAndClear($dm);
+            disableAndClear($ads);
+            disableAndClear($ccm);
+            disableAndClear($cc);
+            return;
+        }
+
+        $dm.prop('disabled', false);
+        $ads.prop('disabled', false);
+        $ccm.prop('disabled', false);
+
+        filterByParent($dm, buhIds);
+        filterByParent($ads, buhIds);
+        filterByParent($ccm, buhIds);
+
+        refreshFromCcm();
+    };
+
+    $buh
+        .off('change.editHierarchy')
+        .on('change.editHierarchy', refreshFromBuh);
+
+    $ccm
+        .off('change.editHierarchy')
+        .on('change.editHierarchy', refreshFromCcm);
+
+    // Terapkan kondisi awal berdasarkan data selected dari API.
+    refreshFromBuh();
 }
 
 function setupEditPlatform(){

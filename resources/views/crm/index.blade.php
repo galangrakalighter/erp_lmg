@@ -128,8 +128,43 @@
                                 @endif
                             </td>
 
-                            <td class="font-weight-bold text-left align-middle">{{ $lead->kendala ?? '-' }}</td>
-                            <td class="font-weight-bold text-left align-middle">{{ $lead->kebutuhan ?? '-' }}</td>
+                            {{-- Kendala --}}
+                            <td class="text-left align-middle" style="min-width: 200px;">
+                                @if(!empty($lead->kendala))
+                                    <div style="max-height: 63px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; white-space: pre-line; font-size: 0.85rem;"
+                                         title="{{ $lead->kendala }}">
+                                        {{ $lead->kendala }}
+                                    </div>
+                                    <button type="button"
+                                            class="btn btn-link btn-sm p-0 mt-1"
+                                            style="font-size: 0.75rem;"
+                                            data-toggle="modal"
+                                            data-target="#detailKendalaModal_{{ $lead->id }}">
+                                        <i class="fas fa-eye mr-1"></i>Selengkapnya
+                                    </button>
+                                @else
+                                    <span class="text-muted small">-</span>
+                                @endif
+                            </td>
+
+                            {{-- Kebutuhan --}}
+                            <td class="text-left align-middle" style="min-width: 200px;">
+                                @if(!empty($lead->kebutuhan))
+                                    <div style="max-height: 63px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; white-space: pre-line; font-size: 0.85rem;"
+                                         title="{{ $lead->kebutuhan }}">
+                                        {{ $lead->kebutuhan }}
+                                    </div>
+                                    <button type="button"
+                                            class="btn btn-link btn-sm p-0 mt-1"
+                                            style="font-size: 0.75rem;"
+                                            data-toggle="modal"
+                                            data-target="#detailKebutuhanModal_{{ $lead->id }}">
+                                        <i class="fas fa-eye mr-1"></i>Selengkapnya
+                                    </button>
+                                @else
+                                    <span class="text-muted small">-</span>
+                                @endif
+                            </td>
                             <td class="font-weight-bold text-left align-middle social-column" data-social="{{ $lead->sosial_media }}">{{ $lead->sosial_media ?? '-' }}</td>
                             
                             {{-- Kesimpulan (Dibuat Truncate + Tombol Lihat Full) --}}
@@ -197,6 +232,132 @@
 
    </div>
 
+   {{-- MODAL DETAIL KENDALA DAN KEBUTUHAN --}}
+   @foreach($leads as $lead)
+       {{-- Modal Kendala --}}
+       @if(!empty($lead->kendala))
+       <div class="modal fade"
+            id="detailKendalaModal_{{ $lead->id }}"
+            tabindex="-1"
+            role="dialog"
+            aria-labelledby="detailKendalaLabel_{{ $lead->id }}"
+            aria-hidden="true">
+           <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+               <div class="modal-content">
+                   <div class="modal-header bg-danger text-white">
+                       <h5 class="modal-title font-weight-bold" id="detailKendalaLabel_{{ $lead->id }}">
+                           <i class="fas fa-exclamation-circle mr-1"></i>
+                           Detail Kendala: {{ $lead->nama ?? 'Client' }}
+                       </h5>
+                       <button type="button" class="close text-white" data-dismiss="modal" aria-label="Tutup">
+                           <span aria-hidden="true">&times;</span>
+                       </button>
+                   </div>
+
+                   <div class="modal-body text-left">
+                       <div class="row mb-3">
+                           <div class="col-md-6 mb-2 mb-md-0">
+                               <small class="text-muted d-block">Nama Client</small>
+                               <strong>{{ $lead->nama ?? 'No Name' }}</strong>
+                           </div>
+                           <div class="col-md-6">
+                               <small class="text-muted d-block">Nama Usaha</small>
+                               <strong>{{ $lead->nama_usaha ?? '-' }}</strong>
+                           </div>
+                       </div>
+
+                       <div class="row mb-3">
+                           <div class="col-md-6 mb-2 mb-md-0">
+                               <small class="text-muted d-block">Layanan</small>
+                               <span>{{ $lead->layanan ?? '-' }}</span>
+                           </div>
+                           <div class="col-md-6">
+                               <small class="text-muted d-block">No. Telepon</small>
+                               <span>{{ $lead->phone ?? '-' }}</span>
+                           </div>
+                       </div>
+
+                       <hr>
+
+                       <label class="small font-weight-bold text-danger">
+                           <i class="fas fa-exclamation-triangle mr-1"></i>Kendala Lengkap
+                       </label>
+                       <div class="border rounded bg-light p-3 text-dark"
+                            style="white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7; font-size: 0.95rem; max-height: 420px; overflow-y: auto;">{{ $lead->kendala }}</div>
+                   </div>
+
+                   <div class="modal-footer">
+                       <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">
+                           <i class="fas fa-times mr-1"></i>Tutup
+                       </button>
+                   </div>
+               </div>
+           </div>
+       </div>
+       @endif
+
+       {{-- Modal Kebutuhan --}}
+       @if(!empty($lead->kebutuhan))
+       <div class="modal fade"
+            id="detailKebutuhanModal_{{ $lead->id }}"
+            tabindex="-1"
+            role="dialog"
+            aria-labelledby="detailKebutuhanLabel_{{ $lead->id }}"
+            aria-hidden="true">
+           <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+               <div class="modal-content">
+                   <div class="modal-header bg-primary text-white">
+                       <h5 class="modal-title font-weight-bold" id="detailKebutuhanLabel_{{ $lead->id }}">
+                           <i class="fas fa-clipboard-list mr-1"></i>
+                           Detail Kebutuhan: {{ $lead->nama ?? 'Client' }}
+                       </h5>
+                       <button type="button" class="close text-white" data-dismiss="modal" aria-label="Tutup">
+                           <span aria-hidden="true">&times;</span>
+                       </button>
+                   </div>
+
+                   <div class="modal-body text-left">
+                       <div class="row mb-3">
+                           <div class="col-md-6 mb-2 mb-md-0">
+                               <small class="text-muted d-block">Nama Client</small>
+                               <strong>{{ $lead->nama ?? 'No Name' }}</strong>
+                           </div>
+                           <div class="col-md-6">
+                               <small class="text-muted d-block">Nama Usaha</small>
+                               <strong>{{ $lead->nama_usaha ?? '-' }}</strong>
+                           </div>
+                       </div>
+
+                       <div class="row mb-3">
+                           <div class="col-md-6 mb-2 mb-md-0">
+                               <small class="text-muted d-block">Layanan</small>
+                               <span>{{ $lead->layanan ?? '-' }}</span>
+                           </div>
+                           <div class="col-md-6">
+                               <small class="text-muted d-block">No. Telepon</small>
+                               <span>{{ $lead->phone ?? '-' }}</span>
+                           </div>
+                       </div>
+
+                       <hr>
+
+                       <label class="small font-weight-bold text-primary">
+                           <i class="fas fa-clipboard-check mr-1"></i>Kebutuhan Lengkap
+                       </label>
+                       <div class="border rounded bg-light p-3 text-dark"
+                            style="white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7; font-size: 0.95rem; max-height: 420px; overflow-y: auto;">{{ $lead->kebutuhan }}</div>
+                   </div>
+
+                   <div class="modal-footer">
+                       <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">
+                           <i class="fas fa-times mr-1"></i>Tutup
+                       </button>
+                   </div>
+               </div>
+           </div>
+       </div>
+       @endif
+   @endforeach
    {{-- MODAL POPUP KESIMPULAN LENGKAP (Opsional untuk setiap lead yang panjang) --}}
    @foreach($leads as $lead)
        @if($lead->kesimpulan && strlen($lead->kesimpulan) > 100)

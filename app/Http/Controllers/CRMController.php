@@ -65,55 +65,305 @@ class CRMController extends Controller
             if (!$lead) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Lead tidak ditemukan.'
+                    'message' => 'Lead tidak ditemukan.',
                 ], 404);
             }
 
-            // Ambil history chat dari Supabase berdasarkan nomor telepon/session_id
-            $chats = historyChat::where('session_id', $lead->session_id)
-                        ->orderBy('created_at', 'asc')
-                        ->get()
-                        ->map(function ($chat) use ($lead) {
-                            $msgData = $chat->message; // Sudah berbentuk array karena $casts di model
-                            $type = $msgData['type'] ?? '';
-                            
-                            $textContent = '';
-                            $isMe = false;
+            /*
+            * Memeriksa apakah data merupakan payload pencarian jadwal.
+            * Mendukung array, object yang sudah menjadi array,
+            * string JSON, dan JSON bertingkat.
+            */
+            $isSearchingSchedule = function ($value) use (&$isSearchingSchedule) {
+                if (is_string($value)) {
+                    $value = trim($value);
 
-                            if ($type === 'ai') {
-                                $isMe = true;
-                                // Untuk 'ai', field 'content' berisi string JSON yang harus di-decode lagi
-                                $rawContent = $msgData['content'] ?? '';
-                                
-                                if (is_string($rawContent)) {
-                                    $decodedContent = json_decode($rawContent, true);
-                                    // Ambil teks pesan dari sub-key "message" di dalam inner JSON
-                                    $textContent = $decodedContent['message'] ?? $rawContent;
-                                } else {
-                                    $textContent = $rawContent;
-                                }
+                    if ($value === '') {
+                        return false;
+                    }
+
+                    // Jangan tampilkan jika sudah berupa teks ini.
+                    if (strtolower($value) === 'sedang mencari jadwal') {
+                        return true;
+                    }
+
+                    $decoded = json_decode($value, true);
+
+                    if (json_last_error() === JSON_ERROR_NONE) {
+                        return $isSearchingSchedule($decoded);
+                    }
+
+                    return false;
+                }
+
+                if (!is_array($value)) {
+                    return false;
+                }
+
+                /*
+                * Contoh payload yang dideteksi:
+                *
+                * [
+                *     [
+                *         "requested_available" => false,
+                *         "meeting" => null,
+                *         "jadwal_wib" => null,
+                *         "alternative_slots" => [...]
+                *     ]
+                * ]
+                */
+
+                $hasRequestedAvailable = array_key_exists(
+                    'requested_available',
+                    $value
+                );
+
+                $requestedAvailable = $hasRequestedAvailable
+                    ? filter_var(
+                        $value['requested_available'],
+                        FILTER_VALIDATE_BOOLEAN,
+                        FILTER_NULL_ON_FAILURE
+                    )
+                    : null;
+
+                $requestedNotAvailable = $hasRequestedAvailable
+                    && $requestedAvailable === false;
+
+                $hasAlternativeSlots = array_key_exists(
+                    'alternative_slots',
+                    $value
+                ) && is_array($value['alternative_slots']);
+
+                if ($requestedNotAvailable || $hasAlternativeSlots) {
+                    return true;
+                }
+
+                // Periksa seluruh isi secara rekursif.
+                foreach ($value as $item) {
+                    if ($isSearchingSchedule($item)) {
+                        return true;
+                    }
+                }
+
+                return false;
+            };
+
+            /*
+            * Memeriksa apakah isi pesan kosong.
+            *
+            * Contoh yang dianggap kosong:
+            * ""
+            * null
+            * []
+            * "[ ]"
+            * "[[]]"
+            * {"message":[]}
+            * {"message":""}
+            * {"message":null}
+            */
+            $isEmptyMessage = function ($value) use (&$isEmptyMessage) {
+                if ($value === null) {
+                    return true;
+                }
+
+                if (is_string($value)) {
+                    $value = trim($value);
+
+                    if ($value === '') {
+                        return true;
+                    }
+
+                    $decoded = json_decode($value, true);
+
+                    if (json_last_error() === JSON_ERROR_NONE) {
+                        return $isEmptyMessage($decoded);
+                    }
+
+                    return false;
+                }
+
+                if (is_array($value)) {
+                    if (empty($value)) {
+                        return true;
+                    }
+
+                    // Jika mempunyai key message, periksa isinya.
+                    if (array_key_exists('message', $value)) {
+                        return $isEmptyMessage($value['message']);
+                    }
+
+                    /*
+                    * Array dianggap kosong jika seluruh item
+                    * di dalamnya juga kosong.
+                    */
+                    foreach ($value as $item) {
+                        if (!$isEmptyMessage($item)) {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }
+
+                return false;
+            };
+
+            $chats = historyChat::where(
+                    'session_id',
+                    $lead->session_id
+                )
+                ->orderBy('created_at', 'asc')
+                ->get()
+                ->map(function ($chat) use (
+                    $isSearchingSchedule,
+                    $isEmptyMessage
+                ) {
+                    $msgData = $chat->message;
+
+                    /*
+                    * Antisipasi jika message masih berupa string JSON,
+                    * meskipun model seharusnya sudah menggunakan cast array.
+                    */
+                    if (is_string($msgData)) {
+                        $decodedMessage = json_decode(
+                            $msgData,
+                            true
+                        );
+
+                        if (json_last_error() === JSON_ERROR_NONE) {
+                            $msgData = $decodedMessage;
+                        }
+                    }
+
+                    // Data message yang tidak valid tidak ditampilkan.
+                    if (!is_array($msgData)) {
+                        return null;
+                    }
+
+                    $type = $msgData['type'] ?? '';
+                    $rawContent = $msgData['content'] ?? '';
+                    $textContent = '';
+                    $isMe = false;
+
+                    if ($type === 'ai') {
+                        $isMe = true;
+
+                        /*
+                        * Content AI biasanya berbentuk:
+                        *
+                        * {
+                        *     "message": "Isi pesan"
+                        * }
+                        */
+                        if (is_string($rawContent)) {
+                            $decodedContent = json_decode(
+                                $rawContent,
+                                true
+                            );
+
+                            if (
+                                json_last_error() === JSON_ERROR_NONE
+                                && is_array($decodedContent)
+                            ) {
+                                $textContent = $decodedContent['message']
+                                    ?? $decodedContent;
                             } else {
-                                // Untuk 'human', 'content' langsung berisi teks pesan dari customer
-                                $isMe = false;
-                                $textContent = $msgData['content'] ?? '';
+                                $textContent = $rawContent;
                             }
+                        } else {
+                            $textContent = $rawContent;
+                        }
+                    } else {
+                        // Pesan dari customer.
+                        $isMe = false;
+                        $textContent = $rawContent;
+                    }
 
-                            return [
-                                'sender' => $isMe ? 'me' : 'client',
-                                'message' => $textContent,
-                                'created_at' => $chat->created_at ? $chat->created_at->setTimezone('Asia/Jakarta')->format('d M Y, H:i') : '-'
-                            ];
-                        });
+                    /*
+                    * Jangan tampilkan payload pencarian jadwal.
+                    * Pemeriksaan dilakukan pada seluruh kemungkinan lokasi.
+                    */
+                    if (
+                        $isSearchingSchedule($msgData)
+                        || $isSearchingSchedule($rawContent)
+                        || $isSearchingSchedule($textContent)
+                    ) {
+                        return null;
+                    }
+
+                    /*
+                    * Jangan tampilkan pesan kosong seperti:
+                    * [], "", null, atau JSON dengan message kosong.
+                    */
+                    if ($isEmptyMessage($textContent)) {
+                        return null;
+                    }
+
+                    /*
+                    * Jika hasilnya masih berupa array, ambil key message.
+                    * Jika tidak mempunyai key message, ubah menjadi JSON.
+                    */
+                    if (is_array($textContent)) {
+                        if (array_key_exists('message', $textContent)) {
+                            $textContent = $textContent['message'];
+                        } else {
+                            $textContent = json_encode(
+                                $textContent,
+                                JSON_UNESCAPED_UNICODE
+                                | JSON_UNESCAPED_SLASHES
+                            );
+                        }
+                    }
+
+                    $textContent = trim((string) $textContent);
+
+                    /*
+                    * Pemeriksaan terakhir sebelum dikirim ke frontend.
+                    */
+                    if (
+                        $textContent === ''
+                        || $textContent === '[]'
+                        || $textContent === '[ ]'
+                        || strtolower($textContent)
+                            === 'sedang mencari jadwal'
+                    ) {
+                        return null;
+                    }
+
+                    return [
+                        'sender' => $isMe ? 'me' : 'client',
+                        'message' => $textContent,
+                        'created_at' => $chat->created_at
+                            ? $chat->created_at
+                                ->copy()
+                                ->setTimezone('Asia/Jakarta')
+                                ->format('d M Y, H:i')
+                            : '-',
+                    ];
+                })
+
+                /*
+                * Hapus seluruh chat yang menghasilkan null.
+                */
+                ->filter(function ($chat) {
+                    return $chat !== null;
+                })
+
+                /*
+                * Susun ulang indeks array agar JSON menghasilkan
+                * array biasa, bukan object dengan nomor indeks acak.
+                */
+                ->values();
 
             return response()->json([
                 'success' => true,
-                'chats' => $chats
+                'chats' => $chats,
             ]);
-
-        } catch (\Exception $e){
+        } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengambil data: ' . $e->getMessage()
+                'message' => 'Gagal mengambil data: '
+                    . $e->getMessage(),
             ], 500);
         }
     }

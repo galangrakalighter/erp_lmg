@@ -72,7 +72,7 @@
                             <th>Kebutuhan</th>
                             <th>Sosial Media</th>
                             <th style="min-width: 200px;">Kesimpulan</th> {{-- Berikan min-width agar proporsional --}}
-                            <th>Jadwal Meeting</th>
+                            <th>Prospek</th>
                             <th>Status</th>
                             <th>Action</th>
                         </tr>
@@ -148,20 +148,16 @@
                                 @endif
                             </td>
 
-                            {{-- Jadwal Meeting --}}
+                            {{-- Prospek: hanya menampilkan true atau false --}}
                             <td class="text-nowrap align-middle">
-                                @if($lead->meeting)
-                                    <span class="small font-weight-bold text-success">
-                                        {{ $lead->meeting->setTimezone('Asia/Jakarta')->format('d M Y, H:i') }} WIB
+                                @if((bool) $lead->hot_prospek)
+                                    <span class="badge badge-success px-3 py-2">
+                                        Kendala & Kebutuhan Lengkap
                                     </span>
-                                    @if($lead->link_meet)
-                                        <br>
-                                        <a href="{{ $lead->link_meet }}" target="_blank" class="btn btn-outline-primary btn-sm mt-1 px-2 py-0" style="font-size: 0.75rem;">
-                                            <i class="fas fa-video mr-1"></i> Join Meet
-                                        </a>
-                                    @endif
                                 @else
-                                    <span class="text-muted small">-</span>
+                                    <span class="badge badge-secondary px-3 py-2">
+                                        Belum Lengkap
+                                    </span>
                                 @endif
                             </td>
 
@@ -198,6 +194,7 @@
                 </table>
             </div>
         </div>
+
    </div>
 
    {{-- MODAL POPUP KESIMPULAN LENGKAP (Opsional untuk setiap lead yang panjang) --}}

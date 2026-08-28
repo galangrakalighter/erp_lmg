@@ -689,66 +689,6 @@
     let editRowIndex = 0;
 
     function openEditJournalModal(id) {
-        // Set Action Form Dinamis
-        const form = document.getElementById('formEditJurnal');
-        form.action = `/general_journal/${id}`; // Sesuaikan dengan endpoint rute update kamu
-
-        const container = document.getElementById('editEntriesRowContainer');
-        container.innerHTML = '<tr><td colspan="5" class="text-center py-3 text-muted">Mengambil rincian data...</td></tr>';
-        
-        // Buka Modal
-        $('#modalEditJurnal').modal('show');
-
-        // Ambil data via Ajax/Fetch
-        fetch(`/general_journal/${id}`)
-            .then(res => res.json())
-            .then(data => {
-                console.log(data);
-                // Set Field Header
-                document.getElementById('edit_tgl_transaksi').value = data.header.tgl_transaksi;
-                document.getElementById('edit_no_invoice').value = data.header.no_invoice || '';
-                document.getElementById('edit_keterangan').value = data.header.keterangan;
-
-                container.innerHTML = '';
-                editRowIndex = 0;
-
-                // Ambil master select untuk kloning options COA
-                const masterSelect = document.querySelector('.select-coa-target');
-                const optionsHtml = masterSelect ? masterSelect.innerHTML : '';
-
-                // Render baris items hasil dari database
-                data.items.forEach(item => {
-                    const isD = item.coa_type.toUpperCase() === 'D';
-                    
-                    const trHtml = `
-                        <tr class="edit-entry-row">
-                            <td>
-                                <select name="items[${editRowIndex}][chart_of_account_id]" class="form-control form-control-sm select-edit-coa-target" required>
-                                    ${optionsHtml}
-                                </select>
-                            </td>
-                            <td><input type="text" name="items[${editRowIndex}][keterangan_item]" class="form-control form-control-sm" value="${item.keterangan_item || ''}" placeholder="Keterangan baris..."></td>
-                            <td><input type="number" name="items[${editRowIndex}][debit]" class="form-control form-control-sm input-edit-nominal input-edit-debit ${!isD ? 'bg-light' : ''}" value="${parseFloat(item.debit)}" min="0" step="0.01" required></td>
-                            <td><input type="number" name="items[${editRowIndex}][kredit]" class="form-control form-control-sm input-edit-nominal input-edit-kredit ${isD ? 'bg-light' : ''}" value="${parseFloat(item.kredit)}" min="0" step="0.01" required></td>
-                            <td class="text-center">
-                                <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove(); calculateEditTotals();"><i class="fas fa-trash"></i></button>
-                            </td>
-                        </tr>
-                    `;
-                    container.insertAdjacentHTML('beforeend', trHtml);
-                    
-                    // Set value select option terpilih
-                    const currentSelect = container.querySelector(`select[name="items[${editRowIndex}][chart_of_account_id]"]`);
-                    currentSelect.value = item.chart_of_account_id;
-
-                    editRowIndex++;
-                });
-
-                calculateEditTotals();
-            });
-    }
-
-    function openEditJournalModal(id) {
         // 1. Set URL Action Form secara dinamis ke endpoint update
         const form = document.getElementById('formEditJurnal');
         form.action = `/general_journal/${id}`; // Sesuaikan dengan named route atau URL project-mu
@@ -760,7 +700,7 @@
         $('#modalEditJurnal').modal('show');
 
         // 2. Ambil data transaksi dari backend via AJAX Fetch
-        fetch(`/general_journal/${id}`)
+        fetch(`/general_journal/detail/${id}`)
             .then(res => {
                 if (!res.ok) throw new Error('Gagal memuat data dari server');
                 return res.json();

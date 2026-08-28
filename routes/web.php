@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
 
 Route::get('/terms-privacy-policy', function(){
     return view('privacy');
@@ -220,6 +221,7 @@ Route::middleware('auth')->group(function() {
     Route::delete('finance_coa/{id}', [App\Http\Controllers\COAController::class, 'destroy'])->name('finance_coa.destroy');
     
     Route::get('general_journal/{id}', [App\Http\Controllers\GeneralJournalController::class, 'index'])->name('general_journal.index');
+    Route::get('general_journal/detail/{id}', [App\Http\Controllers\GeneralJournalController::class, 'show'])->name('general_journal.show');
     Route::post('general_journal/{id}', [App\Http\Controllers\GeneralJournalController::class, 'store'])->name('general_journal.store');
     Route::put('general_journal/{id}', [App\Http\Controllers\GeneralJournalController::class, 'update'])->name('general_journal.update');
     Route::delete('general_journal/{id}', [App\Http\Controllers\GeneralJournalController::class, 'destroy'])->name('general_journal.destroy');

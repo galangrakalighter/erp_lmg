@@ -67,12 +67,29 @@ class GeneralJournalService
 
     private function validatePeriodLock(string $dateString)
     {
-        $txDate = Carbon::parse($dateString)->startOfMonth();
-        $currentMonth = Carbon::now()->startOfMonth();
+        $txDate = Carbon::parse($dateString);
 
-        // Jika bulan transaksi lebih kecil dari bulan berjalan saat ini
-        if ($txDate->lessThan($currentMonth)) {
-            throw new Exception("Akses Ditolak: Transaksi pada periode bulan lalu (" . Carbon::parse($dateString)->format('F Y') . ") telah dikunci oleh sistem.");
+        $year = $txDate->year;
+        $month = $txDate->month;
+
+        // Mendukung format 2026-09 maupun 2026-9
+        $periodWithZero = sprintf('%04d-%02d', $year, $month);
+        $periodWithoutZero = sprintf('%04d-%d', $year, $month);
+
+        $isLocked = DB::table('period_locks')
+            ->where('is_locked', true)
+            ->where(function ($query) use ($periodWithZero, $periodWithoutZero) {
+                $query->where('periode', $periodWithZero)
+                    ->orWhere('periode', $periodWithoutZero);
+            })
+            ->exists();
+
+        if ($isLocked) {
+            throw new Exception(
+                "Akses Ditolak: Transaksi pada periode " .
+                $txDate->format('F Y') .
+                " telah dikunci oleh sistem."
+            );
         }
     }
 

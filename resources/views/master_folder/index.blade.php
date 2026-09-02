@@ -22,20 +22,6 @@
     </div>
 </div>
 
-@if(session('success'))
-    <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
-        {{ session('success') }}
-        <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
-    </div>
-@endif
-
-@if($errors->any())
-    <div class="alert alert-danger shadow-sm" role="alert">
-        <div class="font-weight-bold mb-1">Folder belum dapat disimpan:</div>
-        <ul class="mb-0 pl-3">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
-    </div>
-@endif
-
 <div class="row">
     @forelse($folders as $folder)
         <div class="col-xl-3 col-md-6 mb-4">
@@ -55,12 +41,14 @@
                         <span class="small text-muted"><i class="fas fa-file mr-1"></i>{{ $folder->files_count }} file</span>
                         <span class="small text-primary">Buka <i class="fas fa-arrow-right ml-1"></i></span>
                     </div>
+                    @if($isSuperAdmin)
                     <div class="mt-2">
                         @foreach($folder->roles->take(3) as $role)
                             <span class="badge badge-primary mr-1">{{ $role->role_name }} &middot; {{ $role->division->name ?? '-' }}</span>
                         @endforeach
                         @if($folder->roles->count() > 3)<span class="small text-muted">+{{ $folder->roles->count() - 3 }}</span>@endif
                     </div>
+                    @endif
                 </div>
                 </a>
                 @if($isSuperAdmin)

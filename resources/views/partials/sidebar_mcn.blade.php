@@ -20,7 +20,7 @@
     MCN
 </a>
 
-<div id="collapseMCN" class="collapse {{ $isMCNPage || ($isMCNProduct && $isPdf) || $isMCNCMS ? 'show' : '' }}" 
+<div id="collapseMCN" class="collapse {{ $isMCNPage || ($isMCNProduct && $isPdf) || $isMCNCMS || ($masterFolderDivisionId == 3) ? 'show' : '' }}"
     aria-labelledby="headingMCN" data-parent="#collapseDivisi">
     <div class="collapse-container px-2 py-2">
         
@@ -86,6 +86,14 @@
                 @endforeach
             </div>
         </div>
+
+        @if($isSuperAdmin || $auth->userDivisions->contains('division_id', 3))
+            <div class="mb-2">
+                <a href="{{ route('master-folder.index', ['division_id' => 3]) }}" class="btn-cms-link client-sub-menu-link-client d-flex align-items-center text-dark py-2 px-2 rounded text-decoration-none transition-hover {{ Route::is('master-folder.*') && $masterFolderDivisionId == 3 ? 'active' : '' }}">
+                    <i class="fas fa-folder-open mr-2 text-warning"></i> <span>Folder Master</span>
+                </a>
+            </div>
+        @endif
 
         @if($myDivision->name == "MCN" || $isSuperAdmin)
             <div class="client-item-wrapper mb-2">

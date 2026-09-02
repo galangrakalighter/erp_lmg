@@ -2,7 +2,7 @@
     Digital Marketing
 </a>
 
-<div id="collapseDM" class="collapse {{ ($isMarketingPage && $isDMProduct) ? 'show' : '' }}" 
+<div id="collapseDM" class="collapse {{ ($isMarketingPage && $isDMProduct) || ($masterFolderDivisionId == 1) ? 'show' : '' }}"
     aria-labelledby="headingDM" data-parent="#collapseDivisi">
     <div class="collapse-container px-2">
 
@@ -86,6 +86,14 @@
                 @endif
             @endforeach
         </div>
+
+        @if($isSuperAdmin || $auth->userDivisions->contains('division_id', 1))
+            <div class="mb-2">
+                <a href="{{ route('master-folder.index', ['division_id' => 1]) }}" class="btn-cms-link client-sub-menu-link-client d-flex align-items-center text-dark py-2 px-2 rounded text-decoration-none transition-hover {{ Route::is('master-folder.*') && $masterFolderDivisionId == 1 ? 'active' : '' }}">
+                    <i class="fas fa-folder-open mr-2 text-warning"></i> <span>Folder Master</span>
+                </a>
+            </div>
+        @endif
 
         <style>
             .transition-hover {

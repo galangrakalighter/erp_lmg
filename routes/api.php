@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Http\Request;
+use App\Http\Controllers\CRMController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/user', function (Request $request) {
@@ -34,4 +35,15 @@ Route::get('/invoices/{id}', [App\Http\Controllers\InvoiceController::class, 'ge
 Route::get('/get-user-divisions', [App\Http\Controllers\UserController::class, 'getUserDivision']);
 Route::get('/get-data-payroll', [App\Http\Controllers\PayrollController::class, 'getDataPayroll']);
 Route::get('audit-trails', [App\Http\Controllers\DashboardController::class, 'getDataAudit'])->name('api.audit.index');
-Route::get('/whatsapp/history/{leadId}', [App\Http\Controllers\CRMController::class, 'getHistory']);
+// Route::get('/whatsapp/history/{leadId}', [App\Http\Controllers\CRMController::class, 'getHistory']);
+Route::prefix('crm')->group(function () {
+    Route::get('/ai',[CRMController::class, 'aiData'])->name('crm.api.ai');
+    Route::get('/human',[CRMController::class, 'humanData'])->name('crm.api.human');
+    Route::post('/{type}', [CRMController::class,'store'])->whereIn('type', ['ai', 'human']);
+    Route::put('/{type}/{id}', [CRMController::class,'update'])->whereIn('type', ['ai', 'human']);
+    Route::delete('/{type}/{id}', [CRMController::class,'destroy'])->whereIn('type', ['ai', 'human']);
+    Route::get('/history/{leadId}', [CRMController::class,'getHistory']);
+    Route::get('/human/history-media',[CRMController::class,'humanHistoryMedia'])->name('crm.api.human.history-media');
+    Route::get('/human/history/{id}',[CRMController::class,'humanHistory'])->name('crm.api.human.history');
+    Route::patch('/human/{id}/checklist',[CRMController::class,'updateHumanChecklist'])->name('crm.api.human.checklist');
+});

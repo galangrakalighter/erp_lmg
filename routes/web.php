@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 Route::get('/terms-privacy-policy', function(){
     return view('privacy');
@@ -29,6 +30,17 @@ Route::middleware('auth')->group(function() {
     Route::resource('manajemen_user', App\Http\Controllers\UserController::class);
     
     Route::resource('crm', App\Http\Controllers\CRMController::class);
+
+    Route::get('master-folder', [App\Http\Controllers\MasterFolderController::class, 'index'])->name('master-folder.index');
+    Route::post('master-folder', [App\Http\Controllers\MasterFolderController::class, 'store'])->name('master-folder.store');
+    Route::put('master-folder/{folder}', [App\Http\Controllers\MasterFolderController::class, 'update'])->name('master-folder.update');
+    Route::delete('master-folder/{folder}', [App\Http\Controllers\MasterFolderController::class, 'destroy'])->name('master-folder.destroy');
+    Route::get('master-folder/{folder}', [App\Http\Controllers\MasterFolderController::class, 'show'])->name('master-folder.show');
+    Route::post('master-folder/{folder}/files', [App\Http\Controllers\MasterFolderController::class, 'upload'])->name('master-folder.files.upload');
+    Route::post('master-folder/{folder}/documents', [App\Http\Controllers\MasterFolderController::class, 'createDocument'])->name('master-folder.documents.store');
+    Route::put('master-folder/{folder}/files/{file}', [App\Http\Controllers\MasterFolderController::class, 'updateFile'])->name('master-folder.files.update');
+    Route::delete('master-folder/{folder}/files/{file}', [App\Http\Controllers\MasterFolderController::class, 'destroyFile'])->name('master-folder.files.destroy');
+    Route::get('master-folder/{folder}/files/{file}/download', [App\Http\Controllers\MasterFolderController::class, 'download'])->name('master-folder.files.download');
     
     Route::resource('social_creator', App\Http\Controllers\SosialCreatorController::class);
     Route::resource('blacklist', App\Http\Controllers\BlacklistController::class);
@@ -263,6 +275,49 @@ Route::middleware('auth')->group(function() {
     Route::resource('PDF', App\Http\Controllers\PDFController::class);
     Route::post('/opening-balance/save', [App\Http\Controllers\OpeningBalanceController::class, 'save'])->name('opening-balance.save');
 });
+
+Route::post('/ai/chat-proxy', function (Request $request) {
+    $validated = $request->validate([
+        'message'   => ['nullable', 'string'],
+        'raw_input' => ['required', 'string'],
+        'type'      => ['required', 'in:chat,search_affiliator'],
+        'source'    => ['nullable', 'string'],
+        'user_id'   => ['nullable'],
+        'divisi_id' => ['nullable'],
+        'timestamp' => ['nullable', 'date'],
+    ]);
+
+    try {
+        $n8nResponse = Http::acceptJson()
+            ->asJson()
+            ->timeout(60)
+            ->post(
+                'https://bmglbl3.n8n.bocindonesia.com/webhook-test/96f14d6e-6636-4df4-b3af-ef6342d1d1b9',
+                $validated
+            );
+
+        $responseBody = $n8nResponse->json();
+
+        if ($responseBody === null) {
+            $responseBody = [
+                'response' => $n8nResponse->body(),
+            ];
+        }
+
+        return response()->json(
+            $responseBody,
+            $n8nResponse->status()
+        );
+    } catch (\Throwable $exception) {
+        Log::error('Gagal menghubungi webhook n8n', [
+            'message' => $exception->getMessage(),
+        ]);
+
+        return response()->json([
+            'message' => 'Gagal menghubungi layanan AI.',
+        ], 500);
+    }
+})->name('api.ai.chat-proxy');
 
 Route::middleware('guest')->group(function() {
     Route::get('/', [App\Http\Controllers\LoginController::class, 'showLoginForm'])->name('login');

@@ -293,6 +293,9 @@
 
         $isMarketingPage = Route::is(['market_research', 'branding', 'analisis', 'manajemen', 'PDF']);
 
+        $masterFolderDivisionId = request()->integer('division_id')
+            ?: optional(request()->route('folder'))->division_id;
+
         $divisiOpen = Route::is([
             'client.produk_divisi',
             'barang_client.index',
@@ -301,6 +304,7 @@
             'tools.index',
             'gform_affiliate.index',
             'selection.index',
+            'master-folder.*',
         ]);
 
         $isPdf = Route::is('PDF');

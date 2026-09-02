@@ -1,14 +1,24 @@
 @extends('layout.app')
 
 @section('content')
+<style>
+    #masterPdfViewer { position:fixed; inset:0; width:100%; height:100%; background:#f2f3f5; z-index:99999; display:none; }
+    .master-pdf-header { height:65px; background:#fff; display:flex; align-items:center; justify-content:space-between; gap:20px; padding:0 25px; border-bottom:1px solid #ddd; }
+    .master-pdf-header-left, .master-pdf-header-right { display:flex; align-items:center; gap:12px; }
+    #masterPdfBody { overflow:auto; height:calc(100vh - 65px); padding:35px; display:flex; flex-direction:column; align-items:center; background:#d9d9d9; }
+    .master-pdf-page { background:#fff; margin-bottom:25px; box-shadow:0 2px 12px rgba(0,0,0,.18); max-width:none; }
+    .pdf-file-link { color:#4e73df; cursor:pointer; text-decoration:none; }
+    .pdf-file-link:hover { color:#224abe; text-decoration:underline; }
+</style>
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
     <div>
-        <a href="{{ route('master-folder.index', ['division_id' => $folder->division_id]) }}" class="btn btn-sm btn-light border shadow-sm mb-3">
+        <a href="{{ $backToMine ? route('master-folder.mine') : route('master-folder.index', ['division_id' => $folder->division_id]) }}" class="btn btn-sm btn-light border shadow-sm mb-3">
             <i class="fas fa-arrow-left mr-1"></i>Kembali ke Folder Master
         </a>
         <h1 class="h4 text-gray-800 font-weight-bold mb-1"><i class="fas fa-folder-open text-warning mr-2"></i>{{ $folder->name }}</h1>
-        <p class="text-muted small mb-0">{{ $folder->division->name }} &middot; {{ $folder->description ?: 'Tanpa deskripsi' }}</p>
+        <p class="text-muted small mb-0">{{ optional($folder->division)->name ?? 'Folder Pribadi' }} &middot; {{ $folder->description ?: 'Tanpa deskripsi' }}</p>
     </div>
+    @if($canManage)
     <div class="mt-3 mt-md-0">
         <button class="btn btn-success btn-sm shadow-sm px-3 py-2 mr-2" data-toggle="modal" data-target="#createDocumentModal">
             <i class="fas fa-file-alt mr-1"></i> Buat Dokumen
@@ -17,6 +27,9 @@
             <i class="fas fa-cloud-upload-alt mr-1"></i> Upload File
         </button>
     </div>
+    @else
+        <span class="badge badge-light border px-3 py-2 mt-3 mt-md-0"><i class="fas fa-eye mr-1"></i>Akses lihat saja</span>
+    @endif
 </div>
 
 <div class="card shadow-sm border-0">
@@ -31,19 +44,30 @@
                 <tbody>
                 @forelse($folder->files->sortByDesc('created_at') as $file)
                     <tr>
-                        <td class="pl-4 align-middle"><i class="fas fa-file-alt text-primary mr-2"></i><span class="font-weight-bold text-gray-800">{{ $file->original_name }}</span></td>
+                        <td class="pl-4 align-middle">
+                            <i class="fas fa-file-{{ strtolower(pathinfo($file->original_name, PATHINFO_EXTENSION)) === 'pdf' || $file->mime_type === 'application/pdf' ? 'pdf text-danger' : 'alt text-primary' }} mr-2"></i>
+                            @if(strtolower(pathinfo($file->original_name, PATHINFO_EXTENSION)) === 'pdf' || $file->mime_type === 'application/pdf')
+                                <a href="#" class="font-weight-bold pdf-file-link btn-master-pdf-preview" data-pdf="{{ route('master-folder.files.preview', [$folder, $file]) }}" data-title="{{ $file->original_name }}">{{ $file->original_name }}</a>
+                            @else
+                                <span class="font-weight-bold text-gray-800">{{ $file->original_name }}</span>
+                            @endif
+                        </td>
                         <td class="align-middle">
-                            @foreach($file->roles as $role)
-                                <span class="badge badge-primary mr-1 mb-1">{{ $role->role_name }}</span>
-                            @endforeach
+                            @forelse($file->roles as $role)
+                                <span class="badge badge-primary mr-1 mb-1">{{ $role->role_name }} &middot; {{ $role->division->name ?? '-' }}</span>
+                            @empty
+                                <span class="badge badge-secondary">Hanya pemilik</span>
+                            @endforelse
                         </td>
                         <td class="align-middle text-muted small">{{ number_format($file->size / 1024, $file->size < 1048576 ? 1 : 0, ',', '.') }} KB</td>
                         <td class="align-middle text-muted small">{{ $file->uploader->name ?? '-' }}</td>
                         <td class="align-middle text-muted small">{{ $file->created_at->format('d M Y, H:i') }}</td>
                         <td class="align-middle text-center">
                             <a href="{{ route('master-folder.files.download', [$folder, $file]) }}" class="btn btn-sm btn-outline-primary" title="Download"><i class="fas fa-download"></i></a>
+                            @if($canManage)
                             <button type="button" class="btn btn-sm btn-outline-warning" data-toggle="modal" data-target="#editFileModal{{ $file->id }}" title="Edit"><i class="fas fa-edit"></i></button>
                             <button type="button" class="btn btn-sm btn-outline-danger" data-toggle="modal" data-target="#deleteFileModal{{ $file->id }}" title="Hapus"><i class="fas fa-trash"></i></button>
+                            @endif
                         </td>
                     </tr>
                 @empty
@@ -55,6 +79,7 @@
     </div>
 </div>
 
+@if($canManage)
 @foreach($folder->files as $file)
     <div class="modal fade" id="editFileModal{{ $file->id }}" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog {{ $file->is_generated_document ? 'modal-xl' : 'modal-lg' }}" role="document">
@@ -94,7 +119,7 @@
                                 @foreach($folder->roles as $role)
                                     <label class="border bg-white rounded py-2 px-3 mr-2 mb-1">
                                         <input type="checkbox" name="role_ids[]" value="{{ $role->id }}" class="mr-1" @checked(in_array($role->id, $selectedFileRoles))>
-                                        {{ $role->role_name }}
+                                        {{ $role->role_name }} ({{ $role->division->name ?? '-' }})
                                     </label>
                                 @endforeach
                             </div>
@@ -159,7 +184,24 @@
         </div>
     </div>
 @endforeach
+@endif
 
+<div id="masterPdfViewer">
+    <div class="master-pdf-header">
+        <div class="master-pdf-header-left">
+            <button type="button" id="masterPdfBack" class="btn btn-light border"><i class="fas fa-arrow-left"></i></button>
+            <strong id="masterPdfTitle" class="text-truncate"></strong>
+        </div>
+        <div class="master-pdf-header-right">
+            <button type="button" id="masterPdfZoomOut" class="btn btn-light border" title="Perkecil"><i class="fas fa-minus"></i></button>
+            <span id="masterPdfZoomLabel" class="small font-weight-bold" style="min-width:48px;text-align:center">135%</span>
+            <button type="button" id="masterPdfZoomIn" class="btn btn-light border" title="Perbesar"><i class="fas fa-plus"></i></button>
+        </div>
+    </div>
+    <div id="masterPdfBody"></div>
+</div>
+
+@if($canManage)
 <div class="modal fade" id="uploadFileModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <form method="POST" action="{{ route('master-folder.files.upload', $folder) }}" enctype="multipart/form-data" class="modal-content">
@@ -178,7 +220,7 @@
                             <div class="col-md-6 mb-2">
                                 <label class="border rounded p-2 d-flex align-items-center mb-0 w-100">
                                     <input type="checkbox" name="role_ids[]" value="{{ $role->id }}" class="mr-2" @checked(in_array($role->id, old('role_ids', [])))>
-                                    <span>{{ $role->role_name }}</span>
+                                    <span>{{ $role->role_name }} <small class="text-muted">({{ $role->division->name ?? '-' }})</small></span>
                                 </label>
                             </div>
                         @endforeach
@@ -218,7 +260,7 @@
                             @foreach($folder->roles as $role)
                                 <label class="border bg-white rounded py-2 px-3 mr-2 mb-1">
                                     <input type="checkbox" name="role_ids[]" value="{{ $role->id }}" class="mr-1" @checked(old('form_type') === 'document' && in_array($role->id, old('role_ids', [])))>
-                                    {{ $role->role_name }}
+                                    {{ $role->role_name }} ({{ $role->division->name ?? '-' }})
                                 </label>
                             @endforeach
                         </div>
@@ -264,6 +306,7 @@
         </form>
     </div>
 </div>
+@endif
 
 <script>
 function editDocumentCommand(fileId, command, value) {
@@ -275,9 +318,11 @@ function editDocumentCommand(fileId, command, value) {
 document.addEventListener('DOMContentLoaded', function () {
     const documentForm = document.getElementById('document-form');
     const editor = document.getElementById('document-editor');
-    documentForm.addEventListener('submit', function () {
-        document.getElementById('document-content').value = editor.innerHTML;
-    });
+    if (documentForm && editor) {
+        documentForm.addEventListener('submit', function () {
+            document.getElementById('document-content').value = editor.innerHTML;
+        });
+    }
 
     document.querySelectorAll('.edit-file-form').forEach(function (form) {
         form.addEventListener('submit', function () {
@@ -287,6 +332,77 @@ document.addEventListener('DOMContentLoaded', function () {
             if (editEditor && hiddenContent) hiddenContent.value = editEditor.innerHTML;
         });
     });
+
+    const pdfViewer = document.getElementById('masterPdfViewer');
+    const pdfBody = document.getElementById('masterPdfBody');
+    const pdfTitle = document.getElementById('masterPdfTitle');
+    const zoomLabel = document.getElementById('masterPdfZoomLabel');
+    let activePdf = null;
+    let pdfScale = 1.35;
+
+    async function renderPdfPages() {
+        if (!activePdf) return;
+        pdfBody.innerHTML = '';
+        zoomLabel.textContent = Math.round(pdfScale * 100) + '%';
+
+        for (let pageNumber = 1; pageNumber <= activePdf.numPages; pageNumber++) {
+            const page = await activePdf.getPage(pageNumber);
+            const viewport = page.getViewport({ scale: pdfScale });
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.className = 'master-pdf-page';
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            pdfBody.appendChild(canvas);
+            await page.render({ canvasContext: context, viewport: viewport }).promise;
+        }
+    }
+
+    document.querySelectorAll('.btn-master-pdf-preview').forEach(function (link) {
+        link.addEventListener('click', async function (event) {
+            event.preventDefault();
+            pdfViewer.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+            pdfTitle.textContent = link.dataset.title;
+            pdfScale = 1.35;
+            pdfBody.innerHTML = '<div class="text-center mt-5"><div class="spinner-border text-primary"></div><div class="mt-2">Memuat PDF...</div></div>';
+
+            try {
+                if (typeof pdfjsLib === 'undefined') throw new Error('PDF viewer tidak tersedia.');
+                activePdf = await pdfjsLib.getDocument(link.dataset.pdf).promise;
+                await renderPdfPages();
+            } catch (error) {
+                activePdf = null;
+                pdfBody.innerHTML = '<div class="alert alert-danger mt-5">PDF tidak dapat ditampilkan. Silakan gunakan tombol download.</div>';
+            }
+        });
+    });
+
+    document.getElementById('masterPdfBack').addEventListener('click', function () {
+        pdfViewer.style.display = 'none';
+        document.body.style.overflow = '';
+        pdfBody.innerHTML = '';
+        activePdf = null;
+    });
+
+    document.getElementById('masterPdfZoomIn').addEventListener('click', async function () {
+        if (!activePdf || pdfScale >= 3) return;
+        pdfScale += .2;
+        await renderPdfPages();
+    });
+
+    document.getElementById('masterPdfZoomOut').addEventListener('click', async function () {
+        if (!activePdf || pdfScale <= .6) return;
+        pdfScale -= .2;
+        await renderPdfPages();
+    });
+
+    pdfBody.addEventListener('wheel', async function (event) {
+        if (!event.ctrlKey || !activePdf) return;
+        event.preventDefault();
+        pdfScale = event.deltaY < 0 ? Math.min(3, pdfScale + .1) : Math.max(.6, pdfScale - .1);
+        await renderPdfPages();
+    }, { passive: false });
 
     @if($errors->any() && old('edit_file_id'))
         $('#editFileModal{{ (int) old('edit_file_id') }}').modal('show');

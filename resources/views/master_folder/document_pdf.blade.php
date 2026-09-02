@@ -18,7 +18,7 @@
     </style>
 </head>
 <body>
-    <div class="footer">{{ $folder->division->name }} &middot; {{ $folder->name }}</div>
+    <div class="footer">{{ optional($folder->division)->name ?? 'Folder Pribadi' }} &middot; {{ $folder->name }}</div>
     <h1>{{ $documentName }}</h1>
     <div class="document-meta">Dibuat pada {{ now()->format('d M Y, H:i') }}</div>
     {!! $content !!}

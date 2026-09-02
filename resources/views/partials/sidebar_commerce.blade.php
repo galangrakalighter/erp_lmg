@@ -8,7 +8,7 @@
     $isPdf = Route::is('PDF');
 @endphp
 
-<div id="collapseEcommerce" class="collapse {{ ($isEcommerceProduct && $isPdf) || $isEcommerceCMS || ($masterFolderDivisionId == 7) ? 'show' : '' }}"
+<div id="collapseEcommerce" class="collapse {{ ($isEcommerceProduct && $isPdf) || $isEcommerceCMS ? 'show' : '' }}"
     aria-labelledby="headingEcommerce" data-parent="#collapseDivisi">
     <div class="collapse-container px-2 py-2">
         
@@ -77,13 +77,6 @@
             </div>
         </div>
 
-        @if($isSuperAdmin || $auth->userDivisions->contains('division_id', 7))
-            <div class="mb-2">
-                <a href="{{ route('master-folder.index', ['division_id' => 7]) }}" class="btn-cms-link client-sub-menu-link-client d-flex align-items-center text-dark py-2 px-2 rounded text-decoration-none transition-hover {{ Route::is('master-folder.*') && $masterFolderDivisionId == 7 ? 'active' : '' }}">
-                    <i class="fas fa-folder-open mr-2 text-warning"></i> <span>Folder Master</span>
-                </a>
-            </div>
-        @endif
 
         <style>
             .transition-hover {

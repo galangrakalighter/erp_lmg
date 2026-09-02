@@ -25,13 +25,27 @@
                 </select>
             </form>
         @endif
-        @if($divisions->isNotEmpty())
+        @if($isSuperAdmin && $divisions->isNotEmpty())
             <button class="btn btn-primary btn-sm shadow-sm px-3 py-2" data-toggle="modal" data-target="#createFolderModal">
                 <i class="fas fa-folder-plus mr-1"></i> Folder Baru
             </button>
         @endif
     </div>
 </div>
+
+@if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+        {{ session('success') }}
+        <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+    </div>
+@endif
+
+@if($errors->any())
+    <div class="alert alert-danger shadow-sm" role="alert">
+        <div class="font-weight-bold mb-1">Folder belum dapat disimpan:</div>
+        <ul class="mb-0 pl-3">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
+    </div>
+@endif
 
 <div class="row">
     @forelse($folders as $folder)
@@ -54,12 +68,13 @@
                     </div>
                     <div class="mt-2">
                         @foreach($folder->roles->take(3) as $role)
-                            <span class="badge badge-primary mr-1">{{ $role->role_name }}</span>
+                            <span class="badge badge-primary mr-1">{{ $role->role_name }} &middot; {{ $role->division->name ?? '-' }}</span>
                         @endforeach
                         @if($folder->roles->count() > 3)<span class="small text-muted">+{{ $folder->roles->count() - 3 }}</span>@endif
                     </div>
                 </div>
                 </a>
+                @if($isSuperAdmin)
                 <div class="card-footer bg-white border-0 pt-0 d-flex">
                     <button type="button" class="btn btn-sm btn-outline-primary flex-fill mr-2" data-toggle="modal" data-target="#editFolderModal{{ $folder->id }}">
                         <i class="fas fa-edit mr-1"></i>Edit
@@ -68,9 +83,11 @@
                         <i class="fas fa-trash mr-1"></i>Hapus
                     </button>
                 </div>
+                @endif
             </div>
         </div>
 
+        @if($isSuperAdmin)
         <div class="modal fade" id="editFolderModal{{ $folder->id }}" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog modal-lg" role="document">
                 <form method="POST" action="{{ route('master-folder.update', $folder) }}" class="modal-content">
@@ -97,21 +114,27 @@
                         </div>
                         <div class="form-group mb-0">
                             <label class="font-weight-bold">Role yang Dapat Melihat <span class="text-danger">*</span></label>
-                            <div class="row">
-                                @foreach($rolesByDivision->get($folder->division_id, collect()) as $role)
-                                    @php
-                                        $editRoleIds = (int) old('edit_folder_id') === $folder->id
-                                            ? old('role_ids', [])
-                                            : $folder->roles->pluck('id')->all();
-                                    @endphp
-                                    <div class="col-md-6 mb-2">
-                                        <label class="role-option d-flex align-items-center mb-0 w-100">
-                                            <input type="checkbox" name="role_ids[]" value="{{ $role->id }}" class="mr-2" @checked(in_array($role->id, $editRoleIds))>
-                                            <span>{{ $role->role_name }}</span>
-                                        </label>
+                            <p class="small text-muted">Pilih jabatan dari divisi pemilik maupun divisi lain.</p>
+                            @php
+                                $editRoleIds = (int) old('edit_folder_id') === $folder->id
+                                    ? old('role_ids', [])
+                                    : $folder->roles->pluck('id')->all();
+                            @endphp
+                            @foreach($rolesByDivision as $divisionId => $divisionRoles)
+                                <div class="border rounded p-3 mb-3">
+                                    <div class="small font-weight-bold text-primary text-uppercase mb-2">{{ optional($roleDivisions->get($divisionId))->name ?? 'Divisi' }}</div>
+                                    <div class="row">
+                                        @foreach($divisionRoles as $role)
+                                            <div class="col-md-6 mb-2">
+                                                <label class="role-option d-flex align-items-center mb-0 w-100">
+                                                    <input type="checkbox" name="role_ids[]" value="{{ $role->id }}" class="mr-2" @checked(in_array($role->id, $editRoleIds))>
+                                                    <span>{{ $role->role_name }}</span>
+                                                </label>
+                                            </div>
+                                        @endforeach
                                     </div>
-                                @endforeach
-                            </div>
+                                </div>
+                            @endforeach
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -121,6 +144,7 @@
                 </form>
             </div>
         </div>
+        @endif
 
         <div class="modal fade" id="deleteFolderModal{{ $folder->id }}" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog" role="document">
@@ -155,6 +179,7 @@
     @endforelse
 </div>
 
+@if($isSuperAdmin)
 <div class="modal fade" id="createFolderModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <form method="POST" action="{{ route('master-folder.store') }}" class="modal-content">
@@ -183,20 +208,22 @@
                 </div>
                 <div class="form-group mb-0">
                     <label class="font-weight-bold">Role yang Dapat Melihat <span class="text-danger">*</span></label>
-                    <p class="small text-muted">Role yang tersedia mengikuti divisi yang dipilih.</p>
+                    <p class="small text-muted">Pilih jabatan dari divisi pemilik maupun divisi lain. Penerima lintas divisi akan melihatnya di Folder Master Saya.</p>
                     @foreach($rolesByDivision as $divisionId => $divisionRoles)
-                        <div class="role-group row" data-division="{{ $divisionId }}" style="display:none">
-                            @foreach($divisionRoles as $role)
-                                <div class="col-md-6 mb-2">
-                                    <label class="role-option d-flex align-items-center mb-0 w-100">
-                                        <input type="checkbox" name="role_ids[]" value="{{ $role->id }}" class="mr-2" @checked(in_array($role->id, old('role_ids', [])))>
-                                        <span>{{ $role->role_name }}</span>
-                                    </label>
-                                </div>
-                            @endforeach
+                        <div class="border rounded p-3 mb-3">
+                            <div class="small font-weight-bold text-primary text-uppercase mb-2">{{ optional($roleDivisions->get($divisionId))->name ?? 'Divisi' }}</div>
+                            <div class="row">
+                                @foreach($divisionRoles as $role)
+                                    <div class="col-md-6 mb-2">
+                                        <label class="role-option d-flex align-items-center mb-0 w-100">
+                                            <input type="checkbox" name="role_ids[]" value="{{ $role->id }}" class="mr-2" @checked(in_array($role->id, old('role_ids', [])))>
+                                            <span>{{ $role->role_name }}</span>
+                                        </label>
+                                    </div>
+                                @endforeach
+                            </div>
                         </div>
                     @endforeach
-                    <div id="no-role-message" class="alert alert-light border small mb-0">Pilih divisi terlebih dahulu.</div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -206,28 +233,13 @@
         </form>
     </div>
 </div>
+@endif
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const division = document.getElementById('folder-division');
-    const groups = document.querySelectorAll('.role-group');
-    const emptyMessage = document.getElementById('no-role-message');
-
-    function showRoles(clearHidden) {
-        let found = false;
-        groups.forEach(function (group) {
-            const visible = group.dataset.division === division.value;
-            group.style.display = visible ? '' : 'none';
-            found = found || visible;
-            if (!visible && clearHidden) group.querySelectorAll('input').forEach(input => input.checked = false);
-        });
-        emptyMessage.style.display = found ? 'none' : '';
-    }
-    division.addEventListener('change', function () { showRoles(true); });
-    showRoles(false);
-    @if($errors->any() && old('edit_folder_id'))
+    @if($isSuperAdmin && $errors->any() && old('edit_folder_id'))
         $('#editFolderModal{{ (int) old('edit_folder_id') }}').modal('show');
-    @elseif($errors->any())
+    @elseif($isSuperAdmin && $errors->any())
         $('#createFolderModal').modal('show');
     @endif
 });

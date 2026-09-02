@@ -11,6 +11,10 @@ class FilePdf extends Model
     protected $fillable = [
         'nama_file',
         'client',
-        'location'
+        'location',
+        'editor_content',
+        'is_generated_document'
     ];
+
+    protected $casts = ['is_generated_document' => 'boolean'];
 }

@@ -12,4 +12,9 @@ class Role extends Model
         'level',
         'division_id'
     ];
+
+    public function division()
+    {
+        return $this->belongsTo(Division::class, 'division_id');
+    }
 }

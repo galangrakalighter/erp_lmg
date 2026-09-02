@@ -10,7 +10,9 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
 use App\Models\FilePdf;
 use App\Models\ChartOfAccount;
+use App\Models\ProdukClient;
 use Carbon\Carbon;
+use Illuminate\Validation\Rule;
 class PDFController extends Controller
 {
     protected $pdf;
@@ -214,6 +216,54 @@ class PDFController extends Controller
         return redirect()->back()->with('success', 'File berhasil ditambahkan.');
     }
 
+    public function createDocument(Request $request)
+    {
+        $validated = $request->validate([
+            'client' => ['required', 'integer', 'exists:produk_client,id'],
+            'nama_file' => ['required', 'string', 'max:150'],
+            'content' => ['required', 'string', 'max:200000'],
+        ], [
+            'nama_file.required' => 'Nama dokumen wajib diisi.',
+            'content.required' => 'Isi dokumen wajib diisi.',
+        ]);
+
+        $content = $this->sanitizeDocumentHtml($validated['content']);
+        if (trim(strip_tags($content)) === '') {
+            return back()->withErrors(['content' => 'Isi dokumen tidak boleh kosong.'])
+                ->withInput();
+        }
+
+        $documentName = trim(preg_replace('/\.pdf$/i', '', $validated['nama_file']));
+        if ($documentName === '') {
+            return back()->withErrors(['nama_file' => 'Nama dokumen tidak valid.'])
+                ->withInput();
+        }
+
+        $client = ProdukClient::findOrFail($validated['client']);
+        $filename = (string) str()->uuid().'.pdf';
+        $path = 'pdf/'.$client->id.'/'.$filename;
+        $pdfContent = Pdf::loadView(
+            'pdf.client_document',
+            compact('client', 'documentName', 'content')
+        )->setPaper('a4', 'portrait')->output();
+
+        abort_unless(
+            Storage::disk('public')->put($path, $pdfContent),
+            500,
+            'Dokumen gagal disimpan.'
+        );
+
+        FilePdf::create([
+            'nama_file' => $documentName,
+            'client' => $client->id,
+            'location' => $path,
+            'editor_content' => $content,
+            'is_generated_document' => true,
+        ]);
+
+        return back()->with('success', 'Dokumen PDF berhasil dibuat.');
+    }
+
     public function update(Request $request, $id)
     {
         $file = FilePDF::findOrFail($id);
@@ -221,9 +271,34 @@ class PDFController extends Controller
         $request->validate([
             'nama_file' => 'required|string|max:255',
             'pdf'       => 'nullable|mimes:pdf|max:10240',
+            'content'   => [Rule::requiredIf($file->is_generated_document), 'nullable', 'string', 'max:200000'],
         ]);
 
         $path = $file->location;
+        $editorContent = $file->editor_content;
+        $isGeneratedDocument = $file->is_generated_document;
+
+        if ($file->is_generated_document) {
+            $editorContent = $this->sanitizeDocumentHtml($request->input('content', ''));
+            if (trim(strip_tags($editorContent)) === '') {
+                return back()->withErrors(['content' => 'Isi dokumen tidak boleh kosong.'])
+                    ->withInput();
+            }
+
+            $client = ProdukClient::findOrFail($file->client);
+            $documentName = trim(preg_replace('/\.pdf$/i', '', $request->nama_file));
+            $content = $editorContent;
+            $pdfContent = Pdf::loadView(
+                'pdf.client_document',
+                compact('client', 'documentName', 'content')
+            )->setPaper('a4', 'portrait')->output();
+
+            abort_unless(
+                Storage::disk('public')->put($path, $pdfContent),
+                500,
+                'Dokumen gagal diperbarui.'
+            );
+        }
 
         // Jika upload file baru
         if ($request->hasFile('pdf')) {
@@ -242,11 +317,15 @@ class PDFController extends Controller
                 $filename,
                 'public'
             );
+            $editorContent = null;
+            $isGeneratedDocument = false;
         }
 
         $file->update([
             'nama_file' => $request->nama_file,
             'location'  => $path,
+            'editor_content' => $editorContent,
+            'is_generated_document' => $isGeneratedDocument,
         ]);
 
         return redirect()->back()->with('success', 'File berhasil diperbarui.');
@@ -265,5 +344,75 @@ class PDFController extends Controller
         $file->delete();
 
         return redirect()->back()->with('success', 'File berhasil dihapus.');
+    }
+
+    private function sanitizeDocumentHtml(string $html): string
+    {
+        $allowedTags = '<p><div><span><font><br><h1><h2><h3><strong><b><em><i><u><s><ul><ol><li><blockquote><table><thead><tbody><tr><th><td>';
+        $html = preg_replace('#<(script|style|iframe|object|embed)\b[^>]*>.*?</\1>#is', '', $html);
+        $clean = strip_tags($html, $allowedTags);
+
+        $document = new \DOMDocument('1.0', 'UTF-8');
+        libxml_use_internal_errors(true);
+        $document->loadHTML('<?xml encoding="UTF-8"><body>'.$clean.'</body>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        libxml_clear_errors();
+
+        foreach ($document->getElementsByTagName('*') as $element) {
+            $attributes = [];
+            foreach ($element->attributes ?? [] as $attribute) {
+                $attributes[] = $attribute->name;
+            }
+            foreach ($attributes as $attribute) {
+                $value = trim($element->getAttribute($attribute));
+                if ($attribute === 'align' && in_array($value, ['left', 'center', 'right', 'justify'], true)) {
+                    continue;
+                }
+                if ($attribute === 'style') {
+                    $safeStyle = $this->sanitizeInlineStyle($value);
+                    if ($safeStyle !== '') {
+                        $element->setAttribute('style', $safeStyle);
+                        continue;
+                    }
+                }
+                if ($element->tagName === 'font' && $attribute === 'size' && preg_match('/^[1-7]$/', $value)) {
+                    continue;
+                }
+                if ($element->tagName === 'font' && $attribute === 'color' && preg_match('/^(#[0-9a-f]{3,6}|[a-z]+|rgb\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*\))$/i', $value)) {
+                    continue;
+                }
+                $element->removeAttribute($attribute);
+            }
+        }
+
+        $body = $document->getElementsByTagName('body')->item(0);
+        $result = '';
+        foreach ($body?->childNodes ?? [] as $child) {
+            $result .= $document->saveHTML($child);
+        }
+
+        return $result;
+    }
+
+    private function sanitizeInlineStyle(string $style): string
+    {
+        $safe = [];
+        foreach (explode(';', $style) as $declaration) {
+            if (! str_contains($declaration, ':')) continue;
+            [$property, $value] = array_map('trim', explode(':', $declaration, 2));
+            $property = strtolower($property);
+            $value = strtolower($value);
+            $isSafe = match ($property) {
+                'text-align' => in_array($value, ['left', 'center', 'right', 'justify'], true),
+                'font-weight' => in_array($value, ['normal', 'bold', 'bolder', '100', '200', '300', '400', '500', '600', '700', '800', '900'], true),
+                'font-style' => in_array($value, ['normal', 'italic', 'oblique'], true),
+                'text-decoration', 'text-decoration-line' => preg_match('/^(none|underline|line-through|underline line-through)$/', $value) === 1,
+                'margin-left', 'padding-left', 'font-size' => preg_match('/^\d+(\.\d+)?(px|pt|em|rem|%)$/', $value) === 1,
+                'color', 'background-color' => preg_match('/^(#[0-9a-f]{3,6}|[a-z]+|rgb\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*\))$/i', $value) === 1,
+                default => false,
+            };
+            if ($isSafe) $safe[] = $property.': '.$value;
+        }
+
+        return implode('; ', $safe);
     }
 }

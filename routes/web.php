@@ -32,6 +32,7 @@ Route::middleware('auth')->group(function() {
     Route::resource('crm', App\Http\Controllers\CRMController::class);
 
     Route::get('master-folder', [App\Http\Controllers\MasterFolderController::class, 'index'])->name('master-folder.index');
+    Route::get('my-master-folder', [App\Http\Controllers\MasterFolderController::class, 'myFolders'])->name('master-folder.mine');
     Route::post('master-folder', [App\Http\Controllers\MasterFolderController::class, 'store'])->name('master-folder.store');
     Route::put('master-folder/{folder}', [App\Http\Controllers\MasterFolderController::class, 'update'])->name('master-folder.update');
     Route::delete('master-folder/{folder}', [App\Http\Controllers\MasterFolderController::class, 'destroy'])->name('master-folder.destroy');
@@ -40,6 +41,7 @@ Route::middleware('auth')->group(function() {
     Route::post('master-folder/{folder}/documents', [App\Http\Controllers\MasterFolderController::class, 'createDocument'])->name('master-folder.documents.store');
     Route::put('master-folder/{folder}/files/{file}', [App\Http\Controllers\MasterFolderController::class, 'updateFile'])->name('master-folder.files.update');
     Route::delete('master-folder/{folder}/files/{file}', [App\Http\Controllers\MasterFolderController::class, 'destroyFile'])->name('master-folder.files.destroy');
+    Route::get('master-folder/{folder}/files/{file}/preview', [App\Http\Controllers\MasterFolderController::class, 'preview'])->name('master-folder.files.preview');
     Route::get('master-folder/{folder}/files/{file}/download', [App\Http\Controllers\MasterFolderController::class, 'download'])->name('master-folder.files.download');
     
     Route::resource('social_creator', App\Http\Controllers\SosialCreatorController::class);
@@ -272,6 +274,7 @@ Route::middleware('auth')->group(function() {
     Route::get('profit/list/{id}', [App\Http\Controllers\InvoiceController::class, 'list_client'])->name('profit.list');
     Route::get('profit/detail/{id}', [App\Http\Controllers\InvoiceController::class, 'detail'])->name('profit.detail');
     Route::get("/PDF/{id_produk}", [App\Http\Controllers\PDFController::class, 'index'])->name('PDF');
+    Route::post('/PDF/document/create', [App\Http\Controllers\PDFController::class, 'createDocument'])->name('PDF.documents.store');
     Route::resource('PDF', App\Http\Controllers\PDFController::class);
     Route::post('/opening-balance/save', [App\Http\Controllers\OpeningBalanceController::class, 'save'])->name('opening-balance.save');
 });

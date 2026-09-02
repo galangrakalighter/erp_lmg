@@ -85,15 +85,24 @@
                 Data File PDF
             </h6>
 
-            <button type="button"
-                    class="btn btn-primary"
-                    data-toggle="modal"
-                    data-target="#tambahModal">
-                Tambah File
-            </button>
+            <div>
+                <button type="button" class="btn btn-success mr-2" data-toggle="modal" data-target="#buatDokumenModal">
+                    <i class="fas fa-file-alt mr-1"></i> Buat Dokumen
+                </button>
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#tambahModal">
+                    <i class="fas fa-upload mr-1"></i> Upload PDF
+                </button>
+            </div>
         </div>
 
         <div class="card-body">
+
+            @if(session('success'))
+                <div class="alert alert-success alert-dismissible fade show">{{ session('success') }}<button type="button" class="close" data-dismiss="alert"><span>&times;</span></button></div>
+            @endif
+            @if($errors->any())
+                <div class="alert alert-danger"><ul class="mb-0 pl-3">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
+            @endif
 
             <div class="table-responsive">
 
@@ -164,6 +173,58 @@
         </div>
 
     </div>
+
+{{-- ==================== BUAT DOKUMEN ==================== --}}
+<div class="modal fade" id="buatDokumenModal">
+    <div class="modal-dialog modal-xl">
+        <form id="clientDocumentForm" action="{{ route('PDF.documents.store') }}" method="POST" class="modal-content">
+            @csrf
+            <input type="hidden" name="client" value="{{ $id }}">
+            <input type="hidden" name="form_type" value="create_document">
+            <input type="hidden" id="clientDocumentContent" name="content">
+            <div class="modal-header">
+                <div><h5 class="modal-title font-weight-bold">Buat Dokumen PDF</h5><small class="text-muted">Tulis isi dokumen lalu simpan langsung sebagai PDF.</small></div>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body bg-light">
+                <div class="form-group">
+                    <label class="font-weight-bold">Nama File <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <input type="text" name="nama_file" class="form-control" value="{{ old('form_type') === 'create_document' ? old('nama_file') : '' }}" maxlength="150" required>
+                        <div class="input-group-append"><span class="input-group-text font-weight-bold">.pdf</span></div>
+                    </div>
+                </div>
+                <div class="bg-white border rounded-top p-2 d-flex flex-wrap align-items-center">
+                    <select class="form-control form-control-sm mr-2 mb-1" style="width:145px" onchange="clientEditorCommand('clientDocumentEditor', 'formatBlock', this.value); this.value='p';">
+                        <option value="p">Paragraf</option><option value="h1">Judul 1</option><option value="h2">Judul 2</option><option value="h3">Judul 3</option>
+                    </select>
+                    <div class="btn-group btn-group-sm mr-2 mb-1">
+                        <button type="button" class="btn btn-light border" onclick="clientEditorCommand('clientDocumentEditor','bold')"><i class="fas fa-bold"></i></button>
+                        <button type="button" class="btn btn-light border" onclick="clientEditorCommand('clientDocumentEditor','italic')"><i class="fas fa-italic"></i></button>
+                        <button type="button" class="btn btn-light border" onclick="clientEditorCommand('clientDocumentEditor','underline')"><i class="fas fa-underline"></i></button>
+                        <button type="button" class="btn btn-light border" onclick="clientEditorCommand('clientDocumentEditor','strikeThrough')"><i class="fas fa-strikethrough"></i></button>
+                    </div>
+                    <div class="btn-group btn-group-sm mr-2 mb-1">
+                        <button type="button" class="btn btn-light border" onclick="clientEditorCommand('clientDocumentEditor','justifyLeft')"><i class="fas fa-align-left"></i></button>
+                        <button type="button" class="btn btn-light border" onclick="clientEditorCommand('clientDocumentEditor','justifyCenter')"><i class="fas fa-align-center"></i></button>
+                        <button type="button" class="btn btn-light border" onclick="clientEditorCommand('clientDocumentEditor','justifyRight')"><i class="fas fa-align-right"></i></button>
+                        <button type="button" class="btn btn-light border" onclick="clientEditorCommand('clientDocumentEditor','justifyFull')"><i class="fas fa-align-justify"></i></button>
+                    </div>
+                    <div class="btn-group btn-group-sm mb-1">
+                        <button type="button" class="btn btn-light border" onclick="clientEditorCommand('clientDocumentEditor','insertUnorderedList')"><i class="fas fa-list-ul"></i></button>
+                        <button type="button" class="btn btn-light border" onclick="clientEditorCommand('clientDocumentEditor','insertOrderedList')"><i class="fas fa-list-ol"></i></button>
+                        <button type="button" class="btn btn-light border" onclick="clientEditorCommand('clientDocumentEditor','undo')"><i class="fas fa-undo"></i></button>
+                        <button type="button" class="btn btn-light border" onclick="clientEditorCommand('clientDocumentEditor','redo')"><i class="fas fa-redo"></i></button>
+                    </div>
+                </div>
+                <div class="border border-top-0 rounded-bottom p-4" style="background:#dfe3e8;max-height:600px;overflow:auto">
+                    <div id="clientDocumentEditor" contenteditable="true" class="bg-white mx-auto shadow-sm p-5" style="max-width:794px;min-height:520px;outline:none;line-height:1.65;color:#252a34"><p>{{ old('form_type') === 'create_document' ? strip_tags(old('content')) : 'Mulai tulis dokumen di sini...' }}</p></div>
+                </div>
+            </div>
+            <div class="modal-footer"><button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button><button type="submit" class="btn btn-success"><i class="fas fa-file-pdf mr-1"></i>Simpan sebagai PDF</button></div>
+        </form>
+    </div>
+</div>
 
 {{-- ==================== MODAL TAMBAH ==================== --}}
 
@@ -242,16 +303,20 @@
 
 <div class="modal fade" id="editModal_{{ $item->id }}">
 
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog {{ $item->is_generated_document ? 'modal-xl' : 'modal-lg' }}">
 
         <div class="modal-content">
 
             <form action="{{ route('PDF.update',$item->id) }}"
                   method="POST"
-                  enctype="multipart/form-data">
+                  enctype="multipart/form-data"
+                  class="client-edit-document-form"
+                  data-file-id="{{ $item->id }}">
 
                 @csrf
                 @method('PUT')
+                <input type="hidden" name="edit_file_id" value="{{ $item->id }}">
+                @if($item->is_generated_document)<input type="hidden" id="clientEditContent_{{ $item->id }}" name="content">@endif
 
                 <div class="modal-header">
 
@@ -267,16 +332,32 @@
                 <div class="modal-body">
 
                     <div class="form-group">
-
                         <label>Nama File</label>
-
                         <input type="text"
                                name="nama_file"
                                class="form-control"
-                               value="{{ $item->nama_file }}">
-
+                               value="{{ $item->nama_file }}"
+                               required>
                     </div>
 
+                    @if($item->is_generated_document)
+                    <div class="form-group">
+                        <label class="font-weight-bold">Isi Dokumen</label>
+                        <div class="bg-white border rounded-top p-2">
+                            <div class="btn-group btn-group-sm mr-2">
+                                <button type="button" class="btn btn-light border" onclick="clientEditorCommand('clientEditEditor_{{ $item->id }}','bold')"><i class="fas fa-bold"></i></button>
+                                <button type="button" class="btn btn-light border" onclick="clientEditorCommand('clientEditEditor_{{ $item->id }}','italic')"><i class="fas fa-italic"></i></button>
+                                <button type="button" class="btn btn-light border" onclick="clientEditorCommand('clientEditEditor_{{ $item->id }}','underline')"><i class="fas fa-underline"></i></button>
+                                <button type="button" class="btn btn-light border" onclick="clientEditorCommand('clientEditEditor_{{ $item->id }}','justifyCenter')"><i class="fas fa-align-center"></i></button>
+                                <button type="button" class="btn btn-light border" onclick="clientEditorCommand('clientEditEditor_{{ $item->id }}','insertUnorderedList')"><i class="fas fa-list-ul"></i></button>
+                                <button type="button" class="btn btn-light border" onclick="clientEditorCommand('clientEditEditor_{{ $item->id }}','insertOrderedList')"><i class="fas fa-list-ol"></i></button>
+                            </div>
+                        </div>
+                        <div class="border border-top-0 rounded-bottom p-3 bg-light">
+                            <div id="clientEditEditor_{{ $item->id }}" contenteditable="true" class="bg-white p-4" style="min-height:360px;outline:none;line-height:1.65">{!! $item->editor_content !!}</div>
+                        </div>
+                    </div>
+                    @else
                     <div class="form-group">
 
                         <label>Ganti PDF (Opsional)</label>
@@ -287,6 +368,7 @@
                                accept=".pdf">
 
                     </div>
+                    @endif
 
                 </div>
 
@@ -416,6 +498,34 @@
 
 @push('script')
 <script>
+
+function clientEditorCommand(editorId, command, value) {
+    const editor = document.getElementById(editorId);
+    editor.focus();
+    document.execCommand(command, false, value || null);
+}
+
+const clientDocumentForm = document.getElementById('clientDocumentForm');
+if (clientDocumentForm) {
+    clientDocumentForm.addEventListener('submit', function () {
+        document.getElementById('clientDocumentContent').value = document.getElementById('clientDocumentEditor').innerHTML;
+    });
+}
+
+document.querySelectorAll('.client-edit-document-form').forEach(function (form) {
+    form.addEventListener('submit', function () {
+        const fileId = form.dataset.fileId;
+        const editor = document.getElementById('clientEditEditor_' + fileId);
+        const contentInput = document.getElementById('clientEditContent_' + fileId);
+        if (editor && contentInput) contentInput.value = editor.innerHTML;
+    });
+});
+
+@if($errors->any() && old('form_type') === 'create_document')
+    $('#buatDokumenModal').modal('show');
+@elseif($errors->any() && old('edit_file_id'))
+    $('#editModal_{{ (int) old('edit_file_id') }}').modal('show');
+@endif
 
 const viewer = document.getElementById("pdfViewerPage");
 const content = document.getElementById("pageContent");

@@ -6,7 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class MasterFolder extends Model
 {
-    protected $fillable = ['division_id', 'created_by', 'name', 'description'];
+    protected $fillable = ['division_id', 'created_by', 'name', 'description', 'is_personal'];
+
+    protected $casts = [
+        'is_personal' => 'boolean',
+    ];
 
     public function division()
     {

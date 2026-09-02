@@ -279,6 +279,31 @@
         </a>
     </li>
 
+    @php
+        $personalFolderRoute = request()->route('folder');
+        $personalFolderActive = request()->routeIs('master-folder.mine')
+            || (request()->routeIs('master-folder.show')
+                && $personalFolderRoute
+                && (request('from') === 'mine'
+                    || (!$isSuperAdmin
+                        && !$auth->userDivisions->contains('division_id', $personalFolderRoute->division_id))));
+    @endphp
+    <li class="nav-item {{ $personalFolderActive ? 'active' : '' }}">
+        <a class="nav-link" href="{{ route('master-folder.mine') }}">
+            <i class="fas fa-fw fa-folder"></i>
+            <span>Folder Master Saya</span>
+        </a>
+    </li>
+
+    @if($isSuperAdmin)
+        <li class="nav-item {{ request()->routeIs('master-folder.*') && !request()->routeIs('master-folder.mine') && request('from') !== 'mine' ? 'active' : '' }}">
+            <a class="nav-link py-2 pl-4" href="{{ route('master-folder.index') }}">
+                <i class="fas fa-fw fa-folder-open text-warning"></i>
+                <span>Folder Master Divisi</span>
+            </a>
+        </li>
+    @endif
+
     <hr class="sidebar-divider">
     @php
         $currentProduct = request()->route('id_produk');
@@ -293,9 +318,6 @@
 
         $isMarketingPage = Route::is(['market_research', 'branding', 'analisis', 'manajemen', 'PDF']);
 
-        $masterFolderDivisionId = request()->integer('division_id')
-            ?: optional(request()->route('folder'))->division_id;
-
         $divisiOpen = Route::is([
             'client.produk_divisi',
             'barang_client.index',
@@ -304,7 +326,6 @@
             'tools.index',
             'gform_affiliate.index',
             'selection.index',
-            'master-folder.*',
         ]);
 
         $isPdf = Route::is('PDF');

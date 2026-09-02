@@ -279,30 +279,12 @@
         </a>
     </li>
 
-    @php
-        $personalFolderRoute = request()->route('folder');
-        $personalFolderActive = request()->routeIs('master-folder.mine')
-            || (request()->routeIs('master-folder.show')
-                && $personalFolderRoute
-                && (request('from') === 'mine'
-                    || (!$isSuperAdmin
-                        && !$auth->userDivisions->contains('division_id', $personalFolderRoute->division_id))));
-    @endphp
-    <li class="nav-item {{ $personalFolderActive ? 'active' : '' }}">
-        <a class="nav-link" href="{{ route('master-folder.mine') }}">
+    <li class="nav-item {{ request()->routeIs('master-folder.*') ? 'active' : '' }}">
+        <a class="nav-link" href="{{ route('master-folder.index') }}">
             <i class="fas fa-fw fa-folder"></i>
-            <span>Folder Master Saya</span>
+            <span>Folder Master</span>
         </a>
     </li>
-
-    @if($isSuperAdmin)
-        <li class="nav-item {{ request()->routeIs('master-folder.*') && !request()->routeIs('master-folder.mine') && request('from') !== 'mine' ? 'active' : '' }}">
-            <a class="nav-link py-2 pl-4" href="{{ route('master-folder.index') }}">
-                <i class="fas fa-fw fa-folder-open text-warning"></i>
-                <span>Folder Master Divisi</span>
-            </a>
-        </li>
-    @endif
 
     <hr class="sidebar-divider">
     @php

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Division;
 use App\Models\MasterFolder;
 use App\Models\MasterFolderFile;
 use App\Models\Role;
@@ -17,77 +16,10 @@ class MasterFolderController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        abort_unless($user->isAdmin, 403, 'Folder Master Divisi hanya dapat diakses oleh admin.');
-
-        $memberships = $user->userDivisions()->get(['division_id', 'role_id']);
-        $allowedDivisionIds = $memberships->pluck('division_id')->unique()->values();
-        $selectedDivisionId = $request->integer('division_id') ?: null;
-
-        $divisions = Division::orderBy('name')->get();
-
-        if (! $selectedDivisionId && $divisions->count() === 1) {
-            $selectedDivisionId = $divisions->first()->id;
-        }
-
-        $folders = MasterFolder::with(['division', 'roles.division'])
-            ->where('is_personal', false)
-            ->when(
-                $user->isAdmin,
-                fn ($query) => $query->withCount('files'),
-                fn ($query) => $query->withCount([
-                    'files' => fn ($files) => $files->whereHas(
-                        'roles',
-                        fn ($roles) => $roles->whereIn('roles.id', $memberships->pluck('role_id'))
-                    ),
-                ])
-            )
-            ->when($selectedDivisionId, fn ($query) => $query->where('division_id', $selectedDivisionId))
-            ->when(! $user->isAdmin && $memberships->isEmpty(), fn ($query) => $query->whereRaw('1 = 0'))
-            ->when(! $user->isAdmin && $memberships->isNotEmpty(), function ($query) use ($memberships, $user) {
-                $query->where(function ($visible) use ($memberships) {
-                    $visible->where(function ($access) use ($memberships) {
-                            foreach ($memberships as $membership) {
-                                $access->orWhere(function ($pair) use ($membership) {
-                                    $pair->where('division_id', $membership->division_id)
-                                        ->whereHas('roles', fn ($roles) => $roles->where('roles.id', $membership->role_id));
-                                });
-                            }
-                        });
-                });
-            })
-            ->latest()
-            ->get();
-
-        $roles = Role::query()
-            ->orderBy('level')
-            ->orderBy('role_name')
-            ->get()
-            ->groupBy('division_id');
-
-        $roleDivisions = Division::whereIn('id', $roles->keys())->orderBy('name')->get()->keyBy('id');
-
-        return view('master_folder.index', [
-            'title' => 'Folder Master',
-            'folders' => $folders,
-            'divisions' => $divisions,
-            'rolesByDivision' => $roles,
-            'roleDivisions' => $roleDivisions,
-            'selectedDivisionId' => $selectedDivisionId,
-            'isSuperAdmin' => (bool) $user->isAdmin,
-        ]);
-    }
-
-    public function myFolders(Request $request)
-    {
-        $user = $request->user();
         $roleIds = $user->userDivisions()->pluck('role_id');
 
-        $folders = MasterFolder::with(['division', 'roles.division'])
+        $folders = MasterFolder::with(['roles.division'])
             ->where('is_personal', false)
-            ->when(! $user->isAdmin, fn ($query) => $query->whereHas(
-                'roles',
-                fn ($roles) => $roles->whereIn('roles.id', $roleIds)
-            ))
             ->when(
                 $user->isAdmin,
                 fn ($query) => $query->withCount('files'),
@@ -98,39 +30,54 @@ class MasterFolderController extends Controller
                     ),
                 ])
             )
+            ->when(! $user->isAdmin, fn ($query) => $query->whereHas(
+                'roles',
+                fn ($roles) => $roles->whereIn('roles.id', $roleIds)
+            ))
             ->latest()
             ->get();
 
-        return view('master_folder.mine', [
-            'title' => 'Folder Master Saya',
+        $roles = Role::query()
+            ->orderBy('level')
+            ->orderBy('role_name')
+            ->get()
+            ->groupBy('division_id');
+
+        return view('master_folder.index', [
+            'title' => 'Folder Master',
             'folders' => $folders,
+            'rolesByDivision' => $roles,
+            'isSuperAdmin' => (bool) $user->isAdmin,
         ]);
+    }
+
+    public function myFolders(Request $request)
+    {
+        return redirect()->route('master-folder.index');
     }
 
     public function store(Request $request)
     {
         $user = $request->user();
-        abort_unless($user->isAdmin, 403, 'Hanya admin yang dapat membuat folder divisi.');
+        abort_unless($user->isAdmin, 403, 'Hanya admin yang dapat membuat folder.');
 
         $validated = $request->validate([
-            'division_id' => ['required', 'integer', 'exists:divisions,id'],
             'name' => [
                 'required', 'string', 'max:150',
                 Rule::unique('master_folders')->where(fn ($query) => $query
-                    ->where('is_personal', false)
-                    ->where('division_id', $request->integer('division_id'))),
+                    ->where('is_personal', false)),
             ],
             'description' => ['nullable', 'string', 'max:1000'],
             'role_ids' => ['required', 'array', 'min:1'],
             'role_ids.*' => ['integer', 'distinct', 'exists:roles,id'],
         ], [
-            'name.unique' => 'Nama folder sudah digunakan pada divisi ini.',
+            'name.unique' => 'Nama folder sudah digunakan.',
             'role_ids.required' => 'Pilih minimal satu role yang dapat melihat folder.',
         ]);
 
         DB::transaction(function () use ($validated, $user) {
             $folder = MasterFolder::create([
-                'division_id' => $validated['division_id'],
+                'division_id' => null,
                 'created_by' => $user->id,
                 'name' => trim($validated['name']),
                 'description' => $validated['description'] ?? null,
@@ -139,7 +86,7 @@ class MasterFolderController extends Controller
             $folder->roles()->sync($validated['role_ids']);
         });
 
-        return redirect()->route('master-folder.index', ['division_id' => $validated['division_id']])
+        return redirect()->route('master-folder.index')
             ->with('success', 'Folder berhasil dibuat.');
     }
 
@@ -182,16 +129,13 @@ class MasterFolderController extends Controller
         $validated = $request->validate([
             'name' => [
                 'required', 'string', 'max:150',
-                Rule::unique('master_folders')->where(fn ($query) => $folder->is_personal
-                    ? $query->where('is_personal', true)->where('created_by', $request->user()->id)
-                    : $query->where('is_personal', false)->where('division_id', $folder->division_id)
-                )->ignore($folder->id),
+                Rule::unique('master_folders')->where(fn ($query) => $query->where('is_personal', false))->ignore($folder->id),
             ],
             'description' => ['nullable', 'string', 'max:1000'],
             'role_ids' => [$folder->is_personal ? 'nullable' : 'required', 'array'],
             'role_ids.*' => ['integer', 'distinct', 'exists:roles,id'],
         ], [
-            'name.unique' => 'Nama folder sudah digunakan pada divisi ini.',
+            'name.unique' => 'Nama folder sudah digunakan.',
             'role_ids.required' => 'Pilih minimal satu role yang dapat melihat folder.',
         ]);
 
@@ -203,7 +147,7 @@ class MasterFolderController extends Controller
             $folder->roles()->sync($validated['role_ids'] ?? []);
         });
 
-        return redirect()->route($folder->is_personal ? 'master-folder.mine' : 'master-folder.index', $folder->is_personal ? [] : ['division_id' => $folder->division_id])
+        return redirect()->route('master-folder.index')
             ->with('success', 'Folder berhasil diperbarui.');
     }
 
@@ -211,11 +155,10 @@ class MasterFolderController extends Controller
     {
         $this->authorizeManageFolder($request, $folder);
 
-        $divisionId = $folder->division_id;
         DB::transaction(fn () => $folder->delete());
         Storage::disk('local')->deleteDirectory('master-folders/'.$folder->id);
 
-        return redirect()->route($folder->is_personal ? 'master-folder.mine' : 'master-folder.index', $folder->is_personal ? [] : ['division_id' => $divisionId])
+        return redirect()->route('master-folder.index')
             ->with('success', 'Folder dan seluruh file di dalamnya berhasil dihapus.');
     }
 

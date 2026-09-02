@@ -11,21 +11,10 @@
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
     <div>
         <h1 class="h4 text-gray-800 font-weight-bold mb-0">{{ $title }}</h1>
-        <p class="text-muted small mb-0 font-italic">Folder hanya tampil untuk role yang diberi akses pada divisi terkait.</p>
+        <p class="text-muted small mb-0 font-italic">Folder hanya tampil untuk jabatan yang diberi akses.</p>
     </div>
     <div class="mt-3 mt-md-0 d-flex flex-wrap align-items-center">
-        @if($divisions->count() > 1)
-            <form method="GET" action="{{ route('master-folder.index') }}" class="form-inline bg-white p-2 rounded shadow-sm border mr-2">
-                <label for="division-filter" class="mr-2 small font-weight-bold text-muted text-uppercase">Divisi:</label>
-                <select id="division-filter" name="division_id" class="form-control form-control-sm border-0 bg-light font-weight-bold" onchange="this.form.submit()">
-                    <option value="">Semua divisi</option>
-                    @foreach($divisions as $division)
-                        <option value="{{ $division->id }}" @selected((int) $selectedDivisionId === $division->id)>{{ $division->name }}</option>
-                    @endforeach
-                </select>
-            </form>
-        @endif
-        @if($isSuperAdmin && $divisions->isNotEmpty())
+        @if($isSuperAdmin)
             <button class="btn btn-primary btn-sm shadow-sm px-3 py-2" data-toggle="modal" data-target="#createFolderModal">
                 <i class="fas fa-folder-plus mr-1"></i> Folder Baru
             </button>
@@ -55,7 +44,7 @@
                 <div class="card-body py-3">
                     <div class="d-flex justify-content-between align-items-start mb-3">
                         <div class="folder-icon"><i class="fas fa-folder-open"></i></div>
-                        <span class="badge badge-light border text-muted">{{ $folder->division->name }}</span>
+                        <span class="badge badge-light border text-muted">Folder Master</span>
                     </div>
                     <h6 class="font-weight-bold text-gray-800 mb-1 text-truncate" title="{{ $folder->name }}">{{ $folder->name }}</h6>
                     <p class="small text-muted mb-3" style="min-height: 38px;">
@@ -100,11 +89,6 @@
                     </div>
                     <div class="modal-body">
                         <div class="form-group">
-                            <label class="font-weight-bold">Divisi</label>
-                            <input class="form-control bg-light" value="{{ $folder->division->name }}" readonly>
-                            <small class="form-text text-muted">Divisi folder tidak dapat dipindahkan.</small>
-                        </div>
-                        <div class="form-group">
                             <label for="edit-folder-name-{{ $folder->id }}" class="font-weight-bold">Nama Folder <span class="text-danger">*</span></label>
                             <input id="edit-folder-name-{{ $folder->id }}" name="name" value="{{ (int) old('edit_folder_id') === $folder->id ? old('name') : $folder->name }}" class="form-control" maxlength="150" required>
                         </div>
@@ -122,7 +106,7 @@
                             @endphp
                             @foreach($rolesByDivision as $divisionId => $divisionRoles)
                                 <div class="border rounded p-3 mb-3">
-                                    <div class="small font-weight-bold text-primary text-uppercase mb-2">{{ optional($roleDivisions->get($divisionId))->name ?? 'Divisi' }}</div>
+                                    <div class="small font-weight-bold text-primary text-uppercase mb-2">{{ $divisionRoles->first()->division->name ?? 'Divisi' }}</div>
                                     <div class="row">
                                         @foreach($divisionRoles as $role)
                                             <div class="col-md-6 mb-2">
@@ -172,7 +156,7 @@
                 <div class="card-body text-muted">
                     <i class="fas fa-folder-open fa-3x text-warning mb-3"></i>
                     <h6 class="font-weight-bold text-gray-700">Belum ada folder yang dapat Anda lihat</h6>
-                    <p class="small mb-0">Buat folder baru atau pilih divisi lain.</p>
+                    <p class="small mb-0">{{ $isSuperAdmin ? 'Buat folder baru untuk memulai.' : 'Admin belum memberikan akses folder kepada jabatan Anda.' }}</p>
                 </div>
             </div>
         </div>
@@ -190,15 +174,6 @@
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label for="folder-division" class="font-weight-bold">Divisi <span class="text-danger">*</span></label>
-                    <select id="folder-division" name="division_id" class="form-control" required>
-                        <option value="">Pilih divisi</option>
-                        @foreach($divisions as $division)
-                            <option value="{{ $division->id }}" @selected((int) old('division_id', $selectedDivisionId) === $division->id)>{{ $division->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="form-group">
                     <label for="folder-name" class="font-weight-bold">Nama Folder <span class="text-danger">*</span></label>
                     <input id="folder-name" name="name" value="{{ old('name') }}" class="form-control" maxlength="150" required placeholder="Contoh: SOP Divisi">
                 </div>
@@ -208,10 +183,10 @@
                 </div>
                 <div class="form-group mb-0">
                     <label class="font-weight-bold">Role yang Dapat Melihat <span class="text-danger">*</span></label>
-                    <p class="small text-muted">Pilih jabatan dari divisi pemilik maupun divisi lain. Penerima lintas divisi akan melihatnya di Folder Master Saya.</p>
+                    <p class="small text-muted">Pilih jabatan dari divisi mana pun yang dapat melihat folder ini.</p>
                     @foreach($rolesByDivision as $divisionId => $divisionRoles)
                         <div class="border rounded p-3 mb-3">
-                            <div class="small font-weight-bold text-primary text-uppercase mb-2">{{ optional($roleDivisions->get($divisionId))->name ?? 'Divisi' }}</div>
+                            <div class="small font-weight-bold text-primary text-uppercase mb-2">{{ $divisionRoles->first()->division->name ?? 'Divisi' }}</div>
                             <div class="row">
                                 @foreach($divisionRoles as $role)
                                     <div class="col-md-6 mb-2">

@@ -146,11 +146,44 @@
                                 Status
                             </label>
 
-                            <input
-                                type="text"
+                            <select
                                 id="leadStatus"
                                 class="form-control"
                             >
+                                <option value="">
+                                    Pilih Status
+                                </option>
+
+                                <option value="meeting confirm">
+                                    Meeting Confirm
+                                </option>
+
+                                <option value="meeting schedule">
+                                    Meeting Schedule
+                                </option>
+
+                                <option value="on progress">
+                                    On Progress
+                                </option>
+
+                                <option value="after meeting">
+                                    After Meeting
+                                </option>
+
+                                <option value="ghosting">
+                                    Ghosting
+                                </option>
+
+                                <option value="no respon">
+                                    No Respon
+                                </option>
+                                <option value="deals">
+                                    Deals
+                                </option>
+                                <option value="no deals">
+                                    No Deals
+                                </option>
+                            </select>
                         </div>
 
                         <div class="col-md-4 mb-3">

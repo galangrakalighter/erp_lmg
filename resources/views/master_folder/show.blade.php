@@ -12,11 +12,11 @@
 </style>
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
     <div>
-        <a href="{{ $backToMine ? route('master-folder.mine') : route('master-folder.index', ['division_id' => $folder->division_id]) }}" class="btn btn-sm btn-light border shadow-sm mb-3">
+        <a href="{{ route('master-folder.index') }}" class="btn btn-sm btn-light border shadow-sm mb-3">
             <i class="fas fa-arrow-left mr-1"></i>Kembali ke Folder Master
         </a>
         <h1 class="h4 text-gray-800 font-weight-bold mb-1"><i class="fas fa-folder-open text-warning mr-2"></i>{{ $folder->name }}</h1>
-        <p class="text-muted small mb-0">{{ optional($folder->division)->name ?? 'Folder Pribadi' }} &middot; {{ $folder->description ?: 'Tanpa deskripsi' }}</p>
+        <p class="text-muted small mb-0">{{ $folder->description ?: 'Tanpa deskripsi' }}</p>
     </div>
     @if($canManage)
     <div class="mt-3 mt-md-0">

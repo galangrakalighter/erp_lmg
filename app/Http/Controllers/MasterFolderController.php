@@ -235,6 +235,10 @@ class MasterFolderController extends Controller
     {
         $this->authorizeManageFolder($request, $folder);
 
+        if (is_string($request->input('content'))) {
+            $request->merge(['content' => $this->sanitizeDocumentHtml($request->input('content'))]);
+        }
+
         $validated = $request->validate([
             'document_name' => ['required', 'string', 'max:150'],
             'content' => ['required', 'string', 'max:200000'],
@@ -295,6 +299,10 @@ class MasterFolderController extends Controller
         $this->authorizeManageFolder($request, $folder);
         abort_unless($file->master_folder_id === $folder->id, 404);
         $this->authorizeFile($request, $folder, $file);
+
+        if ($file->is_generated_document && is_string($request->input('content'))) {
+            $request->merge(['content' => $this->sanitizeDocumentHtml($request->input('content'))]);
+        }
 
         $validated = $request->validate([
             'file_name' => ['required', 'string', 'max:150'],
@@ -431,7 +439,7 @@ class MasterFolderController extends Controller
 
     private function sanitizeDocumentHtml(string $html): string
     {
-        $allowedTags = '<p><div><span><font><br><h1><h2><h3><strong><b><em><i><u><s><ul><ol><li><blockquote><table><thead><tbody><tr><th><td>';
+        $allowedTags = '<p><div><span><font><br><hr><h1><h2><h3><h4><h5><h6><strong><b><em><i><u><s><sup><sub><ul><ol><li><blockquote><table><thead><tbody><tfoot><tr><th><td><colgroup><col>';
         $html = preg_replace('#<(script|style|iframe|object|embed)\b[^>]*>.*?</\1>#is', '', $html);
         $clean = strip_tags($html, $allowedTags);
 
@@ -520,15 +528,28 @@ class MasterFolderController extends Controller
 
             [$property, $value] = array_map('trim', explode(':', $declaration, 2));
             $property = strtolower($property);
-            $value = strtolower($value);
+            $normalizedValue = strtolower($value);
+
+            if (str_contains($normalizedValue, 'url(') || str_contains($normalizedValue, 'expression(')) {
+                continue;
+            }
 
             $isSafe = match ($property) {
-                'text-align' => in_array($value, ['left', 'center', 'right', 'justify'], true),
-                'font-weight' => in_array($value, ['normal', 'bold', 'bolder', '100', '200', '300', '400', '500', '600', '700', '800', '900'], true),
-                'font-style' => in_array($value, ['normal', 'italic', 'oblique'], true),
-                'text-decoration', 'text-decoration-line' => preg_match('/^(none|underline|line-through|underline line-through)$/', $value) === 1,
-                'margin-left', 'padding-left', 'font-size' => preg_match('/^\d+(\.\d+)?(px|pt|em|rem|%)$/', $value) === 1,
-                'color', 'background-color' => preg_match('/^(#[0-9a-f]{3,6}|[a-z]+|rgb\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*\))$/i', $value) === 1,
+                'text-align' => in_array($normalizedValue, ['left', 'center', 'right', 'justify', 'start', 'end'], true),
+                'font-weight' => in_array($normalizedValue, ['normal', 'bold', 'bolder', 'lighter', '100', '200', '300', '400', '500', '600', '700', '800', '900'], true),
+                'font-style' => in_array($normalizedValue, ['normal', 'italic', 'oblique'], true),
+                'text-decoration', 'text-decoration-line' => preg_match('/^(none|underline|line-through|underline line-through)$/', $normalizedValue) === 1,
+                'font-family' => preg_match('/^[a-z0-9 ,"\'\-_]+$/i', $value) === 1,
+                'font-size', 'line-height', 'letter-spacing', 'word-spacing', 'text-indent',
+                'margin', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
+                'padding', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+                'width', 'min-width', 'max-width' => preg_match('/^(normal|auto|0|(-?\d+(\.\d+)?)(px|pt|pc|em|rem|%|cm|mm|in)?)$/', $normalizedValue) === 1,
+                'color', 'background', 'background-color' => preg_match('/^(transparent|#[0-9a-f]{3,8}|[a-z]+|rgba?\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+(?:\s*,\s*[\d.]+)?\s*\))$/i', $normalizedValue) === 1,
+                'white-space' => in_array($normalizedValue, ['normal', 'nowrap', 'pre', 'pre-wrap', 'pre-line'], true),
+                'vertical-align' => preg_match('/^(baseline|sub|super|top|text-top|middle|bottom|text-bottom|(-?\d+(\.\d+)?)(px|pt|em|rem|%)?)$/', $normalizedValue) === 1,
+                'list-style-type' => preg_match('/^(none|disc|circle|square|decimal|lower-alpha|upper-alpha|lower-roman|upper-roman)$/', $normalizedValue) === 1,
+                'border-collapse' => in_array($normalizedValue, ['collapse', 'separate'], true),
+                'border', 'border-top', 'border-right', 'border-bottom', 'border-left' => preg_match('/^\d+(\.\d+)?(px|pt)\s+(solid|dashed|dotted|double)\s+(#[0-9a-f]{3,8}|[a-z]+)$/i', $normalizedValue) === 1,
                 default => false,
             };
 

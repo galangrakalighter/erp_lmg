@@ -151,7 +151,7 @@
                             </div>
                         </div>
                         <div class="border border-top-0 rounded-bottom p-4" style="background:#dfe3e8; max-height:600px; overflow:auto;">
-                            <div id="edit-file-editor-{{ $file->id }}" contenteditable="true" class="bg-white mx-auto shadow-sm p-5" style="max-width:794px; min-height:520px; outline:none; line-height:1.65; color:#252a34;">@if((int) old('edit_file_id') === $file->id)<p>{{ strip_tags(old('content')) }}</p>@else{!! $file->editor_content !!}@endif</div>
+                            <div id="edit-file-editor-{{ $file->id }}" contenteditable="true" class="bg-white mx-auto shadow-sm p-5" style="max-width:794px; min-height:520px; outline:none; line-height:1.65; color:#252a34;">@if((int) old('edit_file_id') === $file->id){!! old('content') !!}@else{!! $file->editor_content !!}@endif</div>
                         </div>
                     @endif
                 </div>
@@ -296,7 +296,7 @@
                     </div>
                 </div>
                 <div class="editor-stage border border-top-0 rounded-bottom p-4" style="background:#dfe3e8; max-height:600px; overflow:auto;">
-                    <div id="document-editor" contenteditable="true" class="bg-white mx-auto shadow-sm p-5" style="max-width:794px; min-height:520px; outline:none; line-height:1.65; color:#252a34;"><p>{{ old('form_type') === 'document' ? strip_tags(old('content')) : 'Mulai tulis dokumen di sini...' }}</p></div>
+                    <div id="document-editor" contenteditable="true" class="bg-white mx-auto shadow-sm p-5" style="max-width:794px; min-height:520px; outline:none; line-height:1.65; color:#252a34;">@if(old('form_type') === 'document'){!! old('content') !!}@else<p>Mulai tulis dokumen di sini...</p>@endif</div>
                 </div>
             </div>
             <div class="modal-footer">

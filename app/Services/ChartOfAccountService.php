@@ -152,11 +152,11 @@ class ChartOfAccountService
                     [
                         'periode'             => $openingPeriode,
                         'chart_of_account_id' => $coa->id,
-                        'perusahaan' => $data['perusahaan'],
                     ],
                     [
-                        'saldo'      => $openingSaldo,
-                        'updated_at' => now(),
+                        'saldo'       => $openingSaldo,
+                        'perusahaan'  => (int) $data['perusahaan'],
+                        'updated_at'  => now(),
                     ]
                 );
             }

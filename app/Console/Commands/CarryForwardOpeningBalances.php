@@ -34,7 +34,7 @@ class CarryForwardOpeningBalances extends Command
 
         $accounts = ChartOfAccount::query()
             ->orderBy('id')
-            ->get(['id']);
+            ->get(['id', 'perusahaan']);
 
         $now = now();
         $changed = 0;
@@ -61,11 +61,12 @@ class CarryForwardOpeningBalances extends Command
                 $existing = DB::table('opening_balances')
                     ->where('periode', $targetPeriod)
                     ->where('chart_of_account_id', $account->id)
-                    ->value('saldo');
+                    ->first(['saldo', 'perusahaan']);
 
                 if (
                     $existing !== null &&
-                    abs((float) $existing - $finalBalance) < 0.005
+                    abs((float) $existing->saldo - $finalBalance) < 0.005 &&
+                    (int) $existing->perusahaan === (int) $account->perusahaan
                 ) {
                     continue;
                 }
@@ -82,6 +83,7 @@ class CarryForwardOpeningBalances extends Command
                         ->where('chart_of_account_id', $account->id)
                         ->update([
                             'saldo' => $finalBalance,
+                            'perusahaan' => $account->perusahaan,
                             'updated_at' => $now,
                         ]);
                 } else {
@@ -89,6 +91,7 @@ class CarryForwardOpeningBalances extends Command
                         'periode' => $targetPeriod,
                         'chart_of_account_id' => $account->id,
                         'saldo' => $finalBalance,
+                        'perusahaan' => $account->perusahaan,
                         'created_at' => $now,
                         'updated_at' => $now,
                     ]);

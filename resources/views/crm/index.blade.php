@@ -5,6 +5,7 @@
     id="crmApp"
     data-ai-url="{{ url('/api/crm/ai') }}"
     data-human-url="{{ url('/api/crm/human') }}"
+    data-meeting-url="{{ url('/api/crm/meeting') }}"
     data-crud-url="{{ url('/api/crm') }}"
     data-history-url="{{ url('/api/crm/history') }}"
     data-human-history-url="{{ url('/api/crm/human/history') }}"
@@ -58,6 +59,17 @@
                         Human
                     </button>
                 </li>
+
+                <li class="nav-item">
+                    <button
+                        type="button"
+                        class="nav-link crm-tab"
+                        data-tab="meeting"
+                    >
+                        <i class="fas fa-calendar-alt mr-1"></i>
+                        Jadwal Meeting
+                    </button>
+                </li>
             </ul>
         </div>
 
@@ -69,6 +81,7 @@
                     <div class="col-md-2 mb-2">
                         <label class="small font-weight-bold">
                             Dari Tanggal
+                            <span id="startDateContext">Chat</span>
                         </label>
 
                         <input
@@ -81,6 +94,7 @@
                     <div class="col-md-2 mb-2">
                         <label class="small font-weight-bold">
                             Sampai Tanggal
+                            <span id="endDateContext">Chat</span>
                         </label>
 
                         <input
@@ -167,12 +181,14 @@
 
         @include('crm.ai')
         @include('crm.human')
+        @include('crm.meeting')
     </div>
 </div>
 
 @include('crm.modals')
 
 <script src="{{ asset('js/crm/ai.js') }}?v=1.0.0"></script>
-<script src="{{ asset('js/crm/human.js') }}?v=1.0.0"></script>
+<script src="{{ asset('js/crm/human.js') }}?v=1.1.1"></script>
+<script src="{{ asset('js/crm/meeting.js') }}?v=1.0.0"></script>
 <script src="{{ asset('js/crm/common.js') }}?v=1.0.0"></script>
 @endsection

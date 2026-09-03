@@ -5,11 +5,13 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\CRM;
 use App\Models\CRM_HUMAN;
+use App\Models\Meeting;
 use App\Models\historyChat;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 class CRMController extends Controller
 {
     /**
@@ -42,6 +44,8 @@ class CRMController extends Controller
                     ->toDateString()
             );
 
+            // Pada tabel crm_baru, waktu chat tersimpan di kolom
+            // chat_terbaru (padanan tanggal_chat pada CRM Human).
             $query = CRM::query()
                 ->whereNotNull('chat_terbaru')
                 ->whereDate(
@@ -94,6 +98,10 @@ class CRMController extends Controller
                                 $lead->status
                             ),
                         'chat_terbaru' =>
+                            $this->dateWib(
+                                $lead->chat_terbaru
+                            ),
+                        'tanggal_chat' =>
                             $this->dateWib(
                                 $lead->chat_terbaru
                             ),
@@ -388,6 +396,18 @@ class CRMController extends Controller
                                 $lead->done_meeting
                                 ?? false
                             ),
+
+                        'jumlah_follow_up' =>
+                            min(6, max(0, (int) (
+                                $lead->jumlah_follow_up
+                                ?? 0
+                            ))),
+
+                        'today' =>
+                            (bool) (
+                                $lead->today
+                                ?? false
+                            ),
                     ];
                 })
                 ->values();
@@ -400,22 +420,21 @@ class CRMController extends Controller
                 ->filter()
                 ->values();
 
-            $statuses = CRM_HUMAN::query()
-                ->whereNotNull('status')
-                ->distinct()
-                ->orderBy('status')
-                ->pluck('status')
-                ->filter()
-                ->map(function ($status) {
-                    return [
-                        'value' =>
-                            (string) $status,
-
-                        'label' =>
-                            (string) $status,
-                    ];
-                })
-                ->values();
+            /*
+             * Selalu kirim seluruh pilihan status Human,
+             * meskipun belum ada data untuk salah satunya.
+             */
+            $statuses = collect([
+                ['value' => 'meeting confirm', 'label' => 'Meeting Confirm'],
+                ['value' => 'meeting schedule', 'label' => 'Meeting Schedule'],
+                ['value' => 'on progress', 'label' => 'On Progress'],
+                ['value' => 'after meeting', 'label' => 'After Meeting'],
+                ['value' => 'administrasi progress', 'label' => 'Administrasi Progress'],
+                ['value' => 'ghosting', 'label' => 'Ghosting'],
+                ['value' => 'no respon', 'label' => 'No Respon'],
+                ['value' => 'deals', 'label' => 'Deals'],
+                ['value' => 'no deals', 'label' => 'No Deals'],
+            ]);
 
             $totalSumberAi = $leads
                 ->where(
@@ -475,6 +494,109 @@ class CRMController extends Controller
                 'success' => false,
                 'message' =>
                     $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * API jadwal meeting yang bersumber dari CRM Human.
+     */
+    public function meetingData(Request $request)
+    {
+        try {
+            $startDate = $request->input(
+                'start_date',
+                now('Asia/Jakarta')->toDateString()
+            );
+
+            $endDate = $request->input(
+                'end_date',
+                now('Asia/Jakarta')->addDays(6)->toDateString()
+            );
+
+            $query = Meeting::query()
+                ->with('crmHuman')
+                ->whereDate('waktu_meeting', '>=', $startDate)
+                ->whereDate('waktu_meeting', '<=', $endDate);
+
+            if ($request->filled('layanan')) {
+                $query->whereHas('crmHuman', function ($humanQuery) use ($request) {
+                    $humanQuery->where('layanan', $request->layanan);
+                });
+            }
+
+            if ($request->filled('stage')) {
+                $query->whereHas('crmHuman', function ($humanQuery) use ($request) {
+                    $humanQuery->where('status', $request->stage);
+                });
+            }
+
+            $leads = $query
+                ->orderBy('waktu_meeting')
+                ->get()
+                ->map(function ($meeting) {
+                    $lead = $meeting->crmHuman;
+
+                    return [
+                        'id' => $meeting->getKey(),
+                        'id_crm_human' => $meeting->id_crm_human,
+                        'nama' => $lead?->name,
+                        'brand' => $lead?->brand,
+                        'phone' => $lead?->phone,
+                        'layanan' => $lead?->layanan,
+                        'status' => $lead?->status,
+                        'waktu_meeting' => $this->dateWib(
+                            $meeting->waktu_meeting
+                        ),
+                        'link_meeting' => $meeting->link_meeting,
+                    ];
+                })
+                ->values();
+
+            $services = Meeting::query()
+                ->join('crm_human', 'meeting.id_crm_human', '=', 'crm_human.id')
+                ->whereNotNull('crm_human.layanan')
+                ->distinct()
+                ->orderBy('crm_human.layanan')
+                ->pluck('crm_human.layanan')
+                ->filter()
+                ->values();
+
+            $statuses = Meeting::query()
+                ->join('crm_human', 'meeting.id_crm_human', '=', 'crm_human.id')
+                ->whereNotNull('crm_human.status')
+                ->distinct()
+                ->orderBy('crm_human.status')
+                ->pluck('crm_human.status')
+                ->filter()
+                ->map(function ($status) {
+                    return [
+                        'value' => (string) $status,
+                        'label' => (string) $status,
+                    ];
+                })
+                ->values();
+
+            return response()->json([
+                'success' => true,
+                'total' => $leads->count(),
+                'filters' => [
+                    'start_date' => $startDate,
+                    'end_date' => $endDate,
+                    'services' => $services,
+                    'statuses' => $statuses,
+                ],
+                'data' => $leads,
+            ]);
+        } catch (\Throwable $e) {
+            \Log::error('API jadwal meeting gagal', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
@@ -3529,6 +3651,75 @@ class CRMController extends Controller
                 'success' => false,
                 'message' =>
                     'Gagal menyimpan checklist.',
+            ], 500);
+        }
+    }
+
+    public function incrementHumanFollowUp($id)
+    {
+        try {
+            $result = DB::connection('pgsql_supabase')
+                ->transaction(function () use ($id) {
+                    $lead = CRM_HUMAN::query()
+                        ->lockForUpdate()
+                        ->find($id);
+
+                    if (!$lead) {
+                        return [
+                            'status' => 404,
+                            'message' => 'Data CRM Human tidak ditemukan.',
+                        ];
+                    }
+
+                    $current = min(6, max(
+                        0,
+                        (int) ($lead->jumlah_follow_up ?? 0)
+                    ));
+
+                    if ($current >= 6) {
+                        return [
+                            'status' => 422,
+                            'message' => 'Seluruh tahapan follow up sudah selesai.',
+                        ];
+                    }
+
+                    if ((bool) ($lead->today ?? false)) {
+                        return [
+                            'status' => 422,
+                            'message' => 'Follow up hari ini sudah dilakukan.',
+                        ];
+                    }
+
+                    $lead->jumlah_follow_up = $current + 1;
+                    $lead->today = true;
+                    $lead->save();
+
+                    return [
+                        'status' => 200,
+                        'message' => 'Follow up berhasil dicatat.',
+                        'data' => [
+                            'id' => $lead->getKey(),
+                            'jumlah_follow_up' => (int) $lead->jumlah_follow_up,
+                            'today' => (bool) $lead->today,
+                        ],
+                    ];
+                });
+
+            return response()->json([
+                'success' => $result['status'] === 200,
+                'message' => $result['message'],
+                'data' => $result['data'] ?? null,
+            ], $result['status']);
+        } catch (\Throwable $e) {
+            Log::error('Gagal menambah follow up CRM Human', [
+                'lead_id' => $id,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mencatat follow up.',
             ], 500);
         }
     }

@@ -328,6 +328,63 @@ window.CRMRenderers =
         `;
     }
 
+    const followUpStages = [
+        'Mini Audit',
+        'Insight',
+        'Study Kasus',
+        'Follow Up Ghosting 1',
+        'Follow Up Ghosting 2',
+        'Follow Up Ghosting 3',
+    ];
+
+    function todayFollowUpCheckbox(lead, helpers) {
+        const count = Math.min(
+            6,
+            Math.max(0, Number(lead.jumlah_follow_up) || 0)
+        );
+        const doneToday = booleanValue(lead.today);
+        const disabled = doneToday || count >= 6;
+
+        return `
+            <div
+                class="human-follow-up-today d-flex align-items-center justify-content-center"
+                data-follow-up-id="${helpers.escapeAttribute(lead.id)}"
+            >
+                <input
+                    type="checkbox"
+                    class="human-follow-up-checkbox"
+                    data-id="${helpers.escapeAttribute(lead.id)}"
+                    ${doneToday ? 'checked' : ''}
+                    ${disabled ? 'disabled' : ''}
+                    title="${count >= 6 ? 'Follow up sudah selesai' : 'Follow up hari ini'}"
+                    style="width:19px;height:19px;cursor:${disabled ? 'not-allowed' : 'pointer'}"
+                >
+                <span class="human-follow-up-status ml-2 small text-muted"></span>
+            </div>
+        `;
+    }
+
+    function followUpDetailButton(lead, helpers) {
+        const count = Math.min(6, Math.max(
+            0,
+            Number(lead.jumlah_follow_up) || 0
+        ));
+
+        return `
+            <button
+                type="button"
+                class="btn btn-info btn-sm human-follow-up-detail text-nowrap"
+                data-name="${helpers.escapeAttribute(lead.nama || 'Human')}"
+                data-count="${count}"
+                data-toggle="modal"
+                data-target="#humanFollowUpDetailModal"
+            >
+                <i class="fas fa-list mr-1"></i>
+                Detail ${count}/6
+            </button>
+        `;
+    }
+
     window.CRMRenderers.human =
         function (data, helpers) {
             const body =
@@ -349,7 +406,7 @@ window.CRMRenderers =
                 body.innerHTML = `
                     <tr>
                         <td
-                            colspan="20"
+                            colspan="22"
                             class="
                                 text-center
                                 text-muted
@@ -489,7 +546,7 @@ window.CRMRenderers =
                                                         mr-1
                                                     "
                                                 ></i>
-                                                Dari AI
+                                                Paid
                                             </span>
                                         `
                                         : `
@@ -514,7 +571,7 @@ window.CRMRenderers =
                                                         mr-1
                                                     "
                                                 ></i>
-                                                Human
+                                                Organik
                                             </span>
                                         `
                                 }
@@ -635,6 +692,20 @@ window.CRMRenderers =
                                 )}
                             </td>
 
+                            <td class="align-middle">
+                                ${todayFollowUpCheckbox(
+                                    lead,
+                                    helpers
+                                )}
+                            </td>
+
+                            <td class="align-middle">
+                                ${followUpDetailButton(
+                                    lead,
+                                    helpers
+                                )}
+                            </td>
+
                             <td
                                 class="
                                     text-left
@@ -736,6 +807,18 @@ window.CRMRenderers =
                 return;
             }
 
+            const followUpDetailButton =
+                event.target.closest(
+                    '.human-follow-up-detail'
+                );
+
+            if (followUpDetailButton) {
+                showFollowUpDetail(
+                    followUpDetailButton
+                );
+                return;
+            }
+
             const historyButton =
                 event.target.closest(
                     '.human-history'
@@ -760,6 +843,16 @@ window.CRMRenderers =
     document.addEventListener(
         'change',
         function (event) {
+            const followUpCheckbox =
+                event.target.closest(
+                    '.human-follow-up-checkbox'
+                );
+
+            if (followUpCheckbox) {
+                incrementHumanFollowUp(followUpCheckbox);
+                return;
+            }
+
             const checkbox =
                 event.target.closest(
                     '.human-auto-checkbox'
@@ -774,6 +867,117 @@ window.CRMRenderers =
             );
         }
     );
+
+    async function incrementHumanFollowUp(checkbox) {
+        if (!checkbox.checked) {
+            return;
+        }
+
+        const app = document.getElementById('crmApp');
+        const container = checkbox.closest('.human-follow-up-today');
+        const status = container?.querySelector('.human-follow-up-status');
+        const leadId = checkbox.dataset.id;
+        const baseUrl = app.dataset.humanChecklistUrl;
+
+        checkbox.disabled = true;
+        if (status) {
+            status.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Menyimpan...';
+        }
+
+        try {
+            const response = await fetch(
+                `${baseUrl}/${encodeURIComponent(leadId)}/follow-up`,
+                {
+                    method: 'PATCH',
+                    credentials: 'same-origin',
+                    headers: {
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({}),
+                }
+            );
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || 'Gagal mencatat follow up.');
+            }
+
+            const count = Number(result.data?.jumlah_follow_up) || 0;
+            checkbox.checked = true;
+            checkbox.disabled = true;
+
+            const row = checkbox.closest('tr');
+            const detailButton = row?.querySelector('.human-follow-up-detail');
+
+            if (detailButton) {
+                detailButton.dataset.count = String(count);
+                detailButton.innerHTML = `
+                    <i class="fas fa-list mr-1"></i>
+                    Detail ${count}/6
+                `;
+            }
+
+            if (status) {
+                status.innerHTML = '<i class="fas fa-check-circle text-success" title="Tersimpan"></i>';
+            }
+        } catch (error) {
+            checkbox.checked = false;
+            checkbox.disabled = false;
+
+            if (status) {
+                status.textContent = 'Gagal menyimpan';
+            }
+
+            window.alert(error.message || 'Gagal mencatat follow up.');
+        }
+    }
+
+    function showFollowUpDetail(button) {
+        const count = Math.min(6, Math.max(
+            0,
+            Number(button.dataset.count) || 0
+        ));
+        const name = button.dataset.name || 'Human';
+        const title = document.getElementById('humanFollowUpDetailModalLabel');
+        const body = document.getElementById('humanFollowUpDetailBody');
+
+        if (!body || !title) {
+            return;
+        }
+
+        title.textContent = `Detail Follow Up - ${name}`;
+        body.innerHTML = `
+            <div class="list-group">
+                ${followUpStages.map(function (label, index) {
+                    const completed = index < count;
+                    return `
+                        <div class="list-group-item d-flex align-items-center">
+                            <i class="fas ${completed ? 'fa-check-circle text-success' : 'fa-circle text-muted'} mr-3"></i>
+                            <span class="${completed ? 'font-weight-bold' : 'text-muted'}">
+                                ${index + 1}. ${escapeModalText(label)}
+                            </span>
+                            <span class="badge ${completed ? 'badge-success' : 'badge-secondary'} ml-auto">
+                                ${completed ? 'Sudah' : 'Belum'}
+                            </span>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+
+        const modal = $('#humanFollowUpDetailModal');
+
+        if (modal.length && typeof modal.modal === 'function') {
+            modal.modal('show');
+        }
+    }
+
+    function escapeModalText(value) {
+        const element = document.createElement('div');
+        element.textContent = value ?? '';
+        return element.innerHTML;
+    }
 
     async function updateHumanChecklist(
         checkbox

@@ -11,3 +11,7 @@ Artisan::command('inspire', function () {
 
 Schedule::command('libur:sync')->yearly();
 Schedule::command('task:reset-daily')->dailyAt('07:59')->timezone('Asia/Jakarta');
+Schedule::command('crm:reset-follow-up-today')->dailyAt('00:00')->timezone('Asia/Jakarta');
+Schedule::command('finance:carry-forward-opening-balances')
+    ->monthlyOn(1, '00:05')
+    ->timezone('Asia/Jakarta');

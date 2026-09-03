@@ -7,7 +7,7 @@
             <thead class="thead-light text-nowrap">
                 <tr>
                     <th>No</th>
-                    <th>Chat Terbaru</th>
+                    <th>Tanggal Chat</th>
                     <th>Pertama Chat</th>
                     <th>Nama</th>
                     <th>Kategori</th>

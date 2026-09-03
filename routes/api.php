@@ -39,6 +39,7 @@ Route::get('audit-trails', [App\Http\Controllers\DashboardController::class, 'ge
 Route::prefix('crm')->group(function () {
     Route::get('/ai',[CRMController::class, 'aiData'])->name('crm.api.ai');
     Route::get('/human',[CRMController::class, 'humanData'])->name('crm.api.human');
+    Route::get('/meeting',[CRMController::class, 'meetingData'])->name('crm.api.meeting');
     Route::post('/{type}', [CRMController::class,'store'])->whereIn('type', ['ai', 'human']);
     Route::put('/{type}/{id}', [CRMController::class,'update'])->whereIn('type', ['ai', 'human']);
     Route::delete('/{type}/{id}', [CRMController::class,'destroy'])->whereIn('type', ['ai', 'human']);
@@ -46,4 +47,5 @@ Route::prefix('crm')->group(function () {
     Route::get('/human/history-media',[CRMController::class,'humanHistoryMedia'])->name('crm.api.human.history-media');
     Route::get('/human/history/{id}',[CRMController::class,'humanHistory'])->name('crm.api.human.history');
     Route::patch('/human/{id}/checklist',[CRMController::class,'updateHumanChecklist'])->name('crm.api.human.checklist');
+    Route::patch('/human/{id}/follow-up',[CRMController::class,'incrementHumanFollowUp'])->name('crm.api.human.follow-up');
 });

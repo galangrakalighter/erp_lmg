@@ -10,7 +10,7 @@
                 <tr>
                     <th>No</th>
                     <th>Tanggal Chat</th>
-                    <th>Dibuat</th>
+                    <th>Pertama Chat</th>
                     <th>Nama</th>
                     <th>Brand</th>
                     <th>Kategori</th>
@@ -26,6 +26,8 @@
                     <th>Service Plan</th>
                     <th>Need Analysis</th>
                     <th>Done Meeting</th>
+                    <th>Today</th>
+                    <th>Status Follow Up</th>
                     <th>Note</th>
                     <th>Action</th>
                 </tr>
@@ -34,7 +36,7 @@
             <tbody id="humanTableBody">
                 <tr>
                     <td
-                        colspan="20"
+                        colspan="22"
                         class="text-muted py-4"
                     >
                         Data Human belum tersedia.

@@ -170,6 +170,10 @@
                                     After Meeting
                                 </option>
 
+                                <option value="administrasi progress">
+                                    Administrasi Progress
+                                </option>
+
                                 <option value="ghosting">
                                     Ghosting
                                 </option>
@@ -442,6 +446,38 @@
                     class="btn btn-secondary"
                     data-dismiss="modal"
                 >
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div
+    class="modal fade"
+    id="humanFollowUpDetailModal"
+    tabindex="-1"
+    role="dialog"
+    aria-labelledby="humanFollowUpDetailModalLabel"
+    aria-hidden="true"
+>
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="humanFollowUpDetailModalLabel">
+                    Detail Follow Up
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Tutup">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="humanFollowUpDetailBody">
+                <div class="text-center text-muted py-4">
+                    Memuat detail follow up...
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
                     Tutup
                 </button>
             </div>

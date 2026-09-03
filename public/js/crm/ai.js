@@ -359,8 +359,8 @@ window.CRMRenderers =
                             "
                         >
                             ${longText(
-                                lead.chat_terbaru,
-                                'Chat Terbaru',
+                                lead.tanggal_chat || lead.chat_terbaru,
+                                'Tanggal Chat',
                                 helpers
                             )}
                         </td>

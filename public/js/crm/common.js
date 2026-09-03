@@ -56,6 +56,16 @@
                 'addLeadButton'
             ),
 
+        startDateContext:
+            document.getElementById(
+                'startDateContext'
+            ),
+
+        endDateContext:
+            document.getElementById(
+                'endDateContext'
+            ),
+
         form:
             document.getElementById(
                 'leadForm'
@@ -70,6 +80,7 @@
     const urls = {
         ai: app.dataset.aiUrl,
         human: app.dataset.humanUrl,
+        meeting: app.dataset.meetingUrl,
         crud: app.dataset.crudUrl,
     };
 
@@ -81,6 +92,7 @@
         data: {
             ai: [],
             human: [],
+            meeting: [],
         },
     };
 
@@ -284,10 +296,9 @@
     }
 
     function showTab(tab) {
-        state.activeTab =
-            tab === 'human'
-                ? 'human'
-                : 'ai';
+        state.activeTab = ['ai', 'human', 'meeting'].includes(tab)
+            ? tab
+            : 'ai';
 
         hideError();
 
@@ -324,13 +335,22 @@
                 `${state.activeTab}TabContent`
             )
             ?.classList.remove('d-none');
+
+        const dateContext = state.activeTab === 'meeting'
+            ? 'Meeting'
+            : 'Chat';
+
+        if (elements.startDateContext) {
+            elements.startDateContext.textContent = dateContext;
+        }
+
+        if (elements.endDateContext) {
+            elements.endDateContext.textContent = dateContext;
+        }
     }
 
     function buildApiUrl() {
-        const baseUrl =
-            state.activeTab === 'human'
-                ? urls.human
-                : urls.ai;
+        const baseUrl = urls[state.activeTab];
 
         const url = new URL(
             baseUrl,
@@ -555,9 +575,11 @@
 
             elements.total.textContent =
                 `${result.total || 0} data ${
-                    requestedTab === 'human'
-                        ? 'Human'
-                        : 'AI'
+                    requestedTab === 'meeting'
+                        ? 'Jadwal Meeting'
+                        : requestedTab === 'human'
+                            ? 'Human'
+                            : 'AI'
                 }`;
         } catch (error) {
             if (
@@ -1058,7 +1080,22 @@
                         return;
                     }
 
+                    const previousTab = state.activeTab;
+
                     showTab(tab);
+
+                    elements.addButton?.classList.toggle(
+                        'd-none',
+                        tab === 'meeting'
+                    );
+
+                    if (
+                        tab === 'meeting' ||
+                        previousTab === 'meeting'
+                    ) {
+                        elements.startDate.value = '';
+                        elements.endDate.value = '';
+                    }
 
                     elements.service.value =
                         '';

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CRM_HUMAN extends Model
 {
@@ -28,7 +29,9 @@ class CRM_HUMAN extends Model
         'kebutuhan',
         'service_plan',
         'need_analysys',
-        'done_meeting'
+        'done_meeting',
+        'jumlah_follow_up',
+        'today'
     ];
 
     protected $casts = [
@@ -38,5 +41,16 @@ class CRM_HUMAN extends Model
         'service_plan' => 'boolean',
         'need_analysys' => 'boolean',
         'done_meeting' => 'boolean',
+        'jumlah_follow_up' => 'integer',
+        'today' => 'boolean',
     ];
+
+    public function meetings(): HasMany
+    {
+        return $this->hasMany(
+            Meeting::class,
+            'id_crm_human',
+            'id'
+        );
+    }
 }

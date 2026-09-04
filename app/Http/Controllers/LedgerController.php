@@ -12,6 +12,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use App\Services\AuditService;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class LedgerController extends Controller
 {
@@ -112,11 +113,18 @@ class LedgerController extends Controller
 
         // Panggil data langsung dari Service
         $data = $this->trialBalanceService->getTrialBalance($periode, $id);
+        $reportData = collect($data['report_data'])
+            ->filter(function ($row) {
+                return round((float) $row['saldo_debit'], 2) > 0
+                    || round((float) $row['saldo_kredit'], 2) > 0;
+            })
+            ->values()
+            ->all();
 
         return view('finance.neraca_saldo', [
             'title'            => $title,
             'periode'          => $periode,
-            'reportData'       => $data['report_data'],
+            'reportData'       => $reportData,
             'grandTotalDebit'  => $data['grand_total_debit'],
             'grandTotalKredit' => $data['grand_total_kredit']
         ]);
@@ -245,12 +253,32 @@ class LedgerController extends Controller
         // --- HITUNG SELISIH BALANSING LABA RUGI & NERACA ---
         $lr_balance = $totals['lr_kredit'] - $totals['lr_debit'];
 
+        $valueColumns = [
+            'ns_debit', 'ns_kredit',
+            'aj_debit', 'aj_kredit',
+            'nsd_debit', 'nsd_kredit',
+            'lr_debit', 'lr_kredit',
+            'n_debit', 'n_kredit',
+        ];
+        $worksheetData = array_values(array_filter(
+            $worksheetData,
+            function ($row) use ($valueColumns) {
+                foreach ($valueColumns as $column) {
+                    if (round((float) $row[$column], 2) > 0) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        ));
+
         return view('finance.neraca_lajur', compact('worksheetData', 'totals', 'lr_balance', 'title', 'periode'));
     }
 
     public function arus_kas(Request $request, $id)
     {
-        $title = 'Laporan Keuangan (Metode Langsung)';
+        $title = 'Laporan Keuangan';
         $periode = $request->input('periode', date('Y-m'));
 
         if (!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $periode)) {
@@ -261,6 +289,20 @@ class LedgerController extends Controller
             'intval',
             explode('-', $periode)
         );
+
+        // Laba rugi dan neraca menggunakan sumber perhitungan yang sama dengan
+        // Neraca Lajur dan export Excel agar seluruh laporan selalu sinkron.
+        $laporanData = $this->getWorksheetData($id, $periode, $this->trialBalanceService);
+        $labaRugi = collect($laporanData['worksheetData'])
+            ->filter(fn ($row) => in_array(substr((string) $row['kode'], 0, 1), ['4', '5', '6'])
+                && ($row['lr_debit'] != 0 || $row['lr_kredit'] != 0))
+            ->values();
+        $neraca = collect($laporanData['worksheetData'])
+            ->filter(fn ($row) => in_array(substr((string) $row['kode'], 0, 1), ['1', '2', '3'])
+                && ($row['n_debit'] != 0 || $row['n_kredit'] != 0))
+            ->values();
+        $worksheetTotals = $laporanData['totals'];
+        $labaRugiBersih = $laporanData['lr_balance'];
 
         /*
         * 1. Ambil akun Kas/Bank.
@@ -309,6 +351,10 @@ class LedgerController extends Controller
                 'totalSaldoAwal'          => 0,
                 'kenaikanPenurunanBersih' => 0,
                 'totalSaldoAkhir'         => 0,
+                'labaRugi'                => $labaRugi,
+                'neraca'                  => $neraca,
+                'worksheetTotals'         => $worksheetTotals,
+                'labaRugiBersih'          => $labaRugiBersih,
             ])->with(
                 'error',
                 'Tidak ada akun Kas atau Bank dengan kode 111 atau 113.'
@@ -534,7 +580,11 @@ class LedgerController extends Controller
             'totalPendanaan',
             'totalSaldoAwal',
             'kenaikanPenurunanBersih',
-            'totalSaldoAkhir'
+            'totalSaldoAkhir',
+            'labaRugi',
+            'neraca',
+            'worksheetTotals',
+            'labaRugiBersih'
         ));
     }
 
@@ -620,24 +670,16 @@ class LedgerController extends Controller
             ];
         })->toArray();
 
-        $fileName = 'Laporan_Laba_Rugi_' . Carbon::parse($periode)->format('Y_m') . '.xlsx';
+        $perusahaan = DB::table('perusahaan')->where('id', $id)->first();
+        $fileName = 'Laporan_Laba_Rugi_' . Carbon::parse($periode)->format('Y_m') . '.pdf';
 
-        return Excel::download(new class($labaRugiMurni, $periode, $data['lr_balance'], $data['totals']) implements \Maatwebsite\Excel\Concerns\FromView {
-            private $data; private $periode; private $balance; private $totals;
-
-            public function __construct($data, $periode, $balance, $totals) {
-                $this->data = $data; $this->periode = $periode; $this->balance = $balance; $this->totals = $totals;
-            }
-
-            public function view(): \Illuminate\Contracts\View\View {
-                return view('finance.exports.laba_rugi_excel', [
-                    'data'       => $this->data,
-                    'periode'    => $this->periode,
-                    'lr_balance' => $this->balance,
-                    'totals'     => $this->totals
-                ]);
-            }
-        }, $fileName);
+        return Pdf::loadView('finance.exports.laba_rugi_pdf', [
+            'data' => $labaRugiMurni,
+            'periode' => $periode,
+            'lr_balance' => $data['lr_balance'],
+            'totals' => $data['totals'],
+            'namaPerusahaan' => $perusahaan->nama_perusahaan ?? 'Perusahaan',
+        ])->setPaper('a4', 'portrait')->download($fileName);
     }
 
     public function export_neraca(Request $request, TrialBalanceService $trialBalanceService, $id)
@@ -665,24 +707,30 @@ class LedgerController extends Controller
                 ];
             })->toArray();
 
-        $fileName = 'Laporan_Neraca_' . Carbon::parse($periode)->format('Y_m') . '.xlsx';
+        $aktiva = collect($neracaMurni)
+            ->filter(fn ($row) => str_starts_with((string) $row['kode'], '1'))
+            ->map(fn ($row) => array_merge($row, ['jumlah' => $row['debit'] - $row['kredit']]))
+            ->values();
+        $passiva = collect($neracaMurni)
+            ->filter(fn ($row) => in_array(substr((string) $row['kode'], 0, 1), ['2', '3']))
+            ->map(fn ($row) => array_merge($row, ['jumlah' => $row['kredit'] - $row['debit']]))
+            ->values();
 
-        return Excel::download(new class($neracaMurni, $periode, $data['lr_balance'], $data['totals']) implements \Maatwebsite\Excel\Concerns\FromView {
-            private $data; private $periode; private $balance; private $totals;
+        $passiva->push([
+            'kode' => '',
+            'nama_akun' => $data['lr_balance'] >= 0 ? 'Laba Bersih' : 'Rugi Bersih',
+            'jumlah' => $data['lr_balance'],
+        ]);
 
-            public function __construct($data, $periode, $balance, $totals) {
-                $this->data = $data; $this->periode = $periode; $this->balance = $balance; $this->totals = $totals;
-            }
+        $perusahaan = DB::table('perusahaan')->where('id', $id)->first();
+        $fileName = 'Laporan_Neraca_' . Carbon::parse($periode)->format('Y_m') . '.pdf';
 
-            public function view(): \Illuminate\Contracts\View\View {
-                return view('finance.exports.neraca_excel', [
-                    'data'       => $this->data,
-                    'periode'    => $this->periode,
-                    'lr_balance' => $this->balance,
-                    'totals'     => $this->totals
-                ]);
-            }
-        }, $fileName);
+        return Pdf::loadView('finance.exports.neraca_pdf', [
+            'aktiva' => $aktiva,
+            'passiva' => $passiva,
+            'periode' => $periode,
+            'namaPerusahaan' => $perusahaan->nama_perusahaan ?? 'Perusahaan',
+        ])->setPaper('a4', 'landscape')->download($fileName);
     }
 
     public function export_cash_flow(Request $request, $id)
@@ -738,30 +786,21 @@ class LedgerController extends Controller
         $totalPendanaan = collect($pendanaan)->sum('jumlah');
         $kenaikanPenurunanBersih = $totalOperasional + $totalInvestasi + $totalPendanaan;
         $totalSaldoAkhir = $kenaikanPenurunanBersih;
-        // --- DOWNLOAD EXCEL (Pola yang sama dengan export_neraca Anda) ---
-        $fileName = 'Laporan_Arus_Kas_' . \Carbon\Carbon::parse($periode)->format('Y_m') . '.xlsx';
-        // dd($totalSaldoAkhir);
-        return Excel::download(new class($operasional, $investasi, $pendanaan, $periode, $totalOperasional, $totalInvestasi, $totalPendanaan, $totalSaldoAkhir) implements \Maatwebsite\Excel\Concerns\FromView, \Maatwebsite\Excel\Concerns\WithTitle {
-            private $op, $inv, $pen, $per, $totOp, $totInv, $totPen, $totAkhir;
+        $perusahaan = DB::table('perusahaan')->where('id', $id)->first();
+        $fileName = 'Laporan_Arus_Kas_' . Carbon::parse($periode)->format('Y_m') . '.pdf';
 
-            public function __construct($op, $inv, $pen, $per, $totOp, $totInv, $totPen, $totAkhir) {
-                $this->op = $op; $this->inv = $inv; $this->pen = $pen; $this->per = $per;
-                $this->totOp = $totOp; $this->totInv = $totInv; $this->totPen = $totPen; $this->totAkhir = $totAkhir;
-            }
-
-            public function title(): string {
-                return 'Arus Kas';
-            }
-
-            public function view(): \Illuminate\Contracts\View\View {
-                return view('finance.exports.cash_flow_excel', [
-                    'operasional' => $this->op, 'investasi' => $this->inv, 'pendanaan' => $this->pen,
-                    'periode' => $this->per, 'totalOperasional' => $this->totOp, 
-                    'totalInvestasi' => $this->totInv, 'totalPendanaan' => $this->totPen,
-                    'totalSaldoAkhir' => $this->totAkhir
-                ]);
-            }
-        }, $fileName);
+        return Pdf::loadView('finance.exports.cash_flow_pdf', compact(
+            'operasional',
+            'investasi',
+            'pendanaan',
+            'periode',
+            'totalOperasional',
+            'totalInvestasi',
+            'totalPendanaan',
+            'totalSaldoAkhir'
+        ) + [
+            'namaPerusahaan' => $perusahaan->nama_perusahaan ?? 'Perusahaan',
+        ])->setPaper('a4', 'portrait')->download($fileName);
     }
 
     public function jurnal_penutup(Request $request, TrialBalanceService $trialBalanceService, $id)

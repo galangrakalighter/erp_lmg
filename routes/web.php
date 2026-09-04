@@ -41,6 +41,7 @@ Route::middleware('auth')->group(function() {
     Route::post('master-folder/{folder}/documents', [App\Http\Controllers\MasterFolderController::class, 'createDocument'])->name('master-folder.documents.store');
     Route::put('master-folder/{folder}/files/{file}', [App\Http\Controllers\MasterFolderController::class, 'updateFile'])->name('master-folder.files.update');
     Route::delete('master-folder/{folder}/files/{file}', [App\Http\Controllers\MasterFolderController::class, 'destroyFile'])->name('master-folder.files.destroy');
+    Route::get('master-folder/{folder}/files/{file:original_name}/view', [App\Http\Controllers\MasterFolderController::class, 'viewPdf'])->scopeBindings()->name('master-folder.files.view');
     Route::get('master-folder/{folder}/files/{file}/preview', [App\Http\Controllers\MasterFolderController::class, 'preview'])->name('master-folder.files.preview');
     Route::get('master-folder/{folder}/files/{file}/download', [App\Http\Controllers\MasterFolderController::class, 'download'])->name('master-folder.files.download');
     

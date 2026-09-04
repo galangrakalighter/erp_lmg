@@ -9,6 +9,12 @@
     .master-pdf-page { background:#fff; margin-bottom:25px; box-shadow:0 2px 12px rgba(0,0,0,.18); max-width:none; }
     .pdf-file-link { color:#4e73df; cursor:pointer; text-decoration:none; }
     .pdf-file-link:hover { color:#224abe; text-decoration:underline; }
+    .document-pages { display:flex; flex-direction:column; align-items:center; gap:28px; min-width:794px; }
+    .document-page-wrap { width:794px; max-width:794px; }
+    .document-page-heading { display:flex; justify-content:space-between; align-items:center; margin-bottom:7px; color:#5a6472; font-size:12px; font-weight:600; }
+    .document-page { box-sizing:border-box; width:794px; height:1123px; padding:70px; background:#fff; color:#252a34; line-height:1.65; outline:none; overflow:hidden; overflow-wrap:anywhere; }
+    .document-page.is-active { box-shadow:0 0 0 2px rgba(78,115,223,.3), 0 .125rem .25rem rgba(0,0,0,.075); }
+    .document-page img { max-width:100%; }
 </style>
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
     <div>
@@ -47,7 +53,7 @@
                         <td class="pl-4 align-middle">
                             <i class="fas fa-file-{{ strtolower(pathinfo($file->original_name, PATHINFO_EXTENSION)) === 'pdf' || $file->mime_type === 'application/pdf' ? 'pdf text-danger' : 'alt text-primary' }} mr-2"></i>
                             @if(strtolower(pathinfo($file->original_name, PATHINFO_EXTENSION)) === 'pdf' || $file->mime_type === 'application/pdf')
-                                <a href="#" class="font-weight-bold pdf-file-link btn-master-pdf-preview" data-pdf="{{ route('master-folder.files.preview', [$folder, $file]) }}" data-title="{{ $file->original_name }}">{{ $file->original_name }}</a>
+                                <a href="{{ route('master-folder.files.view', ['folder' => $folder, 'file' => $file->original_name]) }}" class="font-weight-bold pdf-file-link">{{ $file->original_name }}</a>
                             @else
                                 <span class="font-weight-bold text-gray-800">{{ $file->original_name }}</span>
                             @endif
@@ -144,6 +150,7 @@
                                 <button type="button" class="btn btn-light border" onclick="editDocumentCommand({{ $file->id }}, 'justifyFull')"><i class="fas fa-align-justify"></i></button>
                             </div>
                             <div class="btn-group btn-group-sm mb-1">
+                                <button type="button" class="btn btn-light border" onclick="insertDocumentLink('edit-file-editor-{{ $file->id }}')" title="Sisipkan link"><i class="fas fa-link"></i></button>
                                 <button type="button" class="btn btn-light border" onclick="editDocumentCommand({{ $file->id }}, 'insertUnorderedList')"><i class="fas fa-list-ul"></i></button>
                                 <button type="button" class="btn btn-light border" onclick="editDocumentCommand({{ $file->id }}, 'insertOrderedList')"><i class="fas fa-list-ol"></i></button>
                                 <button type="button" class="btn btn-light border" onclick="editDocumentCommand({{ $file->id }}, 'undo')"><i class="fas fa-undo"></i></button>
@@ -151,7 +158,13 @@
                             </div>
                         </div>
                         <div class="border border-top-0 rounded-bottom p-4" style="background:#dfe3e8; max-height:600px; overflow:auto;">
-                            <div id="edit-file-editor-{{ $file->id }}" contenteditable="true" class="bg-white mx-auto shadow-sm p-5" style="max-width:794px; min-height:520px; outline:none; line-height:1.65; color:#252a34;">@if((int) old('edit_file_id') === $file->id){!! old('content') !!}@else{!! $file->editor_content !!}@endif</div>
+                            <div id="edit-file-editor-{{ $file->id }}" class="document-pages">
+                                <div class="document-page-wrap">
+                                    <div class="document-page-heading"><span>Halaman 1</span><button type="button" class="btn btn-link btn-sm text-danger p-0 document-page-delete">Hapus halaman</button></div>
+                                    <div contenteditable="true" class="document-page shadow-sm">@if((int) old('edit_file_id') === $file->id){!! old('content') !!}@else{!! $file->editor_content !!}@endif</div>
+                                </div>
+                            </div>
+                            <div class="text-center mt-3"><button type="button" class="btn btn-sm btn-light border" onclick="addDocumentPage('edit-file-editor-{{ $file->id }}')"><i class="fas fa-plus mr-1"></i>Tambah halaman</button></div>
                         </div>
                     @endif
                 </div>
@@ -284,6 +297,7 @@
                         <button type="button" class="btn btn-light border" onclick="document.execCommand('justifyFull')"><i class="fas fa-align-justify"></i></button>
                     </div>
                     <div class="btn-group btn-group-sm mr-2 mb-1">
+                        <button type="button" class="btn btn-light border" onclick="insertDocumentLink('document-editor')" title="Sisipkan link"><i class="fas fa-link"></i></button>
                         <button type="button" class="btn btn-light border" onclick="document.execCommand('insertUnorderedList')"><i class="fas fa-list-ul"></i></button>
                         <button type="button" class="btn btn-light border" onclick="document.execCommand('insertOrderedList')"><i class="fas fa-list-ol"></i></button>
                         <button type="button" class="btn btn-light border" onclick="document.execCommand('outdent')"><i class="fas fa-outdent"></i></button>
@@ -296,7 +310,13 @@
                     </div>
                 </div>
                 <div class="editor-stage border border-top-0 rounded-bottom p-4" style="background:#dfe3e8; max-height:600px; overflow:auto;">
-                    <div id="document-editor" contenteditable="true" class="bg-white mx-auto shadow-sm p-5" style="max-width:794px; min-height:520px; outline:none; line-height:1.65; color:#252a34;">@if(old('form_type') === 'document'){!! old('content') !!}@else<p>Mulai tulis dokumen di sini...</p>@endif</div>
+                    <div id="document-editor" class="document-pages">
+                        <div class="document-page-wrap">
+                            <div class="document-page-heading"><span>Halaman 1</span><button type="button" class="btn btn-link btn-sm text-danger p-0 document-page-delete">Hapus halaman</button></div>
+                            <div contenteditable="true" class="document-page shadow-sm">@if(old('form_type') === 'document'){!! old('content') !!}@else<p>Mulai tulis dokumen di sini...</p>@endif</div>
+                        </div>
+                    </div>
+                    <div class="text-center mt-3"><button type="button" class="btn btn-sm btn-light border" onclick="addDocumentPage('document-editor')"><i class="fas fa-plus mr-1"></i>Tambah halaman</button></div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -311,16 +331,348 @@
 <script>
 function editDocumentCommand(fileId, command, value) {
     const editor = document.getElementById('edit-file-editor-' + fileId);
-    editor.focus();
+    const page = resolveDocumentPage(editor);
+    if (!page) return;
+    page.focus();
     document.execCommand(command, false, value || null);
 }
 
+function resolveDocumentPage(editor) {
+    if (!editor) return null;
+    const selection = window.getSelection();
+    const anchor = selection && selection.anchorNode;
+    const anchorElement = anchor && (anchor.nodeType === Node.ELEMENT_NODE ? anchor : anchor.parentElement);
+    const selectedPage = anchorElement && anchorElement.closest ? anchorElement.closest('.document-page') : null;
+    if (selectedPage && editor.contains(selectedPage)) return selectedPage;
+    return editor.querySelector('.document-page.is-active') || editor.querySelector('.document-page');
+}
+
+function addDocumentPage(editorId) {
+    const editor = document.getElementById(editorId);
+    if (!editor || typeof editor._appendDocumentPage !== 'function') return;
+    const page = editor._appendDocumentPage('<p><br></p>');
+    page.focus();
+}
+
+function insertDocumentLink(editorId) {
+    const editor = document.getElementById(editorId);
+    if (!editor) return;
+
+    const page = resolveDocumentPage(editor);
+    if (!page) return;
+    page.focus();
+    const selection = window.getSelection();
+    const savedRange = selection && selection.rangeCount ? selection.getRangeAt(0).cloneRange() : null;
+    let url = window.prompt('Masukkan alamat link (contoh: https://example.com):', 'https://');
+    if (!url) return;
+    url = url.trim();
+    if (!/^(https?:\/\/|mailto:|#)/i.test(url)) url = 'https://' + url;
+
+    if (savedRange) {
+        selection.removeAllRanges();
+        selection.addRange(savedRange);
+    }
+
+    if (!selection || selection.isCollapsed) {
+        const label = window.prompt('Teks yang ditampilkan:', url) || url;
+        const link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        link.textContent = label;
+        const range = selection && selection.rangeCount ? selection.getRangeAt(0) : null;
+        if (range) range.insertNode(link);
+        else page.appendChild(link);
+    } else {
+        document.execCommand('createLink', false, url);
+        page.querySelectorAll('a').forEach(function (link) {
+            if (link.href === new URL(url, window.location.href).href) link.target = '_blank';
+        });
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function () {
+    function renumberDocumentPages(editor) {
+        const pages = Array.from(editor.querySelectorAll(':scope > .document-page-wrap'));
+        pages.forEach(function (wrapper, index) {
+            wrapper.querySelector('.document-page-heading span').textContent = 'Halaman ' + (index + 1);
+            const deleteButton = wrapper.querySelector('.document-page-delete');
+            deleteButton.style.visibility = pages.length > 1 ? 'visible' : 'hidden';
+        });
+    }
+
+    function bindDocumentPage(editor, page) {
+        if (!page || page.dataset.pageReady === '1') return;
+        page.dataset.pageReady = '1';
+        page.addEventListener('focus', function () {
+            editor.querySelectorAll('.document-page').forEach(item => item.classList.remove('is-active'));
+            page.classList.add('is-active');
+        });
+        page.addEventListener('click', function () {
+            editor.querySelectorAll('.document-page').forEach(item => item.classList.remove('is-active'));
+            page.classList.add('is-active');
+        });
+        page.addEventListener('input', function () {
+            if (editor._paginationQueued) return;
+            editor._paginationQueued = true;
+            requestAnimationFrame(function () {
+                editor._paginationQueued = false;
+                paginateDocument(editor);
+            });
+        });
+        enableRichDocumentPaste(page);
+    }
+
+    function appendDocumentPage(editor, html) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'document-page-wrap';
+        wrapper.innerHTML = '<div class="document-page-heading"><span></span><button type="button" class="btn btn-link btn-sm text-danger p-0 document-page-delete">Hapus halaman</button></div>' +
+            '<div contenteditable="true" class="document-page shadow-sm"></div>';
+        const page = wrapper.querySelector('.document-page');
+        page.innerHTML = html || '<p><br></p>';
+        wrapper.querySelector('.document-page-delete').addEventListener('click', function () {
+            const pages = editor.querySelectorAll(':scope > .document-page-wrap');
+            if (pages.length <= 1) {
+                page.innerHTML = '<p><br></p>';
+                page.focus();
+                return;
+            }
+            wrapper.remove();
+            renumberDocumentPages(editor);
+        });
+        editor.appendChild(wrapper);
+        bindDocumentPage(editor, page);
+        renumberDocumentPages(editor);
+        return page;
+    }
+
+    function splitPagesAtBreakMarkers(editor) {
+        let marker = editor.querySelector('.document-page [style*="page-break-before: always"], .document-page [style*="break-before: page"], .document-page br[clear="all"]');
+        while (marker) {
+            const sourcePage = marker.closest('.document-page');
+            let boundary = marker;
+            while (boundary.parentElement && boundary.parentElement !== sourcePage) boundary = boundary.parentElement;
+            const following = [];
+            let node = boundary.nextSibling;
+            while (node) {
+                const next = node.nextSibling;
+                following.push(node);
+                node = next;
+            }
+            const newPage = appendDocumentPage(editor, '<p><br></p>');
+            newPage.innerHTML = '';
+            const markerIsOnlyBreak = marker.matches('br, hr') || !marker.textContent.trim();
+            if (!markerIsOnlyBreak) {
+                marker.style.removeProperty('page-break-before');
+                marker.style.removeProperty('break-before');
+                newPage.appendChild(boundary);
+            } else {
+                boundary.remove();
+            }
+            following.forEach(item => newPage.appendChild(item));
+            if (!newPage.innerHTML.trim()) newPage.innerHTML = '<p><br></p>';
+            marker = editor.querySelector('.document-page [style*="page-break-before: always"], .document-page [style*="break-before: page"], .document-page br[clear="all"]');
+        }
+    }
+
+    function paginateDocument(editor) {
+        if (!editor) return;
+        let pageIndex = 0;
+        let safety = 0;
+
+        while (pageIndex < editor.querySelectorAll(':scope > .document-page-wrap').length && safety < 1000) {
+            safety++;
+            const wrappers = Array.from(editor.querySelectorAll(':scope > .document-page-wrap'));
+            const page = wrappers[pageIndex].querySelector('.document-page');
+
+            while (page.scrollHeight > page.clientHeight + 2 && page.childNodes.length && safety < 1000) {
+                safety++;
+                let nextWrapper = wrappers[pageIndex + 1];
+                let nextPage;
+                if (!nextWrapper) {
+                    nextPage = appendDocumentPage(editor, '<p><br></p>');
+                    nextPage.innerHTML = '';
+                    nextWrapper = nextPage.closest('.document-page-wrap');
+                    wrappers.push(nextWrapper);
+                } else {
+                    nextPage = nextWrapper.querySelector('.document-page');
+                }
+
+                const lastNode = page.lastChild;
+                if (!lastNode) break;
+
+                // Jika hasil paste dibungkus dalam satu elemen besar, pecah isi
+                // pembungkusnya tanpa membuang format font maupun style aslinya.
+                if (lastNode.nodeType === Node.ELEMENT_NODE && page.childNodes.length === 1 && lastNode.childNodes.length > 1) {
+                    let continuation = nextPage.firstElementChild;
+                    if (!continuation || continuation.dataset.pageContinuation !== '1' || continuation.tagName !== lastNode.tagName) {
+                        continuation = lastNode.cloneNode(false);
+                        continuation.dataset.pageContinuation = '1';
+                        nextPage.insertBefore(continuation, nextPage.firstChild);
+                    }
+                    continuation.insertBefore(lastNode.lastChild, continuation.firstChild);
+                    if (!lastNode.childNodes.length) lastNode.remove();
+                    continue;
+                }
+
+                // Elemen tunggal yang lebih tinggi dari satu kertas (misalnya
+                // sebuah gambar sangat panjang) tidak boleh terus dipindahkan
+                // dan menghasilkan halaman kosong tanpa batas.
+                if (page.childNodes.length === 1) break;
+
+                nextPage.insertBefore(lastNode, nextPage.firstChild);
+            }
+
+            pageIndex++;
+        }
+
+        editor.querySelectorAll('[data-page-continuation]').forEach(element => element.removeAttribute('data-page-continuation'));
+        renumberDocumentPages(editor);
+    }
+
+    function initializeDocumentEditor(editor) {
+        if (!editor) return;
+        const initialPage = editor.querySelector('.document-page');
+        const initialHtml = initialPage ? initialPage.innerHTML : '<p><br></p>';
+        editor.innerHTML = '';
+        editor._appendDocumentPage = function (html) { return appendDocumentPage(editor, html); };
+        appendDocumentPage(editor, initialHtml);
+        splitPagesAtBreakMarkers(editor);
+        paginateDocument(editor);
+    }
+
+    function serializeDocumentPages(editor) {
+        return Array.from(editor.querySelectorAll(':scope > .document-page-wrap .document-page'))
+            .map(page => page.innerHTML)
+            .join('<div style="page-break-before: always;"></div>');
+    }
+
+    function freezeImageDimensions(editor) {
+        if (!editor) return;
+        editor.querySelectorAll('img').forEach(function (image) {
+            const rectangle = image.getBoundingClientRect();
+            if (rectangle.width <= 0 || rectangle.height <= 0) return;
+            image.style.width = Math.round(rectangle.width) + 'px';
+            image.style.height = Math.round(rectangle.height) + 'px';
+            image.style.maxWidth = '100%';
+            image.setAttribute('width', Math.round(rectangle.width));
+            image.setAttribute('height', Math.round(rectangle.height));
+        });
+    }
+
+    function insertHtmlAtSelection(editor, html) {
+        editor.focus();
+        document.execCommand('insertHTML', false, html);
+    }
+
+    function enableRichDocumentPaste(editor) {
+        if (!editor) return;
+        editor.addEventListener('paste', function (event) {
+            const items = Array.from(event.clipboardData?.items || []);
+            const imageFiles = items.filter(item => item.kind === 'file' && item.type.startsWith('image/')).map(item => item.getAsFile()).filter(Boolean);
+            const pastedHtml = event.clipboardData.getData('text/html');
+            const pastedText = event.clipboardData.getData('text/plain');
+            if (!pastedHtml && !imageFiles.length) return;
+
+            event.preventDefault();
+            const placeholderIds = [];
+            if (pastedHtml) {
+                const parsed = new DOMParser().parseFromString(pastedHtml, 'text/html');
+                parsed.querySelectorAll('script, iframe, object, embed').forEach(element => element.remove());
+                const allowedStyleProperties = new Set([
+                    'text-align', 'font-family', 'font-size', 'font-weight', 'font-style', 'text-decoration', 'text-decoration-line',
+                    'color', 'background', 'background-color', 'line-height', 'letter-spacing', 'word-spacing', 'text-indent',
+                    'margin', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
+                    'padding', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+                    'width', 'height', 'min-width', 'max-width', 'min-height', 'max-height',
+                    'opacity', 'visibility', 'display', 'vertical-align', 'white-space', 'float', 'clear',
+                    'page-break-before', 'page-break-after', 'page-break-inside', 'break-before', 'break-after', 'break-inside',
+                    'border', 'border-top', 'border-right', 'border-bottom', 'border-left', 'border-color',
+                    'border-style', 'border-width', 'border-collapse', 'border-spacing', 'list-style-type'
+                ]);
+
+                parsed.querySelectorAll('style').forEach(function (styleElement) {
+                    const css = styleElement.textContent || '';
+                    const rulePattern = /([^{}]+)\{([^{}]+)\}/g;
+                    let rule;
+                    while ((rule = rulePattern.exec(css)) !== null) {
+                        const declarations = rule[2].split(';').map(function (declaration) {
+                            const separator = declaration.indexOf(':');
+                            if (separator < 1) return null;
+                            let property = declaration.slice(0, separator).trim().toLowerCase();
+                            const value = declaration.slice(separator + 1).trim();
+                            if (property === 'mso-page-break-before') property = 'page-break-before';
+                            if (property === 'mso-page-break-after') property = 'page-break-after';
+                            if (!allowedStyleProperties.has(property) || /url\(|expression\(/i.test(value)) return null;
+                            return [property, value];
+                        }).filter(Boolean);
+
+                        rule[1].split(',').forEach(function (selector) {
+                            selector = selector.trim().replace(/::?[a-z-]+(?:\([^)]*\))?/gi, '');
+                            if (!selector || !declarations.length) return;
+                            try {
+                                parsed.querySelectorAll(selector).forEach(function (element) {
+                                    declarations.forEach(([property, value]) => element.style.setProperty(property, value));
+                                });
+                            } catch (error) {}
+                        });
+                    }
+                    styleElement.remove();
+                });
+
+                parsed.querySelectorAll('br[clear="all"]').forEach(function (lineBreak) {
+                    if (!lineBreak.style.pageBreakBefore && !lineBreak.style.breakBefore) {
+                        lineBreak.style.pageBreakBefore = 'always';
+                    }
+                });
+
+                parsed.querySelectorAll('img').forEach(function (image, index) {
+                    if (!imageFiles[index]) return;
+                    const placeholder = document.createElement('span');
+                    const placeholderId = 'paste-image-' + Date.now() + '-' + index + '-' + Math.random().toString(36).slice(2);
+                    placeholder.id = placeholderId;
+                    placeholderIds.push(placeholderId);
+                    image.replaceWith(placeholder);
+                });
+                insertHtmlAtSelection(editor, parsed.body.innerHTML);
+                const documentPages = editor.closest('.document-pages');
+                splitPagesAtBreakMarkers(documentPages);
+                requestAnimationFrame(function () { paginateDocument(documentPages); });
+            } else if (pastedText) {
+                insertHtmlAtSelection(editor, pastedText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>'));
+                requestAnimationFrame(function () { paginateDocument(editor.closest('.document-pages')); });
+            }
+
+            imageFiles.forEach(function (file, index) {
+                const reader = new FileReader();
+                reader.onload = function () {
+                    const image = document.createElement('img');
+                    image.src = reader.result;
+                    image.alt = file.name || 'Gambar dokumen';
+                    image.style.maxWidth = '100%';
+                    image.style.height = 'auto';
+                    image.style.display = 'block';
+                    image.style.margin = '12px auto';
+                    const documentPages = editor.closest('.document-pages');
+                    const placeholder = placeholderIds[index] ? documentPages.querySelector('#' + placeholderIds[index]) : null;
+                    if (placeholder) placeholder.replaceWith(image);
+                    else {
+                        editor.appendChild(image);
+                        editor.appendChild(document.createElement('p')).appendChild(document.createElement('br'));
+                    }
+                    requestAnimationFrame(function () { paginateDocument(documentPages); });
+                };
+                reader.readAsDataURL(file);
+            });
+        });
+    }
+
     const documentForm = document.getElementById('document-form');
     const editor = document.getElementById('document-editor');
+    document.querySelectorAll('.document-pages').forEach(initializeDocumentEditor);
     if (documentForm && editor) {
         documentForm.addEventListener('submit', function () {
-            document.getElementById('document-content').value = editor.innerHTML;
+            freezeImageDimensions(editor);
+            document.getElementById('document-content').value = serializeDocumentPages(editor);
         });
     }
 
@@ -329,10 +681,12 @@ document.addEventListener('DOMContentLoaded', function () {
             const fileId = form.dataset.fileId;
             const editEditor = document.getElementById('edit-file-editor-' + fileId);
             const hiddenContent = document.getElementById('edit-file-content-' + fileId);
-            if (editEditor && hiddenContent) hiddenContent.value = editEditor.innerHTML;
+            if (editEditor && hiddenContent) {
+                freezeImageDimensions(editEditor);
+                hiddenContent.value = serializeDocumentPages(editEditor);
+            }
         });
     });
-
     const pdfViewer = document.getElementById('masterPdfViewer');
     const pdfBody = document.getElementById('masterPdfBody');
     const pdfTitle = document.getElementById('masterPdfTitle');

@@ -186,11 +186,12 @@ class MasterFolderController extends Controller
         foreach ($validated['files'] as $uploadedFile) {
             $storedName = (string) str()->uuid().'.'.$uploadedFile->getClientOriginalExtension();
             $path = $uploadedFile->storeAs('master-folders/'.$folder->id, $storedName, 'local');
+            $originalName = $this->uniqueFileName($folder, $uploadedFile->getClientOriginalName());
 
             $file = MasterFolderFile::create([
                 'master_folder_id' => $folder->id,
                 'uploaded_by' => $request->user()->id,
-                'original_name' => $uploadedFile->getClientOriginalName(),
+                'original_name' => $originalName,
                 'stored_name' => $storedName,
                 'path' => $path,
                 'mime_type' => $uploadedFile->getMimeType(),
@@ -231,6 +232,23 @@ class MasterFolderController extends Controller
         ]);
     }
 
+    public function viewPdf(Request $request, MasterFolder $folder, MasterFolderFile $file)
+    {
+        $this->authorizeFolder($request, $folder);
+        abort_unless($file->master_folder_id === $folder->id, 404);
+        $this->authorizeFile($request, $folder, $file);
+
+        $isPdf = strtolower(pathinfo($file->original_name, PATHINFO_EXTENSION)) === 'pdf'
+            || $file->mime_type === 'application/pdf';
+        abort_unless($isPdf, 415, 'Preview hanya tersedia untuk file PDF.');
+
+        return view('master_folder.preview', [
+            'title' => $file->original_name,
+            'folder' => $folder,
+            'file' => $file,
+        ]);
+    }
+
     public function createDocument(Request $request, MasterFolder $folder)
     {
         $this->authorizeManageFolder($request, $folder);
@@ -241,7 +259,7 @@ class MasterFolderController extends Controller
 
         $validated = $request->validate([
             'document_name' => ['required', 'string', 'max:150'],
-            'content' => ['required', 'string', 'max:200000'],
+            'content' => ['required', 'string', 'max:15000000'],
             'role_ids' => [$folder->is_personal ? 'nullable' : 'required', 'array', 'min:1'],
             'role_ids.*' => ['integer', 'distinct', 'exists:roles,id'],
         ], [
@@ -269,7 +287,8 @@ class MasterFolderController extends Controller
             return back()->withErrors(['document_name' => 'Nama dokumen tidak valid.'])
                 ->withInput()->with('document_error', true);
         }
-        $originalName = $documentName.'.pdf';
+        $originalName = $this->uniqueFileName($folder, $documentName.'.pdf');
+        $documentName = pathinfo($originalName, PATHINFO_FILENAME);
         $storedName = (string) str()->uuid().'.pdf';
         $path = 'master-folders/'.$folder->id.'/'.$storedName;
         $pdfContent = Pdf::loadView('master_folder.document_pdf', compact('folder', 'documentName', 'content'))
@@ -306,7 +325,7 @@ class MasterFolderController extends Controller
 
         $validated = $request->validate([
             'file_name' => ['required', 'string', 'max:150'],
-            'content' => [Rule::requiredIf($file->is_generated_document), 'nullable', 'string', 'max:200000'],
+            'content' => [Rule::requiredIf($file->is_generated_document), 'nullable', 'string', 'max:15000000'],
             'role_ids' => [$folder->is_personal ? 'nullable' : 'required', 'array', 'min:1'],
             'role_ids.*' => ['integer', 'distinct', 'exists:roles,id'],
         ], [
@@ -340,12 +359,15 @@ class MasterFolderController extends Controller
                     ->withInput()->with('edit_file_id', $file->id);
             }
 
-            $originalName = $documentName.'.pdf';
+            $originalName = $this->uniqueFileName($folder, $documentName.'.pdf', $file->id);
+            $documentName = pathinfo($originalName, PATHINFO_FILENAME);
             $content = $editorContent;
             $newPdfContent = Pdf::loadView(
                 'master_folder.document_pdf',
                 compact('folder', 'documentName', 'content')
             )->setPaper('a4', 'portrait')->output();
+        } else {
+            $originalName = $this->uniqueFileName($folder, $originalName, $file->id);
         }
 
         DB::transaction(function () use ($file, $validated, $originalName, $editorContent, $newPdfContent, $roleIds) {
@@ -366,6 +388,32 @@ class MasterFolderController extends Controller
         });
 
         return back()->with('success', 'File berhasil diperbarui.');
+    }
+
+    private function uniqueFileName(MasterFolder $folder, string $requestedName, ?int $ignoreFileId = null): string
+    {
+        $requestedName = trim(basename(str_replace('\\', '/', $requestedName)));
+        $extension = pathinfo($requestedName, PATHINFO_EXTENSION);
+        $baseName = pathinfo($requestedName, PATHINFO_FILENAME);
+        $extensionWithDot = $extension !== '' ? '.'.$extension : '';
+        $baseName = $baseName !== '' ? $baseName : 'File';
+        $number = 0;
+
+        do {
+            $suffix = $number > 0 ? ' ('.$number.')' : '';
+            $maximumBaseLength = max(1, 255 - mb_strlen($extensionWithDot.$suffix));
+            $candidate = mb_substr($baseName, 0, $maximumBaseLength).$suffix.$extensionWithDot;
+            $query = $folder->files()
+                ->whereRaw('LOWER(original_name) = ?', [mb_strtolower($candidate)]);
+
+            if ($ignoreFileId !== null) {
+                $query->whereKeyNot($ignoreFileId);
+            }
+
+            $number++;
+        } while ($query->exists());
+
+        return $candidate;
     }
 
     public function destroyFile(Request $request, MasterFolder $folder, MasterFolderFile $file)
@@ -439,7 +487,7 @@ class MasterFolderController extends Controller
 
     private function sanitizeDocumentHtml(string $html): string
     {
-        $allowedTags = '<p><div><span><font><br><hr><h1><h2><h3><h4><h5><h6><strong><b><em><i><u><s><sup><sub><ul><ol><li><blockquote><table><thead><tbody><tfoot><tr><th><td><colgroup><col>';
+        $allowedTags = '<p><div><span><font><br><hr><h1><h2><h3><h4><h5><h6><strong><b><em><i><u><s><sup><sub><a><img><ul><ol><li><blockquote><table><thead><tbody><tfoot><tr><th><td><colgroup><col>';
         $html = preg_replace('#<(script|style|iframe|object|embed)\b[^>]*>.*?</\1>#is', '', $html);
         $clean = strip_tags($html, $allowedTags);
 
@@ -460,8 +508,74 @@ class MasterFolderController extends Controller
                     continue;
                 }
 
+                if ($element->tagName === 'br' && $attribute === 'clear'
+                    && in_array(strtolower($value), ['all', 'left', 'right', 'both', 'none'], true)) {
+                    continue;
+                }
+
+                if ($element->tagName === 'a' && $attribute === 'href' && $this->isSafeDocumentLink($value)) {
+                    continue;
+                }
+
+                if ($element->tagName === 'a' && $attribute === 'target' && in_array($value, ['_blank', '_self'], true)) {
+                    continue;
+                }
+
+                if ($element->tagName === 'img' && $attribute === 'src' && $this->isSafeEmbeddedImage($value)) {
+                    continue;
+                }
+
+                if ($element->tagName === 'img' && $attribute === 'alt') {
+                    continue;
+                }
+
+                if ($element->tagName === 'img' && in_array($attribute, ['width', 'height'], true)
+                    && preg_match('/^\d+(\.\d+)?$/', $value)) {
+                    continue;
+                }
+
+                if (in_array($element->tagName, ['table', 'td', 'th', 'col'], true)
+                    && in_array($attribute, ['width', 'height'], true)
+                    && preg_match('/^\d+(\.\d+)?%?$/', $value)) {
+                    continue;
+                }
+
+                if (in_array($element->tagName, ['table', 'td', 'th'], true)
+                    && $attribute === 'border' && preg_match('/^\d+(\.\d+)?$/', $value)) {
+                    continue;
+                }
+
+                if ($element->tagName === 'table'
+                    && in_array($attribute, ['cellpadding', 'cellspacing'], true)
+                    && preg_match('/^\d+(\.\d+)?$/', $value)) {
+                    continue;
+                }
+
+                if (in_array($element->tagName, ['td', 'th'], true)
+                    && in_array($attribute, ['colspan', 'rowspan'], true)
+                    && preg_match('/^[1-9]\d*$/', $value)) {
+                    continue;
+                }
+
+                if (in_array($element->tagName, ['tr', 'td', 'th'], true)
+                    && $attribute === 'valign'
+                    && in_array(strtolower($value), ['top', 'middle', 'bottom', 'baseline'], true)) {
+                    continue;
+                }
+
+                if (in_array($element->tagName, ['table', 'tr', 'td', 'th'], true)
+                    && $attribute === 'bgcolor'
+                    && preg_match('/^(transparent|#[0-9a-f]{3,8}|[a-z]+)$/i', $value)) {
+                    continue;
+                }
+
                 if ($attribute === 'style') {
                     $safeStyle = $this->sanitizeInlineStyle($value);
+                    if (in_array($element->tagName, ['br', 'hr'], true)
+                        && (str_contains($safeStyle, 'page-break-before: always') || str_contains($safeStyle, 'break-before: page'))) {
+                        $safeStyle = preg_replace('/(^|;)\s*display:\s*none\s*(;|$)/i', '$1', $safeStyle);
+                        $safeStyle .= '; border: none; height: 0; margin: 0; padding: 0';
+                    }
                     if ($safeStyle !== '') {
                         $element->setAttribute('style', $safeStyle);
                         continue;
@@ -487,6 +601,21 @@ class MasterFolderController extends Controller
         }
 
         return $result;
+    }
+
+    private function isSafeDocumentLink(string $url): bool
+    {
+        if (str_starts_with($url, '#')) {
+            return preg_match('/^#[A-Za-z0-9_-]+$/', $url) === 1;
+        }
+
+        return filter_var($url, FILTER_VALIDATE_URL) !== false
+            && in_array(strtolower((string) parse_url($url, PHP_URL_SCHEME)), ['http', 'https', 'mailto'], true);
+    }
+
+    private function isSafeEmbeddedImage(string $source): bool
+    {
+        return preg_match('#^data:image/(png|jpe?g|gif|webp);base64,[a-z0-9+/=\r\n]+$#i', $source) === 1;
     }
 
     private function restoreGeneratedPdfIfMissing(MasterFolder $folder, MasterFolderFile $file): void
@@ -520,6 +649,7 @@ class MasterFolderController extends Controller
     private function sanitizeInlineStyle(string $style): string
     {
         $safe = [];
+        $cssLength = '(?:0|-?\d+(?:\.\d+)?(?:px|pt|pc|em|rem|%|cm|mm|in)?)';
 
         foreach (explode(';', $style) as $declaration) {
             if (! str_contains($declaration, ':')) {
@@ -541,15 +671,30 @@ class MasterFolderController extends Controller
                 'text-decoration', 'text-decoration-line' => preg_match('/^(none|underline|line-through|underline line-through)$/', $normalizedValue) === 1,
                 'font-family' => preg_match('/^[a-z0-9 ,"\'\-_]+$/i', $value) === 1,
                 'font-size', 'line-height', 'letter-spacing', 'word-spacing', 'text-indent',
-                'margin', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
-                'padding', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
-                'width', 'min-width', 'max-width' => preg_match('/^(normal|auto|0|(-?\d+(\.\d+)?)(px|pt|pc|em|rem|%|cm|mm|in)?)$/', $normalizedValue) === 1,
-                'color', 'background', 'background-color' => preg_match('/^(transparent|#[0-9a-f]{3,8}|[a-z]+|rgba?\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+(?:\s*,\s*[\d.]+)?\s*\))$/i', $normalizedValue) === 1,
+                'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
+                'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+                'width', 'height', 'min-width', 'max-width', 'min-height', 'max-height' => preg_match('/^(normal|auto|0|(-?\d+(\.\d+)?)(px|pt|pc|em|rem|%|cm|mm|in)?)$/', $normalizedValue) === 1,
+                'margin', 'padding' => preg_match('/^'.$cssLength.'(?:\s+'.$cssLength.'){0,3}$/', $normalizedValue) === 1,
+                'color', 'background', 'background-color', 'border-color' => preg_match('/^(none|transparent|#[0-9a-f]{3,8}|[a-z]+|rgba?\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+(?:\s*,\s*[\d.]+)?\s*\))$/i', $normalizedValue) === 1,
+                'opacity' => preg_match('/^(0(\.\d+)?|1(\.0+)?)$/', $normalizedValue) === 1,
+                'visibility' => in_array($normalizedValue, ['visible', 'hidden', 'collapse'], true),
+                'display' => in_array($normalizedValue, ['none', 'block', 'inline', 'inline-block', 'table', 'table-row', 'table-cell'], true),
+                'page-break-before', 'page-break-after' => in_array($normalizedValue, ['auto', 'always', 'avoid', 'left', 'right'], true),
+                'page-break-inside' => in_array($normalizedValue, ['auto', 'avoid'], true),
+                'break-before', 'break-after' => in_array($normalizedValue, ['auto', 'page', 'avoid', 'avoid-page', 'left', 'right'], true),
+                'break-inside' => in_array($normalizedValue, ['auto', 'avoid', 'avoid-page'], true),
+                'float' => in_array($normalizedValue, ['none', 'left', 'right'], true),
+                'clear' => in_array($normalizedValue, ['none', 'left', 'right', 'both'], true),
                 'white-space' => in_array($normalizedValue, ['normal', 'nowrap', 'pre', 'pre-wrap', 'pre-line'], true),
                 'vertical-align' => preg_match('/^(baseline|sub|super|top|text-top|middle|bottom|text-bottom|(-?\d+(\.\d+)?)(px|pt|em|rem|%)?)$/', $normalizedValue) === 1,
                 'list-style-type' => preg_match('/^(none|disc|circle|square|decimal|lower-alpha|upper-alpha|lower-roman|upper-roman)$/', $normalizedValue) === 1,
                 'border-collapse' => in_array($normalizedValue, ['collapse', 'separate'], true),
-                'border', 'border-top', 'border-right', 'border-bottom', 'border-left' => preg_match('/^\d+(\.\d+)?(px|pt)\s+(solid|dashed|dotted|double)\s+(#[0-9a-f]{3,8}|[a-z]+)$/i', $normalizedValue) === 1,
+                'border-spacing' => preg_match('/^(0|\d+(\.\d+)?(px|pt|em|rem|cm|mm|in))(\s+(0|\d+(\.\d+)?(px|pt|em|rem|cm|mm|in)))?$/', $normalizedValue) === 1,
+                'empty-cells' => in_array($normalizedValue, ['show', 'hide'], true),
+                'border-style', 'border-top-style', 'border-right-style', 'border-bottom-style', 'border-left-style' => in_array($normalizedValue, ['none', 'hidden', 'solid', 'dashed', 'dotted', 'double'], true),
+                'border-width', 'border-top-width', 'border-right-width', 'border-bottom-width', 'border-left-width' => preg_match('/^(0|thin|medium|thick|\d+(\.\d+)?(px|pt))$/', $normalizedValue) === 1,
+                'border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color' => preg_match('/^(transparent|#[0-9a-f]{3,8}|[a-z]+|rgba?\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+(?:\s*,\s*[\d.]+)?\s*\))$/i', $normalizedValue) === 1,
+                'border', 'border-top', 'border-right', 'border-bottom', 'border-left' => $normalizedValue === 'none' || preg_match('/^\d+(\.\d+)?(px|pt)\s+(solid|dashed|dotted|double)\s+(transparent|#[0-9a-f]{3,8}|[a-z]+)$/i', $normalizedValue) === 1,
                 default => false,
             };
 

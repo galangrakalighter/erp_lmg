@@ -14,6 +14,24 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 class CRMController extends Controller
 {
+    private const HIDDEN_CRM_PHONES = [
+        '62882001850221',
+        '62895428171038',
+        '6289637277465',
+        '6283820602669',
+        '6287837979874',
+        '6283829287212',
+        '6281252795716',
+        '6285158860657',
+        '6282142644868',
+        '6285793602782',
+        '62895365042133',
+        '6287794444957',
+        '6289669545397',
+        '6285172267686',
+        '6283100475454'
+    ];
+
     /**
      * Display a listing of the resource.
      */
@@ -65,6 +83,8 @@ class CRMController extends Controller
                     '<=',
                     $endDate
                 );
+
+            $this->excludeHiddenCrmPhones($query);
 
             if ($request->filled('layanan')) {
                 $query->where(
@@ -214,6 +234,8 @@ class CRMController extends Controller
                     '<=',
                     $endDate
                 );
+
+            $this->excludeHiddenCrmPhones($query);
 
             if (
                 $request->filled('layanan')
@@ -524,7 +546,10 @@ class CRMController extends Controller
             $query = Meeting::query()
                 ->with('crmHuman')
                 ->whereDate('waktu_meeting', '>=', $startDate)
-                ->whereDate('waktu_meeting', '<=', $endDate);
+                ->whereDate('waktu_meeting', '<=', $endDate)
+                ->whereHas('crmHuman', function ($humanQuery) {
+                    $this->excludeHiddenCrmPhones($humanQuery);
+                });
 
             if ($request->filled('layanan')) {
                 $query->whereHas('crmHuman', function ($humanQuery) use ($request) {
@@ -618,6 +643,24 @@ class CRMController extends Controller
             ->copy()
             ->setTimezone('Asia/Jakarta')
             ->format('d M Y, H:i') . ' WIB';
+    }
+
+    private function excludeHiddenCrmPhones($query): void
+    {
+        $placeholders = implode(
+            ', ',
+            array_fill(0, count(self::HIDDEN_CRM_PHONES), '?')
+        );
+
+        $query->where(function ($phoneQuery) use ($placeholders) {
+            $phoneQuery
+                ->whereNull('phone')
+                ->orWhereRaw(
+                    "regexp_replace(COALESCE(phone, ''), '[^0-9]', '', 'g') " .
+                    "NOT IN ({$placeholders})",
+                    self::HIDDEN_CRM_PHONES
+                );
+        });
     }
 
     private function aiStatusLabel($status): string

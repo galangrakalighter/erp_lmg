@@ -3576,7 +3576,7 @@ class CRMController extends Controller
                     'field' => [
                         'required',
                         'string',
-                        'in:can_push,service_plan,need_analysys,done_meeting',
+                        'in:can_push,service_plan,need_analysys,done_meeting,mini_audit,insight,study_kasus',
                     ],
                     'value' => [
                         'required',
@@ -3671,12 +3671,12 @@ class CRMController extends Controller
                         ];
                     }
 
-                    $current = min(6, max(
+                    $current = min(3, max(
                         0,
                         (int) ($lead->jumlah_follow_up ?? 0)
                     ));
 
-                    if ($current >= 6) {
+                    if ($current >= 3) {
                         return [
                             'status' => 422,
                             'message' => 'Seluruh tahapan follow up sudah selesai.',
@@ -3692,6 +3692,11 @@ class CRMController extends Controller
 
                     $lead->jumlah_follow_up = $current + 1;
                     $lead->today = true;
+
+                    if ((int) $lead->jumlah_follow_up >= 3) {
+                        $lead->status = 'ghosting';
+                    }
+
                     $lead->save();
 
                     return [
@@ -3701,6 +3706,7 @@ class CRMController extends Controller
                             'id' => $lead->getKey(),
                             'jumlah_follow_up' => (int) $lead->jumlah_follow_up,
                             'today' => (bool) $lead->today,
+                            'status' => $lead->status,
                         ],
                     ];
                 });

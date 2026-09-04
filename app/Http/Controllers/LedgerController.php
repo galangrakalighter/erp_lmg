@@ -300,9 +300,20 @@ class LedgerController extends Controller
         $neraca = collect($laporanData['worksheetData'])
             ->filter(fn ($row) => in_array(substr((string) $row['kode'], 0, 1), ['1', '2', '3'])
                 && ($row['n_debit'] != 0 || $row['n_kredit'] != 0))
+            ->map(function ($row) {
+                $saldo = abs((float) $row['n_debit'] - (float) $row['n_kredit']);
+                $isDebit = strtoupper(trim((string) ($row['type'] ?? ''))) === 'D';
+
+                $row['neraca_debit'] = $isDebit ? $saldo : 0;
+                $row['neraca_kredit'] = $isDebit ? 0 : $saldo;
+
+                return $row;
+            })
             ->values();
         $worksheetTotals = $laporanData['totals'];
         $labaRugiBersih = $laporanData['lr_balance'];
+        $totalNeracaDebit = (float) $neraca->sum('neraca_debit') + abs($labaRugiBersih);
+        $totalNeracaKredit = (float) $neraca->sum('neraca_kredit');
 
         /*
         * 1. Ambil akun Kas/Bank.
@@ -355,6 +366,8 @@ class LedgerController extends Controller
                 'neraca'                  => $neraca,
                 'worksheetTotals'         => $worksheetTotals,
                 'labaRugiBersih'          => $labaRugiBersih,
+                'totalNeracaDebit'        => $totalNeracaDebit,
+                'totalNeracaKredit'       => $totalNeracaKredit,
             ])->with(
                 'error',
                 'Tidak ada akun Kas atau Bank dengan kode 111 atau 113.'
@@ -584,7 +597,9 @@ class LedgerController extends Controller
             'labaRugi',
             'neraca',
             'worksheetTotals',
-            'labaRugiBersih'
+            'labaRugiBersih',
+            'totalNeracaDebit',
+            'totalNeracaKredit'
         ));
     }
 
@@ -639,7 +654,7 @@ class LedgerController extends Controller
             $n_kredit = !in_array($firstDigit, ['4', '5', '6']) ? $nsd_kredit : 0;
 
             $worksheetData[] = [
-                'kode' => $coa->kode, 'nama_akun' => $coa->nama_akun,
+                'kode' => $coa->kode, 'nama_akun' => $coa->nama_akun, 'type' => $coa->type,
                 'lr_debit' => $lr_debit, 'lr_kredit' => $lr_kredit,
                 'n_debit' => $n_debit, 'n_kredit' => $n_kredit
             ];

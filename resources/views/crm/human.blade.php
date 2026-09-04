@@ -26,6 +26,9 @@
                     <th>Service Plan</th>
                     <th>Need Analysis</th>
                     <th>Done Meeting</th>
+                    <th>Mini Audit</th>
+                    <th>Insight</th>
+                    <th>Study Kasus</th>
                     <th>Today</th>
                     <th>Status Follow Up</th>
                     <th>Note</th>

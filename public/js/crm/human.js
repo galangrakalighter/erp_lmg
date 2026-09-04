@@ -2,6 +2,7 @@ window.CRMRenderers =
     window.CRMRenderers || {};
 
 (function () {
+    let count = 0;
     'use strict';
 
     const detailTexts = new Map();
@@ -57,7 +58,7 @@ window.CRMRenderers =
                     "
                 >
                     ${helpers.escape(
-                        words.slice(0, 6).join(' ')
+                        words.slice(0, 3).join(' ')
                     )}...
                 </div>
 
@@ -329,21 +330,23 @@ window.CRMRenderers =
     }
 
     const followUpStages = [
-        'Mini Audit',
-        'Insight',
-        'Study Kasus',
+        // 'Mini Audit',
+        // 'Insight',
+        // 'Study Kasus',
         'Follow Up Ghosting 1',
         'Follow Up Ghosting 2',
         'Follow Up Ghosting 3',
     ];
 
     function todayFollowUpCheckbox(lead, helpers) {
-        const count = Math.min(
-            6,
+        count = Math.min(
+            3,
             Math.max(0, Number(lead.jumlah_follow_up) || 0)
         );
         const doneToday = booleanValue(lead.today);
-        const disabled = doneToday || count >= 6;
+        const disabled = doneToday || count >= 3;
+
+        console.log('masuk sini');
 
         return `
             <div
@@ -356,7 +359,7 @@ window.CRMRenderers =
                     data-id="${helpers.escapeAttribute(lead.id)}"
                     ${doneToday ? 'checked' : ''}
                     ${disabled ? 'disabled' : ''}
-                    title="${count >= 6 ? 'Follow up sudah selesai' : 'Follow up hari ini'}"
+                    title="${count >= 3 ? 'Follow up sudah selesai' : 'Follow up hari ini'}"
                     style="width:19px;height:19px;cursor:${disabled ? 'not-allowed' : 'pointer'}"
                 >
                 <span class="human-follow-up-status ml-2 small text-muted"></span>
@@ -365,7 +368,7 @@ window.CRMRenderers =
     }
 
     function followUpDetailButton(lead, helpers) {
-        const count = Math.min(6, Math.max(
+        const count = Math.min(3, Math.max(
             0,
             Number(lead.jumlah_follow_up) || 0
         ));
@@ -380,7 +383,7 @@ window.CRMRenderers =
                 data-target="#humanFollowUpDetailModal"
             >
                 <i class="fas fa-list mr-1"></i>
-                Detail ${count}/6
+                Detail ${count}/3
             </button>
         `;
     }
@@ -646,7 +649,7 @@ window.CRMRenderers =
                                 )}
                             </td>
 
-                            <td class="align-middle">
+                            <td class="align-middle human-lead-status">
                                 ${helpers.statusBadge(
                                     lead.status || '-'
                                 )}
@@ -688,6 +691,36 @@ window.CRMRenderers =
                                     'done_meeting',
                                     lead.done_meeting,
                                     'Done Meeting',
+                                    helpers
+                                )}
+                            </td>
+
+                            <td class="align-middle">
+                                ${checklistCheckbox(
+                                    lead.id,
+                                    'mini_audit',
+                                    lead.mini_audit,
+                                    'Mni Audit',
+                                    helpers
+                                )}
+                            </td>
+
+                            <td class="align-middle">
+                                ${checklistCheckbox(
+                                    lead.id,
+                                    'insight',
+                                    lead.insight,
+                                    'Insight',
+                                    helpers
+                                )}
+                            </td>
+
+                            <td class="align-middle">
+                                ${checklistCheckbox(
+                                    lead.id,
+                                    'study_kasus',
+                                    lead.study_kasus,
+                                    'Study Kasus',
                                     helpers
                                 )}
                             </td>
@@ -807,6 +840,18 @@ window.CRMRenderers =
                 return;
             }
 
+            if (count >= 3) {
+                const statusCell = row?.querySelector('.human-lead-status');
+
+                if (statusCell) {
+                    statusCell.innerHTML = `
+                        <span class="badge badge-primary">
+                            ghosting
+                        </span>
+                    `;
+                }
+            }
+
             const followUpDetailButton =
                 event.target.closest(
                     '.human-follow-up-detail'
@@ -914,7 +959,7 @@ window.CRMRenderers =
                 detailButton.dataset.count = String(count);
                 detailButton.innerHTML = `
                     <i class="fas fa-list mr-1"></i>
-                    Detail ${count}/6
+                    Detail ${count}/3
                 `;
             }
 
@@ -934,7 +979,7 @@ window.CRMRenderers =
     }
 
     function showFollowUpDetail(button) {
-        const count = Math.min(6, Math.max(
+        const count = Math.min(3, Math.max(
             0,
             Number(button.dataset.count) || 0
         ));
@@ -982,6 +1027,7 @@ window.CRMRenderers =
     async function updateHumanChecklist(
         checkbox
     ) {
+        console.log(checkbox.dataset.field);
         const app =
             document.getElementById(
                 'crmApp'
@@ -1063,6 +1109,8 @@ window.CRMRenderers =
                     'Gagal menyimpan checklist.'
                 );
             }
+
+            console.log("berhasil");
 
             /*
             * Simpan state terakhir yang

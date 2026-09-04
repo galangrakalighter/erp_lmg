@@ -14,6 +14,14 @@
         <p class="text-muted small mb-0 font-italic">Folder hanya tampil untuk jabatan yang diberi akses.</p>
     </div>
     <div class="mt-3 mt-md-0 d-flex flex-wrap align-items-center">
+        <form method="GET" action="{{ route('master-folder.index') }}" class="d-flex mr-2">
+            <select name="division_id" class="form-control form-control-sm" onchange="this.form.submit()" aria-label="Filter divisi utama">
+                <option value="">Semua Divisi</option>
+                @foreach($divisions as $division)
+                    <option value="{{ $division->id }}" @selected((int) $selectedDivisionId === (int) $division->id)>{{ $division->name }}</option>
+                @endforeach
+            </select>
+        </form>
         @if($isSuperAdmin)
             <button class="btn btn-primary btn-sm shadow-sm px-3 py-2" data-toggle="modal" data-target="#createFolderModal">
                 <i class="fas fa-folder-plus mr-1"></i> Folder Baru
@@ -30,7 +38,7 @@
                 <div class="card-body py-3">
                     <div class="d-flex justify-content-between align-items-start mb-3">
                         <div class="folder-icon"><i class="fas fa-folder-open"></i></div>
-                        <span class="badge badge-light border text-muted">Folder Master</span>
+                        <span class="badge badge-light border text-muted">{{ $folder->division->name ?? 'Divisi belum ditentukan' }}</span>
                     </div>
                     <h6 class="font-weight-bold text-gray-800 mb-1 text-truncate" title="{{ $folder->name }}">{{ $folder->name }}</h6>
                     <p class="small text-muted mb-3" style="min-height: 38px;">
@@ -83,6 +91,16 @@
                         <div class="form-group">
                             <label for="edit-folder-description-{{ $folder->id }}" class="font-weight-bold">Deskripsi</label>
                             <textarea id="edit-folder-description-{{ $folder->id }}" name="description" class="form-control" rows="3" maxlength="1000">{{ (int) old('edit_folder_id') === $folder->id ? old('description') : $folder->description }}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-folder-division-{{ $folder->id }}" class="font-weight-bold">Divisi Utama <span class="text-danger">*</span></label>
+                            <select id="edit-folder-division-{{ $folder->id }}" name="division_id" class="form-control" required>
+                                <option value="">Pilih divisi utama</option>
+                                @foreach($divisions as $division)
+                                    <option value="{{ $division->id }}" @selected((int) ((int) old('edit_folder_id') === $folder->id ? old('division_id') : $folder->division_id) === (int) $division->id)>{{ $division->name }}</option>
+                                @endforeach
+                            </select>
+                            <small class="form-text text-muted">Hanya digunakan untuk pengelompokan dan filter folder.</small>
                         </div>
                         <div class="form-group mb-0">
                             <label class="font-weight-bold">Role yang Dapat Melihat <span class="text-danger">*</span></label>
@@ -168,6 +186,16 @@
                 <div class="form-group">
                     <label for="folder-description" class="font-weight-bold">Deskripsi</label>
                     <textarea id="folder-description" name="description" class="form-control" rows="3" maxlength="1000" placeholder="Jelaskan isi folder secara singkat">{{ old('description') }}</textarea>
+                </div>
+                <div class="form-group">
+                    <label for="folder-division" class="font-weight-bold">Divisi Utama <span class="text-danger">*</span></label>
+                    <select id="folder-division" name="division_id" class="form-control" required>
+                        <option value="">Pilih divisi utama</option>
+                        @foreach($divisions as $division)
+                            <option value="{{ $division->id }}" @selected((int) old('division_id') === (int) $division->id)>{{ $division->name }}</option>
+                        @endforeach
+                    </select>
+                    <small class="form-text text-muted">Divisi utama hanya untuk pengelompokan. Role dari divisi lain tetap dapat diberi akses.</small>
                 </div>
                 <div class="form-group mb-0">
                     <label class="font-weight-bold">Role yang Dapat Melihat <span class="text-danger">*</span></label>

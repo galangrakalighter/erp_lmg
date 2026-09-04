@@ -232,12 +232,12 @@
                     <thead><tr><th style="width:18%">Kode Akun</th><th>Nama Akun</th><th style="width:18%;text-align:right">Debit</th><th style="width:18%;text-align:right">Kredit</th></tr></thead>
                     <tbody>
                         @forelse($neraca as $row)
-                            <tr><td class="account-code">{{ $row['kode'] }}</td><td>{{ $row['nama_akun'] }}</td><td class="amount">{{ $row['n_debit'] != 0 ? number_format($row['n_debit'], 2, ',', '.') : '-' }}</td><td class="amount">{{ $row['n_kredit'] != 0 ? number_format($row['n_kredit'], 2, ',', '.') : '-' }}</td></tr>
+                            <tr><td class="account-code">{{ $row['kode'] }}</td><td>{{ $row['nama_akun'] }}</td><td class="amount">{{ $row['neraca_debit'] != 0 ? number_format($row['neraca_debit'], 2, ',', '.') : '-' }}</td><td class="amount">{{ $row['neraca_kredit'] != 0 ? number_format($row['neraca_kredit'], 2, ',', '.') : '-' }}</td></tr>
                         @empty
                             <tr><td colspan="4" style="padding:2rem;text-align:center;color:#9ca3af;font-style:italic">Tidak ada data neraca pada periode ini.</td></tr>
                         @endforelse
-                        <tr class="statement-result"><td colspan="2">{{ $labaRugiBersih >= 0 ? 'Laba Bersih Periode Berjalan' : 'Rugi Bersih Periode Berjalan' }}</td><td class="amount">{{ number_format(abs($labaRugiBersih), 2, ',', '.') }}</td><td class="amount">-</td></tr>
-                        <tr class="statement-total"><td colspan="2" style="text-align:right">Total Neraca</td><td class="amount">{{ number_format($worksheetTotals['n_debit'] + abs($labaRugiBersih), 2, ',', '.') }}</td><td class="amount">{{ number_format($worksheetTotals['n_kredit'], 2, ',', '.') }}</td></tr>
+                        <tr class="statement-result"><td colspan="2">{{ $labaRugiBersih >= 0 ? 'Laba Bersih Periode Berjalan' : 'Rugi Bersih Periode Berjalan' }}</td><td class="amount">{{ $labaRugiBersih >= 0 ? number_format($labaRugiBersih, 2, ',', '.') : '-' }}</td><td class="amount">{{ $labaRugiBersih < 0 ? number_format(abs($labaRugiBersih), 2, ',', '.') : '-' }}</td></tr>
+                        <tr class="statement-total"><td colspan="2" style="text-align:right">Total Neraca</td><td class="amount">{{ number_format($totalNeracaDebit, 2, ',', '.') }}</td><td class="amount">{{ number_format($totalNeracaKredit, 2, ',', '.') }}</td></tr>
                     </tbody>
                 </table>
             </div>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\MasterFolder;
 use App\Models\MasterFolderFile;
+use App\Models\Division;
 use App\Models\Role;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -18,8 +19,13 @@ class MasterFolderController extends Controller
         $user = $request->user();
         $roleIds = $user->userDivisions()->pluck('role_id');
 
-        $folders = MasterFolder::with(['roles.division'])
+        $selectedDivisionId = $request->filled('division_id')
+            ? (int) $request->input('division_id')
+            : null;
+
+        $folders = MasterFolder::with(['division', 'roles.division'])
             ->where('is_personal', false)
+            ->when($selectedDivisionId, fn ($query) => $query->where('division_id', $selectedDivisionId))
             ->when(
                 $user->isAdmin,
                 fn ($query) => $query->withCount('files'),
@@ -43,10 +49,14 @@ class MasterFolderController extends Controller
             ->get()
             ->groupBy('division_id');
 
+        $divisions = Division::query()->orderBy('name')->get();
+
         return view('master_folder.index', [
             'title' => 'Folder Master',
             'folders' => $folders,
             'rolesByDivision' => $roles,
+            'divisions' => $divisions,
+            'selectedDivisionId' => $selectedDivisionId,
             'isSuperAdmin' => (bool) $user->isAdmin,
         ]);
     }
@@ -68,6 +78,7 @@ class MasterFolderController extends Controller
                     ->where('is_personal', false)),
             ],
             'description' => ['nullable', 'string', 'max:1000'],
+            'division_id' => ['required', 'integer', 'exists:divisions,id'],
             'role_ids' => ['required', 'array', 'min:1'],
             'role_ids.*' => ['integer', 'distinct', 'exists:roles,id'],
         ], [
@@ -77,7 +88,7 @@ class MasterFolderController extends Controller
 
         DB::transaction(function () use ($validated, $user) {
             $folder = MasterFolder::create([
-                'division_id' => null,
+                'division_id' => $validated['division_id'],
                 'created_by' => $user->id,
                 'name' => trim($validated['name']),
                 'description' => $validated['description'] ?? null,
@@ -132,6 +143,7 @@ class MasterFolderController extends Controller
                 Rule::unique('master_folders')->where(fn ($query) => $query->where('is_personal', false))->ignore($folder->id),
             ],
             'description' => ['nullable', 'string', 'max:1000'],
+            'division_id' => ['required', 'integer', 'exists:divisions,id'],
             'role_ids' => [$folder->is_personal ? 'nullable' : 'required', 'array'],
             'role_ids.*' => ['integer', 'distinct', 'exists:roles,id'],
         ], [
@@ -143,6 +155,7 @@ class MasterFolderController extends Controller
             $folder->update([
                 'name' => trim($validated['name']),
                 'description' => $validated['description'] ?? null,
+                'division_id' => $validated['division_id'],
             ]);
             $folder->roles()->sync($validated['role_ids'] ?? []);
         });

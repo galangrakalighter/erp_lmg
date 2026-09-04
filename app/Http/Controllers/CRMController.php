@@ -19,9 +19,16 @@ class CRMController extends Controller
      */
     public function index()
     {
-        return view('crm.index', [
-            'title' => 'CRM',
-        ]);
+        return response()
+            ->view('crm.index', [
+                'title' => 'CRM',
+            ])
+            ->header(
+                'Cache-Control',
+                'no-store, no-cache, must-revalidate, max-age=0'
+            )
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 
     public function aiData(Request $request)

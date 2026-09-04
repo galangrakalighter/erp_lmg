@@ -301,11 +301,16 @@ class LedgerController extends Controller
             ->filter(fn ($row) => in_array(substr((string) $row['kode'], 0, 1), ['1', '2', '3'])
                 && ($row['n_debit'] != 0 || $row['n_kredit'] != 0))
             ->map(function ($row) {
-                $saldo = abs((float) $row['n_debit'] - (float) $row['n_kredit']);
                 $isDebit = strtoupper(trim((string) ($row['type'] ?? ''))) === 'D';
 
-                $row['neraca_debit'] = $isDebit ? $saldo : 0;
-                $row['neraca_kredit'] = $isDebit ? 0 : $saldo;
+                // Saldo ditempatkan sesuai tipe normal akun. Jika posisi saldo
+                // dari Neraca Lajur berlawanan, nilainya ditampilkan negatif.
+                $row['neraca_debit'] = $isDebit
+                    ? (float) $row['n_debit'] - (float) $row['n_kredit']
+                    : 0;
+                $row['neraca_kredit'] = $isDebit
+                    ? 0
+                    : (float) $row['n_kredit'] - (float) $row['n_debit'];
 
                 return $row;
             })

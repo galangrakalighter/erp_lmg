@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class MasterFolderFile extends Model
 {
     protected $fillable = [
-        'master_folder_id', 'uploaded_by', 'original_name', 'stored_name',
+        'master_folder_id', 'uploaded_by', 'primary_role_id', 'original_name', 'stored_name',
         'path', 'mime_type', 'size', 'editor_content', 'is_generated_document',
     ];
 
@@ -21,6 +21,11 @@ class MasterFolderFile extends Model
     public function uploader()
     {
         return $this->belongsTo(User::class, 'uploaded_by');
+    }
+
+    public function primaryRole()
+    {
+        return $this->belongsTo(Role::class, 'primary_role_id');
     }
 
     public function roles()

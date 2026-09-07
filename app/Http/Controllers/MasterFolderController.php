@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class MasterFolderController extends Controller
 {
@@ -107,7 +108,19 @@ class MasterFolderController extends Controller
         $folder->load(['division', 'roles.division']);
 
         $files = $folder->files()
-            ->with(['uploader', 'roles.division'])
+            ->with(['uploader', 'roles.division', 'primaryRole.division'])
+            ->when($request->filled('primary_role_id'), function ($query) use ($request, $folder) {
+                $roleId = $request->integer('primary_role_id');
+                $isFolderPrimaryRole = $folder->roles()
+                    ->where('roles.id', $roleId)
+                    ->where('roles.division_id', $folder->division_id)
+                    ->exists();
+
+                $query->when($isFolderPrimaryRole,
+                    fn ($files) => $files->where('primary_role_id', $roleId),
+                    fn ($files) => $files->whereRaw('1 = 0')
+                );
+            })
             ->when(
                 ($folder->is_personal && (int) $folder->created_by !== (int) $request->user()->id)
                     || (! $request->user()->isAdmin && ! $folder->is_personal),
@@ -130,6 +143,7 @@ class MasterFolderController extends Controller
             'folder' => $folder,
             'canManage' => $canManage,
             'backToMine' => $backToMine,
+            'selectedPrimaryRoleId' => $request->integer('primary_role_id') ?: null,
         ]);
     }
 
@@ -181,14 +195,16 @@ class MasterFolderController extends Controller
         $validated = $request->validate([
             'files' => ['required', 'array', 'min:1', 'max:10'],
             'files.*' => ['required', 'file', 'max:25600'],
-            'role_ids' => [$folder->is_personal ? 'nullable' : 'required', 'array', 'min:1'],
+            'primary_role_id' => ['required', 'integer', 'exists:roles,id'],
+            'role_ids' => ['nullable', 'array'],
             'role_ids.*' => ['integer', 'distinct', 'exists:roles,id'],
         ], [
             'files.*.max' => 'Ukuran setiap file maksimal 25 MB.',
             'role_ids.required' => 'Pilih minimal satu role yang dapat melihat file.',
         ]);
 
-        $roleIds = $validated['role_ids'] ?? [];
+        $this->validatePrimaryFileRole($folder, (int) $validated['primary_role_id']);
+        $roleIds = collect($validated['role_ids'] ?? [])->push((int) $validated['primary_role_id'])->unique()->values()->all();
         $folderRoleIds = $folder->roles()->pluck('roles.id');
         if (collect($roleIds)->diff($folderRoleIds)->isNotEmpty()) {
             return back()->withErrors([
@@ -204,6 +220,7 @@ class MasterFolderController extends Controller
             $file = MasterFolderFile::create([
                 'master_folder_id' => $folder->id,
                 'uploaded_by' => $request->user()->id,
+                'primary_role_id' => $validated['primary_role_id'],
                 'original_name' => $originalName,
                 'stored_name' => $storedName,
                 'path' => $path,
@@ -273,7 +290,8 @@ class MasterFolderController extends Controller
         $validated = $request->validate([
             'document_name' => ['required', 'string', 'max:150'],
             'content' => ['required', 'string', 'max:15000000'],
-            'role_ids' => [$folder->is_personal ? 'nullable' : 'required', 'array', 'min:1'],
+            'primary_role_id' => ['required', 'integer', 'exists:roles,id'],
+            'role_ids' => ['nullable', 'array'],
             'role_ids.*' => ['integer', 'distinct', 'exists:roles,id'],
         ], [
             'document_name.required' => 'Nama dokumen wajib diisi.',
@@ -281,7 +299,8 @@ class MasterFolderController extends Controller
             'role_ids.required' => 'Pilih minimal satu role yang dapat melihat dokumen.',
         ]);
 
-        $roleIds = $validated['role_ids'] ?? [];
+        $this->validatePrimaryFileRole($folder, (int) $validated['primary_role_id']);
+        $roleIds = collect($validated['role_ids'] ?? [])->push((int) $validated['primary_role_id'])->unique()->values()->all();
         $folderRoleIds = $folder->roles()->pluck('roles.id');
         if (collect($roleIds)->diff($folderRoleIds)->isNotEmpty()) {
             return back()->withErrors([
@@ -313,6 +332,7 @@ class MasterFolderController extends Controller
         $file = MasterFolderFile::create([
             'master_folder_id' => $folder->id,
             'uploaded_by' => $request->user()->id,
+            'primary_role_id' => $validated['primary_role_id'],
             'original_name' => $originalName,
             'stored_name' => $storedName,
             'path' => $path,
@@ -339,7 +359,8 @@ class MasterFolderController extends Controller
         $validated = $request->validate([
             'file_name' => ['required', 'string', 'max:150'],
             'content' => [Rule::requiredIf($file->is_generated_document), 'nullable', 'string', 'max:15000000'],
-            'role_ids' => [$folder->is_personal ? 'nullable' : 'required', 'array', 'min:1'],
+            'primary_role_id' => ['required', 'integer', 'exists:roles,id'],
+            'role_ids' => ['nullable', 'array'],
             'role_ids.*' => ['integer', 'distinct', 'exists:roles,id'],
         ], [
             'file_name.required' => 'Nama file wajib diisi.',
@@ -347,7 +368,8 @@ class MasterFolderController extends Controller
             'role_ids.required' => 'Pilih minimal satu role yang dapat melihat file.',
         ]);
 
-        $roleIds = $validated['role_ids'] ?? [];
+        $this->validatePrimaryFileRole($folder, (int) $validated['primary_role_id']);
+        $roleIds = collect($validated['role_ids'] ?? [])->push((int) $validated['primary_role_id'])->unique()->values()->all();
         $folderRoleIds = $folder->roles()->pluck('roles.id');
         if (collect($roleIds)->diff($folderRoleIds)->isNotEmpty()) {
             return back()->withErrors([
@@ -394,6 +416,7 @@ class MasterFolderController extends Controller
 
             $file->update([
                 'original_name' => $originalName,
+                'primary_role_id' => $validated['primary_role_id'],
                 'editor_content' => $editorContent,
                 'size' => $newPdfContent !== null ? strlen($newPdfContent) : $file->size,
             ]);
@@ -427,6 +450,20 @@ class MasterFolderController extends Controller
         } while ($query->exists());
 
         return $candidate;
+    }
+
+    private function validatePrimaryFileRole(MasterFolder $folder, int $roleId): void
+    {
+        $isValid = $folder->roles()
+            ->where('roles.id', $roleId)
+            ->where('roles.division_id', $folder->division_id)
+            ->exists();
+
+        if (! $isValid) {
+            throw ValidationException::withMessages([
+                'primary_role_id' => 'Jabatan utama harus berasal dari divisi utama dan memiliki akses ke folder.',
+            ]);
+        }
     }
 
     public function destroyFile(Request $request, MasterFolder $folder, MasterFolderFile $file)

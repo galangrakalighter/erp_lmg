@@ -286,6 +286,13 @@
         </a>
     </li>
 
+    <li class="nav-item {{ request()->routeIs('file-master.*') ? 'active' : '' }}">
+        <a class="nav-link" href="{{ route('file-master.index') }}">
+            <i class="fas fa-fw fa-file-alt"></i>
+            <span>File Master</span>
+        </a>
+    </li>
+
     <hr class="sidebar-divider">
     @php
         $currentProduct = request()->route('id_produk');

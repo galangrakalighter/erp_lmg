@@ -253,15 +253,33 @@
     @endif
 </div>
 
+@php
+    $primaryRoles = $folder->roles->where('division_id', $folder->division_id)->values();
+@endphp
+
 <div class="card shadow-sm border-0">
-    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+    <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between align-items-center">
         <h6 class="m-0 font-weight-bold text-primary">Daftar File</h6>
-        <span class="badge badge-light border">{{ $folder->files->count() }} file</span>
+        <div class="d-flex flex-wrap align-items-center mt-2 mt-md-0">
+            <form method="GET" action="{{ route('master-folder.show', $folder) }}" class="form-inline mr-2 mb-1 mb-md-0">
+                <label for="primary-role-filter" class="small text-muted mr-2 mb-0">Jabatan Utama</label>
+                <select id="primary-role-filter" name="primary_role_id" class="form-control form-control-sm" onchange="this.form.submit()">
+                    <option value="">Semua Jabatan</option>
+                    @foreach($primaryRoles as $role)
+                        <option value="{{ $role->id }}" @selected((int) $selectedPrimaryRoleId === (int) $role->id)>{{ $role->role_name }}</option>
+                    @endforeach
+                </select>
+                @if($selectedPrimaryRoleId)
+                    <a href="{{ route('master-folder.show', $folder) }}" class="btn btn-sm btn-light border ml-2" title="Hapus filter"><i class="fas fa-times"></i></a>
+                @endif
+            </form>
+            <span class="badge badge-light border">{{ $folder->files->count() }} file</span>
+        </div>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table table-hover mb-0">
-                <thead class="bg-light"><tr><th class="pl-4">Nama File</th><th>Akses Role</th><th>Ukuran</th><th>Pengunggah</th><th>Tanggal</th><th class="text-center">Aksi</th></tr></thead>
+                <thead class="bg-light"><tr><th class="pl-4">Nama File</th><th>Jabatan Utama</th><th>Akses Role</th><th>Ukuran</th><th>Pengunggah</th><th>Tanggal</th><th class="text-center">Aksi</th></tr></thead>
                 <tbody>
                 @forelse($folder->files->sortByDesc('created_at') as $file)
                     <tr>
@@ -271,6 +289,13 @@
                                 <a href="{{ route('master-folder.files.view', ['folder' => $folder, 'file' => $file->original_name]) }}" class="font-weight-bold pdf-file-link">{{ $file->original_name }}</a>
                             @else
                                 <span class="font-weight-bold text-gray-800">{{ $file->original_name }}</span>
+                            @endif
+                        </td>
+                        <td class="align-middle">
+                            @if($file->primaryRole)
+                                <span class="badge badge-warning">{{ $file->primaryRole->role_name }}</span>
+                            @else
+                                <span class="text-muted small">Belum ditentukan</span>
                             @endif
                         </td>
                         <td class="align-middle">
@@ -292,7 +317,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="6" class="text-center py-5 text-muted"><i class="fas fa-cloud-upload-alt fa-3x mb-3 text-gray-300 d-block"></i>Belum ada file yang dapat Anda lihat di folder ini.</td></tr>
+                    <tr><td colspan="7" class="text-center py-5 text-muted"><i class="fas fa-cloud-upload-alt fa-3x mb-3 text-gray-300 d-block"></i>Belum ada file yang dapat Anda lihat di folder ini.</td></tr>
                 @endforelse
                 </tbody>
             </table>
@@ -360,6 +385,17 @@
 
                 {{-- BODY --}}
                 <div class="modal-body {{ $file->is_generated_document ? 'bg-light' : '' }}">
+
+                    <div class="form-group">
+                        <label for="edit-primary-role-{{ $file->id }}" class="font-weight-bold">Jabatan Utama <span class="text-danger">*</span></label>
+                        <select id="edit-primary-role-{{ $file->id }}" name="primary_role_id" class="form-control" required>
+                            <option value="">Pilih jabatan utama</option>
+                            @foreach($primaryRoles as $role)
+                                <option value="{{ $role->id }}" @selected((int) ((int) old('edit_file_id') === $file->id ? old('primary_role_id') : $file->primary_role_id) === (int) $role->id)>{{ $role->role_name }}</option>
+                            @endforeach
+                        </select>
+                        <small class="form-text text-muted">Jabatan utama berasal dari divisi {{ $folder->division->name ?? 'utama folder' }} dan otomatis mendapat akses file.</small>
+                    </div>
 
                     {{-- NAMA + ROLE --}}
                     <div class="form-row mb-3">
@@ -840,6 +876,14 @@
                 <label for="folder-files" class="font-weight-bold">Pilih File</label>
                 <input id="folder-files" type="file" name="files[]" class="form-control-file border rounded p-3 w-100" multiple required>
                 <small class="form-text text-muted">Maksimal 10 file sekali upload, masing-masing 25 MB.</small>
+                <div class="form-group mt-4">
+                    <label for="upload-primary-role" class="font-weight-bold">Jabatan Utama <span class="text-danger">*</span></label>
+                    <select id="upload-primary-role" name="primary_role_id" class="form-control" required>
+                        <option value="">Pilih jabatan utama</option>
+                        @foreach($primaryRoles as $role)<option value="{{ $role->id }}" @selected(old('form_type') === 'upload' && (int) old('primary_role_id') === (int) $role->id)>{{ $role->role_name }}</option>@endforeach
+                    </select>
+                    <small class="form-text text-muted">Diambil dari divisi utama {{ $folder->division->name ?? '-' }}.</small>
+                </div>
                 <div class="mt-4">
                     <label class="font-weight-bold">Role yang Dapat Melihat File <span class="text-danger">*</span></label>
                     <p class="small text-muted">Hanya role yang sudah memiliki akses ke folder ini yang dapat dipilih.</p>
@@ -874,6 +918,14 @@
                 <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
             </div>
             <div class="modal-body bg-light">
+                <div class="form-group">
+                    <label for="document-primary-role" class="font-weight-bold">Jabatan Utama <span class="text-danger">*</span></label>
+                    <select id="document-primary-role" name="primary_role_id" class="form-control" required>
+                        <option value="">Pilih jabatan utama</option>
+                        @foreach($primaryRoles as $role)<option value="{{ $role->id }}" @selected(old('form_type') === 'document' && (int) old('primary_role_id') === (int) $role->id)>{{ $role->role_name }}</option>@endforeach
+                    </select>
+                    <small class="form-text text-muted">Jabatan utama berasal dari divisi {{ $folder->division->name ?? 'utama folder' }} dan otomatis mendapat akses.</small>
+                </div>
                 <div class="form-row mb-3">
                     <div class="col-md-7">
                         <label for="document-name" class="font-weight-bold">Nama File <span class="text-danger">*</span></label>

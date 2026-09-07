@@ -10,6 +10,15 @@ Route::get('/terms-privacy-policy', function(){
 Route::middleware('auth')->group(function() {
     // Dashboard
     Route::get('/home', [App\Http\Controllers\DashboardController::class, 'index'])->name('home');
+
+    Route::get('file-master', [App\Http\Controllers\AccountMasterFileController::class, 'index'])->name('file-master.index');
+    Route::get('file-master/{owner}', [App\Http\Controllers\AccountMasterFileController::class, 'show'])->name('file-master.show');
+    Route::post('file-master/{owner}/upload', [App\Http\Controllers\AccountMasterFileController::class, 'upload'])->name('file-master.upload');
+    Route::post('file-master/{owner}/documents', [App\Http\Controllers\AccountMasterFileController::class, 'createDocument'])->name('file-master.documents.store');
+    Route::get('file-master/{owner}/files/{fileName}/view', [App\Http\Controllers\AccountMasterFileController::class, 'view'])->name('file-master.files.view');
+    Route::get('file-master/{owner}/files/{fileName}/preview', [App\Http\Controllers\AccountMasterFileController::class, 'preview'])->name('file-master.files.preview');
+    Route::get('file-master/{owner}/files/{fileName}/download', [App\Http\Controllers\AccountMasterFileController::class, 'download'])->name('file-master.files.download');
+    Route::delete('file-master/{owner}/files/{file}', [App\Http\Controllers\AccountMasterFileController::class, 'destroy'])->name('file-master.files.destroy');
     
     // Logout
     Route::post("/logout", [App\Http\Controllers\LoginController::class, 'logout'])->name('logout');

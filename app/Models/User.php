@@ -67,4 +67,9 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(KPI::class, 'kpi_user', 'user_id', 'kpi_id');
     }
+
+    public function accountMasterFiles()
+    {
+        return $this->hasMany(AccountMasterFile::class, 'owner_user_id');
+    }
 }

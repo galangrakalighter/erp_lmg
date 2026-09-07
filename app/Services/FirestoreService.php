@@ -13,12 +13,24 @@ class FirestoreService
 {
     private const SCOPE = 'https://www.googleapis.com/auth/datastore';
 
-    public function list(string $collection, int $pageSize = 50, ?string $pageToken = null): array
-    {
+    private ?string $cachedAccessToken = null;
+
+    private int $accessTokenExpiresAt = 0;
+
+    public function list(
+        string $collection,
+        int $pageSize = 50,
+        ?string $pageToken = null,
+        ?string $orderBy = null,
+    ): array {
         $query = ['pageSize' => min(max($pageSize, 1), 1000)];
 
         if ($pageToken) {
             $query['pageToken'] = $pageToken;
+        }
+
+        if ($orderBy) {
+            $query['orderBy'] = $orderBy;
         }
 
         $response = $this->request()->get($this->documentsUrl($collection), $query)->throw()->json();
@@ -102,6 +114,10 @@ class FirestoreService
 
     private function accessToken(): string
     {
+        if ($this->cachedAccessToken && $this->accessTokenExpiresAt > time() + 60) {
+            return $this->cachedAccessToken;
+        }
+
         $credentials = new ServiceAccountCredentials(self::SCOPE, $this->credentialsPath());
         $token = $credentials->fetchAuthToken();
 
@@ -109,7 +125,10 @@ class FirestoreService
             throw new RuntimeException('Google tidak mengembalikan access token untuk service account.');
         }
 
-        return $token['access_token'];
+        $this->cachedAccessToken = $token['access_token'];
+        $this->accessTokenExpiresAt = time() + (int) ($token['expires_in'] ?? 3600);
+
+        return $this->cachedAccessToken;
     }
 
     private function documentsUrl(string $path): string

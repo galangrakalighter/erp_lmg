@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
+
 class LoginController extends Controller
 {
     public function showLoginForm()
@@ -19,17 +20,33 @@ class LoginController extends Controller
             'password' => 'required',
         ]);
 
-        if(Auth::attempt(['email' => $credentials['email'], 'password' => $credentials['password']])){
+        if (Auth::attempt(['email' => $credentials['email'], 'password' => $credentials['password']])) {
+            app(ActivityLogService::class)->record([
+                'action' => 'LOGIN',
+                'module' => 'authentication',
+                'description' => 'Masuk ke aplikasi',
+                'target_type' => 'session',
+            ]);
+
             return redirect('/home');
-        }else{
+        } else {
             return back()->withErrors([
                 'email' => 'The provided credentials do not match our records.',
             ]);
         }
     }
 
-    public function logout(){
+    public function logout()
+    {
+        app(ActivityLogService::class)->record([
+            'action' => 'LOGOUT',
+            'module' => 'authentication',
+            'description' => 'Keluar dari aplikasi',
+            'target_type' => 'session',
+        ]);
+
         Auth::logout();
+
         return redirect('/');
     }
 }

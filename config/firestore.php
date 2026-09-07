@@ -8,5 +8,6 @@ return [
         storage_path('app/firebase/service-account.json')
     ),
     'default_collection' => env('FIREBASE_DEFAULT_COLLECTION'),
+    'activity_log_collection' => env('FIREBASE_ACTIVITY_LOG_COLLECTION', 'logs'),
     'timeout' => (int) env('FIREBASE_HTTP_TIMEOUT', 15),
 ];

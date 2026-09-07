@@ -669,6 +669,13 @@
     @endif
 
     @if($isSuperAdmin)
+        <li class="nav-item {{ Route::is('activity-logs.*') ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('activity-logs.index') }}">
+                <i class="fas fa-history fa-fw mr-2"></i>
+                <span>Activity Log</span>
+            </a>
+        </li>
+
         <li class="nav-item {{ Route::is('manajemen_user.index') ? 'active' : '' }}">
             <a class="nav-link collapsed" href="{{ route('manajemen_user.index') }}">
                 <span>Manajemen User</span>

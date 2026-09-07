@@ -134,6 +134,22 @@ class ActivityLogService
             $divisionIds = is_array($decoded) ? $decoded : [$legacyDivision];
         }
 
+        try {
+            $relatedDivisionIds = method_exists($user, 'userDivisions')
+                ? ($user->relationLoaded('userDivisions')
+                    ? $user->getRelation('userDivisions')->pluck('division_id')->all()
+                    : $user->userDivisions()->pluck('division_id')->all())
+                : [];
+            $divisionIds = array_merge($divisionIds, $relatedDivisionIds);
+        } catch (Throwable) {
+            // Activity logging must never interrupt the user's primary action.
+        }
+
+        $divisionIds = array_values(array_unique(array_filter(
+            $divisionIds,
+            fn (mixed $id): bool => $id !== null && $id !== '',
+        )));
+
         return [
             'user_id' => (string) $user->getAuthIdentifier(),
             'email' => (string) data_get($user, 'email', ''),

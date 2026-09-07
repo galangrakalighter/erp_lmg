@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Division;
 use App\Models\User;
 use App\Services\ActivityLogFormatter;
 use App\Services\FirestoreService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\View\View;
 use Throwable;
 
@@ -52,6 +54,22 @@ class ActivityLogController extends Controller
                     'created_at desc',
                 );
             }
+            $selectedDivision = $request->string('division')->toString();
+            $divisionEmails = $selectedDivision === ''
+                ? []
+                : User::query()
+                    ->whereHas('userDivisions', fn ($query) => $query->where('division_id', $selectedDivision))
+                    ->pluck('email')
+                    ->filter()
+                    ->map(fn (string $email): string => strtolower($email))
+                    ->all();
+            $documents = $this->filterDocuments(
+                $result['documents'],
+                $selectedDivision,
+                $request->string('start_date')->toString(),
+                $request->string('end_date')->toString(),
+                $divisionEmails,
+            );
             $allLogs = array_map(
                 function (array $document) use ($formatter): array {
                     $log = array_merge(
@@ -62,7 +80,7 @@ class ActivityLogController extends Controller
 
                     return $log;
                 },
-                $result['documents'],
+                $documents,
             );
             $total = count($allLogs);
             $lastPage = max(1, (int) ceil($total / $perPage));
@@ -83,7 +101,11 @@ class ActivityLogController extends Controller
             'logs' => $logs,
             'error' => $error,
             'emails' => User::query()->orderBy('email')->pluck('email'),
+            'divisions' => Division::query()->orderBy('name')->get(['id', 'name']),
             'selectedEmail' => $request->string('email')->toString(),
+            'selectedDivision' => $request->string('division')->toString(),
+            'startDate' => $request->string('start_date')->toString(),
+            'endDate' => $request->string('end_date')->toString(),
             'currentPage' => $currentPage,
             'lastPage' => $lastPage,
             'perPage' => $perPage,
@@ -93,5 +115,45 @@ class ActivityLogController extends Controller
             'actionCounts' => $actionCounts,
             'uniqueUsers' => $uniqueUsers,
         ]);
+    }
+
+    private function filterDocuments(
+        array $documents,
+        string $division,
+        string $startDate,
+        string $endDate,
+        array $divisionEmails = [],
+    ): array {
+        return array_values(array_filter($documents, function (array $document) use ($division, $startDate, $endDate, $divisionEmails): bool {
+            $data = $document['data'] ?? [];
+
+            if ($division !== '') {
+                $divisionIds = array_map('strval', (array) ($data['division_ids'] ?? []));
+                $primaryDivision = isset($data['divisi']) ? (string) $data['divisi'] : null;
+
+                $emailMatchesDivision = in_array(strtolower((string) ($data['email'] ?? '')), $divisionEmails, true);
+
+                if ($primaryDivision !== $division
+                    && ! in_array($division, $divisionIds, true)
+                    && ! $emailMatchesDivision) {
+                    return false;
+                }
+            }
+
+            if ($startDate === '' && $endDate === '') {
+                return true;
+            }
+
+            try {
+                $logDate = Carbon::parse($data['created_at'] ?? null)
+                    ->timezone('Asia/Jakarta')
+                    ->toDateString();
+            } catch (Throwable) {
+                return false;
+            }
+
+            return ($startDate === '' || $logDate >= $startDate)
+                && ($endDate === '' || $logDate <= $endDate);
+        }));
     }
 }

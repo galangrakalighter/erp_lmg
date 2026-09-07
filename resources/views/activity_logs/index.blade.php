@@ -71,8 +71,8 @@
 
     <div class="card activity-panel mb-4">
         <div class="activity-filters">
-            <div class="form-row">
-                <div class="col-lg-4 mb-2 mb-lg-0">
+            <div class="form-row mb-3">
+                <div class="col-lg-7 mb-2 mb-lg-0">
                     <label for="activitySearch" class="small font-weight-bold">Cari aktivitas</label>
                     <div class="input-group input-group-sm">
                         <div class="input-group-prepend">
@@ -82,17 +82,6 @@
                     </div>
                 </div>
                 <div class="col-lg-3 mb-2 mb-lg-0">
-                    <form method="GET" action="{{ route('activity-logs.index') }}">
-                        <label for="activityEmail" class="small font-weight-bold">Email pengguna</label>
-                        <select id="activityEmail" name="email" class="form-control form-control-sm">
-                            <option value="">Semua email</option>
-                            @foreach($emails as $email)
-                                <option value="{{ $email }}" @selected($selectedEmail === $email)>{{ $email }}</option>
-                            @endforeach
-                        </select>
-                    </form>
-                </div>
-                <div class="col-lg-2 mb-2 mb-lg-0">
                     <label for="activityAction" class="small font-weight-bold">Aksi</label>
                     <select id="activityAction" class="form-control form-control-sm">
                         <option value="">Semua aksi</option>
@@ -101,12 +90,43 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-lg-3 d-flex align-items-end">
+                <div class="col-lg-2 d-flex align-items-end">
                     <button id="activityReset" type="button" class="btn btn-sm btn-outline-secondary btn-block">
-                        <i class="fas fa-undo mr-1"></i> Reset filter
+                        <i class="fas fa-undo mr-1"></i> Reset
                     </button>
                 </div>
             </div>
+
+            <form method="GET" action="{{ route('activity-logs.index') }}" id="activityServerFilters">
+                <div class="form-row">
+                    <div class="col-lg-3 mb-2 mb-lg-0">
+                        <label for="activityEmail" class="small font-weight-bold">Email pengguna</label>
+                        <select id="activityEmail" name="email" class="form-control form-control-sm">
+                            <option value="">Semua email</option>
+                            @foreach($emails as $email)
+                                <option value="{{ $email }}" @selected($selectedEmail === $email)>{{ $email }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-lg-3 mb-2 mb-lg-0">
+                        <label for="activityDivision" class="small font-weight-bold">Divisi</label>
+                        <select id="activityDivision" name="division" class="form-control form-control-sm">
+                            <option value="">Semua divisi</option>
+                            @foreach($divisions as $division)
+                                <option value="{{ $division->id }}" @selected($selectedDivision === (string) $division->id)>{{ $division->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-lg-3 mb-2 mb-lg-0">
+                        <label for="activityStartDate" class="small font-weight-bold">Dari tanggal</label>
+                        <input id="activityStartDate" name="start_date" type="date" value="{{ $startDate }}" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-lg-3">
+                        <label for="activityEndDate" class="small font-weight-bold">Sampai tanggal</label>
+                        <input id="activityEndDate" name="end_date" type="date" value="{{ $endDate }}" class="form-control form-control-sm">
+                    </div>
+                </div>
+            </form>
         </div>
 
         <div class="card-body p-0">
@@ -220,7 +240,13 @@
                 @php
                     $startPage = max(1, $currentPage - 2);
                     $endPage = min($lastPage, $currentPage + 2);
-                    $pageQuery = fn($page) => array_filter(['page' => $page, 'email' => $selectedEmail ?: null]);
+                    $pageQuery = fn($page) => array_filter([
+                        'page' => $page,
+                        'email' => $selectedEmail ?: null,
+                        'division' => $selectedDivision ?: null,
+                        'start_date' => $startDate ?: null,
+                        'end_date' => $endDate ?: null,
+                    ]);
                 @endphp
                 <nav aria-label="Pagination activity log">
                     <ul class="pagination pagination-sm activity-pagination mb-0">
@@ -322,11 +348,21 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        if (event.target.matches('#activityEmail')) {
+        if (event.target.matches('#activityEmail, #activityDivision, #activityStartDate, #activityEndDate')) {
+            const form = document.getElementById('activityServerFilters');
             const url = new URL(@json(route('activity-logs.index')), window.location.origin);
-            if (event.target.value) url.searchParams.set('email', event.target.value);
+
+            new FormData(form).forEach(function (value, key) {
+                if (value) url.searchParams.set(key, value);
+            });
+
             loadActivityPage(url.toString());
         }
+    });
+
+    document.addEventListener('submit', function (event) {
+        if (!event.target.matches('#activityServerFilters')) return;
+        event.preventDefault();
     });
 
     document.addEventListener('click', function (event) {
@@ -341,8 +377,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const reset = event.target.closest('#activityReset');
         if (!reset) return;
 
-        const email = document.getElementById('activityEmail');
-        if (email && email.value) {
+        const serverFilters = document.querySelectorAll('#activityServerFilters select, #activityServerFilters input');
+        const hasServerFilter = Array.from(serverFilters).some(function (field) { return field.value; });
+        if (hasServerFilter) {
             loadActivityPage(@json(route('activity-logs.index')));
             return;
         }

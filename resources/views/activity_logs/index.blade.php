@@ -352,6 +352,11 @@ document.addEventListener('DOMContentLoaded', function () {
             const form = document.getElementById('activityServerFilters');
             const url = new URL(@json(route('activity-logs.index')), window.location.origin);
 
+            if (event.target.matches('#activityDivision')) {
+                const email = document.getElementById('activityEmail');
+                if (email) email.value = '';
+            }
+
             new FormData(form).forEach(function (value, key) {
                 if (value) url.searchParams.set(key, value);
             });

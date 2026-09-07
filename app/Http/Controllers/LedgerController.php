@@ -826,78 +826,208 @@ class LedgerController extends Controller
     public function jurnal_penutup(Request $request, TrialBalanceService $trialBalanceService, $id)
     {
         $periode = $request->get('periode', date('Y-m'));
-        $lrData = $this->getLabaRugiData($request, $trialBalanceService, $id);
-        // Jika tidak ada data, kirim variabel kosong dengan nilai 0
-        $title = "Jurnal Penutup";
-        $isLocked = DB::table('period_locks')
+        if (!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $periode)) {
+            $periode = date('Y-m');
+        }
+
+        $title = 'Jurnal Tutup Akun';
+        $isPeriodLocked = DB::table('period_locks')
             ->where('periode', $periode)
             ->where('perusahaan', $id)
             ->where('is_locked', true)
             ->exists();
-        
-        if (empty($lrData['data'])) {
-            return view('finance.jurnal_penutup', [
-                'periode' => $periode, 'data' => [], 'modals' => 0, 'pendapatan' => 0, 
-                'jumlah' => 0, 'totalDebet' => 0, 'totalKredit' => 0, 'lr_balance' => 0,
-                'title' => $title, 'isLocked' => $isLocked, 'id' => $id
-            ]);
-        }
 
+        $accounts = DB::table('chart_of_account')
+            ->where('perusahaan', $id)
+            ->where('is_active', true)
+            ->whereIn(DB::raw("SUBSTRING(CAST(kode AS TEXT), 1, 1)"), ['4', '5', '6'])
+            ->orderBy('kode')
+            ->get();
 
-        $modal = $lrData['totals']['debit'] - $lrData['totals']['kredit'];
-        $pendapatans = $lrData['totals']['kredit'];
-        $data = $lrData['data'];
-        $totalDebetData = collect($data)->sum('debit');
-        $totalKreditData = collect($data)->sum('kredit');
-        $jumlah = $totalDebetData + $totalKreditData;
-        
-        // Hitung total keseluruhan
-        $totalDebet = abs($modal < 0 ? $modal : 0) + abs($pendapatans) + abs($lrData['balance']) + $totalKreditData;
-        $totalKredit = abs($modal >= 0 ? $modal : 0) + abs($pendapatans) + abs($lrData['balance']) + $totalDebetData;
-                        
+        $closings = DB::table('account_closings as ac')
+            ->join('chart_of_account as coa', 'ac.chart_of_account_id', '=', 'coa.id')
+            ->join('chart_of_account as equity', 'ac.equity_account_id', '=', 'equity.id')
+            ->where('ac.perusahaan', $id)
+            ->where('ac.periode', $periode)
+            ->select('ac.*', 'coa.kode', 'coa.nama_akun', 'equity.kode as equity_kode', 'equity.nama_akun as equity_nama')
+            ->orderBy('ac.closing_date')
+            ->orderBy('coa.kode')
+            ->get();
+
         return view('finance.jurnal_penutup', [
-            'periode' => $periode, 'pendapatan' => $pendapatans, 'totals' => $lrData['totals'],
-            'lr_balance' => $lrData['balance'], 'modals' => $modal, 'data' => $data,
-            'totalKredit' => $totalKredit, 'totalDebet' => $totalDebet, 'jumlah' => $jumlah,
-            'title' => $title, 'isLocked' => $isLocked, 'id' => $id
+            'periode' => $periode,
+            'closingDate' => Carbon::createFromFormat('Y-m', $periode)->endOfMonth()->format('Y-m-d'),
+            'accounts' => $accounts,
+            'closings' => $closings,
+            'title' => $title,
+            'isPeriodLocked' => $isPeriodLocked,
+            'id' => $id,
         ]);
     }
 
-    public function lockPeriode(Request $request, $id)
+    public function closeAccount(Request $request, $id)
     {
-        $request->validate(['periode' => 'required']);
+        $validated = $request->validate([
+            'periode' => ['required', 'date_format:Y-m'],
+            'chart_of_account_id' => ['required', 'integer'],
+            'keterangan' => ['nullable', 'string', 'max:255'],
+        ]);
 
-        $periode = $request->periode;
+        if ($this->isPeriodLocked($id, $validated['periode'])) {
+            return redirect()->back()->with('error', 'Periode ini sudah dikunci secara penuh dan tidak dapat diubah.');
+        }
 
-        // Ambil data status lama sebelum di-update (jika sudah ada) untuk keperluan log audit
-        $oldLock = DB::table('period_locks')->where('periode', $periode)->first();
+        $account = DB::table('chart_of_account')
+            ->where('id', $validated['chart_of_account_id'])
+            ->where('perusahaan', $id)
+            ->where('is_active', true)
+            ->first();
 
-        // Lakukan update atau insert status kunci periode
-        DB::table('period_locks')->updateOrInsert(
-            ['periode' => $periode],
-            [
-                'is_locked'  => true,
-                'locked_at'  => now(),
-                'locked_by'  => Auth::id(),
-                'updated_at' => now(),
-                'created_at' => $oldLock ? $oldLock->created_at : now(),
-                'perusahaan' => $id
-            ]
+        if (!$account || !in_array(substr((string) $account->kode, 0, 1), ['4', '5', '6'])) {
+            return redirect()->back()->with('error', 'Akun yang dapat ditutup hanya akun pendapatan dan beban.');
+        }
+
+        $worksheet = $this->getWorksheetData($id, $validated['periode'], $this->trialBalanceService);
+        $row = collect($worksheet['worksheetData'])->firstWhere('kode', $account->kode);
+
+        if (!$row || ((float) $row['lr_debit'] == 0 && (float) $row['lr_kredit'] == 0)) {
+            return redirect()->back()->with('error', 'Akun ini tidak memiliki saldo yang dapat ditutup.');
+        }
+
+        $equity = DB::table('chart_of_account')
+            ->where('perusahaan', $id)
+            ->where('is_active', true)
+            ->where('kode', 301)
+            ->first()
+            ?? DB::table('chart_of_account')->where('perusahaan', $id)->where('is_active', true)->where('kode', 'like', '3%')->orderBy('kode')->first();
+
+        if (!$equity) {
+            return redirect()->back()->with('error', 'Akun modal/ekuitas belum tersedia.');
+        }
+
+        $nextPeriod = Carbon::createFromFormat('Y-m', $validated['periode'])->addMonth()->format('Y-m');
+        $existingNext = DB::table('opening_balances')
+            ->where('periode', $nextPeriod)
+            ->where('chart_of_account_id', $account->id)
+            ->first();
+
+        try {
+            DB::transaction(function () use ($id, $validated, $account, $equity, $row, $nextPeriod, $existingNext) {
+                DB::table('account_closings')->insert([
+                    'perusahaan' => $id,
+                    'periode' => $validated['periode'],
+                    'closing_date' => Carbon::createFromFormat('Y-m', $validated['periode'])->endOfMonth()->toDateString(),
+                    'chart_of_account_id' => $account->id,
+                    'equity_account_id' => $equity->id,
+                    'saldo_sebelum_tutup' => (float) $row['lr_kredit'] - (float) $row['lr_debit'],
+                    'debit' => (float) $row['lr_kredit'],
+                    'kredit' => (float) $row['lr_debit'],
+                    'dampak_laba_rugi' => (float) $row['lr_kredit'] - (float) $row['lr_debit'],
+                    'saldo_awal_berikutnya_sudah_ada' => (bool) $existingNext,
+                    'saldo_awal_berikutnya_lama' => $existingNext->saldo ?? null,
+                    'keterangan' => $validated['keterangan'] ?: 'Penutupan saldo akun ' . $account->nama_akun,
+                    'created_by' => Auth::id(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                DB::table('opening_balances')->updateOrInsert(
+                    ['periode' => $nextPeriod, 'chart_of_account_id' => $account->id],
+                    ['saldo' => 0, 'perusahaan' => $id, 'updated_at' => now(), 'created_at' => $existingNext->created_at ?? now()]
+                );
+
+                $this->refreshClosingEquityBalance($id, $validated['periode'], $equity);
+            });
+        } catch (\Illuminate\Database\QueryException $exception) {
+            return redirect()->back()->with('error', 'Akun ini sudah ditutup pada periode tersebut.');
+        }
+
+        AuditService::log('CREATED', 'Jurnal Tutup Akun', 'Menutup akun ' . $account->kode . ' - ' . $account->nama_akun . ' periode ' . $validated['periode']);
+
+        return redirect()
+            ->route('Ledger.jurnal_penutup', ['id' => $id, 'periode' => $validated['periode']])
+            ->with('success', 'Akun ' . $account->nama_akun . ' berhasil ditutup pada periode ' . $validated['periode'] . '.');
+    }
+
+    public function updateAccountClosing(Request $request, $id, $closingId)
+    {
+        $validated = $request->validate(['keterangan' => ['required', 'string', 'max:255']]);
+        $closing = DB::table('account_closings')->where('id', $closingId)->where('perusahaan', $id)->first();
+
+        if (!$closing || $this->isPeriodLocked($id, $closing->periode)) {
+            return redirect()->back()->with('error', 'Jurnal tutup akun tidak dapat diubah.');
+        }
+
+        DB::table('account_closings')->where('id', $closingId)->update(['keterangan' => $validated['keterangan'], 'updated_at' => now()]);
+        return redirect()
+            ->route('Ledger.jurnal_penutup', ['id' => $id, 'periode' => $closing->periode])
+            ->with('success', 'Keterangan jurnal tutup akun berhasil diperbarui.');
+    }
+
+    public function deleteAccountClosing($id, $closingId)
+    {
+        $closing = DB::table('account_closings')->where('id', $closingId)->where('perusahaan', $id)->first();
+
+        if (!$closing || $this->isPeriodLocked($id, $closing->periode)) {
+            return redirect()->back()->with('error', 'Jurnal tutup akun tidak dapat dibatalkan.');
+        }
+
+        $nextPeriod = Carbon::createFromFormat('Y-m', $closing->periode)->addMonth()->format('Y-m');
+        $equity = DB::table('chart_of_account')->where('id', $closing->equity_account_id)->first();
+
+        DB::transaction(function () use ($id, $closing, $nextPeriod, $equity) {
+            DB::table('account_closings')->where('id', $closing->id)->delete();
+
+            if ($closing->saldo_awal_berikutnya_sudah_ada) {
+                DB::table('opening_balances')
+                    ->where('periode', $nextPeriod)
+                    ->where('chart_of_account_id', $closing->chart_of_account_id)
+                    ->update(['saldo' => $closing->saldo_awal_berikutnya_lama, 'updated_at' => now()]);
+            } else {
+                DB::table('opening_balances')
+                    ->where('periode', $nextPeriod)
+                    ->where('chart_of_account_id', $closing->chart_of_account_id)
+                    ->delete();
+            }
+
+            $this->refreshClosingEquityBalance($id, $closing->periode, $equity);
+        });
+
+        return redirect()
+            ->route('Ledger.jurnal_penutup', ['id' => $id, 'periode' => $closing->periode])
+            ->with('success', 'Penutupan akun berhasil dibatalkan dan saldo awal dipulihkan.');
+    }
+
+    private function refreshClosingEquityBalance($id, $periode, $equity): void
+    {
+        $worksheet = $this->getWorksheetData($id, $periode, $this->trialBalanceService);
+        $equityRow = collect($worksheet['worksheetData'])->firstWhere('kode', $equity->kode);
+        $isDebit = strtoupper((string) $equity->type) === 'D';
+        $baseBalance = $equityRow
+            ? ($isDebit
+                ? (float) $equityRow['n_debit'] - (float) $equityRow['n_kredit']
+                : (float) $equityRow['n_kredit'] - (float) $equityRow['n_debit'])
+            : 0;
+        $closedResult = (float) DB::table('account_closings')
+            ->where('perusahaan', $id)
+            ->where('periode', $periode)
+            ->where('equity_account_id', $equity->id)
+            ->sum('dampak_laba_rugi');
+        $nextPeriod = Carbon::createFromFormat('Y-m', $periode)->addMonth()->format('Y-m');
+
+        DB::table('opening_balances')->updateOrInsert(
+            ['periode' => $nextPeriod, 'chart_of_account_id' => $equity->id],
+            ['saldo' => $baseBalance + $closedResult, 'perusahaan' => $id, 'updated_at' => now(), 'created_at' => now()]
         );
+    }
 
-        // Ambil data terbaru setelah proses
-        $newLock = DB::table('period_locks')->where('periode', $periode)->first();
-
-        // [BARU] Catat ke Audit Trail
-        AuditService::log(
-            'UPDATED',
-            'Periode Akuntansi',
-            'Menutup / Mengunci periode akuntansi bulan: ' . $periode,
-            $oldLock ? (array) $oldLock : null,
-            (array) $newLock
-        );
-
-        return redirect()->back()->with('success', 'Periode ' . $periode . ' berhasil ditutup.');
+    private function isPeriodLocked($id, $periode): bool
+    {
+        return DB::table('period_locks')
+            ->where('perusahaan', $id)
+            ->where('periode', $periode)
+            ->where('is_locked', true)
+            ->exists();
     }
 
     private function getLabaRugiData($request, $trialBalanceService, $id)

@@ -65,7 +65,7 @@ class GeneralJournalService
                     ->get();
     }
 
-    private function validatePeriodLock(string $dateString)
+    private function validatePeriodLock(string $dateString, $companyId = null)
     {
         $txDate = Carbon::parse($dateString);
 
@@ -78,6 +78,7 @@ class GeneralJournalService
 
         $isLocked = DB::table('period_locks')
             ->where('is_locked', true)
+            ->when($companyId, fn ($query) => $query->where('perusahaan', $companyId))
             ->where(function ($query) use ($periodWithZero, $periodWithoutZero) {
                 $query->where('periode', $periodWithZero)
                     ->orWhere('periode', $periodWithoutZero);
@@ -93,6 +94,29 @@ class GeneralJournalService
         }
     }
 
+    private function validateClosedAccounts(string $dateString, $companyId, array $accountIds): void
+    {
+        if (empty($accountIds)) {
+            return;
+        }
+
+        $periode = Carbon::parse($dateString)->format('Y-m');
+        $closedAccounts = DB::table('account_closings as ac')
+            ->join('chart_of_account as coa', 'ac.chart_of_account_id', '=', 'coa.id')
+            ->where('ac.perusahaan', $companyId)
+            ->where('ac.periode', $periode)
+            ->whereIn('ac.chart_of_account_id', array_unique($accountIds))
+            ->pluck('coa.nama_akun')
+            ->all();
+
+        if (!empty($closedAccounts)) {
+            throw new Exception(
+                'Akses Ditolak: akun ' . implode(', ', $closedAccounts) .
+                ' sudah ditutup pada periode ' . $periode . '.'
+            );
+        }
+    }
+
     /**
      * Memproses Penyimpanan Transaksi Jurnal (Header + Detail)
      */
@@ -100,7 +124,12 @@ class GeneralJournalService
     {
         // 1. [BARU] PROTEKSI KUNCI PERIODE BULANAN
         // Memastikan user tidak memasukkan transaksi baru bertanggal bulan lalu/lampau
-        $this->validatePeriodLock($data['tgl_transaksi']);
+        $this->validatePeriodLock($data['tgl_transaksi'], $data['perusahaan']);
+        $this->validateClosedAccounts(
+            $data['tgl_transaksi'],
+            $data['perusahaan'],
+            array_column($data['items'], 'chart_of_account_id')
+        );
 
         // 2. Ambil array items detail
         $items = $data['items'];
@@ -204,8 +233,18 @@ class GeneralJournalService
 
         // 3. [BARU] PROTEKSI KUNCI PERIODE BULANAN
         // Cek apakah tanggal lama (di DB) atau tanggal baru (dari Form) berasal dari bulan lalu
-        $this->validatePeriodLock($currentJournal->tgl_transaksi);
-        $this->validatePeriodLock($data['tgl_transaksi']);
+        $this->validatePeriodLock($currentJournal->tgl_transaksi, $currentJournal->perusahaan);
+        $this->validatePeriodLock($data['tgl_transaksi'], $data['perusahaan']);
+        $oldAccountIds = DB::table('general_journal_details')
+            ->where('general_journal_id', $id)
+            ->pluck('chart_of_account_id')
+            ->all();
+        $this->validateClosedAccounts($currentJournal->tgl_transaksi, $currentJournal->perusahaan, $oldAccountIds);
+        $this->validateClosedAccounts(
+            $data['tgl_transaksi'],
+            $data['perusahaan'],
+            array_column($data['items'], 'chart_of_account_id')
+        );
 
         // 4. Cek Validasi Logika Akuntansi (Apakah Seimbang?)
         $totalDebit  = 0;
@@ -266,10 +305,17 @@ class GeneralJournalService
     public function deleteJournal(int $id)
     {
         // 1. Cek keberadaan data sebelum dieksekusi
-        $journalExists = DB::table('general_journals')->where('id', $id)->exists();
-        if (!$journalExists) {
+        $journal = DB::table('general_journals')->where('id', $id)->first();
+        if (!$journal) {
             throw new Exception("Data jurnal tidak ditemukan atau sudah dihapus sebelumnya.");
         }
+
+        $this->validatePeriodLock($journal->tgl_transaksi, $journal->perusahaan);
+        $accountIds = DB::table('general_journal_details')
+            ->where('general_journal_id', $id)
+            ->pluck('chart_of_account_id')
+            ->all();
+        $this->validateClosedAccounts($journal->tgl_transaksi, $journal->perusahaan, $accountIds);
 
         // 2. Jalankan DB Transaction demi keamanan data pembukuan
         DB::transaction(function () use ($id) {

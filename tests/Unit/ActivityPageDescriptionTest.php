@@ -52,6 +52,25 @@ class ActivityPageDescriptionTest extends TestCase
         );
     }
 
+    public function test_stored_route_suffix_is_replaced_with_human_page_name(): void
+    {
+        $description = (new ActivityPageDescription)->describeStoredLog([
+            'action' => 'VISIT',
+            'description' => 'Mengunjungi halaman hc_daily.index',
+            'new_data' => ['route_name' => 'hc_daily.index'],
+        ]);
+
+        $this->assertSame('Masuk ke halaman Daily Work', $description);
+
+        $activityLog = (new ActivityPageDescription)->describeStoredLog([
+            'action' => 'VISIT',
+            'description' => 'Mengunjungi halaman activity-logs.index',
+            'new_data' => ['route_name' => 'activity-logs.index'],
+        ]);
+
+        $this->assertSame('Masuk ke halaman Activity Log', $activityLog);
+    }
+
     private function requestWithRoute(string $uri, string $name, array $parameters = []): Request
     {
         $request = Request::create($uri);

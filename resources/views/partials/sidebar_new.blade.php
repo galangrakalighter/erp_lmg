@@ -632,7 +632,7 @@
                             
                             <div class="client-item-wrapper mb-2">
                                 <a class="client-dropdown-link-out-div {{ Route::is('Ledger.jurnal_penutup') ? 'active' : '' }}" href="{{ route('Ledger.jurnal_penutup', $pe->id) }}">
-                                    <span>Jurnal Penutup</span>
+                                    <span>Jurnal Tutup Akun</span>
                                 </a>
                             </div>
 

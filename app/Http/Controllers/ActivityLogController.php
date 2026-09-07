@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Division;
 use App\Models\User;
 use App\Services\ActivityLogFormatter;
+use App\Services\ActivityPageDescription;
 use App\Services\FirestoreService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -17,6 +18,7 @@ class ActivityLogController extends Controller
         Request $request,
         FirestoreService $firestore,
         ActivityLogFormatter $formatter,
+        ActivityPageDescription $pageDescription,
     ): View {
         $logs = [];
         $error = null;
@@ -26,6 +28,7 @@ class ActivityLogController extends Controller
         $lastPage = 1;
         $actionCounts = [];
         $uniqueUsers = 0;
+        $selectedDivision = $request->string('division')->toString();
 
         try {
             $collection = (string) config('firestore.activity_log_collection', 'logs');
@@ -54,7 +57,6 @@ class ActivityLogController extends Controller
                     'created_at desc',
                 );
             }
-            $selectedDivision = $request->string('division')->toString();
             $divisionEmails = $selectedDivision === ''
                 ? []
                 : User::query()
@@ -71,11 +73,12 @@ class ActivityLogController extends Controller
                 $divisionEmails,
             );
             $allLogs = array_map(
-                function (array $document) use ($formatter): array {
+                function (array $document) use ($formatter, $pageDescription): array {
                     $log = array_merge(
                         ['document_id' => $document['id']],
                         $document['data'] ?? [],
                     );
+                    $log['description'] = $pageDescription->describeStoredLog($log);
                     $log['human_detail'] = $formatter->format($log);
 
                     return $log;
@@ -96,11 +99,20 @@ class ActivityLogController extends Controller
             $error = 'Activity log belum dapat dimuat. Periksa koneksi Firestore pada server.';
         }
 
+        $emailQuery = User::query()->orderBy('email');
+
+        if ($selectedDivision !== '') {
+            $emailQuery->whereHas(
+                'userDivisions',
+                fn ($query) => $query->where('division_id', $selectedDivision),
+            );
+        }
+
         return view('activity_logs.index', [
             'title' => 'Activity Log',
             'logs' => $logs,
             'error' => $error,
-            'emails' => User::query()->orderBy('email')->pluck('email'),
+            'emails' => $emailQuery->pluck('email'),
             'divisions' => Division::query()->orderBy('name')->get(['id', 'name']),
             'selectedEmail' => $request->string('email')->toString(),
             'selectedDivision' => $request->string('division')->toString(),

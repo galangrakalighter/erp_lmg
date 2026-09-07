@@ -24,8 +24,8 @@ class TrialBalanceService
                 'coa.type',
                 'coa.category',
                 'ob.saldo as opening_balance',
-                DB::raw('COALESCE(SUM(ji.debit), 0) as total_debit'),
-                DB::raw('COALESCE(SUM(ji.kredit), 0) as total_kredit')
+                DB::raw('COALESCE(SUM(CASE WHEN ju.id IS NOT NULL THEN ji.debit ELSE 0 END), 0) as total_debit'),
+                DB::raw('COALESCE(SUM(CASE WHEN ju.id IS NOT NULL THEN ji.kredit ELSE 0 END), 0) as total_kredit')
             ])
             ->leftJoin('public.opening_balances as ob', function($join) use ($periode) {
                 $join->on('coa.id', '=', 'ob.chart_of_account_id')

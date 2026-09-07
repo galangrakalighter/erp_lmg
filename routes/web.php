@@ -279,7 +279,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/neraca-lajur/{id}', [App\Http\Controllers\LedgerController::class, 'neracaLajur'])->name('Ledger.neraca_lajur');
     Route::get('/arus-kas/{id}', [App\Http\Controllers\LedgerController::class, 'arus_kas'])->name('Ledger.arus_kas');
     Route::get('/jurnal-penutup/{id}', [App\Http\Controllers\LedgerController::class, 'jurnal_penutup'])->name('Ledger.jurnal_penutup');
-    Route::post('/jurnal-tutup/{id}', [App\Http\Controllers\LedgerController::class, 'lockPeriode'])->name('Ledger.lock_periode');
+    Route::post('/jurnal-tutup/{id}', [App\Http\Controllers\LedgerController::class, 'closeAccount'])->name('Ledger.close_account');
+    Route::put('/jurnal-tutup/{id}/{closingId}', [App\Http\Controllers\LedgerController::class, 'updateAccountClosing'])->name('Ledger.update_account_closing');
+    Route::delete('/jurnal-tutup/{id}/{closingId}', [App\Http\Controllers\LedgerController::class, 'deleteAccountClosing'])->name('Ledger.delete_account_closing');
     Route::get('finance/report/worksheet/export-laba-rugi/{id}', [App\Http\Controllers\LedgerController::class, 'export_laba_rugi']);
     Route::get('finance/report/worksheet/export-neraca/{id}', [App\Http\Controllers\LedgerController::class, 'export_neraca']);
     Route::get('finance/report/cash-flow/export/{id}', [App\Http\Controllers\LedgerController::class, 'export_cash_flow']);

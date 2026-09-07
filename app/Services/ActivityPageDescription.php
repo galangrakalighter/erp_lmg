@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\MasterFolder;
 use App\Models\MasterFolderFile;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class ActivityPageDescription
 {
@@ -43,7 +44,58 @@ class ActivityPageDescription
             );
         }
 
-        return 'Mengunjungi halaman '.($routeName ?: '/'.ltrim($request->path(), '/'));
+        return 'Masuk ke halaman '.$this->pageName($routeName, $request);
+    }
+
+    public function describeStoredLog(array $log): string
+    {
+        $description = (string) ($log['description'] ?? 'Aktivitas pengguna');
+
+        if (strtoupper((string) ($log['action'] ?? '')) !== 'VISIT') {
+            return $description;
+        }
+
+        $routeName = data_get($log, 'new_data.route_name');
+
+        if (! is_string($routeName) || $routeName === '') {
+            return $description;
+        }
+
+        return 'Masuk ke halaman '.$this->pageName($routeName);
+    }
+
+    private function pageName(?string $routeName, ?Request $request = null): string
+    {
+        if (! $routeName) {
+            $path = preg_replace('#/\d+(?=/|$)#', '', '/'.ltrim($request?->path() ?? '', '/'));
+
+            return Str::headline(trim($path, '/') ?: 'Dashboard');
+        }
+
+        $knownPages = [
+            'home' => 'Dashboard',
+            'activity-logs' => 'Activity Log',
+            'hc_daily' => 'Daily Work',
+            'hc_overview' => 'HC Overview',
+            'overview' => 'HC Dashboard',
+            'manajemen_user' => 'Manajemen User',
+            'master-folder' => 'Master Folder',
+            'file-master' => 'File Master',
+        ];
+        $segments = explode('.', $routeName);
+        $resource = $segments[0];
+
+        if (isset($knownPages[$resource])) {
+            return $knownPages[$resource];
+        }
+
+        $routeActions = ['index', 'show', 'create', 'edit', 'store', 'update', 'destroy'];
+        $segments = array_values(array_filter(
+            $segments,
+            fn (string $segment): bool => ! in_array(strtolower($segment), $routeActions, true),
+        ));
+
+        return Str::headline(implode(' ', $segments) ?: $resource);
     }
 
     private function folderName(Request $request): string

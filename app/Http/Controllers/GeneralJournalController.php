@@ -41,6 +41,7 @@ class GeneralJournalController extends Controller
         // Cek status lock
         $isLocked = DB::table('period_locks')
             ->where('periode', $periode)
+            ->where('perusahaan', $id)
             ->where('is_locked', true)
             ->exists();
 
@@ -60,6 +61,7 @@ class GeneralJournalController extends Controller
         $periode = date('Y-m', strtotime($request->tgl_transaksi));
         $isLocked = DB::table('period_locks')
             ->where('periode', $periode)
+            ->where('perusahaan', $request->perusahaan)
             ->where('is_locked', true)
             ->exists();
 

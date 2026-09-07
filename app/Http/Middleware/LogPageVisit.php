@@ -3,13 +3,17 @@
 namespace App\Http\Middleware;
 
 use App\Services\ActivityLogService;
+use App\Services\ActivityPageDescription;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class LogPageVisit
 {
-    public function __construct(private readonly ActivityLogService $activityLog) {}
+    public function __construct(
+        private readonly ActivityLogService $activityLog,
+        private readonly ActivityPageDescription $pageDescription,
+    ) {}
 
     public function handle(Request $request, Closure $next): Response
     {
@@ -21,7 +25,7 @@ class LogPageVisit
             $this->activityLog->record([
                 'action' => 'VISIT',
                 'module' => $this->moduleFromRequest($request),
-                'description' => 'Mengunjungi halaman '.($routeName ?: '/'.ltrim($request->path(), '/')),
+                'description' => $this->pageDescription->describe($request),
                 'target_name' => $routeName ?: $request->path(),
                 'target_type' => 'page',
                 'old_data' => [],
@@ -41,6 +45,7 @@ class LogPageVisit
     {
         return $request->user() !== null
             && $request->isMethod('GET')
+            && ! $request->ajax()
             && ! $request->expectsJson()
             && ! $request->is('up')
             && $response->getStatusCode() < 400;

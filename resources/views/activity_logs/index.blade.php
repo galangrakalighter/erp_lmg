@@ -1,15 +1,66 @@
 @extends('layout.app')
 
 @section('content')
-<div class="container-fluid px-4">
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+<style>
+    .activity-page { --activity-primary: #4f46e5; --activity-ink: #18212f; }
+    .activity-hero { background: linear-gradient(135deg, #312e81 0%, #4f46e5 55%, #7c3aed 100%); border-radius: 18px; color: #fff; padding: 1.4rem 1.6rem; box-shadow: 0 14px 35px rgba(79,70,229,.18); }
+    .activity-hero .admin-pill { background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.22); border-radius: 999px; padding: .45rem .8rem; }
+    .activity-stat { background: #fff; border: 1px solid #edf0f6; border-radius: 14px; padding: 1rem 1.1rem; box-shadow: 0 7px 20px rgba(31,41,55,.05); height: 100%; }
+    .activity-stat-icon { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; }
+    .activity-panel { border: 0; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(31,41,55,.07); }
+    .activity-filters { background: linear-gradient(180deg,#fff,#fafbff); padding: 1.15rem; border-bottom: 1px solid #eef0f5; }
+    .activity-filters .form-control, .activity-filters .input-group-text { border-color: #e2e6ef; min-height: 38px; }
+    .activity-table thead th { border: 0; background: #f7f8fc; color: #64748b; font-size: .72rem; letter-spacing: .055em; text-transform: uppercase; padding: .9rem 1rem; }
+    .activity-table tbody td { border-color: #f0f2f7; padding: 1rem; vertical-align: top; color: var(--activity-ink); }
+    .activity-table tbody tr:hover { background: #fafaff; }
+    .activity-avatar { width: 38px; height: 38px; flex: 0 0 38px; border-radius: 12px; display: grid; place-items: center; color: #4338ca; background: #eef2ff; font-weight: 800; }
+    .activity-badge { border-radius: 999px; padding: .38rem .65rem; font-size: .68rem; letter-spacing: .04em; }
+    .activity-module { border-radius: 7px; padding: .25rem .45rem; color: #475569; background: #f1f5f9; font-size: .75rem; }
+    .activity-detail { background: #f8fafc; border-left: 3px solid #c7d2fe; border-radius: 7px; padding: .65rem .75rem; }
+    .activity-pagination .page-link { border: 0; border-radius: 9px !important; margin: 0 .15rem; color: #475569; min-width: 36px; text-align: center; }
+    .activity-pagination .active .page-link { background: var(--activity-primary); box-shadow: 0 5px 12px rgba(79,70,229,.25); }
+    .activity-page { transition: opacity .18s ease, transform .18s ease; }
+    .activity-page.is-loading { opacity: .52; transform: translateY(2px); pointer-events: none; }
+    @media (max-width: 767px) { .activity-hero { padding: 1.1rem; } .activity-table tbody td { padding: .75rem; } }
+</style>
+
+<div class="container-fluid px-4 activity-page" id="activityDashboardContent">
+    <div class="activity-hero d-sm-flex align-items-center justify-content-between mb-4">
         <div>
-            <h1 class="h3 mb-1 text-gray-800">Activity Log</h1>
-            <p class="mb-0 text-muted">Riwayat aktivitas seluruh akun. Halaman ini bersifat baca-saja.</p>
+            <div class="small text-uppercase mb-1" style="opacity:.72; letter-spacing:.12em">Monitoring sistem</div>
+            <h1 class="h3 mb-1 text-white">Activity Log</h1>
+            <p class="mb-0" style="opacity:.78">Pantau riwayat aktivitas seluruh akun dalam satu tempat.</p>
         </div>
-        <span class="badge badge-secondary px-3 py-2">
-            <i class="fas fa-lock mr-1"></i> Admin only
+        <span class="admin-pill mt-3 mt-sm-0">
+            <i class="fas fa-shield-alt mr-1"></i> Khusus Admin
         </span>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-6 col-xl-3 mb-3 mb-xl-0">
+            <div class="activity-stat d-flex align-items-center">
+                <div class="activity-stat-icon mr-3" style="background:#eef2ff;color:#4f46e5"><i class="fas fa-list-ul"></i></div>
+                <div><div class="small text-muted">Total Log</div><div class="h5 font-weight-bold mb-0">{{ number_format($total) }}</div></div>
+            </div>
+        </div>
+        <div class="col-6 col-xl-3 mb-3 mb-xl-0">
+            <div class="activity-stat d-flex align-items-center">
+                <div class="activity-stat-icon mr-3" style="background:#ecfdf5;color:#059669"><i class="fas fa-edit"></i></div>
+                <div><div class="small text-muted">Perubahan Data</div><div class="h5 font-weight-bold mb-0">{{ number_format(($actionCounts['CREATE'] ?? 0) + ($actionCounts['UPDATE'] ?? 0) + ($actionCounts['DELETE'] ?? 0)) }}</div></div>
+            </div>
+        </div>
+        <div class="col-6 col-xl-3">
+            <div class="activity-stat d-flex align-items-center">
+                <div class="activity-stat-icon mr-3" style="background:#eff6ff;color:#0284c7"><i class="fas fa-eye"></i></div>
+                <div><div class="small text-muted">Kunjungan</div><div class="h5 font-weight-bold mb-0">{{ number_format($actionCounts['VISIT'] ?? 0) }}</div></div>
+            </div>
+        </div>
+        <div class="col-6 col-xl-3">
+            <div class="activity-stat d-flex align-items-center">
+                <div class="activity-stat-icon mr-3" style="background:#fff7ed;color:#ea580c"><i class="fas fa-users"></i></div>
+                <div><div class="small text-muted">Akun Terdeteksi</div><div class="h5 font-weight-bold mb-0">{{ number_format($uniqueUsers) }}</div></div>
+            </div>
+        </div>
     </div>
 
     @if($error)
@@ -18,10 +69,10 @@
         </div>
     @endif
 
-    <div class="card shadow-sm mb-4">
-        <div class="card-body border-bottom bg-light">
+    <div class="card activity-panel mb-4">
+        <div class="activity-filters">
             <div class="form-row">
-                <div class="col-lg-6 mb-2 mb-lg-0">
+                <div class="col-lg-4 mb-2 mb-lg-0">
                     <label for="activitySearch" class="small font-weight-bold">Cari aktivitas</label>
                     <div class="input-group input-group-sm">
                         <div class="input-group-prepend">
@@ -31,6 +82,17 @@
                     </div>
                 </div>
                 <div class="col-lg-3 mb-2 mb-lg-0">
+                    <form method="GET" action="{{ route('activity-logs.index') }}">
+                        <label for="activityEmail" class="small font-weight-bold">Email pengguna</label>
+                        <select id="activityEmail" name="email" class="form-control form-control-sm">
+                            <option value="">Semua email</option>
+                            @foreach($emails as $email)
+                                <option value="{{ $email }}" @selected($selectedEmail === $email)>{{ $email }}</option>
+                            @endforeach
+                        </select>
+                    </form>
+                </div>
+                <div class="col-lg-2 mb-2 mb-lg-0">
                     <label for="activityAction" class="small font-weight-bold">Aksi</label>
                     <select id="activityAction" class="form-control form-control-sm">
                         <option value="">Semua aksi</option>
@@ -49,7 +111,7 @@
 
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover mb-0" id="activityTable">
+                <table class="table activity-table mb-0" id="activityTable">
                     <thead class="thead-light">
                         <tr>
                             <th class="text-nowrap">Waktu</th>
@@ -87,20 +149,22 @@
                             <tr data-activity-row data-action="{{ $action }}" data-search="{{ $searchable }}">
                                 <td class="small text-nowrap">{{ $displayTime }}</td>
                                 <td>
-                                    <div class="font-weight-bold">{{ $log['user_name'] ?? '-' }}</div>
-                                    <div class="small text-muted">{{ $log['email'] ?? '-' }}</div>
+                                    <div class="d-flex align-items-center">
+                                        <div class="activity-avatar mr-2">{{ strtoupper(substr($log['user_name'] ?? '?', 0, 1)) }}</div>
+                                        <div>
+                                            <div class="font-weight-bold">{{ $log['user_name'] ?? '-' }}</div>
+                                            <div class="small text-muted">{{ $log['email'] ?? '-' }}</div>
+                                        </div>
+                                    </div>
                                 </td>
-                                <td><span class="badge badge-{{ $badge }}">{{ $action }}</span></td>
-                                <td><code>{{ $log['module'] ?? '-' }}</code></td>
+                                <td><span class="badge activity-badge badge-{{ $badge }}">{{ $action }}</span></td>
+                                <td><span class="activity-module">{{ str_replace('_', ' ', $log['module'] ?? '-') }}</span></td>
                                 <td>
                                     <div>{{ $log['description'] ?? '-' }}</div>
-                                    @if(!empty($log['target_name']))
-                                        <div class="small text-muted">Target: {{ $log['target_name'] }}</div>
-                                    @endif
                                 </td>
                                 <td style="min-width: 300px">
                                     @if($log['human_detail'])
-                                        <div class="small">
+                                        <div class="small activity-detail">
                                             <div class="font-weight-bold mb-1">{{ $log['human_detail']['summary'] }}</div>
                                             @forelse($log['human_detail']['items'] as $item)
                                                 <div class="mb-1">
@@ -148,25 +212,58 @@
             </div>
         </div>
 
-        @if($nextPageToken)
-            <div class="card-footer bg-white text-right">
-                <a class="btn btn-sm btn-primary" href="{{ route('activity-logs.index', ['page_token' => $nextPageToken]) }}">
-                    Log berikutnya <i class="fas fa-chevron-right ml-1"></i>
-                </a>
+        <div class="card-footer bg-white d-flex flex-column flex-md-row justify-content-between align-items-center py-3">
+            <div class="small text-muted mb-2 mb-md-0">
+                Menampilkan <strong>{{ $from }}–{{ $to }}</strong> dari <strong>{{ number_format($total) }}</strong> log
             </div>
-        @endif
+            @if($lastPage > 1)
+                @php
+                    $startPage = max(1, $currentPage - 2);
+                    $endPage = min($lastPage, $currentPage + 2);
+                    $pageQuery = fn($page) => array_filter(['page' => $page, 'email' => $selectedEmail ?: null]);
+                @endphp
+                <nav aria-label="Pagination activity log">
+                    <ul class="pagination pagination-sm activity-pagination mb-0">
+                        <li class="page-item {{ $currentPage <= 1 ? 'disabled' : '' }}">
+                            <a class="page-link" href="{{ $currentPage > 1 ? route('activity-logs.index', $pageQuery($currentPage - 1)) : '#' }}" aria-label="Sebelumnya">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                        @if($startPage > 1)
+                            <li class="page-item"><a class="page-link" href="{{ route('activity-logs.index', $pageQuery(1)) }}">1</a></li>
+                            @if($startPage > 2)<li class="page-item disabled"><span class="page-link">…</span></li>@endif
+                        @endif
+                        @for($page = $startPage; $page <= $endPage; $page++)
+                            <li class="page-item {{ $page === $currentPage ? 'active' : '' }}">
+                                <a class="page-link" href="{{ route('activity-logs.index', $pageQuery($page)) }}">{{ $page }}</a>
+                            </li>
+                        @endfor
+                        @if($endPage < $lastPage)
+                            @if($endPage < $lastPage - 1)<li class="page-item disabled"><span class="page-link">…</span></li>@endif
+                            <li class="page-item"><a class="page-link" href="{{ route('activity-logs.index', $pageQuery($lastPage)) }}">{{ $lastPage }}</a></li>
+                        @endif
+                        <li class="page-item {{ $currentPage >= $lastPage ? 'disabled' : '' }}">
+                            <a class="page-link" href="{{ $currentPage < $lastPage ? route('activity-logs.index', $pageQuery($currentPage + 1)) : '#' }}" aria-label="Berikutnya">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            @endif
+        </div>
     </div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const search = document.getElementById('activitySearch');
-    const action = document.getElementById('activityAction');
-    const reset = document.getElementById('activityReset');
-    const rows = Array.from(document.querySelectorAll('[data-activity-row]'));
-    const noResult = document.getElementById('activityNoResult');
-
     function applyFilter() {
+        const search = document.getElementById('activitySearch');
+        const action = document.getElementById('activityAction');
+        const rows = Array.from(document.querySelectorAll('[data-activity-row]'));
+        const noResult = document.getElementById('activityNoResult');
+
+        if (!search || !action || !noResult) return;
+
         const term = search.value.trim().toLowerCase();
         const selectedAction = action.value;
         let visible = 0;
@@ -182,12 +279,84 @@ document.addEventListener('DOMContentLoaded', function () {
         noResult.classList.toggle('d-none', visible !== 0 || rows.length === 0);
     }
 
-    search.addEventListener('input', applyFilter);
-    action.addEventListener('change', applyFilter);
-    reset.addEventListener('click', function () {
+    async function loadActivityPage(url, addHistory = true) {
+        const container = document.getElementById('activityDashboardContent');
+        if (!container) return;
+
+        container.classList.add('is-loading');
+
+        try {
+            const response = await fetch(url, {
+                headers: {
+                    'Accept': 'text/html',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            if (!response.ok) throw new Error('Gagal memuat activity log.');
+
+            const html = await response.text();
+            const documentResult = new DOMParser().parseFromString(html, 'text/html');
+            const freshContent = documentResult.getElementById('activityDashboardContent');
+
+            if (!freshContent) throw new Error('Konten activity log tidak ditemukan.');
+
+            container.innerHTML = freshContent.innerHTML;
+            container.classList.remove('is-loading');
+
+            if (addHistory) window.history.pushState({ activityLog: true }, '', url);
+            container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } catch (error) {
+            container.classList.remove('is-loading');
+            window.location.href = url;
+        }
+    }
+
+    document.addEventListener('input', function (event) {
+        if (event.target.matches('#activitySearch')) applyFilter();
+    });
+
+    document.addEventListener('change', function (event) {
+        if (event.target.matches('#activityAction')) {
+            applyFilter();
+            return;
+        }
+
+        if (event.target.matches('#activityEmail')) {
+            const url = new URL(@json(route('activity-logs.index')), window.location.origin);
+            if (event.target.value) url.searchParams.set('email', event.target.value);
+            loadActivityPage(url.toString());
+        }
+    });
+
+    document.addEventListener('click', function (event) {
+        const paginationLink = event.target.closest('.activity-pagination a.page-link');
+        if (paginationLink) {
+            event.preventDefault();
+            if (paginationLink.closest('.disabled')) return;
+            loadActivityPage(paginationLink.href);
+            return;
+        }
+
+        const reset = event.target.closest('#activityReset');
+        if (!reset) return;
+
+        const email = document.getElementById('activityEmail');
+        if (email && email.value) {
+            loadActivityPage(@json(route('activity-logs.index')));
+            return;
+        }
+
+        const search = document.getElementById('activitySearch');
+        const action = document.getElementById('activityAction');
+
         search.value = '';
         action.value = '';
         applyFilter();
+    });
+
+    window.addEventListener('popstate', function () {
+        loadActivityPage(window.location.href, false);
     });
 });
 </script>

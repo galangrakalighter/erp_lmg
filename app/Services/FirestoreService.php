@@ -52,6 +52,44 @@ class FirestoreService
         return $this->decodeDocument($response->throw()->json());
     }
 
+    public function queryByField(
+        string $collection,
+        string $field,
+        mixed $value,
+        int $limit = 50,
+        ?string $orderBy = null,
+    ): array {
+        $structuredQuery = [
+            'from' => [['collectionId' => $collection]],
+            'where' => [
+                'fieldFilter' => [
+                    'field' => ['fieldPath' => $field],
+                    'op' => 'EQUAL',
+                    'value' => $this->encodeValue($value),
+                ],
+            ],
+            'limit' => min(max($limit, 1), 1000),
+        ];
+
+        if ($orderBy) {
+            [$fieldPath, $direction] = array_pad(preg_split('/\s+/', trim($orderBy), 2), 2, 'asc');
+            $structuredQuery['orderBy'] = [[
+                'field' => ['fieldPath' => $fieldPath],
+                'direction' => strtolower($direction) === 'desc' ? 'DESCENDING' : 'ASCENDING',
+            ]];
+        }
+
+        $response = $this->request()
+            ->post($this->runQueryUrl(), ['structuredQuery' => $structuredQuery])
+            ->throw()
+            ->json();
+
+        return array_values(array_map(
+            fn (array $item): array => $this->decodeDocument($item['document']),
+            array_filter($response, fn (array $item): bool => isset($item['document'])),
+        ));
+    }
+
     public function create(string $collection, array $data, ?string $documentId = null): array
     {
         $query = $documentId ? ['documentId' => $documentId] : [];
@@ -147,6 +185,15 @@ class FirestoreService
             rawurlencode($this->projectId()),
             $database,
             $encodedPath
+        );
+    }
+
+    private function runQueryUrl(): string
+    {
+        return sprintf(
+            'https://firestore.googleapis.com/v1/projects/%s/databases/%s/documents:runQuery',
+            rawurlencode($this->projectId()),
+            rawurlencode((string) config('firestore.database_id', '(default)')),
         );
     }
 

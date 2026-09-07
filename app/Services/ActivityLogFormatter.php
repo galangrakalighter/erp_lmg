@@ -2,13 +2,22 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Throwable;
 
 class ActivityLogFormatter
 {
     private const CRUD_ACTIONS = ['CREATE', 'UPDATE', 'DELETE'];
 
-    private const IGNORED_FIELDS = ['created_at', 'updated_at', 'deleted_at', 'password', 'remember_token'];
+    private const IGNORED_FIELDS = [
+        'id', 'created_at', 'updated_at', 'deleted_at', 'password', 'remember_token',
+        'stored_name', 'editor_content',
+    ];
+
+    private array $lookupCache = [];
+
+    private bool $formattingTask = false;
 
     public function format(array $log): ?array
     {
@@ -22,6 +31,25 @@ class ActivityLogFormatter
             ?? Str::headline((string) ($log['target_type'] ?? 'data'));
         $oldData = $this->filterData($log['old_data'] ?? []);
         $newData = $this->filterData($log['new_data'] ?? []);
+        $context = is_array($log['context'] ?? null) ? $log['context'] : [];
+        $this->formattingTask = ($log['target_type'] ?? null) === 'task'
+            || ($log['module'] ?? null) === 'task';
+
+        if ($this->formattingTask) {
+            $target = $newData['nama_task'] ?? $oldData['nama_task'] ?? $target;
+        }
+
+        if (($context['kind'] ?? null) === 'master_folder_file') {
+            return $this->formatMasterFolderFile($action, $context, $oldData, $newData);
+        }
+
+        if (($context['kind'] ?? null) === 'master_folder') {
+            return $this->formatMasterFolder($action, $context, $oldData, $newData);
+        }
+
+        if (($context['kind'] ?? null) === 'account_master_file') {
+            return $this->formatAccountMasterFile($action, $context, $oldData, $newData);
+        }
 
         return match ($action) {
             'CREATE' => [
@@ -39,14 +67,83 @@ class ActivityLogFormatter
         };
     }
 
+    private function formatMasterFolderFile(string $action, array $context, array $oldData, array $newData): array
+    {
+        $file = $context['file_name'] ?? 'file';
+        $folder = $context['folder_name'] ?? 'Master Folder';
+        $verb = match ($action) {
+            'CREATE' => 'Menambahkan',
+            'UPDATE' => 'Mengubah',
+            'DELETE' => 'Menghapus',
+        };
+        $connector = $action === 'DELETE' ? 'dari' : 'di';
+        $items = $action === 'UPDATE'
+            ? $this->changeItems($oldData, $newData)
+            : $this->attributeItems($action === 'DELETE' ? $oldData : $newData);
+
+        array_unshift($items, [
+            'label' => 'Master Folder',
+            'value' => $folder,
+            'url' => $context['folder_link'] ?? null,
+        ]);
+
+        return [
+            'summary' => "{$verb} file {$file} {$connector} folder {$folder}:",
+            'items' => $items,
+        ];
+    }
+
+    private function formatMasterFolder(string $action, array $context, array $oldData, array $newData): array
+    {
+        $folder = $context['folder_name'] ?? 'Master Folder';
+        $verb = match ($action) {
+            'CREATE' => 'Membuat',
+            'UPDATE' => 'Mengubah',
+            'DELETE' => 'Menghapus',
+        };
+        $items = $action === 'UPDATE'
+            ? $this->changeItems($oldData, $newData)
+            : $this->attributeItems($action === 'DELETE' ? $oldData : $newData);
+
+        return [
+            'summary' => "{$verb} Master Folder {$folder}:",
+            'items' => $items,
+        ];
+    }
+
+    private function formatAccountMasterFile(string $action, array $context, array $oldData, array $newData): array
+    {
+        $file = $context['file_name'] ?? 'file';
+        $owner = $context['owner_name'] ?? 'akun';
+        $verb = match ($action) {
+            'CREATE' => 'Menambahkan',
+            'UPDATE' => 'Mengubah',
+            'DELETE' => 'Menghapus',
+        };
+        $items = $action === 'UPDATE'
+            ? $this->changeItems($oldData, $newData)
+            : $this->attributeItems($action === 'DELETE' ? $oldData : $newData);
+
+        array_unshift($items, [
+            'label' => 'Folder akun',
+            'value' => $owner,
+            'url' => $context['folder_link'] ?? null,
+        ]);
+
+        return [
+            'summary' => "{$verb} file {$file} pada folder akun {$owner}:",
+            'items' => $items,
+        ];
+    }
+
     private function attributeItems(array $data): array
     {
         $items = [];
 
         foreach ($data as $field => $value) {
             $items[] = [
-                'label' => Str::headline((string) $field),
-                'value' => $this->displayValue($value),
+                'label' => $this->fieldLabel((string) $field),
+                'value' => $this->displayFieldValue((string) $field, $value),
                 'url' => $this->url($value),
             ];
         }
@@ -67,9 +164,9 @@ class ActivityLogFormatter
             }
 
             $items[] = [
-                'label' => Str::headline((string) $field),
-                'old' => $this->displayValue($old),
-                'new' => $this->displayValue($new),
+                'label' => $this->fieldLabel((string) $field),
+                'old' => $this->displayFieldValue((string) $field, $old),
+                'new' => $this->displayFieldValue((string) $field, $new),
                 'old_url' => $this->url($old),
                 'new_url' => $this->url($new),
             ];
@@ -86,9 +183,124 @@ class ActivityLogFormatter
 
         return array_filter(
             $data,
-            fn (string|int $field): bool => ! in_array(strtolower((string) $field), self::IGNORED_FIELDS, true),
+            fn (string|int $field): bool => ! in_array(strtolower((string) $field), self::IGNORED_FIELDS, true)
+                && ! str_ends_with(strtolower((string) $field), '_id'),
             ARRAY_FILTER_USE_KEY,
         );
+    }
+
+    private function displayFieldValue(string $field, mixed $value): string
+    {
+        if ($this->formattingTask) {
+            $resolved = $this->taskFieldValue($field, $value);
+
+            if ($resolved !== null) {
+                return $resolved;
+            }
+        }
+
+        if ($field === 'size' && is_numeric($value)) {
+            $bytes = (float) $value;
+
+            if ($bytes >= 1048576) {
+                return round($bytes / 1048576, 2).' MB';
+            }
+
+            if ($bytes >= 1024) {
+                return round($bytes / 1024, 2).' KB';
+            }
+
+            return (int) $bytes.' byte';
+        }
+
+        return $this->displayValue($value);
+    }
+
+    private function fieldLabel(string $field): string
+    {
+        if (! $this->formattingTask) {
+            return Str::headline($field);
+        }
+
+        return match ($field) {
+            'pic' => 'PIC',
+            'id_kpi' => 'KPI',
+            'priority' => 'Prioritas',
+            'divisi' => 'Divisi',
+            'project' => 'Project',
+            default => Str::headline($field),
+        };
+    }
+
+    private function taskFieldValue(string $field, mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return match ($field) {
+            'project' => $this->lookup('produk_client', 'nama', $value, 'Project'),
+            'pic' => $this->lookupUser($value),
+            'divisi' => $this->lookup('divisions', 'name', $value, 'Divisi'),
+            'id_kpi' => $this->lookup('kpi', 'nama_kpi', $value, 'KPI'),
+            'priority' => match ((int) $value) {
+                1 => 'Rendah',
+                2 => 'Sedang',
+                3 => 'Tinggi',
+                default => 'Prioritas '.$value,
+            },
+            'status' => match ((int) $value) {
+                0 => 'Not Started',
+                1 => 'In Progress',
+                2 => 'Split',
+                3 => 'Tunggu Approval',
+                4 => 'Done',
+                default => 'Status '.$value,
+            },
+            default => null,
+        };
+    }
+
+    private function lookup(string $table, string $column, mixed $id, string $fallback): string
+    {
+        $key = "{$table}:{$id}";
+
+        if (array_key_exists($key, $this->lookupCache)) {
+            return $this->lookupCache[$key];
+        }
+
+        try {
+            $name = DB::table($table)->where('id', $id)->value($column);
+        } catch (Throwable) {
+            $name = null;
+        }
+
+        return $this->lookupCache[$key] = $name ? (string) $name : "{$fallback} #{$id}";
+    }
+
+    private function lookupUser(mixed $id): string
+    {
+        $key = "users:{$id}";
+
+        if (array_key_exists($key, $this->lookupCache)) {
+            return $this->lookupCache[$key];
+        }
+
+        try {
+            $user = DB::table('users')->select(['name', 'email'])->where('id', $id)->first();
+        } catch (Throwable) {
+            $user = null;
+        }
+
+        if (! $user) {
+            return $this->lookupCache[$key] = "User #{$id}";
+        }
+
+        $label = $user->name ?: $user->email;
+
+        return $this->lookupCache[$key] = $user->email && $user->email !== $label
+            ? "{$label} ({$user->email})"
+            : (string) $label;
     }
 
     private function displayValue(mixed $value): string

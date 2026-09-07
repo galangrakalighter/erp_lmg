@@ -43,6 +43,7 @@ class ActivityLogService
             'target_id' => isset($activity['target_id']) ? (string) $activity['target_id'] : null,
             'target_name' => isset($activity['target_name']) ? (string) $activity['target_name'] : null,
             'target_type' => isset($activity['target_type']) ? (string) $activity['target_type'] : null,
+            'context' => $this->sanitize($activity['context'] ?? []),
             'old_data' => $this->sanitize($activity['old_data'] ?? []),
             'new_data' => $this->sanitize($activity['new_data'] ?? []),
             'ip_address' => $this->request->ip(),
@@ -68,6 +69,7 @@ class ActivityLogService
         };
         $targetType = Str::snake(class_basename($model));
         $targetName = $this->targetName($model);
+        $context = $this->modelContext($model);
         $oldData = $event === 'updated'
             ? Arr::only($model->getRawOriginal(), array_keys($model->getChanges()))
             : ($event === 'deleted' ? $model->getRawOriginal() : []);
@@ -82,6 +84,7 @@ class ActivityLogService
             'target_id' => $model->getKey(),
             'target_name' => $targetName,
             'target_type' => $targetType,
+            'context' => $context,
             'old_data' => $oldData,
             'new_data' => $newData,
         ]);
@@ -143,7 +146,7 @@ class ActivityLogService
 
     private function targetName(Model $model): ?string
     {
-        foreach (['name', 'nama', 'title', 'judul', 'original_name', 'filename', 'client_name', 'email'] as $field) {
+        foreach (['name', 'nama', 'nama_task', 'nama_kpi', 'title', 'judul', 'original_name', 'filename', 'client_name', 'email'] as $field) {
             $value = $model->getAttribute($field);
 
             if (is_scalar($value) && (string) $value !== '') {
@@ -152,6 +155,46 @@ class ActivityLogService
         }
 
         return $model->getKey() !== null ? class_basename($model).' #'.$model->getKey() : null;
+    }
+
+    private function modelContext(Model $model): array
+    {
+        if ($model instanceof \App\Models\MasterFolderFile) {
+            $folder = $model->folder()->first();
+
+            return [
+                'kind' => 'master_folder_file',
+                'folder_id' => $model->master_folder_id,
+                'folder_name' => $folder?->name ?? 'Folder #'.$model->master_folder_id,
+                'file_name' => $model->original_name,
+                'file_path' => $model->path,
+                'folder_link' => url('/master-folder/'.$model->master_folder_id),
+            ];
+        }
+
+        if ($model instanceof \App\Models\MasterFolder) {
+            return [
+                'kind' => 'master_folder',
+                'folder_id' => $model->getKey(),
+                'folder_name' => $model->name,
+                'folder_link' => url('/master-folder/'.$model->getKey()),
+            ];
+        }
+
+        if ($model instanceof \App\Models\AccountMasterFile) {
+            $owner = $model->owner()->first();
+
+            return [
+                'kind' => 'account_master_file',
+                'owner_id' => $model->owner_user_id,
+                'owner_name' => $owner?->name ?? $owner?->email ?? 'Akun #'.$model->owner_user_id,
+                'file_name' => $model->original_name,
+                'file_path' => $model->path,
+                'folder_link' => url('/file-master/'.$model->owner_user_id),
+            ];
+        }
+
+        return [];
     }
 
     private function description(string $action, string $type, ?string $name): string

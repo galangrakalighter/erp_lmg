@@ -16,6 +16,7 @@
                     <th>Kategori</th>
                     <th>Sumber Lead</th>
                     <th>Telepon</th>
+                    <th>Rate Balasan</th>
                     <th>Layanan</th>
                     <th>Chanelling</th>
                     <th>Sosial Media</th>
@@ -39,7 +40,7 @@
             <tbody id="humanTableBody">
                 <tr>
                     <td
-                        colspan="22"
+                        colspan="26"
                         class="text-muted py-4"
                     >
                         Data Human belum tersedia.

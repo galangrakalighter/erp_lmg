@@ -43,6 +43,7 @@ class CRM_HUMAN extends Model
         'done_meeting' => 'boolean',
         'jumlah_follow_up' => 'integer',
         'today' => 'boolean',
+        'rate_balasan' => 'string',
     ];
 
     public function meetings(): HasMany

@@ -409,7 +409,7 @@ window.CRMRenderers =
                 body.innerHTML = `
                     <tr>
                         <td
-                            colspan="22"
+                            colspan="26"
                             class="
                                 text-center
                                 text-muted
@@ -589,6 +589,19 @@ window.CRMRenderers =
                                 ${helpers.whatsapp(
                                     lead.phone
                                 )}
+                            </td>
+
+                            <td class="align-middle text-nowrap">
+                                <span class="badge badge-info px-2 py-2">
+                                    ${helpers.escape(
+                                        Number(lead.rate_balasan || 0)
+                                            .toLocaleString('en-US', {
+                                                minimumFractionDigits: 0,
+                                                maximumFractionDigits: 6,
+                                                useGrouping: false,
+                                            })
+                                    )}%
+                                </span>
                             </td>
 
                             <td

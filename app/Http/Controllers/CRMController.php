@@ -366,6 +366,13 @@ class CRMController extends Controller
                         'phone' =>
                             $lead->phone,
 
+                        'rate_balasan' =>
+                            min(100, max(0, (float) str_replace(
+                                [',', '%'],
+                                ['.', ''],
+                                (string) ($lead->rate_balasan ?? 0)
+                            ))),
+
                         'kategori' =>
                             $lead->kategori,
 

@@ -236,16 +236,17 @@ class ProdukController extends Controller
     {
         $id = (int) $id;
 
-        $accessTokenArray = [
-            'platform' => $request->platform,
-            'access'   => $request->access,
-        ];
-
         try {
             DB::beginTransaction();
 
             // 1. Update data produk
             $produk = ProdukClient::findOrFail($id);
+
+            $accessTokenArray = $this->mergeAccessTokens(
+                $produk->access_token,
+                $request->input('platform', []),
+                $request->input('access', [])
+            );
 
             $produk->update([
                 'kategori_jasa_id' => (int) $request->kategori_jasa_id,
@@ -368,6 +369,54 @@ class ProdukController extends Controller
                     'Terjadi kesalahan: '.$e->getMessage()
                 );
         }
+    }
+
+    /**
+     * Pertahankan token lama ketika input token pada form edit kosong.
+     */
+    private function mergeAccessTokens(?array $currentTokens, array $platforms, array $accessTokens): ?array
+    {
+        $currentByPlatform = [];
+
+        if (isset($currentTokens['platform'], $currentTokens['access'])) {
+            foreach ($currentTokens['platform'] as $index => $platform) {
+                if ($platform !== null && $platform !== '') {
+                    $currentByPlatform[$platform] = $currentTokens['access'][$index] ?? '';
+                }
+            }
+        } elseif (is_array($currentTokens)) {
+            // Tetap mendukung data lama yang tersimpan sebagai daftar objek.
+            foreach ($currentTokens as $item) {
+                if (is_array($item) && !empty($item['platform'])) {
+                    $currentByPlatform[$item['platform']] = $item['access'] ?? '';
+                }
+            }
+        }
+
+        $mergedPlatforms = [];
+        $mergedAccessTokens = [];
+
+        foreach ($platforms as $index => $platform) {
+            if ($platform === null || $platform === '') {
+                continue;
+            }
+
+            $submittedToken = $accessTokens[$index] ?? '';
+            $mergedPlatforms[] = $platform;
+            $mergedAccessTokens[] = $submittedToken !== ''
+                ? $submittedToken
+                : ($currentByPlatform[$platform] ?? '');
+        }
+
+        // Form tanpa baris platform tidak boleh menghapus seluruh token secara tidak sengaja.
+        if ($mergedPlatforms === []) {
+            return $currentTokens;
+        }
+
+        return [
+            'platform' => $mergedPlatforms,
+            'access' => $mergedAccessTokens,
+        ];
     }
 
     public function destroy($id)

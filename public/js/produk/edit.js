@@ -81,12 +81,29 @@ function buildEditModalHtml(res){
     const opt = res.options;
     const currentTeams = res.current_teams || [];
 
+    let rawPlatformData = p.access_token;
+
+    if (typeof rawPlatformData === 'string') {
+        try {
+            rawPlatformData = JSON.parse(rawPlatformData);
+        } catch (e) {
+            rawPlatformData = null;
+        }
+    }
+
     let platformData = [];
 
-    try{
-        platformData = JSON.parse(p.access_token) || [];
-    }catch(e){
-        platformData = [];
+    if (Array.isArray(rawPlatformData)) {
+        // Mendukung format lama: [{ platform: 'Instagram', access: '...' }].
+        platformData = rawPlatformData;
+    } else if (rawPlatformData && Array.isArray(rawPlatformData.platform)) {
+        // Format model saat ini: { platform: [...], access: [...] }.
+        platformData = rawPlatformData.platform.map((platform, index) => ({
+            platform,
+            access: Array.isArray(rawPlatformData.access)
+                ? (rawPlatformData.access[index] || '')
+                : ''
+        }));
     }
 
     return `

@@ -291,6 +291,7 @@ Route::middleware('auth')->group(function () {
     Route::get('finance_ledger/show/{perusahaan}/{id}', [App\Http\Controllers\LedgerController::class, 'show'])->name('finance_ledger.show');
     Route::get('profit/list/{id}', [App\Http\Controllers\InvoiceController::class, 'list_client'])->name('profit.list');
     Route::get('profit/detail/{id}', [App\Http\Controllers\InvoiceController::class, 'detail'])->name('profit.detail');
+    Route::get('/PDF/file/{file}/preview', [App\Http\Controllers\PDFController::class, 'previewFile'])->name('PDF.files.preview');
     Route::get('/PDF/{id_produk}', [App\Http\Controllers\PDFController::class, 'index'])->name('PDF');
     Route::post('/PDF/document/create', [App\Http\Controllers\PDFController::class, 'createDocument'])->name('PDF.documents.store');
     Route::resource('PDF', App\Http\Controllers\PDFController::class);

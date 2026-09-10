@@ -130,7 +130,7 @@
                             <td>
                                 <button
                                     class="btn btn-info btn-sm btn-preview"
-                                    data-pdf="{{ asset('storage/'.$item->location) }}"
+                                    data-pdf="{{ route('PDF.files.preview', $item) }}"
                                     data-title="{{ $item->nama_file }}">
                                     <i class="fa fa-eye"></i> Lihat
                                 </button>
@@ -194,7 +194,8 @@
                         <div class="input-group-append"><span class="input-group-text font-weight-bold">.pdf</span></div>
                     </div>
                 </div>
-                <div class="bg-white border rounded-top p-2 d-flex flex-wrap align-items-center">
+                <div id="clientDocumentWorkspace" class="lmg-editor-workspace">
+                <div class="lmg-document-toolbar">
                     <select class="form-control form-control-sm mr-2 mb-1" style="width:145px" onchange="clientEditorCommand('clientDocumentEditor', 'formatBlock', this.value); this.value='p';">
                         <option value="p">Paragraf</option><option value="h1">Judul 1</option><option value="h2">Judul 2</option><option value="h3">Judul 3</option>
                     </select>
@@ -211,14 +212,21 @@
                         <button type="button" class="btn btn-light border" onclick="clientEditorCommand('clientDocumentEditor','justifyFull')"><i class="fas fa-align-justify"></i></button>
                     </div>
                     <div class="btn-group btn-group-sm mb-1">
+                        <button type="button" class="btn btn-light border" onclick="lmgInsertLink('clientDocumentEditor')"><i class="fas fa-link"></i></button>
                         <button type="button" class="btn btn-light border" onclick="clientEditorCommand('clientDocumentEditor','insertUnorderedList')"><i class="fas fa-list-ul"></i></button>
                         <button type="button" class="btn btn-light border" onclick="clientEditorCommand('clientDocumentEditor','insertOrderedList')"><i class="fas fa-list-ol"></i></button>
                         <button type="button" class="btn btn-light border" onclick="clientEditorCommand('clientDocumentEditor','undo')"><i class="fas fa-undo"></i></button>
                         <button type="button" class="btn btn-light border" onclick="clientEditorCommand('clientDocumentEditor','redo')"><i class="fas fa-redo"></i></button>
+                        <button type="button" class="btn btn-light border" onclick="clientEditorCommand('clientDocumentEditor','removeFormat')"><i class="fas fa-eraser"></i></button>
+                        <button type="button" class="btn btn-light border" onclick="lmgInsertTable('clientDocumentEditor')" title="Sisipkan tabel"><i class="fas fa-table"></i></button>
                     </div>
+                    <select class="form-control form-control-sm" style="width:130px" onchange="if(this.value!==''){lmgSetTableBorderOpacity('clientDocumentEditor',this.value);this.value=''}"><option value="">Opacity garis</option><option value="1">100%</option><option value="0.75">75%</option><option value="0.5">50%</option><option value="0.25">25%</option><option value="0">Tanpa garis</option></select>
+                    <button type="button" class="btn btn-light border btn-sm" onclick="lmgToggleEditorFullscreen('clientDocumentWorkspace')"><i class="fas fa-expand mr-1"></i>Fullscreen</button>
                 </div>
-                <div class="border border-top-0 rounded-bottom p-4" style="background:#dfe3e8;max-height:600px;overflow:auto">
-                    <div id="clientDocumentEditor" contenteditable="true" class="bg-white mx-auto shadow-sm p-5" style="max-width:794px;min-height:520px;outline:none;line-height:1.65;color:#252a34"><p>{{ old('form_type') === 'create_document' ? strip_tags(old('content')) : 'Mulai tulis dokumen di sini...' }}</p></div>
+                <div class="lmg-document-stage">
+                    <button type="button" class="btn btn-dark btn-sm lmg-editor-exit" onclick="lmgToggleEditorFullscreen('clientDocumentWorkspace')"><i class="fas fa-compress mr-1"></i>Keluar Fullscreen</button>
+                    <div id="clientDocumentEditor" contenteditable="true" class="lmg-document-editor"><p>{{ old('form_type') === 'create_document' ? strip_tags(old('content')) : 'Mulai tulis dokumen di sini...' }}</p></div>
+                </div>
                 </div>
             </div>
             <div class="modal-footer"><button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button><button type="submit" class="btn btn-success"><i class="fas fa-file-pdf mr-1"></i>Simpan sebagai PDF</button></div>
@@ -343,7 +351,8 @@
                     @if($item->is_generated_document)
                     <div class="form-group">
                         <label class="font-weight-bold">Isi Dokumen</label>
-                        <div class="bg-white border rounded-top p-2">
+                        <div id="clientEditWorkspace_{{ $item->id }}" class="lmg-editor-workspace">
+                        <div class="lmg-document-toolbar">
                             <div class="btn-group btn-group-sm mr-2">
                                 <button type="button" class="btn btn-light border" onclick="clientEditorCommand('clientEditEditor_{{ $item->id }}','bold')"><i class="fas fa-bold"></i></button>
                                 <button type="button" class="btn btn-light border" onclick="clientEditorCommand('clientEditEditor_{{ $item->id }}','italic')"><i class="fas fa-italic"></i></button>
@@ -351,10 +360,18 @@
                                 <button type="button" class="btn btn-light border" onclick="clientEditorCommand('clientEditEditor_{{ $item->id }}','justifyCenter')"><i class="fas fa-align-center"></i></button>
                                 <button type="button" class="btn btn-light border" onclick="clientEditorCommand('clientEditEditor_{{ $item->id }}','insertUnorderedList')"><i class="fas fa-list-ul"></i></button>
                                 <button type="button" class="btn btn-light border" onclick="clientEditorCommand('clientEditEditor_{{ $item->id }}','insertOrderedList')"><i class="fas fa-list-ol"></i></button>
+                                <button type="button" class="btn btn-light border" onclick="lmgInsertLink('clientEditEditor_{{ $item->id }}')"><i class="fas fa-link"></i></button>
+                                <button type="button" class="btn btn-light border" onclick="clientEditorCommand('clientEditEditor_{{ $item->id }}','undo')"><i class="fas fa-undo"></i></button>
+                                <button type="button" class="btn btn-light border" onclick="clientEditorCommand('clientEditEditor_{{ $item->id }}','redo')"><i class="fas fa-redo"></i></button>
+                                <button type="button" class="btn btn-light border" onclick="lmgInsertTable('clientEditEditor_{{ $item->id }}')"><i class="fas fa-table"></i></button>
                             </div>
+                            <select class="form-control form-control-sm" style="width:130px" onchange="if(this.value!==''){lmgSetTableBorderOpacity('clientEditEditor_{{ $item->id }}',this.value);this.value=''}"><option value="">Opacity garis</option><option value="1">100%</option><option value="0.75">75%</option><option value="0.5">50%</option><option value="0.25">25%</option><option value="0">Tanpa garis</option></select>
+                            <button type="button" class="btn btn-light border btn-sm" onclick="lmgToggleEditorFullscreen('clientEditWorkspace_{{ $item->id }}')"><i class="fas fa-expand mr-1"></i>Fullscreen</button>
                         </div>
-                        <div class="border border-top-0 rounded-bottom p-3 bg-light">
-                            <div id="clientEditEditor_{{ $item->id }}" contenteditable="true" class="bg-white p-4" style="min-height:360px;outline:none;line-height:1.65">{!! $item->editor_content !!}</div>
+                        <div class="lmg-document-stage">
+                            <button type="button" class="btn btn-dark btn-sm lmg-editor-exit" onclick="lmgToggleEditorFullscreen('clientEditWorkspace_{{ $item->id }}')"><i class="fas fa-compress mr-1"></i>Keluar Fullscreen</button>
+                            <div id="clientEditEditor_{{ $item->id }}" contenteditable="true" class="lmg-document-editor">{!! $item->editor_content !!}</div>
+                        </div>
                         </div>
                     </div>
                     @else
@@ -495,6 +512,8 @@
     </div>
 
 </div>
+
+@include('partials.document_editor_tools')
 
 @push('script')
 <script>

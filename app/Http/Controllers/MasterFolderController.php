@@ -670,7 +670,7 @@ class MasterFolderController extends Controller
 
     private function restoreGeneratedPdfIfMissing(MasterFolder $folder, MasterFolderFile $file): void
     {
-        if (Storage::disk('local')->exists($file->path) || ! $file->is_generated_document) {
+        if (! $file->is_generated_document) {
             return;
         }
 

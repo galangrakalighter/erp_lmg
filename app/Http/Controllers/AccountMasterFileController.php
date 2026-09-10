@@ -121,6 +121,7 @@ class AccountMasterFileController extends Controller
     {
         $file = $this->accessibleFile($request, $owner, $fileName);
         abort_unless($this->isPdf($file), 415, 'Preview hanya tersedia untuk PDF.');
+        $this->refreshGeneratedPdf($owner, $file);
         abort_unless(Storage::disk('local')->exists($file->path), 404);
         return Storage::disk('local')->response($file->path, $file->original_name, ['Content-Type' => 'application/pdf']);
     }
@@ -128,6 +129,7 @@ class AccountMasterFileController extends Controller
     public function download(Request $request, User $owner, string $fileName)
     {
         $file = $this->accessibleFile($request, $owner, $fileName);
+        $this->refreshGeneratedPdf($owner, $file);
         abort_unless(Storage::disk('local')->exists($file->path), 404);
         return Storage::disk('local')->download($file->path, $file->original_name);
     }
@@ -209,6 +211,23 @@ class AccountMasterFileController extends Controller
     {
         return strtolower(pathinfo($file->original_name, PATHINFO_EXTENSION)) === 'pdf'
             || $file->mime_type === 'application/pdf';
+    }
+
+    private function refreshGeneratedPdf(User $owner, AccountMasterFile $file): void
+    {
+        if (! $file->is_generated_document) {
+            return;
+        }
+
+        abort_if(blank($file->editor_content), 404, 'Sumber dokumen tidak tersedia untuk membuat ulang PDF.');
+
+        $documentName = trim(preg_replace('/\.pdf$/i', '', $file->original_name));
+        $content = $this->sanitizeDocumentHtml($file->editor_content);
+        $pdf = Pdf::loadView('account_master_file.document_pdf', compact('owner', 'documentName', 'content'))
+            ->setPaper('a4', 'portrait')->output();
+
+        abort_unless(Storage::disk('local')->put($file->path, $pdf), 500, 'PDF gagal dibuat ulang.');
+        $file->update(['size' => strlen($pdf)]);
     }
 
     private function sanitizeDocumentHtml(string $html): string

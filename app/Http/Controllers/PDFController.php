@@ -221,7 +221,7 @@ class PDFController extends Controller
         $validated = $request->validate([
             'client' => ['required', 'integer', 'exists:produk_client,id'],
             'nama_file' => ['required', 'string', 'max:150'],
-            'content' => ['required', 'string', 'max:200000'],
+            'content' => ['required', 'string', 'max:15000000'],
         ], [
             'nama_file.required' => 'Nama dokumen wajib diisi.',
             'content.required' => 'Isi dokumen wajib diisi.',
@@ -264,6 +264,29 @@ class PDFController extends Controller
         return back()->with('success', 'Dokumen PDF berhasil dibuat.');
     }
 
+    public function previewFile(FilePdf $file)
+    {
+        if ($file->is_generated_document && filled($file->editor_content)) {
+            $client = ProdukClient::findOrFail($file->client);
+            $documentName = trim(preg_replace('/\.pdf$/i', '', $file->nama_file));
+            $content = $this->sanitizeDocumentHtml($file->editor_content);
+            $pdfContent = Pdf::loadView(
+                'pdf.client_document',
+                compact('client', 'documentName', 'content')
+            )->setPaper('a4', 'portrait')->output();
+
+            return response($pdfContent, 200, [
+                'Content-Type' => 'application/pdf',
+            ]);
+        }
+
+        abort_unless(Storage::disk('public')->exists($file->location), 404, 'File PDF tidak ditemukan.');
+
+        return Storage::disk('public')->response($file->location, $file->nama_file.'.pdf', [
+            'Content-Type' => 'application/pdf',
+        ]);
+    }
+
     public function update(Request $request, $id)
     {
         $file = FilePDF::findOrFail($id);
@@ -271,7 +294,7 @@ class PDFController extends Controller
         $request->validate([
             'nama_file' => 'required|string|max:255',
             'pdf'       => 'nullable|mimes:pdf|max:10240',
-            'content'   => [Rule::requiredIf($file->is_generated_document), 'nullable', 'string', 'max:200000'],
+            'content'   => [Rule::requiredIf($file->is_generated_document), 'nullable', 'string', 'max:15000000'],
         ]);
 
         $path = $file->location;
@@ -348,7 +371,7 @@ class PDFController extends Controller
 
     private function sanitizeDocumentHtml(string $html): string
     {
-        $allowedTags = '<p><div><span><font><br><h1><h2><h3><strong><b><em><i><u><s><ul><ol><li><blockquote><table><thead><tbody><tr><th><td>';
+        $allowedTags = '<p><div><span><font><br><hr><h1><h2><h3><strong><b><em><i><u><s><a><img><ul><ol><li><blockquote><table><thead><tbody><tfoot><tr><th><td><colgroup><col>';
         $html = preg_replace('#<(script|style|iframe|object|embed)\b[^>]*>.*?</\1>#is', '', $html);
         $clean = strip_tags($html, $allowedTags);
 
@@ -367,6 +390,14 @@ class PDFController extends Controller
                 if ($attribute === 'align' && in_array($value, ['left', 'center', 'right', 'justify'], true)) {
                     continue;
                 }
+                if ($element->tagName === 'a' && $attribute === 'href'
+                    && (str_starts_with($value, '#') || filter_var($value, FILTER_VALIDATE_URL))) continue;
+                if ($element->tagName === 'a' && $attribute === 'target' && in_array($value, ['_blank', '_self'], true)) continue;
+                if ($element->tagName === 'img' && $attribute === 'src'
+                    && preg_match('#^data:image/(png|jpe?g|gif|webp);base64,#i', $value)) continue;
+                if ($element->tagName === 'img' && in_array($attribute, ['alt', 'width', 'height'], true)) continue;
+                if (in_array($element->tagName, ['table', 'td', 'th', 'col'], true)
+                    && in_array($attribute, ['width', 'height', 'border', 'cellpadding', 'cellspacing', 'colspan', 'rowspan'], true)) continue;
                 if ($attribute === 'style') {
                     $safeStyle = $this->sanitizeInlineStyle($value);
                     if ($safeStyle !== '') {
@@ -406,8 +437,16 @@ class PDFController extends Controller
                 'font-weight' => in_array($value, ['normal', 'bold', 'bolder', '100', '200', '300', '400', '500', '600', '700', '800', '900'], true),
                 'font-style' => in_array($value, ['normal', 'italic', 'oblique'], true),
                 'text-decoration', 'text-decoration-line' => preg_match('/^(none|underline|line-through|underline line-through)$/', $value) === 1,
-                'margin-left', 'padding-left', 'font-size' => preg_match('/^\d+(\.\d+)?(px|pt|em|rem|%)$/', $value) === 1,
-                'color', 'background-color' => preg_match('/^(#[0-9a-f]{3,6}|[a-z]+|rgb\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*\))$/i', $value) === 1,
+                'margin', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
+                'padding', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+                'font-size', 'line-height', 'width', 'height', 'max-width' => preg_match('/^(auto|0|\d+(\.\d+)?(px|pt|em|rem|%|cm|mm|in)?)$/', $value) === 1,
+                'color', 'background-color', 'border-color' => preg_match('/^(transparent|#[0-9a-f]{3,8}|[a-z]+|rgba?\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+(?:\s*,\s*[\d.]+)?\s*\))$/i', $value) === 1,
+                'border-collapse' => in_array($value, ['collapse', 'separate'], true),
+                'border-style', 'border-top-style', 'border-right-style', 'border-bottom-style', 'border-left-style' => in_array($value, ['none', 'hidden', 'solid', 'dashed', 'dotted', 'double'], true),
+                'border-width', 'border-top-width', 'border-right-width', 'border-bottom-width', 'border-left-width' => preg_match('/^(0|\d+(\.\d+)?(px|pt))$/', $value) === 1,
+                'border', 'border-top', 'border-right', 'border-bottom', 'border-left' => $value === 'none'
+                    || preg_match('/^\d+(\.\d+)?(px|pt)\s+(solid|dashed|dotted|double)\s+(transparent|#[0-9a-f]{3,8}|[a-z]+|rgba?\([^)]*\))$/i', $value) === 1,
+                'opacity' => preg_match('/^(0(\.\d+)?|1(\.0+)?)$/', $value) === 1,
                 default => false,
             };
             if ($isSafe) $safe[] = $property.': '.$value;

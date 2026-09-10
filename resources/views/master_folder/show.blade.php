@@ -739,6 +739,13 @@
                                 </div>
 
 
+                                <div class="btn-group btn-group-sm mr-2 mb-1">
+                                    <button type="button" class="btn btn-light border" onclick="lmgInsertTable('edit-file-editor-{{ $file->id }}')" title="Sisipkan tabel"><i class="fas fa-table"></i></button>
+                                    <select class="form-control form-control-sm" style="width:130px" onchange="if(this.value!==''){lmgSetTableBorderOpacity('edit-file-editor-{{ $file->id }}',this.value);this.value=''}">
+                                        <option value="">Opacity garis</option><option value="1">100%</option><option value="0.75">75%</option><option value="0.5">50%</option><option value="0.25">25%</option><option value="0">Tanpa garis</option>
+                                    </select>
+                                </div>
+
                                 {{-- FULLSCREEN --}}
                                 <button type="button"
                                         class="btn btn-light border btn-sm mb-1 ml-auto"
@@ -775,7 +782,7 @@
                                 class="document-pages document-single-page">
 
                                 <div contenteditable="true"
-                                    class="document-page shadow-sm">
+                                    class="document-page shadow-sm lmg-document-editor" data-rich-paste-managed="1">
 
                                     @if((int) old('edit_file_id') === $file->id)
 
@@ -975,6 +982,10 @@
                         <button type="button" class="btn btn-light border" onclick="document.execCommand('undo')"><i class="fas fa-undo"></i></button>
                         <button type="button" class="btn btn-light border" onclick="document.execCommand('redo')"><i class="fas fa-redo"></i></button>
                         <button type="button" class="btn btn-light border" onclick="document.execCommand('removeFormat')" title="Hapus format"><i class="fas fa-eraser"></i></button>
+                        <button type="button" class="btn btn-light border" onclick="lmgInsertTable('document-editor')" title="Sisipkan tabel"><i class="fas fa-table"></i></button>
+                        <select class="form-control form-control-sm" style="width:130px" onchange="if(this.value!==''){lmgSetTableBorderOpacity('document-editor',this.value);this.value=''}">
+                            <option value="">Opacity garis</option><option value="1">100%</option><option value="0.75">75%</option><option value="0.5">50%</option><option value="0.25">25%</option><option value="0">Tanpa garis</option>
+                        </select>
                         <button type="button" class="btn btn-light border" id="document-fullscreen-btn"title="Fullscreen"><i class="fas fa-expand"></i><span class="ml-1">Fullscreen</span>
                         </button>
                     </div>
@@ -982,7 +993,7 @@
                 <div id="create-document-editor-stage" class="editor-stage border rounded-bottom p-4" style="background:#dfe3e8; height:600px; overflow:auto;">
                     <button type="button" class="btn btn-dark btn-sm editor-fullscreen-exit" onclick="toggleCreateEditorFullscreen()"><i class="fas fa-compress mr-1"></i>Keluar Fullscreen</button>
                     <div id="document-editor" class="document-pages document-single-page">
-                        <div contenteditable="true" class="document-page shadow-sm">
+                        <div contenteditable="true" class="document-page shadow-sm lmg-document-editor" data-rich-paste-managed="1">
                         @if(old('form_type') === 'document')
                             {!! old('content') !!}
                         @else
@@ -1001,6 +1012,8 @@
     </div>
 </div>
 @endif
+
+@include('partials.document_editor_tools')
 
 <script>
     function editDocumentCommand(fileId, command, value) {

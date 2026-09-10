@@ -12,13 +12,19 @@
         ul, ol { margin: 8px 0 12px 22px; padding: 0; }
         blockquote { margin: 12px 0; padding: 8px 14px; border-left: 3px solid #4e73df; color: #5a5c69; background: #f8f9fc; }
         table { width: 100%; max-width: 100%; border-collapse: collapse; margin: 12px 0; }
-        table, tr, td, th { border-color: transparent !important; }
-        td, th { border-width: 1px; border-style: solid; padding: 7px; }
+        td, th { border: 1px solid #dfe3e8; padding: 7px; }
         .footer { position: fixed; bottom: -42px; left: 0; right: 0; text-align: center; color: #a0a4ab; font-size: 8pt; }
     </style>
 </head>
 <body>
     <div class="footer">Folder Master &middot; {{ $folder->name }}</div>
-    {!! $content !!}
+    @php
+        $renderedContent = preg_replace(
+            '/rgba\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+\s*,\s*0(?:\.0+)?\s*\)/i',
+            'transparent',
+            $content
+        );
+    @endphp
+    {!! $renderedContent !!}
 </body>
 </html>

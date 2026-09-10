@@ -32,35 +32,34 @@
 @if($canManage)
 <div class="modal fade" id="uploadAccountFile"><div class="modal-dialog"><form method="POST" enctype="multipart/form-data" action="{{ route('file-master.upload',$owner) }}" class="modal-content">@csrf
     <div class="modal-header"><h5 class="modal-title">Upload File</h5><button class="close" type="button" data-dismiss="modal">&times;</button></div>
-    <div class="modal-body"><input type="file" name="files[]" class="form-control-file" multiple required><small class="text-muted">PDF maupun format file lainnya, maksimal 25 MB per file.</small></div>
+    <div class="modal-body"><label class="font-weight-bold">Pilih File</label><input type="file" name="files[]" class="form-control-file border rounded p-3 w-100" multiple required><small class="form-text text-muted">PDF maupun format file lainnya, maksimal 25 MB per file.</small></div>
     <div class="modal-footer"><button type="button" class="btn btn-light border" data-dismiss="modal">Batal</button><button class="btn btn-primary">Upload</button></div></form></div></div>
 
 <div class="modal fade" id="createAccountDocument"><div class="modal-dialog modal-xl"><form id="account-document-form" method="POST" action="{{ route('file-master.documents.store',$owner) }}" class="modal-content">@csrf
     <input type="hidden" name="content" id="account-document-content">
     <div class="modal-header"><h5 class="modal-title">Buat Dokumen PDF</h5><button class="close" type="button" data-dismiss="modal">&times;</button></div>
     <div class="modal-body bg-light"><div class="form-group"><label class="font-weight-bold">Nama File</label><div class="input-group"><input name="document_name" class="form-control" maxlength="150" required><div class="input-group-append"><span class="input-group-text">.pdf</span></div></div></div>
-        <div id="account-document-workspace" class="account-document-workspace">
-            <div class="bg-white border rounded-top p-2 d-flex flex-wrap">
+        <div id="account-document-workspace" class="account-document-workspace lmg-editor-workspace">
+            <div class="lmg-document-toolbar">
                 <select class="form-control form-control-sm mr-2" style="width:140px" onchange="document.execCommand('formatBlock',false,this.value);this.value='p'"><option value="p">Paragraf</option><option value="h1">Judul 1</option><option value="h2">Judul 2</option><option value="h3">Judul 3</option></select>
-                <div class="btn-group btn-group-sm mr-2"><button type="button" class="btn btn-light border" onclick="document.execCommand('bold')"><i class="fas fa-bold"></i></button><button type="button" class="btn btn-light border" onclick="document.execCommand('italic')"><i class="fas fa-italic"></i></button><button type="button" class="btn btn-light border" onclick="document.execCommand('underline')"><i class="fas fa-underline"></i></button></div>
-                <div class="btn-group btn-group-sm mr-2"><button type="button" class="btn btn-light border" onclick="document.execCommand('justifyLeft')"><i class="fas fa-align-left"></i></button><button type="button" class="btn btn-light border" onclick="document.execCommand('justifyCenter')"><i class="fas fa-align-center"></i></button><button type="button" class="btn btn-light border" onclick="document.execCommand('justifyRight')"><i class="fas fa-align-right"></i></button></div>
-                <div class="btn-group btn-group-sm"><button type="button" class="btn btn-light border" onclick="document.execCommand('insertUnorderedList')"><i class="fas fa-list-ul"></i></button><button type="button" class="btn btn-light border" onclick="document.execCommand('insertOrderedList')"><i class="fas fa-list-ol"></i></button><button type="button" class="btn btn-light border" onclick="toggleAccountEditorFullscreen()"><i class="fas fa-expand"></i></button></div>
+                <div class="btn-group btn-group-sm mr-2"><button type="button" class="btn btn-light border" onclick="lmgEditorCommand('account-document-editor','bold')"><i class="fas fa-bold"></i></button><button type="button" class="btn btn-light border" onclick="lmgEditorCommand('account-document-editor','italic')"><i class="fas fa-italic"></i></button><button type="button" class="btn btn-light border" onclick="lmgEditorCommand('account-document-editor','underline')"><i class="fas fa-underline"></i></button><button type="button" class="btn btn-light border" onclick="lmgEditorCommand('account-document-editor','strikeThrough')"><i class="fas fa-strikethrough"></i></button></div>
+                <div class="btn-group btn-group-sm mr-2"><button type="button" class="btn btn-light border" onclick="lmgEditorCommand('account-document-editor','justifyLeft')"><i class="fas fa-align-left"></i></button><button type="button" class="btn btn-light border" onclick="lmgEditorCommand('account-document-editor','justifyCenter')"><i class="fas fa-align-center"></i></button><button type="button" class="btn btn-light border" onclick="lmgEditorCommand('account-document-editor','justifyRight')"><i class="fas fa-align-right"></i></button><button type="button" class="btn btn-light border" onclick="lmgEditorCommand('account-document-editor','justifyFull')"><i class="fas fa-align-justify"></i></button></div>
+                <div class="btn-group btn-group-sm"><button type="button" class="btn btn-light border" onclick="lmgInsertLink('account-document-editor')"><i class="fas fa-link"></i></button><button type="button" class="btn btn-light border" onclick="lmgEditorCommand('account-document-editor','insertUnorderedList')"><i class="fas fa-list-ul"></i></button><button type="button" class="btn btn-light border" onclick="lmgEditorCommand('account-document-editor','insertOrderedList')"><i class="fas fa-list-ol"></i></button><button type="button" class="btn btn-light border" onclick="lmgEditorCommand('account-document-editor','undo')"><i class="fas fa-undo"></i></button><button type="button" class="btn btn-light border" onclick="lmgEditorCommand('account-document-editor','redo')"><i class="fas fa-redo"></i></button><button type="button" class="btn btn-light border" onclick="lmgInsertTable('account-document-editor')" title="Sisipkan tabel"><i class="fas fa-table"></i></button></div>
+                <select class="form-control form-control-sm" style="width:130px" onchange="if(this.value!==''){lmgSetTableBorderOpacity('account-document-editor',this.value);this.value=''}"><option value="">Opacity garis</option><option value="1">100%</option><option value="0.75">75%</option><option value="0.5">50%</option><option value="0.25">25%</option><option value="0">Tanpa garis</option></select>
+                <button type="button" class="btn btn-light border btn-sm" onclick="toggleAccountEditorFullscreen()"><i class="fas fa-expand mr-1"></i>Fullscreen</button>
             </div>
-            <div class="account-editor-stage border rounded-bottom p-4" style="height:600px;overflow:auto;background:#dfe3e8"><button type="button" class="btn btn-dark btn-sm fullscreen-exit" onclick="toggleAccountEditorFullscreen()"><i class="fas fa-compress mr-1"></i>Keluar Fullscreen</button><div id="account-document-editor" class="account-editor shadow-sm" contenteditable="true"><p>Mulai tulis dokumen di sini...</p></div></div>
+            <div class="account-editor-stage lmg-document-stage" style="height:600px"><button type="button" class="btn btn-dark btn-sm fullscreen-exit lmg-editor-exit" onclick="toggleAccountEditorFullscreen()"><i class="fas fa-compress mr-1"></i>Keluar Fullscreen</button><div id="account-document-editor" class="account-editor lmg-document-editor" contenteditable="true"><p>Mulai tulis dokumen di sini...</p></div></div>
         </div>
     </div><div class="modal-footer"><button type="button" class="btn btn-light border" data-dismiss="modal">Batal</button><button class="btn btn-success">Simpan sebagai PDF</button></div></form></div></div>
 @endif
 
+@include('partials.document_editor_tools')
+
 <script>
-function toggleAccountEditorFullscreen(){document.getElementById('account-document-workspace')?.classList.toggle('fullscreen');document.body.classList.toggle('overflow-hidden');}
+function toggleAccountEditorFullscreen(){lmgToggleEditorFullscreen('account-document-workspace');}
 document.addEventListener('DOMContentLoaded',function(){
     const editor=document.getElementById('account-document-editor'); const form=document.getElementById('account-document-form');
     if(form&&editor) form.addEventListener('submit',function(){document.getElementById('account-document-content').value=editor.innerHTML;});
-    if(editor) editor.addEventListener('paste',function(event){
-        const images=Array.from(event.clipboardData?.items||[]).filter(x=>x.kind==='file'&&x.type.startsWith('image/'));
-        if(!images.length)return; event.preventDefault();
-        images.forEach(item=>{const reader=new FileReader();reader.onload=()=>document.execCommand('insertHTML',false,'<img src="'+reader.result+'" style="max-width:100%;height:auto">');reader.readAsDataURL(item.getAsFile());});
-    });
 });
 </script>
 @endsection

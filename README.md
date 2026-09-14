@@ -8,8 +8,31 @@ Aplikasi internal berbasis Laravel untuk mengelola operasional Lighter Media Gro
 - Navbar
 - Customer Relationship Management (CRM)
 - Manajemen user
+- Daily Work dan timeline kanban
+- Folder Master
+- File Master
+- Chart of Account
 
-> Modul lain yang terdapat di repository belum dibahas dalam README ini dan dapat ditambahkan secara bertahap.
+> Modul lain yang terdapat di repository dapat ditambahkan ke dokumentasi ini secara bertahap.
+
+## Daftar isi
+
+- [Teknologi](#teknologi)
+- [Menjalankan aplikasi](#menjalankan-aplikasi)
+- [Gambaran alur aplikasi](#gambaran-alur-aplikasi)
+- [Login dan logout](#login-dan-logout)
+- [Layout utama aplikasi](#layout-utama-aplikasi)
+- [Sidebar](#sidebar)
+- [Navbar](#navbar)
+- [CRM](#crm)
+- [Manajemen User](#manajemen-user)
+- [Daily Work](#daily-work)
+- [Folder Master](#folder-master)
+- [File Master](#file-master)
+- [Chart of Account](#chart-of-account)
+- [Pemeliharaan integritas client](#pemeliharaan-integritas-client)
+- [Troubleshooting](#troubleshooting)
+- [Pemeriksaan setelah perubahan](#pemeriksaan-setelah-perubahan)
 
 ## Teknologi
 
@@ -106,7 +129,11 @@ app/
 ├── Http/Controllers/
 │   ├── LoginController.php
 │   ├── CRMController.php
-│   └── UserController.php
+│   ├── UserController.php
+│   ├── HCDailyController.php
+│   ├── MasterFolderController.php
+│   ├── AccountMasterFileController.php
+│   └── COAController.php
 ├── Models/
 │   ├── CRM.php
 │   ├── CRM_HUMAN.php
@@ -130,6 +157,16 @@ resources/views/
 │   ├── human.blade.php
 │   ├── meeting.blade.php
 │   └── modals.blade.php
+├── hc/dailywork.blade.php
+├── master_folder/
+│   ├── index.blade.php
+│   ├── show.blade.php
+│   └── preview.blade.php
+├── account_master_file/
+│   ├── index.blade.php
+│   ├── show.blade.php
+│   └── preview.blade.php
+├── finance/coa.blade.php
 ├── partials/
 │   ├── navbar.blade.php
 │   └── sidebar_new.blade.php
@@ -156,6 +193,9 @@ flowchart LR
     F --> I[Konten halaman]
     I --> J[CRM]
     I --> K[Manajemen User]
+    I --> L[Daily Work]
+    I --> M[Folder dan File Master]
+    I --> N[Chart of Account]
 ```
 
 Semua halaman utama di dalam grup `auth` hanya dapat dibuka setelah pengguna berhasil login. Pengguna yang belum terautentikasi diarahkan ke halaman login.
@@ -526,6 +566,298 @@ erDiagram
 ```
 
 `parent_id` menunjuk user yang menjadi atasan. Role level `1` diperlakukan sebagai level tanpa parent ketika data user diperbarui.
+
+## Daily Work
+
+Daily Work adalah halaman penyusunan agenda kerja harian berbasis API. Blade hanya menjadi kerangka antarmuka; seluruh task, statistik, anggota tim, project, divisi, dan KPI dimuat sebagai JSON setelah halaman dibuka.
+
+### File utama
+
+| Bagian | Lokasi |
+|---|---|
+| Controller | `app/Http/Controllers/HCDailyController.php` |
+| Tampilan | `resources/views/hc/dailywork.blade.php` |
+| Route halaman | `routes/web.php` |
+| Route data dan aksi | `routes/api.php` |
+| Model task | `app/Models/Task.php` |
+
+### Route
+
+| Method | Endpoint | Fungsi |
+|---|---|---|
+| GET | `/hc_dailywork` | Menampilkan kerangka halaman Daily Work |
+| GET | `/api/hc/daily-work` | Mengambil task, anggota, KPI, project, divisi, dan ringkasan |
+| POST | `/api/hc/daily-work/tasks` | Menambahkan task |
+| PUT | `/api/hc/daily-work/tasks/{task}` | Memperbarui task status `0` |
+| DELETE | `/api/hc/daily-work/tasks/{task}` | Menghapus task status `0` |
+| POST | `/api/hc/update-schedule` | Memasang atau mengubah jam task |
+| POST | `/api/hc/update-status` | Menjalankan perubahan status task |
+| POST | `/api/hc/cancel-remaining` | Memecah sisa durasi task ke Task Pool |
+
+Route Daily Work di `api.php` menggunakan middleware `web` dan `auth`. Middleware `web` diperlukan karena autentikasi aplikasi menggunakan session browser. Tanpa middleware tersebut, `Auth::user()` pada controller akan bernilai `null`.
+
+### Alur pemuatan data
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Page as dailywork.blade.php
+    participant API as HCDailyController
+    participant DB as Database
+
+    User->>Page: Membuka /hc_dailywork
+    Page->>API: GET /api/hc/daily-work
+    API->>DB: Mengambil task dan referensi pengguna
+    DB-->>API: Data hari ini
+    API-->>Page: JSON
+    Page->>Page: Render Task Pool, statistik, dan timeline
+```
+
+Identitas PIC di Daily Work ditampilkan menggunakan email, bukan nama user. API juga mengurutkan pilihan anggota berdasarkan email.
+
+### Task Pool dan timeline
+
+- Task tanpa `jam_mulai` ditampilkan pada Task Pool.
+- Task dengan jadwal hari ini ditampilkan pada timeline pukul 08:00–17:00.
+- Task selesai tampil ketika `tanggal_approve` adalah hari ini.
+- Task split tampil ketika `tanggal_split` adalah hari ini.
+- Task dari tanggal lain tidak dimasukkan ke agenda hari ini.
+- Tinggi task mengikuti durasinya.
+- Task yang waktunya bertabrakan ditempatkan pada lajur horizontal yang berbeda.
+- Nama KPI dan note ditampilkan jika tersedia.
+
+Task status `0` dapat diseret dari Task Pool ke timeline. Posisi jatuh dibulatkan ke interval 10 menit dan dikirim ke endpoint `update-schedule`. Task yang telah diproses tidak dapat diedit atau dihapus.
+
+### Status task
+
+| Status | Keterangan umum | Edit/hapus |
+|---:|---|---|
+| 0 | Belum dimulai | Diizinkan |
+| 1 | Sedang dikerjakan | Tidak diizinkan |
+| 2 | Perlu revisi | Tidak diizinkan |
+| 3 | Menunggu persetujuan | Tidak diizinkan |
+| 4 | Selesai | Tidak diizinkan |
+| 5 | Dipecah | Tidak diizinkan |
+| 7 | Terlambat | Tidak diizinkan |
+| 8 | Waktu habis | Tidak diizinkan |
+| 9 | Menunggu persetujuan overdue | Tidak diizinkan |
+
+Aturan edit/hapus diperiksa pada frontend dan backend. Menyembunyikan tombol saja tidak dianggap sebagai pengamanan.
+
+### Zoom timeline
+
+Timeline mendukung zoom vertikal:
+
+1. Arahkan kursor ke timeline.
+2. Tahan tombol `Shift`.
+3. Scroll ke atas untuk memperbesar skala waktu.
+4. Scroll ke bawah untuk memperkecil skala waktu.
+5. Klik persentase zoom untuk kembali ke ukuran normal.
+
+Rentang skala adalah sekitar 7,5%–400%. Pada skala sangat kecil, task berubah menjadi bar ringkas. Detail KPI dan note tetap dapat diperiksa melalui tooltip atau modal detail. Perhitungan drag-and-drop menggunakan skala aktif agar jam yang disimpan tetap benar.
+
+## Folder Master
+
+Folder Master menyimpan dokumen bersama yang aksesnya ditentukan berdasarkan role dan divisi.
+
+### File utama
+
+| Bagian | Lokasi |
+|---|---|
+| Controller | `app/Http/Controllers/MasterFolderController.php` |
+| Daftar folder | `resources/views/master_folder/index.blade.php` |
+| Isi folder | `resources/views/master_folder/show.blade.php` |
+| Preview PDF | `resources/views/master_folder/preview.blade.php` |
+| Dokumen PDF | `resources/views/master_folder/document_pdf.blade.php` |
+
+### Route utama
+
+| Method | Endpoint | Fungsi |
+|---|---|---|
+| GET | `/master-folder` | Daftar folder yang dapat diakses |
+| POST | `/master-folder` | Membuat folder |
+| PUT | `/master-folder/{folder}` | Memperbarui folder dan role akses |
+| DELETE | `/master-folder/{folder}` | Menghapus folder beserta file |
+| GET | `/master-folder/{folder}` | Membuka isi folder |
+| POST | `/master-folder/{folder}/files` | Mengunggah file |
+| POST | `/master-folder/{folder}/documents` | Membuat dokumen PDF |
+| PUT | `/master-folder/{folder}/files/{file}` | Memperbarui metadata atau dokumen |
+| DELETE | `/master-folder/{folder}/files/{file}` | Menghapus file |
+
+Admin dapat membuat, mengedit, dan menghapus folder. User biasa hanya melihat folder yang memiliki role sesuai salah satu assignment pada `user_division`. Jumlah file untuk user biasa juga menghitung file yang role aksesnya cocok.
+
+Alur akses folder:
+
+```mermaid
+flowchart LR
+    A[User membuka Folder Master] --> B{Super Admin?}
+    B -- Ya --> C[Semua folder dan seluruh file]
+    B -- Tidak --> D[Ambil role dari user_division]
+    D --> E[Filter folder berdasarkan role]
+    E --> F[Filter file berdasarkan role akses]
+```
+
+File disimpan pada disk Laravel `local` di direktori `master-folders/{folder_id}`. Menghapus folder turut menghapus direktori penyimpanannya.
+
+## File Master
+
+File Master adalah direktori dokumen per pengguna. Seorang user dapat melihat file miliknya dan file bawahan yang berada dalam jalur pelaporan. Perubahan isi hanya dapat dilakukan oleh pemilik akun.
+
+### File utama
+
+| Bagian | Lokasi |
+|---|---|
+| Controller | `app/Http/Controllers/AccountMasterFileController.php` |
+| Daftar pengguna | `resources/views/account_master_file/index.blade.php` |
+| Daftar file pengguna | `resources/views/account_master_file/show.blade.php` |
+| Preview PDF | `resources/views/account_master_file/preview.blade.php` |
+| Template PDF | `resources/views/account_master_file/document_pdf.blade.php` |
+
+### Route utama
+
+| Method | Endpoint | Fungsi |
+|---|---|---|
+| GET | `/file-master` | Menampilkan pemilik file yang dapat diakses |
+| GET | `/file-master/{owner}` | Menampilkan file milik user |
+| POST | `/file-master/{owner}/upload` | Mengunggah file milik sendiri |
+| POST | `/file-master/{owner}/documents` | Membuat dokumen PDF |
+| GET | `/file-master/{owner}/files/{fileName}/view` | Membuka halaman preview PDF |
+| GET | `/file-master/{owner}/files/{fileName}/preview` | Mengirim stream PDF |
+| GET | `/file-master/{owner}/files/{fileName}/download` | Mengunduh file |
+| DELETE | `/file-master/{owner}/files/{file}` | Menghapus file milik sendiri |
+
+File fisik disimpan di `account-master-files/{owner_id}` pada disk `local`. Nama file yang sama dibuat unik agar tidak menimpa file sebelumnya. File non-PDF dapat diunduh, sedangkan preview hanya tersedia untuk PDF.
+
+## Chart of Account
+
+Chart of Account mengelola akun keuangan, kategori, tipe debit/kredit, status aktif, dan saldo pembuka per perusahaan.
+
+### File utama
+
+| Bagian | Lokasi |
+|---|---|
+| Controller | `app/Http/Controllers/COAController.php` |
+| Service | `app/Services/ChartOfAccountService.php` |
+| Tampilan | `resources/views/finance/coa.blade.php` |
+| Model | `app/Models/ChartOfAccount.php` |
+
+Halaman mengambil data melalui endpoint `GET /finance_coa/data/akun/{id}`. Service melakukan filter berdasarkan perusahaan, tipe, status, kategori, dan kata pencarian.
+
+### Route
+
+| Method | Endpoint | Fungsi |
+|---|---|---|
+| GET | `/finance_coa/{id}` | Membuka COA perusahaan |
+| GET | `/finance_coa/data/akun/{id}` | Mengambil daftar akun dalam JSON |
+| POST | `/finance_coa/{id}` | Menambahkan akun |
+| PUT | `/finance_coa/{id}` | Memperbarui akun |
+| DELETE | `/finance_coa/{id}` | Menghapus akun |
+
+### Paginasi
+
+Paginasi dijalankan pada data hasil API di sisi frontend. Pengguna dapat memilih 10, 25, 50, atau 100 baris per halaman. Navigasi menyediakan nomor halaman, tombol Sebelumnya/Berikutnya, dan informasi rentang data. Perubahan filter atau pencarian mengembalikan tabel ke halaman pertama.
+
+### Catatan JavaScript
+
+Formatter HTML pada halaman ini bernama `escapeCoaHtml`. Gunakan nama tersebut dan jangan menggantinya menjadi `escapeHtml`, karena layout masih memuat beberapa skrip lama yang mempunyai fungsi global dengan nama `escapeHtml`. Benturan nama akan menyebabkan formatter angka memakai `.replace()` secara langsung dan menghasilkan error:
+
+```text
+TypeError: text.replace is not a function
+```
+
+## Pemeliharaan integritas client
+
+Migration berikut digunakan untuk membersihkan relasi client lama:
+
+- `database/migrations/2026_09_14_000001_merge_duplicate_produk_client.php`
+- `database/migrations/2026_09_14_000002_cleanup_orphan_client_relations.php`
+
+Migration menggabungkan `produk_client` dengan nama yang sama, memindahkan referensi `client_division` dan `user_client` ke ID utama, lalu membersihkan relasi yang tidak lagi mempunyai pasangan pada `produk_client`. Selalu buat backup database sebelum menjalankan migration pembersihan pada lingkungan produksi.
+
+## Troubleshooting
+
+### Tampilan tidak berubah setelah update
+
+Bersihkan cache dan build ulang aset:
+
+```bash
+php artisan optimize:clear
+php artisan view:cache
+npm run build
+```
+
+Setelah itu lakukan hard refresh dengan `Ctrl+F5`.
+
+### API Daily Work menganggap user belum login
+
+Pastikan kelompok route Daily Work di `routes/api.php` menggunakan middleware berikut:
+
+```php
+Route::middleware(['web', 'auth'])->prefix('hc')->group(function () {
+    // route Daily Work
+});
+```
+
+Route API Laravel bersifat stateless secara default. Middleware `web` mengaktifkan session yang digunakan oleh autentikasi aplikasi ini.
+
+### Daily Work tidak menampilkan task
+
+Periksa hal berikut:
+
+1. User memiliki assignment pada `user_division`.
+2. `task.pic` menunjuk ID user yang benar.
+3. Task terjadwal memiliki `tanggal_mulai` hari ini.
+4. Task Pool memiliki `jam_mulai = null` dan belum berstatus selesai.
+5. `task.project` masih memiliki pasangan di `produk_client`.
+6. Request `/api/hc/daily-work` mengembalikan JSON, bukan redirect login atau halaman HTML.
+
+### Task timeline bertumpuk
+
+Pastikan API hanya mengirim task terjadwal untuk hari ini. Frontend membagi task yang waktunya benar-benar bersamaan ke lajur berbeda. Gunakan `Shift + scroll` untuk memperbesar timeline jika banyak task berdurasi pendek.
+
+### Chart of Account menampilkan `text.replace is not a function`
+
+Pastikan halaman COA memakai `escapeCoaHtml`, bukan fungsi global `escapeHtml`. Nilai kode akun dapat berupa angka dan harus dikonversi menggunakan `String(value)` sebelum `.replace()`.
+
+### File tidak dapat dipreview
+
+- Preview hanya tersedia untuk PDF.
+- Pastikan file masih tersedia pada disk `local`.
+- Jalankan `php artisan storage:link` hanya apabila bagian aplikasi yang digunakan memang membaca disk publik; file master saat ini dilayani melalui controller dari disk `local`.
+- Periksa bahwa user memiliki akses ke pemilik File Master atau role Folder Master.
+
+### Modal Folder/File Master tidak terbuka
+
+Halaman detail yang masih memiliki interaksi editor lama menggunakan `resources/views/partials/lmg_legacy_workspace.blade.php` sebagai pengendali modal dan lapisan visual sementara. Pastikan partial tersebut tetap dimuat oleh halaman detail.
+
+## Checklist pengujian per modul
+
+### Daily Work
+
+- Data awal dimuat melalui `/api/hc/daily-work`.
+- Dropdown anggota menampilkan email.
+- Task Pool dapat diseret ke timeline.
+- Jam hasil drop sesuai interval yang dipilih.
+- Zoom `Shift + scroll` mempertahankan titik waktu di bawah kursor.
+- KPI dan note tampil jika tersedia.
+- Edit/hapus hanya tersedia dan diterima API pada status `0`.
+- Mulai, selesai, revisi, approval, dan kembali ke pool memperbarui tampilan.
+
+### Folder Master dan File Master
+
+- Filter divisi dan jabatan bekerja.
+- Hak akses folder mengikuti role.
+- Upload, download, preview PDF, edit, dan hapus bekerja.
+- User tidak dapat mengubah File Master milik user lain.
+- Penghapusan folder turut menghapus file fisiknya.
+
+### Chart of Account
+
+- Filter tipe, status, kategori, dan pencarian bekerja.
+- Paginasi dan pilihan jumlah baris bekerja.
+- Tambah, edit, dan hapus akun bekerja.
+- Nilai numerik tidak memunculkan error formatter.
+- Saldo pembuka tampil sesuai periode.
 
 ## Pemeriksaan setelah perubahan
 

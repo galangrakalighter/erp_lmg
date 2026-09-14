@@ -1,167 +1,50 @@
 @extends('layout.app')
-
 @section('content')
-<div class="container-fluid mt-4">
-
-    <!-- Header & Filter Periode -->
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800 font-weight-bold">Dashboard Keuangan Owner</h1>
-        
-        <form action="{{ route('finance.dashboard', $id) }}" method="GET" class="form-inline">
-            <label for="periode" class="mr-2 font-weight-bold text-secondary small">Filter Periode:</label>
-            <input type="month" name="periode" id="periode" class="form-control form-control-sm shadow-sm" 
-                   value="{{ $periode }}" onchange="this.form.submit()">
-        </form>
-    </div>
-
-    <!-- Ringkasan Utama (Cards) -->
-    <div class="row">
-
-        <!-- Card 1: Total Profit -->
-        <div class="col-xl-4 col-md-6 mb-4">
-            <div class="card border-left-{{ $totalProfit >= 0 ? 'success' : 'danger' }} shadow-sm h-100 py-2 border-0">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-uppercase mb-1 {{ $totalProfit >= 0 ? 'text-success' : 'text-danger' }}">
-                                Profit Bersih ({{ date('F Y', strtotime($periode)) }})
-                            </div>
-                            <div class="h4 mb-0 font-weight-bold text-gray-800">
-                                Rp {{ number_format($totalProfit, 0, ',', '.') }}
-                            </div>
-                            <div class="mt-2 text-muted small">
-                                <span class="text-success"><i class="fas fa-arrow-up mr-1"></i>Pendapatan: {{ number_format($totalPendapatan, 0, ',', '.') }}</span> | 
-                                <span class="text-danger"><i class="fas fa-arrow-down mr-1"></i>Beban: {{ number_format($totalBeban, 0, ',', '.') }}</span>
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-chart-line fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
+@php
+    $cashVolume = abs($cashflowIn) + abs($cashflowOut);
+    $cashInPercent = $cashVolume > 0 ? (abs($cashflowIn) / $cashVolume) * 100 : 0;
+    $cashOutPercent = $cashVolume > 0 ? 100 - $cashInPercent : 0;
+    $revenueVolume = abs($totalPendapatan) + abs($totalBeban);
+    $revenuePercent = $revenueVolume > 0 ? (abs($totalPendapatan) / $revenueVolume) * 100 : 0;
+    $expensePercent = $revenueVolume > 0 ? 100 - $revenuePercent : 0;
+@endphp
+<div class="min-h-screen bg-[#f7f7f5] px-4 py-6 sm:px-6 lg:px-8">
+<div class="mx-auto max-w-[1600px] space-y-6">
+    <section class="relative overflow-hidden rounded-[28px] bg-zinc-950 px-6 py-8 text-white shadow-xl shadow-zinc-950/10 sm:px-9">
+        <div class="absolute -right-20 -top-24 h-72 w-72 rounded-full bg-lime-300/10 blur-3xl"></div>
+        <div class="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div><p class="text-[11px] font-semibold uppercase tracking-[.22em] text-lime-300">Lighter Media Group · Finance</p><h1 class="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">Dashboard Keuangan</h1><p class="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">Ringkasan kondisi finansial {{ $perusahaan_baru->nama_perusahaan ?? 'perusahaan' }} berdasarkan jurnal perusahaan.</p></div>
+            <form action="{{ route('finance.dashboard', $id) }}" method="GET"><label class="block"><span class="mb-1.5 block text-[10px] font-bold uppercase tracking-[.14em] text-zinc-400">Periode Laporan</span><input type="month" name="periode" id="periode" value="{{ $periode }}" onchange="this.form.submit()" class="w-full rounded-xl border border-white/15 bg-white/10 px-3 py-2.5 text-sm font-semibold text-white outline-none transition [color-scheme:dark] focus:border-lime-300 focus:ring-2 focus:ring-lime-300/20 sm:w-48"></label></form>
         </div>
+    </section>
 
-        <!-- Card 2: Net Cashflow -->
-        <div class="col-xl-4 col-md-6 mb-4">
-            <div class="card border-left-primary shadow-sm h-100 py-2 border-0">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                Net Cashflow (Arus Kas Bersih)
-                            </div>
-                            <div class="h4 mb-0 font-weight-bold text-gray-800">
-                                Rp {{ number_format($netCashflow, 0, ',', '.') }}
-                            </div>
-                            <div class="mt-2 text-muted small">
-                                <span class="text-primary"><i class="fas fa-plus-circle mr-1"></i>Masuk: {{ number_format($cashflowIn, 0, ',', '.') }}</span> | 
-                                <span class="text-warning"><i class="fas fa-minus-circle mr-1"></i>Keluar: {{ number_format($cashflowOut, 0, ',', '.') }}</span>
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-wallet fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <article class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+            <div class="flex items-start justify-between"><div><p class="text-[10px] font-bold uppercase tracking-[.14em] text-zinc-500">{{ $totalProfit >= 0 ? 'Profit Bersih' : 'Rugi Bersih' }}</p><p class="mt-2 text-2xl font-bold tracking-tight {{ $totalProfit >= 0 ? 'text-emerald-700' : 'text-rose-700' }}">Rp {{ number_format($totalProfit, 0, ',', '.') }}</p></div><span class="flex h-10 w-10 items-center justify-center rounded-xl {{ $totalProfit >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700' }}"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V9m6 10V5m6 14v-7m4 7H2"/></svg></span></div>
+            <div class="mt-5 grid grid-cols-2 gap-2 border-t border-zinc-100 pt-4"><div><p class="text-[10px] uppercase text-zinc-400">Pendapatan</p><p class="mt-1 text-xs font-semibold text-emerald-700">Rp {{ number_format($totalPendapatan, 0, ',', '.') }}</p></div><div class="text-right"><p class="text-[10px] uppercase text-zinc-400">Beban</p><p class="mt-1 text-xs font-semibold text-rose-600">Rp {{ number_format($totalBeban, 0, ',', '.') }}</p></div></div>
+        </article>
+        <article class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+            <div class="flex items-start justify-between"><div><p class="text-[10px] font-bold uppercase tracking-[.14em] text-zinc-500">Arus Kas Bersih</p><p class="mt-2 text-2xl font-bold tracking-tight {{ $netCashflow >= 0 ? 'text-zinc-950' : 'text-rose-700' }}">Rp {{ number_format($netCashflow, 0, ',', '.') }}</p></div><span class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-700"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M16 13h3M7 6V4h10v2"/></svg></span></div>
+            <div class="mt-5 grid grid-cols-2 gap-2 border-t border-zinc-100 pt-4"><div><p class="text-[10px] uppercase text-zinc-400">Kas masuk</p><p class="mt-1 text-xs font-semibold text-blue-700">Rp {{ number_format($cashflowIn, 0, ',', '.') }}</p></div><div class="text-right"><p class="text-[10px] uppercase text-zinc-400">Kas keluar</p><p class="mt-1 text-xs font-semibold text-amber-700">Rp {{ number_format($cashflowOut, 0, ',', '.') }}</p></div></div>
+        </article>
+        <article class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm md:col-span-2 xl:col-span-1">
+            <div class="flex items-start justify-between"><div><p class="text-[10px] font-bold uppercase tracking-[.14em] text-zinc-500">Total Saldo Aset</p><p class="mt-2 text-2xl font-bold tracking-tight text-zinc-950">Rp {{ number_format($totalSaldoUtama, 0, ',', '.') }}</p></div><span class="flex h-10 w-10 items-center justify-center rounded-xl bg-lime-50 text-lime-800"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10h18M5 10v8m4-8v8m6-8v8m4-8v8M2 21h20M12 3 3 7h18Z"/></svg></span></div>
+            <div class="mt-5 border-t border-zinc-100 pt-4"><p class="text-xs leading-5 text-zinc-500">Akumulasi {{ $mainBalances->count() }} akun aset perusahaan yang tercatat pada jurnal.</p></div>
+        </article>
+    </section>
 
-        <!-- Card 3: Saldo Utama (Akun Kategori Aset) -->
-        <div class="col-xl-4 col-md-6 mb-4">
-            <div class="card border-left-warning shadow-sm h-100 py-2 border-0">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                Total Saldo Aset (Kas & Bank)
-                            </div>
-                            <div class="h4 mb-0 font-weight-bold text-gray-800">
-                                Rp {{ number_format($totalSaldoUtama, 0, ',', '.') }}
-                            </div>
-                            <div class="mt-2 text-muted small">
-                                Akumulasi saldo kategori aset terkini
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-university fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <section class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <article class="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
+            <div class="flex items-center justify-between gap-4 border-b border-zinc-200 px-5 py-4"><div><h2 class="font-semibold text-zinc-950">Rincian Saldo Akun Aset</h2><p class="mt-1 text-xs text-zinc-500">Kas, bank, dan akun aset lainnya.</p></div><span class="rounded-full bg-zinc-100 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-zinc-600">{{ $mainBalances->count() }} Akun</span></div>
+            <div class="overflow-x-auto"><table class="w-full min-w-[720px] text-left text-sm"><thead class="bg-zinc-950 text-[10px] font-semibold uppercase tracking-[.12em] text-white"><tr><th class="px-5 py-3.5">Kode</th><th class="px-4 py-3.5">Nama Akun</th><th class="px-4 py-3.5">Tipe</th><th class="px-5 py-3.5 text-right">Saldo Terkini</th></tr></thead><tbody class="divide-y divide-zinc-100">@forelse($mainBalances as $acc)<tr class="transition hover:bg-zinc-50"><td class="px-5 py-4 font-mono text-xs text-zinc-500">{{ $acc->kode }}</td><td class="px-4 py-4 font-semibold text-zinc-950">{{ $acc->nama_akun }}</td><td class="px-4 py-4"><span class="rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-[10px] font-bold uppercase text-zinc-600">{{ $acc->type }}</span></td><td class="whitespace-nowrap px-5 py-4 text-right font-bold {{ $acc->balance >= 0 ? 'text-emerald-700' : 'text-rose-600' }}">Rp {{ number_format($acc->balance, 0, ',', '.') }}</td></tr>@empty<tr><td colspan="4" class="px-5 py-14 text-center text-sm text-zinc-500">Tidak ada data akun aset.</td></tr>@endforelse</tbody><tfoot><tr class="bg-zinc-100"><th colspan="3" class="px-5 py-4 text-right text-[10px] font-bold uppercase tracking-wide text-zinc-600">Total Keseluruhan Aset</th><th class="px-5 py-4 text-right text-sm font-bold text-zinc-950">Rp {{ number_format($totalSaldoUtama, 0, ',', '.') }}</th></tr></tfoot></table></div>
+        </article>
 
-    </div>
-
-    <!-- Detail Saldo Akun Kategori Aset -->
-    <div class="row">
-        <div class="col-xl-8 col-lg-7 mb-4">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-list-ul mr-2"></i>Rincian Saldo Akun Aset (Kas / Bank / Lainnya)
-                    </h6>
-                    <span class="badge bg-primary text-white p-2">Total Akun: {{ $mainBalances->count() }}</span>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-hover table-sm mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Kode Akun</th>
-                                    <th>Nama Akun</th>
-                                    <th>Kategori</th>
-                                    <th class="text-end">Saldo Terkini</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($mainBalances as $acc)
-                                <tr>
-                                    <td><code>{{ $acc->kode }}</code></td>
-                                    <td class="font-weight-bold text-dark">{{ $acc->nama_akun }}</td>
-                                    <td><span class="badge bg-info text-white text-uppercase">{{ $acc->type }}</span></td>
-                                    <td class="text-end font-weight-bold text-success">
-                                        Rp {{ number_format($acc->balance, 0, ',', '.') }}
-                                    </td>
-                                </tr>
-                                @empty
-                                <tr>
-                                    <td colspan="4" class="text-center text-muted py-3">Tidak ada data akun aset.</td>
-                                </tr>
-                                @endforelse
-                            </tbody>
-                            <tfoot class="table-secondary font-weight-bold">
-                                <tr>
-                                    <th colspan="3" class="text-center">TOTAL KESELURUHAN ASET</th>
-                                    <th class="text-end text-dark">Rp {{ number_format($totalSaldoUtama, 0, ',', '.') }}</th>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Panel Informasi / Pintasan Quick Links -->
-        <div class="col-xl-4 col-lg-5 mb-4">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-info-circle mr-2"></i>Informasi & Akses Cepat
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <p class="text-muted small">
-                        Halaman ini dikhususkan bagi Owner untuk memantau indikator kesehatan finansial secara langsung berdasarkan jurnal umum perusahaan.
-                    </p>
-                    <hr>
-                    <a href="{{ route('Ledger.jurnal_penutup', $id) }}" class="btn btn-outline-primary btn-sm btn-block mb-2">
-                        <i class="fas fa-file-invoice-dollar mr-2"></i>Lihat Jurnal Penutup
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
+        <aside class="space-y-4">
+            <article class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm"><p class="text-[10px] font-bold uppercase tracking-[.14em] text-zinc-400">Komposisi Laba Rugi</p><div class="mt-4 flex items-end justify-between text-xs"><span class="font-semibold text-emerald-700">Pendapatan {{ number_format($revenuePercent, 0) }}%</span><span class="text-zinc-400">Beban {{ number_format($expensePercent, 0) }}%</span></div><div class="mt-2 flex h-2 overflow-hidden rounded-full bg-rose-200"><div class="h-full bg-emerald-500" style="width: {{ $revenuePercent }}%"></div></div></article>
+            <article class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm"><p class="text-[10px] font-bold uppercase tracking-[.14em] text-zinc-400">Komposisi Arus Kas</p><div class="mt-4 flex items-end justify-between text-xs"><span class="font-semibold text-blue-700">Masuk {{ number_format($cashInPercent, 0) }}%</span><span class="text-zinc-400">Keluar {{ number_format($cashOutPercent, 0) }}%</span></div><div class="mt-2 flex h-2 overflow-hidden rounded-full bg-amber-200"><div class="h-full bg-blue-500" style="width: {{ $cashInPercent }}%"></div></div></article>
+            <article class="rounded-2xl bg-zinc-950 p-5 text-white shadow-lg"><p class="text-[10px] font-bold uppercase tracking-[.14em] text-lime-300">Akses Cepat</p><h3 class="mt-2 font-semibold">Penutupan Periode</h3><p class="mt-2 text-xs leading-5 text-zinc-400">Tinjau dan kelola jurnal penutup untuk periode laporan perusahaan.</p><a href="{{ route('Ledger.jurnal_penutup', $id) }}" class="mt-5 inline-flex w-full items-center justify-between rounded-xl bg-white px-4 py-3 text-xs font-bold text-zinc-950 transition hover:bg-lime-300"><span>Lihat Jurnal Penutup</span><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></a></article>
+        </aside>
+    </section>
+</div>
 </div>
 @endsection

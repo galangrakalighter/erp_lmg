@@ -361,7 +361,7 @@ class HCDailyController extends Controller
             'division_id' => 'required|integer|exists:divisions,id', 'pic_id' => 'required|integer|exists:users,id',
             'priority' => 'required|integer|between:1,3', 'minutes' => 'required|integer|min:1|max:1440',
             'start_date' => 'required|date', 'deadline' => 'required|date|after_or_equal:start_date',
-            'start_time' => 'nullable|date_format:H:i', 'kpi_id' => 'nullable|integer|exists:kpi,id',
+            'start_time' => 'required|date_format:H:i', 'kpi_id' => 'nullable|integer|exists:kpi,id',
             'note' => 'nullable|string', 'jira' => 'nullable|string|max:1000',
         ]);
 
@@ -382,7 +382,7 @@ class HCDailyController extends Controller
             'division_id' => 'required|integer|exists:divisions,id', 'pic_id' => 'required|integer|exists:users,id',
             'priority' => 'required|integer|between:1,3', 'minutes' => 'required|integer|min:1|max:1440',
             'start_date' => 'required|date', 'deadline' => 'required|date|after_or_equal:start_date',
-            'start_time' => 'nullable|date_format:H:i', 'kpi_id' => 'nullable|integer|exists:kpi,id',
+            'start_time' => 'required|date_format:H:i', 'kpi_id' => 'nullable|integer|exists:kpi,id',
             'note' => 'nullable|string', 'jira' => 'nullable|string|max:1000',
         ]);
         $task->update($this->mapApiTask($data, false));
@@ -407,7 +407,7 @@ class HCDailyController extends Controller
             'nama_task' => $data['name'], 'project' => $data['project_id'], 'divisi' => $data['division_id'],
             'pic' => $data['pic_id'], 'priority' => $data['priority'], 'menit' => $data['minutes'],
             'tanggal_mulai' => $data['start_date'], 'tanggal_deadline' => $data['deadline'],
-            'jam_mulai' => $data['start_time'] ?? null, 'id_kpi' => $data['kpi_id'] ?? null,
+            'jam_mulai' => $data['start_time'], 'id_kpi' => $data['kpi_id'] ?? null,
             'note' => $data['note'] ?? null, 'jira' => $data['jira'] ?? null,
         ];
         if ($includeStatus) $mapped['status'] = 0;

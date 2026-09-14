@@ -1,243 +1,47 @@
 @extends('layout.app')
-
 @section('content')
-<div class="container-fluid px-4">
-    <h1 class="mt-4">Audit Trail</h1>
-    <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item active">Riwayat aktivitas dan perubahan data sistem</li>
-    </ol>
+<div class="min-h-screen bg-[#f7f7f5] px-4 py-6 sm:px-6 lg:px-8">
+<div class="mx-auto max-w-[1600px] space-y-6">
+    <section class="relative overflow-hidden rounded-[28px] bg-zinc-950 px-6 py-8 text-white shadow-xl shadow-zinc-950/10 sm:px-9">
+        <div class="absolute -right-20 -top-24 h-72 w-72 rounded-full bg-lime-300/10 blur-3xl"></div>
+        <div class="relative"><p class="text-[11px] font-semibold uppercase tracking-[.22em] text-lime-300">Lighter Media Group · Governance</p><h1 class="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">Audit Trail</h1><p class="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">Telusuri aktivitas pengguna dan perubahan data sistem secara terstruktur.</p></div>
+    </section>
 
-    <!-- Form Filter Live Search -->
-    <div class="card mb-4 shadow-sm">
-        <div class="card-body border-bottom bg-light">
-            <form id="filterForm" onsubmit="event.preventDefault();">
-                <div class="row">
-                    <!-- Cari Deskripsi / Keyword -->
-                    <div class="col-md-3 mb-3">
-                        <label class="small font-weight-bold text-dark">Cari Deskripsi:</label>
-                        <div class="input-group input-group-sm">
-                            <input type="text" id="filterSearch" name="search" class="form-control border-primary" placeholder="Cari keterangan..." onkeyup="fetchAudits()">
-                            <div class="input-group-append">
-                                <span class="input-group-text bg-primary border-primary text-white">
-                                    <i class="fas fa-search fa-sm"></i>
-                                </span>
-                            </div>
-                        </div>
-                    </div>
+    <section class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+        <form id="filterForm" class="grid gap-4 md:grid-cols-2 xl:grid-cols-12" onsubmit="event.preventDefault()">
+            <label class="xl:col-span-3"><span class="mb-1.5 block text-[10px] font-bold uppercase tracking-[.12em] text-zinc-500">Cari aktivitas</span><div class="relative"><svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input id="filterSearch" name="search" type="search" class="w-full rounded-xl border border-zinc-200 bg-zinc-50 py-2.5 pl-10 pr-3 text-sm outline-none transition focus:border-zinc-400 focus:bg-white focus:ring-2 focus:ring-zinc-100" placeholder="Deskripsi, pengguna..." oninput="fetchAudits()"></div></label>
+            <label class="xl:col-span-2"><span class="mb-1.5 block text-[10px] font-bold uppercase tracking-[.12em] text-zinc-500">Modul</span><select id="filterModule" name="module" class="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm outline-none focus:border-zinc-400 focus:bg-white" onchange="fetchAudits()"><option value="">Semua modul</option>@foreach($modules as $mod)<option value="{{ $mod }}">{{ $mod }}</option>@endforeach</select></label>
+            <label class="xl:col-span-2"><span class="mb-1.5 block text-[10px] font-bold uppercase tracking-[.12em] text-zinc-500">Jenis aksi</span><select id="filterAction" name="action" class="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm outline-none focus:border-zinc-400 focus:bg-white" onchange="fetchAudits()"><option value="">Semua aksi</option><option value="CREATED">Dibuat</option><option value="UPDATED">Diubah</option><option value="DELETED">Dihapus</option></select></label>
+            <label class="xl:col-span-2"><span class="mb-1.5 block text-[10px] font-bold uppercase tracking-[.12em] text-zinc-500">Dari tanggal</span><input type="date" id="filterStartDate" name="start_date" class="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm outline-none focus:border-zinc-400 focus:bg-white" onchange="fetchAudits()"></label>
+            <label class="xl:col-span-2"><span class="mb-1.5 block text-[10px] font-bold uppercase tracking-[.12em] text-zinc-500">Sampai tanggal</span><input type="date" id="filterEndDate" name="end_date" class="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm outline-none focus:border-zinc-400 focus:bg-white" onchange="fetchAudits()"></label>
+            <div class="flex items-end xl:col-span-1"><button type="button" onclick="resetFilters()" class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100" title="Reset filter"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg><span class="xl:hidden">Reset</span></button></div>
+        </form>
+    </section>
 
-                    <!-- Filter Modul -->
-                    <div class="col-md-2 mb-3">
-                        <label class="small font-weight-bold text-dark">Filter Modul:</label>
-                        <select id="filterModule" name="module" class="form-control form-control-sm border-primary" onchange="fetchAudits()">
-                            <option value="">- Semua Modul -</option>
-                            @foreach($modules as $mod)
-                                <option value="{{ $mod }}">{{ $mod }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <!-- Filter Aksi -->
-                    <div class="col-md-2 mb-3">
-                        <label class="small font-weight-bold text-dark">Filter Aksi:</label>
-                        <select id="filterAction" name="action" class="form-control form-control-sm border-primary" onchange="fetchAudits()">
-                            <option value="">- Semua Aksi -</option>
-                            <option value="CREATED">CREATED</option>
-                            <option value="UPDATED">UPDATED</option>
-                            <option value="DELETED">DELETED</option>
-                        </select>
-                    </div>
-
-                    <!-- Dari Tanggal -->
-                    <div class="col-md-2 mb-3">
-                        <label class="small font-weight-bold text-dark">Dari Tanggal:</label>
-                        <input type="date" id="filterStartDate" name="start_date" class="form-control form-control-sm border-primary" onchange="fetchAudits()">
-                    </div>
-
-                    <!-- Sampai Tanggal -->
-                    <div class="col-md-2 mb-3">
-                        <label class="small font-weight-bold text-dark">Sampai Tanggal:</label>
-                        <input type="date" id="filterEndDate" name="end_date" class="form-control form-control-sm border-primary" onchange="fetchAudits()">
-                    </div>
-
-                    <!-- Tombol Reset -->
-                    <div class="col-md-1 mb-3 d-flex align-items-end">
-                        <button type="button" onclick="resetFilters()" class="btn btn-sm btn-secondary px-2 shadow-sm w-100" title="Reset">
-                            <i class="fas fa-undo fa-sm"></i>
-                        </button>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Tabel Data & Hasil AJAX -->
-    <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-white py-3">
-            <i class="fas fa-table me-1"></i> <strong>Daftar Log Aktivitas Sistem</strong>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered table-striped table-hover align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Waktu</th>
-                            <th>Pengguna (User)</th>
-                            <th>Modul</th>
-                            <th>Deskripsi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="auditTableBody">
-                        <!-- Data akan dimuat melalui JavaScript / AJAX -->
-                        <tr>
-                            <td colspan="6" class="text-center py-4 text-muted">Memuat data...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Informasi & Pagination AJAX -->
-            <div class="d-flex justify-content-between align-items-center mt-3">
-                <div class="text-muted small" id="paginationInfo">
-                    Menampilkan data 0 sampai 0 dari total 0 data
-                </div>
-                <div id="paginationLinks">
-                    <!-- Link pagination akan dirender dinamis via JS -->
-                </div>
-            </div>
-        </div>
-    </div>
+    <section class="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
+        <div class="flex items-center justify-between gap-4 border-b border-zinc-200 px-5 py-4"><div><h2 class="font-semibold text-zinc-950">Log Aktivitas Sistem</h2><p class="mt-1 text-xs text-zinc-500">Aktivitas terbaru ditampilkan terlebih dahulu.</p></div><span class="rounded-full bg-zinc-100 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-zinc-600">Audit Log</span></div>
+        <div class="overflow-x-auto"><table class="w-full min-w-[1000px] text-left text-sm"><thead class="bg-zinc-950 text-[10px] font-semibold uppercase tracking-[.12em] text-white"><tr><th class="px-5 py-3.5">Waktu</th><th class="px-4 py-3.5">Pengguna</th><th class="px-4 py-3.5">Modul</th><th class="px-4 py-3.5">Aksi</th><th class="px-4 py-3.5">Deskripsi</th><th class="px-5 py-3.5 text-center">Detail</th></tr></thead><tbody id="auditTableBody" class="divide-y divide-zinc-100"><tr><td colspan="6" class="px-5 py-14 text-center text-sm text-zinc-500">Memuat data audit...</td></tr></tbody></table></div>
+        <div class="flex flex-col gap-3 border-t border-zinc-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"><p id="paginationInfo" class="text-xs text-zinc-500">Menampilkan 0 data</p><div id="paginationLinks" class="flex flex-wrap items-center gap-1"></div></div>
+    </section>
+</div>
 </div>
 
-<!-- Modal Detail Universal -->
-<div class="modal fade text-start" id="universalDetailModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="modalTitle">Detail Audit</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <p class="mb-1"><strong>Aksi:</strong> <span id="modalActionBadge" class="badge bg-secondary">-</span></p>
-                    <p class="mb-1"><strong>Deskripsi:</strong> <span id="modalDescription">-</span></p>
-                    <p class="mb-0"><strong>Waktu:</strong> <span id="modalTime">-</span> | <strong>Oleh:</strong> <span id="modalUser">-</span></p>
-                </div>
-                <hr>
-                <div class="row">
-                    <div class="col-md-6 mb-3 mb-md-0">
-                        <h6 class="text-danger fw-bold">Data Lama (Old Values):</h6>
-                        <pre class="bg-dark text-light p-3 border rounded" style="max-height: 350px; overflow-y: auto;"><code id="modalOldValues">-</code></pre>
-                    </div>
-                    <div class="col-md-6">
-                        <h6 class="text-success fw-bold">Data Baru / Perubahan (New Values):</h6>
-                        <pre class="bg-dark text-light p-3 border rounded" style="max-height: 350px; overflow-y: auto;"><code id="modalNewValues">-</code></pre>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-            </div>
-        </div>
-    </div>
-</div>
+<div id="auditDetailModal" class="fixed inset-0 z-[100] hidden overflow-y-auto" aria-hidden="true"><div class="fixed inset-0 bg-zinc-950/65 backdrop-blur-sm" data-audit-close></div><div class="relative flex min-h-full items-center justify-center p-4 sm:p-6"><div class="relative w-full max-w-6xl overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl">
+    <div class="flex items-center justify-between border-b border-zinc-200 px-5 py-4"><div><p class="text-[10px] font-bold uppercase tracking-[.14em] text-zinc-400">Audit Trail</p><h2 class="mt-1 text-lg font-semibold text-zinc-950" id="modalTitle">Detail Aktivitas</h2></div><button type="button" data-audit-close class="flex h-9 w-9 items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200" aria-label="Tutup">×</button></div>
+    <div class="space-y-5 p-5"><div class="grid gap-3 rounded-xl bg-zinc-50 p-4 md:grid-cols-3"><div><p class="text-[10px] font-bold uppercase text-zinc-400">Aksi</p><div class="mt-2" id="modalActionBadge">-</div></div><div><p class="text-[10px] font-bold uppercase text-zinc-400">Waktu</p><p class="mt-2 text-sm font-medium text-zinc-800" id="modalTime">-</p></div><div><p class="text-[10px] font-bold uppercase text-zinc-400">Pengguna</p><p class="mt-2 text-sm font-medium text-zinc-800" id="modalUser">-</p></div><div class="md:col-span-3"><p class="text-[10px] font-bold uppercase text-zinc-400">Deskripsi</p><p class="mt-2 text-sm leading-6 text-zinc-700" id="modalDescription">-</p></div></div><div class="grid gap-4 lg:grid-cols-2"><div><h3 class="mb-2 text-xs font-bold uppercase tracking-wide text-rose-600">Data Lama</h3><pre class="max-h-[420px] overflow-auto rounded-xl bg-zinc-950 p-4 text-xs leading-6 text-zinc-300"><code id="modalOldValues">-</code></pre></div><div><h3 class="mb-2 text-xs font-bold uppercase tracking-wide text-emerald-600">Data Baru</h3><pre class="max-h-[420px] overflow-auto rounded-xl bg-zinc-950 p-4 text-xs leading-6 text-zinc-300"><code id="modalNewValues">-</code></pre></div></div></div>
+</div></div></div>
 
-<!-- JavaScript untuk Live Search & Render Modal -->
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        fetchAudits();
-    });
-
-    let searchTimer;
-
-    function fetchAudits(page = 1) {
-        clearTimeout(searchTimer);
-        searchTimer = setTimeout(() => {
-            let search = document.getElementById('filterSearch').value;
-            let module = document.getElementById('filterModule').value;
-            let action = document.getElementById('filterAction').value;
-            let startDate = document.getElementById('filterStartDate').value;
-            let endDate = document.getElementById('filterEndDate').value;
-
-            let params = new URLSearchParams({
-                page: page,
-                search: search,
-                module: module,
-                action: action,
-                start_date: startDate,
-                end_date: endDate
-            });
-
-            fetch(`{{ route('api.audit.index') }}?${params.toString()}`)
-                .then(response => response.json())
-                .then(res => {
-                    if (res.success) {
-                        renderTable(res.data);
-                    }
-                })
-                .catch(error => console.error('Error fetching audits:', error));
-        }, 300); // Delay kecil agar tidak terlalu sering memanggil API saat mengetik
-    }
-
-    function renderTable(paginator) {
-        let tbody = document.getElementById('auditTableBody');
-        tbody.innerHTML = '';
-
-        if (paginator.data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted">Belum ada data audit log yang tercatat.</td></tr>`;
-            document.getElementById('paginationInfo').innerText = `Menampilkan data 0 sampai 0 dari total 0 data`;
-            document.getElementById('paginationLinks').innerHTML = '';
-            return;
-        }
-
-        paginator.data.forEach(audit => {
-            let badgeClass = 'bg-secondary';
-            if (audit.action === 'CREATED') badgeClass = 'bg-success';
-            else if (audit.action === 'UPDATED') badgeClass = 'bg-warning text-dark';
-            else if (audit.action === 'DELETED') badgeClass = 'bg-danger';
-
-            let userName = audit.user ? audit.user.name : 'System / Guest';
-            let ipAddress = audit.ip_address ?? '-';
-            let createdAt = audit.created_at ? audit.created_at.replace('T', ' ').substring(0, 19) : '-';
-
-            let row = `
-                <tr>
-                    <td>${createdAt}</td>
-                    <td>
-                        <strong>${userName}</strong>
-                    </td>
-                    <td>${audit.module ?? '-'}</td>
-                    <td>${audit.description ?? '-'}</td>
-                </tr>
-            `;
-            tbody.insertAdjacentHTML('beforeend', row);
-        });
-
-        // Update Text Info Pagination
-        document.getElementById('paginationInfo').innerText = 
-            `Menampilkan data ke-${paginator.from ?? 0} sampai ${paginator.to ?? 0} dari total ${paginator.total} data`;
-
-        // Render Pagination Links
-        let paginationHtml = `<ul class="pagination pagination-sm mb-0">`;
-        paginator.links.forEach(link => {
-            let activeClass = link.active ? 'active' : '';
-            let disabledClass = !link.url ? 'disabled' : '';
-            let pageNum = link.label.includes('&laquo;') ? '&laquo;' : (link.label.includes('&raquo;') ? '&raquo;' : link.label);
-            
-            if (link.url) {
-                let urlParams = new URLSearchParams(link.url.split('?')[1]);
-                let pageNumber = urlParams.get('page');
-                paginationHtml += `<li class="page-item ${activeClass} ${disabledClass}"><a class="page-link" href="javascript:void(0)" onclick="fetchAudits(${pageNumber})">${pageNum}</a></li>`;
-            } else {
-                paginationHtml += `<li class="page-item ${disabledClass}"><span class="page-link">${pageNum}</span></li>`;
-            }
-        });
-        paginationHtml += `</ul>`;
-        document.getElementById('paginationLinks').innerHTML = paginationHtml;
-    }
-
-    function resetFilters() {
-        document.getElementById('filterForm').reset();
-        fetchAudits();
-    }
+let auditTimer; let auditRows = new Map();
+const filterForm=document.getElementById('filterForm'),filterSearch=document.getElementById('filterSearch'),filterModule=document.getElementById('filterModule'),filterAction=document.getElementById('filterAction'),filterStartDate=document.getElementById('filterStartDate'),filterEndDate=document.getElementById('filterEndDate'),auditTableBody=document.getElementById('auditTableBody'),paginationInfo=document.getElementById('paginationInfo'),paginationLinks=document.getElementById('paginationLinks'),auditDetailModal=document.getElementById('auditDetailModal'),modalTitle=document.getElementById('modalTitle'),modalActionBadge=document.getElementById('modalActionBadge'),modalDescription=document.getElementById('modalDescription'),modalTime=document.getElementById('modalTime'),modalUser=document.getElementById('modalUser'),modalOldValues=document.getElementById('modalOldValues'),modalNewValues=document.getElementById('modalNewValues');
+const auditEscape = value => String(value ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;');
+function auditBadge(action){const key=String(action||'').toUpperCase();const cls=key==='CREATED'?'border-emerald-200 bg-emerald-50 text-emerald-700':key==='UPDATED'?'border-amber-200 bg-amber-50 text-amber-700':key==='DELETED'?'border-rose-200 bg-rose-50 text-rose-700':'border-zinc-200 bg-zinc-100 text-zinc-600';return `<span class="inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${cls}">${auditEscape(key||'-')}</span>`}
+function auditJson(value){if(value===null||value===undefined||value==='')return '-';try{return JSON.stringify(typeof value==='string'?JSON.parse(value):value,null,2)}catch{return String(value)}}
+function fetchAudits(page=1){clearTimeout(auditTimer);auditTimer=setTimeout(async()=>{const body=document.getElementById('auditTableBody');try{const params=new URLSearchParams({page,search:filterSearch.value,module:filterModule.value,action:filterAction.value,start_date:filterStartDate.value,end_date:filterEndDate.value});const response=await fetch(`{{ route('api.audit.index') }}?${params}`,{headers:{Accept:'application/json'}});if(!response.ok)throw new Error('Data audit gagal dimuat.');const res=await response.json();if(res.success)renderTable(res.data)}catch(error){body.innerHTML=`<tr><td colspan="6" class="px-5 py-14 text-center text-sm text-rose-600">${auditEscape(error.message)}</td></tr>`}},300)}
+function renderTable(paginator){const body=document.getElementById('auditTableBody');auditRows=new Map((paginator.data||[]).map(row=>[String(row.id),row]));if(!paginator.data?.length){body.innerHTML='<tr><td colspan="6" class="px-5 py-14 text-center text-sm text-zinc-500">Belum ada data audit yang tercatat.</td></tr>';paginationInfo.textContent='Menampilkan 0 data';paginationLinks.innerHTML='';return}body.innerHTML=paginator.data.map(audit=>{const time=audit.created_at?new Date(audit.created_at).toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'}):'-';return `<tr class="transition hover:bg-zinc-50"><td class="whitespace-nowrap px-5 py-4 text-xs text-zinc-600">${auditEscape(time)}</td><td class="px-4 py-4"><p class="font-semibold text-zinc-950">${auditEscape(audit.user?.name||'System / Guest')}</p><p class="mt-0.5 text-xs text-zinc-400">${auditEscape(audit.user?.email||audit.ip_address||'')}</p></td><td class="px-4 py-4"><span class="rounded-lg bg-zinc-100 px-2.5 py-1.5 text-xs font-semibold text-zinc-700">${auditEscape(audit.module||'-')}</span></td><td class="px-4 py-4">${auditBadge(audit.action)}</td><td class="max-w-md px-4 py-4 leading-6 text-zinc-600"><p class="line-clamp-2">${auditEscape(audit.description||'-')}</p></td><td class="px-5 py-4 text-center"><button type="button" data-audit-detail="${audit.id}" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-700 transition hover:bg-zinc-950 hover:text-white" title="Lihat detail"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></td></tr>`}).join('');paginationInfo.textContent=`Menampilkan ${paginator.from??0}–${paginator.to??0} dari ${paginator.total??0} data`;paginationLinks.innerHTML=(paginator.links||[]).map(link=>{const label=link.label.includes('&laquo;')?'‹':link.label.includes('&raquo;')?'›':link.label;const pageNumber=link.url?new URL(link.url).searchParams.get('page'):'';return `<button type="button" ${link.url?'':'disabled'} onclick="fetchAudits(${pageNumber||1})" class="flex h-8 min-w-8 items-center justify-center rounded-lg border px-2 text-xs font-semibold transition ${link.active?'border-zinc-950 bg-zinc-950 text-white':'border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50'} disabled:cursor-not-allowed disabled:opacity-40">${label}</button>`}).join('')}
+function openAuditDetail(id){const audit=auditRows.get(String(id));if(!audit)return;modalTitle.textContent=audit.module||'Detail Aktivitas';modalActionBadge.innerHTML=auditBadge(audit.action);modalDescription.textContent=audit.description||'-';modalTime.textContent=audit.created_at?new Date(audit.created_at).toLocaleString('id-ID'):'-';modalUser.textContent=audit.user?.name||'System / Guest';modalOldValues.textContent=auditJson(audit.old_values);modalNewValues.textContent=auditJson(audit.new_values);auditDetailModal.classList.remove('hidden');document.body.style.overflow='hidden'}
+function closeAuditDetail(){auditDetailModal.classList.add('hidden');document.body.style.overflow=''}
+function resetFilters(){filterForm.reset();fetchAudits()}
+document.addEventListener('DOMContentLoaded',()=>{fetchAudits();auditTableBody.addEventListener('click',event=>{const button=event.target.closest('[data-audit-detail]');if(button)openAuditDetail(button.dataset.auditDetail)});document.querySelectorAll('[data-audit-close]').forEach(el=>el.addEventListener('click',closeAuditDetail));document.addEventListener('keydown',event=>{if(event.key==='Escape')closeAuditDetail()})});
 </script>
 @endsection

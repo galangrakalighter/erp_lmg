@@ -115,7 +115,7 @@
             inset: 0 auto 0 0;
             width: 270px;
             height: 100vh;
-            z-index: 1050;
+            z-index: 1100;
 
             background: #09090b;
             color: #fff;
@@ -152,6 +152,17 @@
 
         #content {
             min-height: calc(100vh - 80px);
+        }
+
+        @media (min-width: 1025px) {
+            body.sidebar-collapsed #accordionSidebar {
+                transform: translateX(-100%);
+            }
+
+            body.sidebar-collapsed #content-wrapper {
+                width: 100%;
+                margin-left: 0;
+            }
         }
 
         /* =====================================================
@@ -932,6 +943,10 @@
             }
 
             #accordionSidebar.show {
+                transform: translateX(0);
+            }
+
+            #accordionSidebar.translate-x-0 {
                 transform: translateX(0);
             }
 

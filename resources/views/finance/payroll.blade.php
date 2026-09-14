@@ -1,55 +1,39 @@
 @extends('layout.app')
 
 @section('content')
-
-
-    <!-- Page Heading -->
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">{{ $title }}</h1>
-        <button type="button" class="btn btn-primary btn-sm shadow-sm" data-toggle="modal" data-target="#addPayrollModal">
-            <i class="fas fa-plus fa-sm text-white-50 mr-1"></i> Buat Data Gaji Baru
-        </button>
-    </div>
-
-    <!-- Tabel Daftar Keseluruhan Payroll -->
-    <div class="card shadow-sm mb-4">
-        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-            <h6 class="m-0 font-weight-bold text-primary">Rekapitulasi Seluruh Gaji Karyawan</h6>
-            
-            <!-- Filter Tanggal / Periode -->
-            <div class="col-md-2 mb-2 mb-md-0">
-                <label class="small font-weight-bold text-dark">Periode Bulan:</label>
-                <input type="month" id="filter_period" class="form-control form-control-sm border-primary" value="{{ date('Y-m') }}" onchange="loadPayrollData()">
-            </div>
+<div class="lmg-finance min-h-screen bg-[#f7f7f5] px-4 py-6 sm:px-6 lg:px-8">
+@include('partials.lmg_finance_workspace')
+<div class="mx-auto max-w-[1600px] space-y-6">
+    <section class="relative overflow-hidden rounded-[28px] bg-zinc-950 px-6 py-8 text-white shadow-xl shadow-zinc-950/10 sm:px-9">
+        <div class="absolute -right-20 -top-24 h-72 w-72 rounded-full bg-lime-300/10 blur-3xl"></div>
+        <div class="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+            <div><p class="text-[11px] font-semibold uppercase tracking-[.22em] text-lime-300">Lighter Media Group · Finance</p><h1 class="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">Manajemen Payroll</h1><p class="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">Kelola tagihan gaji, pembayaran, dan status payroll karyawan per periode.</p></div>
+            <button type="button" class="inline-flex items-center justify-center gap-2 rounded-xl bg-lime-300 px-4 py-2.5 text-sm font-bold text-zinc-950 transition hover:bg-lime-200" data-toggle="modal" data-target="#addPayrollModal"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Buat Data Gaji</button>
         </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered table-striped" width="100%" cellspacing="0">
-                    <thead class="thead-dark">
+    </section>
+
+    <section class="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
+        <div class="flex flex-col gap-4 border-b border-zinc-200 px-5 py-4 sm:flex-row sm:items-end sm:justify-between">
+            <div><h2 class="font-semibold text-zinc-950">Rekapitulasi Gaji Karyawan</h2><p class="mt-1 text-xs text-zinc-500">Data payroll ditampilkan berdasarkan periode yang dipilih.</p></div>
+            <label class="block w-full sm:w-56"><span class="mb-1.5 block text-[10px] font-bold uppercase tracking-[.12em] text-zinc-500">Periode Bulan</span><input type="month" id="filter_period" class="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-zinc-400 focus:bg-white focus:ring-2 focus:ring-zinc-100" value="{{ date('Y-m') }}" onchange="loadPayrollData()"></label>
+        </div>
+        <div class="overflow-x-auto">
+                <table class="w-full min-w-[1050px] text-left text-sm" width="100%">
+                    <thead class="bg-zinc-950 text-[10px] font-semibold uppercase tracking-[.12em] text-white">
                         <tr>
-                            <th>No</th>
-                            <th>Tanggal</th>
-                            <th>Nama Karyawan</th>
-                            <th>Total Tagihan</th>
-                            <th>Sudah Dibayar</th>
-                            <th>Sisa Kurang</th>
-                            <th>Status</th>
-                            <th>Aksi</th>
+                            <th class="px-4 py-3.5 text-center">No</th><th class="px-4 py-3.5">Tanggal</th><th class="px-4 py-3.5">Karyawan</th><th class="px-4 py-3.5 text-right">Total Gaji</th><th class="px-4 py-3.5 text-right">Dibayar</th><th class="px-4 py-3.5 text-right">Sisa</th><th class="px-4 py-3.5">Status</th><th class="px-4 py-3.5 text-center">Aksi</th>
                         </tr>
                     </thead>
-                    <tbody id="payrollTableBody">
+                    <tbody id="payrollTableBody" class="divide-y divide-zinc-100">
                         <!-- Data akan dimuat secara otomatis lewat API AJAX -->
                         <tr>
-                            <td colspan="8" class="text-center text-muted py-4">Memuat data dari server...</td>
+                            <td colspan="8" class="px-5 py-14 text-center text-sm text-zinc-500">Memuat data payroll...</td>
                         </tr>
                     </tbody>
                 </table>
-                <nav aria-label="Page navigation">
-                    <ul id="payrollPagination" class="pagination justify-content-end mt-3"></ul>
-                </nav>
-            </div>
         </div>
-    </div>
+        <nav class="flex justify-end border-t border-zinc-200 px-5 py-4" aria-label="Navigasi halaman"><ul id="payrollPagination" class="flex items-center gap-1"></ul></nav>
+    </section>
 
 
     <!-- Modal Tambah Payroll -->
@@ -68,6 +52,7 @@
                     <div class="modal-body">
                         <!-- Pilih Karyawan (user_id) -->
                         <div class="form-group">
+                            <label for="coa" class="small font-weight-bold">Akun Beban Gaji <span class="text-danger">*</span></label>
                             <select name="coa" id="coa" class="form-control" required>
                                 <option value="">-- Pilih Akun --</option>
                                 <!-- Asumsi Anda mengirim variable $users dari controller -->
@@ -148,7 +133,8 @@
                         <input type="hidden" name="payroll_id" id="payment_payroll_id">
 
                         <div class="form-group">
-                            <select name="coa" id="coa" class="form-control" required>
+                            <label for="payment_coa" class="small font-weight-bold">Akun Pembayaran <span class="text-danger">*</span></label>
+                            <select name="coa" id="payment_coa" class="form-control" required>
                                 <option value="">-- Pilih Akun --</option>
                                 <!-- Asumsi Anda mengirim variable $users dari controller -->
                                 @foreach($accountKewajiban as $ap)
@@ -275,6 +261,11 @@
             </div>
         </div>
     </div>
+<style>
+.lmg-finance .modal-body .form-group{margin-bottom:16px}.lmg-finance .modal-body .form-group:last-child{margin-bottom:0}
+.lmg-finance .modal-header{background:#18181b!important;color:#fff!important}.lmg-finance .modal-title{font-size:16px;font-weight:700}
+.lmg-finance .modal-footer{background:#fafafa}.lmg-finance .modal-body textarea{resize:vertical}
+</style>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     function loadPayrollData(period = '', page = 1) {
@@ -340,11 +331,11 @@
 
                     let badgeHtml = '';
                     if (p.status === 'paid') {
-                        badgeHtml = '<span class="badge badge-success">Lunas</span>';
+                        badgeHtml = '<span class="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700">Lunas</span>';
                     } else if (p.status === 'partial') {
-                        badgeHtml = '<span class="badge badge-warning">Sebagian</span>';
+                        badgeHtml = '<span class="inline-flex rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-amber-700">Sebagian</span>';
                     } else {
-                        badgeHtml = '<span class="badge badge-secondary">Belum Dibayar</span>';
+                        badgeHtml = '<span class="inline-flex rounded-full border border-zinc-200 bg-zinc-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-zinc-600">Belum Dibayar</span>';
                     }
 
                     let userName = p.user ? p.user.name : '-';
@@ -358,21 +349,21 @@
                     let destroyUrl = deleteUrlTemplate.replace(':id', p.id);
 
                     let row = `
-                        <tr>
-                            <td class="text-center">${rowNumber}</td>
-                            <td>${formattedDate}</td>
-                            <td>
-                                <strong>${userName}</strong>
-                                <br><small class="text-muted">${userEmail}</small>
+                        <tr class="transition hover:bg-zinc-50/80">
+                            <td class="px-4 py-4 text-center text-xs text-zinc-400">${rowNumber}</td>
+                            <td class="whitespace-nowrap px-4 py-4 text-zinc-600">${formattedDate}</td>
+                            <td class="px-4 py-4">
+                                <strong class="block font-semibold text-zinc-950">${userName}</strong>
+                                <small class="mt-0.5 block text-xs text-zinc-500">${userEmail}</small>
                             </td>
-                            <td>${formatTotal}</td>
-                            <td class="text-success font-weight-bold">${formatPaid}</td>
-                            <td class="${sisa > 0 ? 'text-danger font-weight-bold' : 'text-success'}">
+                            <td class="whitespace-nowrap px-4 py-4 text-right font-semibold text-zinc-950">${formatTotal}</td>
+                            <td class="whitespace-nowrap px-4 py-4 text-right font-semibold text-emerald-700">${formatPaid}</td>
+                            <td class="whitespace-nowrap px-4 py-4 text-right font-bold ${sisa > 0 ? 'text-rose-600' : 'text-emerald-600'}">
                                 ${formatSisa}
                             </td>
-                            <td>${badgeHtml}</td>
-                            <td class="text-center">
-                                <button type="button" class="btn btn-success btn-circle btn-sm btn-pay" 
+                            <td class="px-4 py-4">${badgeHtml}</td>
+                            <td class="px-4 py-4 text-center"><div class="flex items-center justify-center gap-1.5">
+                                <button type="button" class="btn-pay inline-flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-200 bg-white text-emerald-700 transition hover:bg-emerald-50"
                                         data-toggle="modal" 
                                         data-target="#paymentModal" 
                                         data-id="${p.id}" 
@@ -381,7 +372,7 @@
                                         title="Tambah Pembayaran">
                                     <i class="fas fa-money-bill-wave"></i>
                                 </button>
-                                <button type="button" class="btn btn-warning btn-circle btn-sm" 
+                                <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-amber-200 bg-white text-amber-700 transition hover:bg-amber-50"
                                         data-toggle="modal" 
                                         data-target="#editPayrollModal" 
                                         data-id="${p.id}" 
@@ -395,13 +386,13 @@
                                         title="Edit Data">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                <form action="${destroyUrl}".replace(':id', p.id) method="POST" class="d-inline" onsubmit="return confirm('Yakin ingin menghapus data ini?');">
+                                <form action="${destroyUrl}" method="POST" class="inline" onsubmit="return confirm('Yakin ingin menghapus data ini?');">
                                     <input type="hidden" name="_token" value="${csrfToken}">
                                     <input type="hidden" name="_method" value="DELETE">
-                                    <button type="submit" class="btn btn-danger btn-circle btn-sm" title="Hapus">
+                                    <button type="submit" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200 bg-white text-rose-600 transition hover:bg-rose-50" title="Hapus">
                                         <i class="fas fa-trash"></i>
                                     </button>
-                                </form>
+                                </form></div>
                             </td>
                         </tr>
                     `;
@@ -535,4 +526,6 @@
 
     
 </script>
+</div>
+</div>
 @endsection

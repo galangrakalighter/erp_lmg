@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\ChartOfAccount;
 use App\Services\LedgerService;
+use App\Services\TrialBalanceService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -16,7 +17,10 @@ class CarryForwardOpeningBalances extends Command
 
     protected $description = 'Jadikan saldo akhir bulan sebelumnya sebagai saldo awal bulan baru';
 
-    public function handle(LedgerService $ledgerService): int
+    public function handle(
+        LedgerService $ledgerService,
+        TrialBalanceService $trialBalanceService
+    ): int
     {
         $targetPeriod = (string) ($this->option('period')
             ?: now('Asia/Jakarta')->format('Y-m'));
@@ -34,17 +38,20 @@ class CarryForwardOpeningBalances extends Command
 
         $accounts = ChartOfAccount::query()
             ->orderBy('id')
-            ->get(['id', 'perusahaan']);
+            ->get(['id', 'kode', 'perusahaan']);
 
         $now = now();
         $changed = 0;
+        $profitLossByCompany = [];
 
         DB::transaction(function () use (
             $accounts,
             $ledgerService,
+            $trialBalanceService,
             $previousPeriod,
             $targetPeriod,
             $now,
+            &$profitLossByCompany,
             &$changed
         ) {
             foreach ($accounts as $account) {
@@ -57,6 +64,26 @@ class CarryForwardOpeningBalances extends Command
                     (float) $ledger['final_balance'],
                     2
                 );
+
+                // Khusus akun 301 (modal/laba ditahan), saldo awal periode baru
+                // juga membawa laba-rugi bersih periode sebelumnya. Nilai laba
+                // positif akan menambah saldo, sedangkan rugi negatif mengurangi.
+                if ((string) $account->kode === '301') {
+                    $companyId = (int) $account->perusahaan;
+
+                    if (!array_key_exists($companyId, $profitLossByCompany)) {
+                        $profitLossByCompany[$companyId] = $this->calculateProfitLoss(
+                            $trialBalanceService,
+                            $companyId,
+                            $previousPeriod
+                        );
+                    }
+
+                    $finalBalance = round(
+                        $finalBalance + $profitLossByCompany[$companyId],
+                        2
+                    );
+                }
 
                 $existing = DB::table('opening_balances')
                     ->where('periode', $targetPeriod)
@@ -106,5 +133,50 @@ class CarryForwardOpeningBalances extends Command
         );
 
         return self::SUCCESS;
+    }
+
+    private function calculateProfitLoss(
+        TrialBalanceService $trialBalanceService,
+        int $companyId,
+        string $period
+    ): float {
+        $trialBalance = $trialBalanceService->getTrialBalance($period, $companyId);
+        $balances = collect($trialBalance['report_data'] ?? [])->keyBy(
+            fn (array $row) => (string) $row['kode']
+        );
+
+        $adjustments = DB::table('adjustment_journal_details as ajd')
+            ->join('adjustment_journals as aj', 'ajd.adjustment_journal_id', '=', 'aj.id')
+            ->where('aj.perusahaan', $companyId)
+            ->whereRaw("to_char(aj.tgl_transaksi, 'YYYY-MM') = ?", [$period])
+            ->groupBy('ajd.chart_of_account_id')
+            ->selectRaw('ajd.chart_of_account_id, SUM(ajd.debit) as debit, SUM(ajd.kredit) as kredit')
+            ->get()
+            ->keyBy('chart_of_account_id');
+
+        $accounts = ChartOfAccount::query()
+            ->where('perusahaan', $companyId)
+            ->where('is_active', true)
+            ->where(function ($query) {
+                $query->where('kode', 'like', '4%')
+                    ->orWhere('kode', 'like', '5%')
+                    ->orWhere('kode', 'like', '6%');
+            })
+            ->get(['id', 'kode']);
+
+        $profitLoss = 0.0;
+
+        foreach ($accounts as $account) {
+            $balance = $balances->get((string) $account->kode);
+            $adjustment = $adjustments->get($account->id);
+            $debit = (float) ($balance['saldo_debit'] ?? 0)
+                + (float) ($adjustment->debit ?? 0);
+            $credit = (float) ($balance['saldo_kredit'] ?? 0)
+                + (float) ($adjustment->kredit ?? 0);
+
+            $profitLoss += $credit - $debit;
+        }
+
+        return round($profitLoss, 2);
     }
 }

@@ -12,6 +12,7 @@ Aplikasi internal berbasis Laravel untuk mengelola operasional Lighter Media Gro
 - Folder Master
 - File Master
 - Chart of Account
+- Finance: dashboard, pembayaran, profit, payroll, audit, dan laporan keuangan
 
 > Modul lain yang terdapat di repository dapat ditambahkan ke dokumentasi ini secara bertahap.
 
@@ -30,6 +31,14 @@ Aplikasi internal berbasis Laravel untuk mengelola operasional Lighter Media Gro
 - [Folder Master](#folder-master)
 - [File Master](#file-master)
 - [Chart of Account](#chart-of-account)
+- [Modul Finance](#modul-finance)
+- [Dashboard Finance](#dashboard-finance)
+- [Pembayaran dan invoice](#pembayaran-dan-invoice)
+- [Profit per client](#profit-per-client)
+- [Payroll](#payroll)
+- [Audit Trail](#audit-trail)
+- [Laporan Keuangan](#laporan-keuangan)
+- [Carry-forward saldo awal](#carry-forward-saldo-awal)
 - [Pemeliharaan integritas client](#pemeliharaan-integritas-client)
 - [Troubleshooting](#troubleshooting)
 - [Pemeriksaan setelah perubahan](#pemeriksaan-setelah-perubahan)
@@ -133,7 +142,11 @@ app/
 │   ├── HCDailyController.php
 │   ├── MasterFolderController.php
 │   ├── AccountMasterFileController.php
-│   └── COAController.php
+│   ├── COAController.php
+│   ├── DashboardController.php
+│   ├── InvoiceController.php
+│   ├── LedgerController.php
+│   └── PayrollController.php
 ├── Models/
 │   ├── CRM.php
 │   ├── CRM_HUMAN.php
@@ -166,7 +179,15 @@ resources/views/
 │   ├── index.blade.php
 │   ├── show.blade.php
 │   └── preview.blade.php
-├── finance/coa.blade.php
+├── finance/
+│   ├── coa.blade.php
+│   ├── dashboard.blade.php
+│   ├── invoice.blade.php
+│   ├── profit_list.blade.php
+│   ├── detail_profit.blade.php
+│   ├── payroll.blade.php
+│   ├── audit.blade.php
+│   └── report_cash_flow.blade.php
 ├── partials/
 │   ├── navbar.blade.php
 │   └── sidebar_new.blade.php
@@ -196,6 +217,7 @@ flowchart LR
     I --> L[Daily Work]
     I --> M[Folder dan File Master]
     I --> N[Chart of Account]
+    I --> O[Finance]
 ```
 
 Semua halaman utama di dalam grup `auth` hanya dapat dibuka setelah pengguna berhasil login. Pengguna yang belum terautentikasi diarahkan ke halaman login.
@@ -351,9 +373,15 @@ JavaScript di bagian bawah `sidebar_new.blade.php`:
 
 Jika menambahkan dropdown baru, pastikan nilai `data-sidebar-collapse` dan `id` target unik dan sama persis.
 
-### Sidebar mobile
+### Sidebar responsif
 
-Pada layar kecil, sidebar dibuka dari tombol `#sidebarToggleTop`. Sidebar dapat ditutup melalui tombol close, backdrop, tombol Escape, atau setelah pengguna memilih link navigasi.
+Tombol `#sidebarToggleTop` dapat membuka dan menutup sidebar pada desktop maupun perangkat kecil.
+
+- Pada desktop, kondisi tertutup disimpan di `localStorage` dengan key `lmg-sidebar-collapsed` dan area konten otomatis menggunakan lebar penuh.
+- Pada perangkat kecil, sidebar muncul sebagai panel di atas backdrop tanpa efek blur.
+- Sidebar dapat ditutup melalui tombol close, backdrop, tombol Escape, atau setelah pengguna memilih link navigasi.
+- `sidebar_new.blade.php` menjadi satu-satunya pengendali state sidebar. Jangan menambahkan script toggle kedua di navbar karena dapat membuat class `show` dan `translate-x-0` saling bertabrakan.
+- Sidebar menggunakan `z-index` lebih tinggi daripada `#sidebarBackdrop` agar menu tidak tertutup lapisan gelap pada perangkat kecil.
 
 ## Navbar
 
@@ -361,7 +389,7 @@ Navbar berada di `resources/views/partials/navbar.blade.php` dan dimasukkan lang
 
 Navbar bertanggung jawab untuk:
 
-- Tombol pembuka sidebar pada perangkat mobile
+- Tombol buka/tutup sidebar pada desktop dan perangkat mobile
 - Identitas halaman/aplikasi
 - Informasi pengguna aktif
 - Akses menu akun
@@ -596,6 +624,8 @@ Daily Work adalah halaman penyusunan agenda kerja harian berbasis API. Blade han
 
 Route Daily Work di `api.php` menggunakan middleware `web` dan `auth`. Middleware `web` diperlukan karena autentikasi aplikasi menggunakan session browser. Tanpa middleware tersebut, `Auth::user()` pada controller akan bernilai `null`.
 
+Pada operasi tambah dan edit, `start_time` atau jam mulai wajib diisi dengan format `HH:mm`. Validasi diterapkan pada form dan API.
+
 ### Alur pemuatan data
 
 ```mermaid
@@ -765,6 +795,159 @@ Formatter HTML pada halaman ini bernama `escapeCoaHtml`. Gunakan nama tersebut d
 TypeError: text.replace is not a function
 ```
 
+## Modul Finance
+
+Halaman Finance menggunakan `layout.app` dan komponen visual Tailwind dengan identitas Lighter Media Group. Menu Finance dikelompokkan berdasarkan perusahaan yang dapat diakses pengguna melalui data dari `MenuServiceProvider`.
+
+### File utama
+
+| Bagian | Controller/service | Tampilan |
+|---|---|---|
+| Dashboard | `DashboardController@finance_dashboard` | `finance/dashboard.blade.php` |
+| Chart of Account | `COAController`, `ChartOfAccountService` | `finance/coa.blade.php` |
+| Invoice dan pembayaran | `InvoiceController` | `finance/invoice.blade.php` |
+| Profit client | `InvoiceController@list_client`, `detail` | `finance/profit_list.blade.php`, `detail_profit.blade.php` |
+| Payroll | `PayrollController` | `finance/payroll.blade.php` |
+| Audit Trail | `DashboardController@audit`, `getDataAudit` | `finance/audit.blade.php` |
+| Buku Besar dan laporan | `LedgerController`, `LedgerService`, `TrialBalanceService` | `finance/bb/*`, `finance/report_cash_flow.blade.php` |
+| Carry-forward | `CarryForwardOpeningBalances` | Perintah Artisan terjadwal |
+
+Alur data umumnya:
+
+```mermaid
+flowchart LR
+    A[Chart of Account] --> B[Opening Balance]
+    C[Jurnal Umum Posted] --> D[TrialBalanceService]
+    E[Jurnal Penyesuaian] --> F[Neraca Lajur]
+    B --> D
+    D --> F
+    F --> G[Laba Rugi]
+    F --> H[Neraca]
+    G --> I[Perubahan Modal]
+    D --> J[Dashboard Finance]
+```
+
+Kolom `chart_of_account.type` berisi posisi normal akun (`D` atau `K`). Klasifikasi seperti `aset`, `pendapatan`, `beban`, `kewajiban`, dan `ekuitas` berada pada kolom `category`. Jangan memfilter kategori melalui kolom `type` karena hasilnya akan kosong.
+
+## Dashboard Finance
+
+Dashboard dibuka melalui `GET /dashboard_finance/{id}` dan menampilkan data perusahaan serta periode yang dipilih.
+
+Ringkasan yang tersedia:
+
+- Profit atau rugi bersih.
+- Pendapatan dan beban.
+- Arus kas masuk, keluar, dan bersih.
+- Total posisi saldo aset.
+- Komposisi pendapatan/beban dan kas masuk/keluar.
+- Rincian akun aset dan akses menuju Jurnal Penutup.
+
+Dashboard menggunakan `TrialBalanceService` sebagai sumber posisi akun. Perhitungan tersebut mencakup opening balance dan jurnal berstatus `posted`. Akun pendapatan dikenali melalui kategori `pendapatan` atau kode awal `4`, beban melalui kategori `beban` atau kode awal `5/6`, dan aset melalui kategori `aset` atau kode awal `1`.
+
+## Pembayaran dan invoice
+
+Halaman pembayaran dibuka melalui route `invoice.index`. Data tabel dimuat dari endpoint bernama `api.invoices.data` menggunakan `fetch`.
+
+Halaman ini tidak menggunakan jQuery DataTables. Fitur pencarian dan pagination dijalankan oleh JavaScript halaman agar tidak bergantung pada plugin DataTables. Setiap invoice tetap menyediakan aksi:
+
+- Mencatat pembayaran jika belum lunas.
+- Membuka PDF invoice.
+- Mengedit invoice.
+- Menghapus invoice setelah konfirmasi.
+
+API menyertakan `due_date` untuk tampilan dan `due_date_raw` berformat `YYYY-MM-DD` untuk input edit. Status `paid`, `partial`, dan belum lunas ditampilkan dengan badge berbeda.
+
+## Profit per client
+
+Profit per client memiliki dua mode:
+
+- Mode ringkasan menampilkan kartu client, total invoice, pembayaran, sisa piutang, dan persentase pembayaran.
+- Mode rincian menampilkan invoice dan pembayaran yang dikelompokkan berdasarkan client.
+
+Klik kartu client untuk membuka halaman detail. Tampilan daftar dan detail memakai partial transaksi bersama `finance/partials/profit_transaction_table.blade.php` agar susunan invoice dan pembayaran tetap konsisten.
+
+## Payroll
+
+Payroll dibuka melalui `GET /payroll/{id}` dan datanya dimuat dari `/api/get-data-payroll` berdasarkan periode bulan.
+
+Fungsi utama:
+
+- Membuat tagihan gaji karyawan.
+- Memfilter payroll berdasarkan periode.
+- Menambahkan pembayaran gaji.
+- Mengedit payroll sesuai status.
+- Menghapus payroll beserta relasi jurnalnya jika periode belum dikunci.
+- Menampilkan pagination dari respons API.
+
+Form menggunakan akun beban untuk pencatatan payroll dan akun kewajiban/pembayaran ketika gaji dibayarkan. Tombol hapus harus menggunakan URL hasil `route('payroll.destroy', id)` tanpa operasi `.replace()` di dalam atribut HTML.
+
+## Audit Trail
+
+Audit Trail dibuka melalui route `audit.index`. Filter dan pagination mengambil data dari endpoint `api.audit.index` tanpa memuat ulang halaman.
+
+Filter yang tersedia meliputi kata pencarian, modul, jenis aksi, tanggal awal, dan tanggal akhir. Jenis aksi utama adalah `CREATED`, `UPDATED`, dan `DELETED`.
+
+Tombol detail pada setiap baris membuka modal yang menampilkan:
+
+- Modul dan jenis aksi.
+- Waktu serta pengguna.
+- Deskripsi aktivitas.
+- JSON data lama (`old_values`).
+- JSON data baru (`new_values`).
+
+Konten API harus dikonversi menjadi string dan di-escape sebelum dimasukkan ke HTML. Data JSON ditampilkan melalui `textContent` agar tidak dieksekusi sebagai markup.
+
+## Laporan Keuangan
+
+Halaman Laporan Keuangan berada di `finance/report_cash_flow.blade.php` dan mempunyai tab:
+
+1. Arus Kas.
+2. Laba Rugi.
+3. Neraca.
+4. Modal atau Laporan Perubahan Modal.
+
+Laba Rugi dan Neraca menggunakan hasil Neraca Lajur yang sama agar angka halaman dan export tetap konsisten. Tab Modal khusus menggunakan akun berkode tepat `301`.
+
+Rumus perubahan modal:
+
+```text
+Modal akhir periode sebelumnya
++ laba/rugi bersih periode sebelumnya yang tetap bertanda
+= posisi modal periode laporan
+```
+
+Laba memiliki nilai positif dan menambah modal. Rugi memiliki nilai negatif dan mengurangi modal. Contoh:
+
+```text
+-39.125.810 + (-7.649.838) = -46.775.648
+```
+
+Untuk laporan September 2026, tab Modal menggunakan saldo akun `301` dan laba/rugi bersih Agustus 2026, bukan laba/rugi September. Nama periode sumber laba/rugi ditampilkan pada baris laporan agar tidak ambigu.
+
+## Carry-forward saldo awal
+
+Saldo awal bulanan diperbarui melalui:
+
+```bash
+php artisan finance:carry-forward-opening-balances --period=2026-09
+```
+
+Gunakan simulasi tanpa menyimpan perubahan:
+
+```bash
+php artisan finance:carry-forward-opening-balances --period=2026-09 --dry-run
+```
+
+Aturan carry-forward:
+
+- Semua akun membawa saldo akhirnya dari bulan sebelumnya.
+- Hanya akun berkode tepat `301` yang turut ditambah laba/rugi bersih bulan sebelumnya.
+- Perhitungan laba/rugi mencakup akun kode awal `4`, `5`, dan `6`, termasuk jurnal penyesuaian.
+- Perhitungan dilakukan terpisah untuk setiap perusahaan.
+- Nilai rugi tidak diubah menjadi absolut; nilai negatif langsung ditambahkan sehingga mengurangi saldo modal.
+
+Perintah ini dijadwalkan melalui `routes/console.php` pada tanggal 1 setiap bulan pukul 00:05 zona waktu Asia/Jakarta.
+
 ## Pemeliharaan integritas client
 
 Migration berikut digunakan untuk membersihkan relasi client lama:
@@ -775,6 +958,33 @@ Migration berikut digunakan untuk membersihkan relasi client lama:
 Migration menggabungkan `produk_client` dengan nama yang sama, memindahkan referensi `client_division` dan `user_client` ke ID utama, lalu membersihkan relasi yang tidak lagi mempunyai pasangan pada `produk_client`. Selalu buat backup database sebelum menjalankan migration pembersihan pada lingkungan produksi.
 
 ## Troubleshooting
+
+### Tailwind hilang setelah Vite memakai IP LAN
+
+Jika `public/hot` tersedia, directive `@vite` selalu mengambil aset dari alamat dev server yang tertulis di file tersebut dan tidak memakai `public/build`. Contoh konfigurasi LAN:
+
+```javascript
+server: {
+    host: '0.0.0.0',
+    port: 5173,
+    cors: { origin: 'http://192.168.14.99:8000' },
+    hmr: { host: '192.168.14.99', port: 5173 },
+}
+```
+
+Selaraskan juga `.env`:
+
+```dotenv
+APP_URL=http://192.168.14.99:8000
+```
+
+Untuk development, pastikan Vite tetap berjalan dan port `5173` dapat diakses:
+
+```bash
+npm run dev
+```
+
+Untuk memakai aset hasil build tanpa dev server, jalankan `npm run build`, pastikan `public/build/manifest.json` tersedia, lalu hapus file `public/hot`. Bersihkan cache dengan `php artisan optimize:clear` setelah mengubah URL atau konfigurasi aset.
 
 ### Tampilan tidak berubah setelah update
 
@@ -858,6 +1068,29 @@ Halaman detail yang masih memiliki interaksi editor lama menggunakan `resources/
 - Tambah, edit, dan hapus akun bekerja.
 - Nilai numerik tidak memunculkan error formatter.
 - Saldo pembuka tampil sesuai periode.
+
+### Finance
+
+- Dashboard menampilkan akun dari `category`, bukan mencoba membaca kategori dari `type`.
+- Angka dashboard berubah ketika periode diganti.
+- Dashboard hanya menghitung jurnal umum berstatus `posted`.
+- Tabel Pembayaran dapat mencari dan berpindah halaman tanpa DataTables.
+- Aksi bayar, PDF, edit, dan hapus invoice bekerja.
+- Mode ringkasan dan rincian Profit menampilkan invoice serta pembayaran terkait.
+- Filter periode, pembayaran, edit, hapus, dan pagination Payroll bekerja.
+- Filter dan pagination Audit bekerja tanpa reload.
+- Tombol detail Audit menampilkan `old_values` dan `new_values`.
+- Tab Arus Kas, Laba Rugi, Neraca, dan Modal dapat berpindah dengan benar.
+- Tab Modal memakai laba/rugi periode sebelumnya dan mempertahankan tanda negatif untuk rugi.
+- Simulasi carry-forward akun `301` dapat dijalankan menggunakan opsi `--dry-run`.
+
+### Sidebar dan navbar
+
+- Tombol navbar membuka dan menutup sidebar pada desktop serta perangkat kecil.
+- Konten melebar ketika sidebar desktop ditutup.
+- Status sidebar desktop bertahan setelah halaman dimuat ulang.
+- Sidebar perangkat kecil berada di atas backdrop dan seluruh menu terlihat jelas.
+- Klik backdrop, tombol close, Escape, atau link menu menutup sidebar mobile.
 
 ## Pemeriksaan setelah perubahan
 

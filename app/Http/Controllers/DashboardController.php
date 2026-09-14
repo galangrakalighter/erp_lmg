@@ -9,6 +9,7 @@ use App\Models\Division;
 use App\Models\UserDivision;
 use App\Models\ProdukClient;
 use App\Models\AuditTrail;
+use App\Services\TrialBalanceService;
 
 class DashboardController extends Controller
 {
@@ -75,7 +76,7 @@ class DashboardController extends Controller
         return view('hc.kpi', compact('title', 'listProject', 'listBawahan', 'listDivisi'));
     }
 
-    public function finance_dashboard(Request $request, $id){
+    public function finance_dashboard(Request $request, $id, TrialBalanceService $trialBalanceService){
         $periode = $request->get('periode', date('Y-m'));
         $year    = date('Y', strtotime($periode));
         $month   = date('m', strtotime($periode));
@@ -84,27 +85,21 @@ class DashboardController extends Controller
 
         $perusahaan_baru = DB::table('perusahaan')->where('id', $id)->first();
 
-        // 1. HITUNG PROFIT BERSIH (Pendapatan - Beban)
-        // Sesuai nilai option HTML: 'pendapatan' dan 'beban'
-        $totalPendapatan = DB::table('general_journal_details as gjd')
-            ->join('general_journals as gj', 'gj.id', '=', 'gjd.general_journal_id')
-            ->join('chart_of_account as coa', 'coa.id', '=', 'gjd.chart_of_account_id')
-            ->where('coa.type', 'pendapatan')
-            ->where('gj.perusahaan', $id) 
-            ->where('coa.perusahaan', $id)
-            ->whereYear('gj.tgl_transaksi', $year)
-            ->whereMonth('gj.tgl_transaksi', $month)
-            ->sum(DB::raw('gjd.kredit - gjd.debit'));
+        // Gunakan Neraca Saldo sebagai sumber utama agar saldo awal dan hanya
+        // jurnal berstatus posted ikut dihitung secara konsisten.
+        $trialBalance = collect(
+            $trialBalanceService->getTrialBalance($periode, (int) $id)['report_data'] ?? []
+        );
 
-        $totalBeban = DB::table('general_journal_details as gjd')
-            ->join('general_journals as gj', 'gj.id', '=', 'gjd.general_journal_id')
-            ->join('chart_of_account as coa', 'coa.id', '=', 'gjd.chart_of_account_id')
-            ->where('coa.type', 'beban') 
-            ->where('gj.perusahaan', $id)
-            ->where('coa.perusahaan', $id)
-            ->whereYear('gj.tgl_transaksi', $year)
-            ->whereMonth('gj.tgl_transaksi', $month)
-            ->sum(DB::raw('gjd.debit - gjd.kredit'));
+        $totalPendapatan = $trialBalance
+            ->filter(fn ($row) => strtolower((string) ($row['category'] ?? '')) === 'pendapatan'
+                || str_starts_with((string) $row['kode'], '4'))
+            ->sum(fn ($row) => (float) $row['saldo_kredit'] - (float) $row['saldo_debit']);
+
+        $totalBeban = $trialBalance
+            ->filter(fn ($row) => strtolower((string) ($row['category'] ?? '')) === 'beban'
+                || in_array(substr((string) $row['kode'], 0, 1), ['5', '6']))
+            ->sum(fn ($row) => (float) $row['saldo_debit'] - (float) $row['saldo_kredit']);
 
         $totalProfit = $totalPendapatan - $totalBeban;
 
@@ -114,7 +109,11 @@ class DashboardController extends Controller
         $cashflowIn = DB::table('general_journal_details as gjd')
             ->join('general_journals as gj', 'gj.id', '=', 'gjd.general_journal_id')
             ->join('chart_of_account as coa', 'coa.id', '=', 'gjd.chart_of_account_id')
-            ->where('coa.type', 'aset') 
+            ->where(function ($query) {
+                $query->whereRaw("LOWER(COALESCE(coa.category, '')) = ?", ['aset'])
+                    ->orWhere('coa.kode', 'like', '1%');
+            })
+            ->where('gj.status', 'posted')
             ->where('gj.perusahaan', $id)
             ->where('coa.perusahaan', $id)
             ->whereYear('gj.tgl_transaksi', $year)
@@ -124,7 +123,11 @@ class DashboardController extends Controller
         $cashflowOut = DB::table('general_journal_details as gjd')
             ->join('general_journals as gj', 'gj.id', '=', 'gjd.general_journal_id')
             ->join('chart_of_account as coa', 'coa.id', '=', 'gjd.chart_of_account_id')
-            ->where('coa.type', 'aset')
+            ->where(function ($query) {
+                $query->whereRaw("LOWER(COALESCE(coa.category, '')) = ?", ['aset'])
+                    ->orWhere('coa.kode', 'like', '1%');
+            })
+            ->where('gj.status', 'posted')
             ->where('gj.perusahaan', $id)
             ->where('coa.perusahaan', $id)
             ->whereYear('gj.tgl_transaksi', $year)
@@ -133,20 +136,17 @@ class DashboardController extends Controller
 
         $netCashflow = $cashflowIn - $cashflowOut;
 
-        // 3. HITUNG SALDO UTAMA TERKINI (Khusus Aset Kas/Bank)
-        $mainBalances = DB::table('chart_of_account as coa')
-            ->leftJoin('general_journal_details as gjd', 'coa.id', '=', 'gjd.chart_of_account_id')
-            ->select(
-                'coa.id',
-                'coa.kode',
-                'coa.nama_akun',
-                'coa.type',
-                DB::raw('COALESCE(SUM(gjd.debit - gjd.kredit), 0) as balance')
-            )
-            ->where('coa.type', 'aset') // Mengambil dari kategori aset
-            ->where('coa.perusahaan', $id)
-            ->groupBy('coa.id', 'coa.kode', 'coa.nama_akun', 'coa.type')
-            ->get();
+        // Posisi aset pada periode terpilih, termasuk opening balance.
+        $mainBalances = $trialBalance
+            ->filter(fn ($row) => strtolower((string) ($row['category'] ?? '')) === 'aset'
+                || str_starts_with((string) $row['kode'], '1'))
+            ->map(fn ($row) => (object) [
+                'kode' => $row['kode'],
+                'nama_akun' => $row['nama_akun'],
+                'type' => $row['category'] ?: 'aset',
+                'balance' => (float) $row['saldo_debit'] - (float) $row['saldo_kredit'],
+            ])
+            ->values();
 
         $totalSaldoUtama = $mainBalances->sum('balance');
 

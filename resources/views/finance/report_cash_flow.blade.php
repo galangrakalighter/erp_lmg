@@ -1,279 +1,848 @@
 @extends('layout.app')
+
 @section('content')
-<div class="p-6 max-w-7xl mx-auto">
-    
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-gray-200 pb-4 mb-6">
-        <div>
-            <h1 class="text-xl font-bold text-gray-900 tracking-tight">{{ $title }}</h1>
-            <p class="text-xs text-gray-500 mt-1">
-                Periode Laporan: <span class="font-semibold text-gray-700">{{ \Carbon\Carbon::parse($periode.'-01')->isoFormat('MMMM YYYY') }}</span>
-            </p>
-        </div>
-        
-        <form action="{{ url()->current() }}" method="GET" class="d-flex flex-wrap align-items-center gap-2 mt-3 mt-sm-0">
-            <input type="month" name="periode" value="{{ $periode }}" 
-                class="form-control form-control-sm bg-white font-weight-medium text-dark shadow-sm" style="width: auto;"
-                onchange="this.form.submit()">
 
-            <a id="financial-pdf-export"
-            href="{{ url('finance/report/cash-flow/export/'. $id .'?periode=' . $periode) }}"
-            data-arus-kas-url="{{ url('finance/report/cash-flow/export/'. $id .'?periode=' . $periode) }}"
-            data-laba-rugi-url="{{ url('finance/report/worksheet/export-laba-rugi/'. $id .'?periode=' . $periode) }}"
-            data-neraca-url="{{ url('finance/report/worksheet/export-neraca/'. $id .'?periode=' . $periode) }}"
-            class="btn btn-danger btn-sm shadow-sm px-3" target="_blank">
-                <i class="fas fa-file-pdf mr-1"></i> PDF Arus Kas
-            </a>
+<div class="min-h-screen bg-[#f7f7f5] px-4 py-6 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-[1500px]">
 
-            {{-- <a href="{{ url('finance/report/cash-flow/export-pdf?periode=' . $periode) }}" target="_blank"
-            class="btn btn-danger btn-sm shadow-sm px-3">
-                <i class="fas fa-file-pdf mr-1"></i> Export PDF
-            </a> --}}
-        </form>
-    </div>
+        {{-- =========================================================
+             HEADER
+        ========================================================== --}}
+        <div class="mb-7 flex flex-col gap-5 border-b border-zinc-200 pb-5 lg:flex-row lg:items-end lg:justify-between">
 
-    <style>
-        .financial-tabs { display: flex; gap: .5rem; padding: .35rem; margin-bottom: 1.5rem; background: #f3f4f6; border-radius: .6rem; width: fit-content; }
-        .financial-tab { border: 0; background: transparent; color: #6b7280; border-radius: .45rem; padding: .6rem 1rem; font-size: 12px; font-weight: 700; cursor: pointer; transition: all .2s ease; }
-        .financial-tab:hover { color: #312e81; background: #fff; }
-        .financial-tab.active { color: #fff; background: #312e81; box-shadow: 0 2px 5px rgba(49, 46, 129, .22); }
-        .financial-pane { display: none; }
-        .financial-pane.active { display: block; }
-        .statement-card { overflow: hidden; border: 1px solid #e5e7eb; border-radius: .5rem; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
-        .statement-heading { padding: 1rem 1.25rem; border-bottom: 1px solid #e5e7eb; background: linear-gradient(135deg, #f9fafb, #eef2ff); }
-        .statement-heading h2 { margin: 0; color: #1f2937; font-size: 15px; font-weight: 700; }
-        .statement-heading p { margin: .25rem 0 0; color: #6b7280; font-size: 11px; }
-        .statement-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        .statement-table th { padding: .75rem 1rem; color: #4b5563; background: #f9fafb; border-bottom: 2px solid #e5e7eb; text-transform: uppercase; font-size: 10px; letter-spacing: .04em; }
-        .statement-table td { padding: .65rem 1rem; color: #374151; border-bottom: 1px solid #f3f4f6; }
-        .statement-table tbody tr:hover:not(.statement-total):not(.statement-result) { background: #fafafa; }
-        .statement-table .account-code { color: #9ca3af; font-family: monospace; }
-        .statement-table .amount { text-align: right; font-family: monospace; font-weight: 500; }
-        .statement-total td { background: #f3f4f6; color: #374151; font-weight: 700; border-top: 2px solid #d1d5db; }
-        .statement-result td { color: #fff; background: #312e81; font-weight: 700; }
-        @media (max-width: 640px) { .financial-tabs { width: 100%; } .financial-tab { flex: 1; padding: .55rem .4rem; } }
-    </style>
+            <div>
+                <div class="mb-2 flex items-center gap-2">
+                    <span class="h-px w-8 bg-zinc-950"></span>
+                    <span class="text-[10px] font-semibold uppercase tracking-[0.25em] text-zinc-500">
+                        Financial Report
+                    </span>
+                </div>
 
-    <div class="financial-tabs" role="tablist" aria-label="Jenis laporan keuangan">
-        <button type="button" class="financial-tab active" data-financial-tab="arus-kas" role="tab" aria-selected="true">Arus Kas</button>
-        <button type="button" class="financial-tab" data-financial-tab="laba-rugi" role="tab" aria-selected="false">Laba Rugi</button>
-        <button type="button" class="financial-tab" data-financial-tab="neraca" role="tab" aria-selected="false">Neraca</button>
-    </div>
+                <h1 class="text-2xl font-semibold tracking-tight text-zinc-950 sm:text-3xl">
+                    {{ $title }}
+                </h1>
 
-    <div id="financial-arus-kas" class="financial-pane active">
-
-    <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; width: 100%;">
-        <div style="flex: 1; bg-color: #f9fafb; background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 0.375rem; padding: 1rem; height: auto; min-height: unset;">
-            <span style="display: block; font-size: 10px; font-weight: 700; color: #9ca3af; text-transform: uppercase; tracking: 0.05em;">Saldo Awal Kas & Bank</span>
-            <span style="display: block; font-size: 1.125rem; font-weight: 700; color: #1f2937; margin-top: 0.25rem;">Rp {{ number_format($totalSaldoAwal, 2, ',', '.') }}</span>
-        </div>
-        
-        <div style="flex: 1; bg-color: #f9fafb; background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 0.375rem; padding: 1rem; height: auto; min-height: unset;">
-            <span style="display: block; font-size: 10px; font-weight: 700; color: #9ca3af; text-transform: uppercase; tracking: 0.05em;">Kenaikan / (Penurunan) Bersih</span>
-            <span style="display: block; font-size: 1.125rem; font-weight: 700; color: {{ $kenaikanPenurunanBersih >= 0 ? '#10b981' : '#ef4444' }}; margin-top: 0.25rem;">
-                {{ $kenaikanPenurunanBersih < 0 ? '-' : '' }}Rp {{ number_format(abs($kenaikanPenurunanBersih), 2, ',', '.') }}
-            </span>
-        </div>
-        
-        <div style="flex: 1; background-color: #eef2ff; border: 1px solid #e0e7ff; border-radius: 0.375rem; padding: 1rem; height: auto; min-height: unset;">
-            <span style="display: block; font-size: 10px; font-weight: 700; color: #6366f1; text-transform: uppercase; tracking: 0.05em;">Saldo Akhir Kas & Bank</span>
-            <span style="display: block; font-size: 1.125rem; font-weight: 700; color: #4338ca; margin-top: 0.25rem;">Rp {{ number_format($totalSaldoAkhir, 2, ',', '.') }}</span>
-        </div>
-    </div>
-
-    <div style="border: 1px solid #e5e7eb; border-radius: 0.375rem; background-color: #ffffff; overflow: hidden; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); width: 100%; margin-top: 1.5rem;">
-        <table style="width: 100%; text-align: left; border-collapse: collapse; font-size: 12px; margin: 0; padding: 0;">
-            <thead>
-                <tr style="background-color: #f3f4f6; border-bottom: 2px solid #e5e7eb; color: #4b5563; font-weight: 700; text-transform: uppercase;">
-                    <th style="padding: 0.75rem 1rem; width: 15%; font-family: monospace;">Kode Akun</th>
-                    <th style="padding: 0.75rem 1rem; width: 55%;">Deskripsi Aliran Arus Kas</th>
-                    <th style="padding: 0.75rem 1rem; width: 15%; text-align: right;">Kas Masuk (Dr)</th>
-                    <th style="padding: 0.75rem 1rem; width: 15%; text-align: right;">Kas Keluar (Cr)</th>
-                </tr>
-            </thead>
-            <tbody style="color: #374151;">
-                
-                {{-- ================= AKTIVITAS OPERASIONAL ================= --}}
-                <tr style="background-color: #f9fafb; font-weight: 700; color: #1e1b4b; border-bottom: 1px solid #e5e7eb;">
-                    <td colspan="4" style="padding: 0.5rem 1rem; font-size: 13px;">1. Arus Kas dari Aktivitas Operasional</td>
-                </tr>
-                @forelse($operasional as $item)
-                    <tr style="border-bottom: 1px solid #f3f4f6;">
-                        <td style="padding: 0.5rem 1rem; color: #9ca3af; font-family: monospace; font-size: 11px;">{{ $item['kode'] }}</td>
-                        <td style="padding: 0.5rem 1rem; color: #4b5563;">{{ $item['nama_akun'] }}</td>
-                        <td style="padding: 0.5rem 1rem; text-align: right; font-weight: 500; color: #059669; font-family: monospace;">
-                            {{ $item['jumlah'] >= 0 ? number_format($item['jumlah'], 2, ',', '.') : '-' }}
-                        </td>
-                        <td style="padding: 0.5rem 1rem; text-align: right; font-weight: 500; color: #dc2626; font-family: monospace;">
-                            {{ $item['jumlah'] < 0 ? number_format(abs($item['jumlah']), 2, ',', '.') : '-' }}
-                        </td>
-                    </tr>
-                @empty
-                    <tr style="border-bottom: 1px solid #e5e7eb;">
-                        <td colspan="4" style="padding: 1rem; text-align: center; color: #9ca3af; font-style: italic; background-color: #ffffff;">Tidak ada transaksi kas operasional</td>
-                    </tr>
-                @endforelse
-                <tr style="font-weight: 600; background-color: rgba(249, 250, 251, 0.5); border-bottom: 1px solid #d1d5db;">
-                    <td colspan="2" style="padding: 0.5rem 1rem; text-align: right; color: #6b7280; text-transform: uppercase; font-size: 10px; letter-spacing: 0.05em;">Total Kas Netto Operasional</td>
-                    <td colspan="2" style="padding: 0.5rem 1rem; text-align: right; font-weight: 700; font-family: monospace; color: #111827;">
-                        {{ $totalOperasional < 0 ? '(' . number_format(abs($totalOperasional), 2, ',', '.') . ')' : number_format($totalOperasional, 2, ',', '.') }}
-                    </td>
-                </tr>
-
-                {{-- ================= AKTIVITAS INVESTASI ================= --}}
-                <tr style="background-color: #f9fafb; font-weight: 700; color: #1e1b4b; border-bottom: 1px solid #e5e7eb; border-top: 1px solid #d1d5db;">
-                    <td colspan="4" style="padding: 0.5rem 1rem; font-size: 13px;">2. Arus Kas dari Aktivitas Investasi</td>
-                </tr>
-                @forelse($investasi as $item)
-                    <tr style="border-bottom: 1px solid #f3f4f6;">
-                        <td style="padding: 0.5rem 1rem; color: #9ca3af; font-family: monospace; font-size: 11px;">{{ $item['kode'] }}</td>
-                        <td style="padding: 0.5rem 1rem; color: #4b5563;">{{ $item['nama_akun'] }}</td>
-                        <td style="padding: 0.5rem 1rem; text-align: right; font-weight: 500; color: #059669; font-family: monospace;">
-                            {{ $item['jumlah'] >= 0 ? number_format($item['jumlah'], 2, ',', '.') : '-' }}
-                        </td>
-                        <td style="padding: 0.5rem 1rem; text-align: right; font-weight: 500; color: #dc2626; font-family: monospace;">
-                            {{ $item['jumlah'] < 0 ? number_format(abs($item['jumlah']), 2, ',', '.') : '-' }}
-                        </td>
-                    </tr>
-                @empty
-                    <tr style="border-bottom: 1px solid #e5e7eb;">
-                        <td colspan="4" style="padding: 1rem; text-align: center; color: #9ca3af; font-style: italic; background-color: #ffffff;">Tidak ada transaksi kas investasi</td>
-                    </tr>
-                @endforelse
-                <tr style="font-weight: 600; background-color: rgba(249, 250, 251, 0.5); border-bottom: 1px solid #d1d5db;">
-                    <td colspan="2" style="padding: 0.5rem 1rem; text-align: right; color: #6b7280; text-transform: uppercase; font-size: 10px; letter-spacing: 0.05em;">Total Kas Netto Investasi</td>
-                    <td colspan="2" style="padding: 0.5rem 1rem; text-align: right; font-weight: 700; font-family: monospace; color: #111827;">
-                        {{ $totalInvestasi < 0 ? '(' . number_format(abs($totalInvestasi), 2, ',', '.') . ')' : number_format($totalInvestasi, 2, ',', '.') }}
-                    </td>
-                </tr>
-
-                {{-- ================= AKTIVITAS PENDANAAN ================= --}}
-                <tr style="background-color: #f9fafb; font-weight: 700; color: #1e1b4b; border-bottom: 1px solid #e5e7eb; border-top: 1px solid #d1d5db;">
-                    <td colspan="4" style="padding: 0.5rem 1rem; font-size: 13px;">3. Arus Kas dari Aktivitas Pendanaan</td>
-                </tr>
-                @forelse($pendanaan as $item)
-                    <tr style="border-bottom: 1px solid #f3f4f6;">
-                        <td style="padding: 0.5rem 1rem; color: #9ca3af; font-family: monospace; font-size: 11px;">{{ $item['kode'] }}</td>
-                        <td style="padding: 0.5rem 1rem; color: #4b5563;">{{ $item['nama_akun'] }}</td>
-                        <td style="padding: 0.5rem 1rem; text-align: right; font-weight: 500; color: #059669; font-family: monospace;">
-                            {{ $item['jumlah'] >= 0 ? number_format($item['jumlah'], 2, ',', '.') : '-' }}
-                        </td>
-                        <td style="padding: 0.5rem 1rem; text-align: right; font-weight: 500; color: #dc2626; font-family: monospace;">
-                            {{ $item['jumlah'] < 0 ? number_format(abs($item['jumlah']), 2, ',', '.') : '-' }}
-                        </td>
-                    </tr>
-                @empty
-                    <tr style="border-bottom: 1px solid #e5e7eb;">
-                        <td colspan="4" style="padding: 1rem; text-align: center; color: #9ca3af; font-style: italic; background-color: #ffffff;">Tidak ada transaksi kas pendanaan</td>
-                    </tr>
-                @endforelse
-                <tr style="font-weight: 600; background-color: rgba(249, 250, 251, 0.5); border-bottom: 1px solid #d1d5db;">
-                    <td colspan="2" style="padding: 0.5rem 1rem; text-align: right; color: #6b7280; text-transform: uppercase; font-size: 10px; letter-spacing: 0.05em;">Total Kas Netto Pendanaan</td>
-                    <td colspan="2" style="padding: 0.5rem 1rem; text-align: right; font-weight: 700; font-family: monospace; color: #111827;">
-                        {{ $totalPendanaan < 0 ? '(' . number_format(abs($totalPendanaan), 2, ',', '.') . ')' : number_format($totalPendanaan, 2, ',', '.') }}
-                    </td>
-                </tr>
-
-                {{-- ================= REKONSILIASI KELOMPOK AKHIR ================= --}}
-                <tr style="background-color: #312e81; color: #ffffff; font-weight: 500;">
-                    <td colspan="2" style="padding: 0.625rem 1rem; text-align: right; text-transform: uppercase; font-size: 10px; letter-spacing: 0.05em;">Kenaikan / (Penurunan) Bersih Kas Periode Ini</td>
-                    <td colspan="2" style="padding: 0.625rem 1rem; text-align: right; font-weight: 700; font-family: monospace; font-size: 13px;">
-                        {{ $kenaikanPenurunanBersih < 0 ? '(' . number_format(abs($kenaikanPenurunanBersih), 2, ',', '.') . ')' : number_format($kenaikanPenurunanBersih, 2, ',', '.') }}
-                    </td>
-                </tr>
-                <tr style="background-color: #1f2937; color: #d1d5db; font-weight: 500;">
-                    <td colspan="2" style="padding: 0.5rem 1rem; text-align: right; text-transform: uppercase; font-size: 10px; letter-spacing: 0.05em;">Saldo Awal Kas & Bank Bersih</td>
-                    <td colspan="2" style="padding: 0.5rem 1rem; text-align: right; font-weight: 600; font-family: monospace; font-size: 12px;">
-                        {{ number_format($totalSaldoAwal, 2, ',', '.') }}
-                    </td>
-                </tr>
-                <tr style="background-color: #111827; color: #34d399; font-weight: 700; border-top: 1px solid #374151;">
-                    <td colspan="2" style="padding: 0.75rem 1rem; text-align: right; text-transform: uppercase; font-size: 10px; letter-spacing: 0.05em;">Saldo Akhir Kas & Bank Riil</td>
-                    <td colspan="2" style="padding: 0.75rem 1rem; text-align: right; font-size: 14px; font-family: monospace; letter-spacing: 0.025em;">
-                        {{ number_format($kenaikanPenurunanBersih + $totalSaldoAwal, 2, ',', '.') }}
-                    </td>
-                </tr>
-
-            </tbody>
-        </table>
-    </div>
-    </div>
-
-    <div id="financial-laba-rugi" class="financial-pane">
-        <div class="statement-card">
-            <div class="statement-heading">
-                <h2>Laporan Laba Rugi</h2>
-                <p>Pendapatan dan beban berdasarkan saldo disesuaikan pada neraca lajur.</p>
+                <p class="mt-1.5 text-xs text-zinc-500">
+                    Periode Laporan:
+                    <span class="font-semibold text-zinc-800">
+                        {{ \Carbon\Carbon::parse($periode.'-01')->isoFormat('MMMM YYYY') }}
+                    </span>
+                </p>
             </div>
-            <div class="table-responsive">
-                <table class="statement-table">
-                    <thead><tr><th style="width:18%">Kode Akun</th><th>Nama Akun</th><th style="width:18%;text-align:right">Debit</th><th style="width:18%;text-align:right">Kredit</th></tr></thead>
-                    <tbody>
-                        @forelse($labaRugi as $row)
-                            <tr><td class="account-code">{{ $row['kode'] }}</td><td>{{ $row['nama_akun'] }}</td><td class="amount">{{ $row['lr_debit'] != 0 ? number_format($row['lr_debit'], 2, ',', '.') : '-' }}</td><td class="amount">{{ $row['lr_kredit'] != 0 ? number_format($row['lr_kredit'], 2, ',', '.') : '-' }}</td></tr>
-                        @empty
-                            <tr><td colspan="4" style="padding:2rem;text-align:center;color:#9ca3af;font-style:italic">Tidak ada data laba rugi pada periode ini.</td></tr>
-                        @endforelse
-                        <tr class="statement-total"><td colspan="2" style="text-align:right">Jumlah</td><td class="amount">{{ number_format($worksheetTotals['lr_debit'], 2, ',', '.') }}</td><td class="amount">{{ number_format($worksheetTotals['lr_kredit'], 2, ',', '.') }}</td></tr>
-                        <tr class="statement-result"><td colspan="3">{{ $labaRugiBersih >= 0 ? 'Laba Bersih Periode Berjalan' : 'Rugi Bersih Periode Berjalan' }}</td><td class="amount">{{ number_format(abs($labaRugiBersih), 2, ',', '.') }}</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
 
-    <div id="financial-neraca" class="financial-pane">
-        <div class="statement-card">
-            <div class="statement-heading">
-                <h2>Laporan Neraca</h2>
-                <p>Aset, liabilitas, dan ekuitas berdasarkan saldo disesuaikan pada neraca lajur.</p>
+            {{-- FILTER + EXPORT --}}
+            <form
+                action="{{ url()->current() }}"
+                method="GET"
+                class="flex flex-col gap-2 sm:flex-row sm:items-center"
+            >
+                <div>
+                    <label class="mb-1 block text-[9px] font-semibold uppercase tracking-[0.18em] text-zinc-400">
+                        Periode
+                    </label>
+
+                    <input
+                        type="month"
+                        name="periode"
+                        value="{{ $periode }}"
+                        onchange="this.form.submit()"
+                        class="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-sm font-medium text-zinc-800 shadow-sm outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950/10 sm:w-44"
+                    >
+                </div>
+
+                <div class="sm:pt-[17px]">
+                    <a
+                        id="financial-pdf-export"
+                        href="{{ url('finance/report/cash-flow/export/'. $id .'?periode=' . $periode) }}"
+                        data-arus-kas-url="{{ url('finance/report/cash-flow/export/'. $id .'?periode=' . $periode) }}"
+                        data-laba-rugi-url="{{ url('finance/report/worksheet/export-laba-rugi/'. $id .'?periode=' . $periode) }}"
+                        data-neraca-url="{{ url('finance/report/worksheet/export-neraca/'. $id .'?periode=' . $periode) }}"
+                        class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-950 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-zinc-800 sm:w-auto"
+                        target="_blank"
+                    >
+                        <svg
+                            class="h-4 w-4"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14a2 2 0 0 0 2-2v-5M3 14v5a2 2 0 0 0 2 2"
+                            />
+                        </svg>
+
+                        <span class="financial-export-label">
+                            PDF Arus Kas
+                        </span>
+                    </a>
+                </div>
+            </form>
+        </div>
+
+
+        {{-- =========================================================
+             TABS
+        ========================================================== --}}
+        <div
+            class="mb-6 flex w-full gap-1 rounded-xl border border-zinc-200 bg-zinc-100 p-1 sm:w-fit"
+            role="tablist"
+            aria-label="Jenis laporan keuangan"
+        >
+            <button
+                type="button"
+                class="financial-tab active flex-1 rounded-lg bg-zinc-950 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-white shadow-sm transition sm:flex-none"
+                data-financial-tab="arus-kas"
+                role="tab"
+                aria-selected="true"
+            >
+                Arus Kas
+            </button>
+
+            <button
+                type="button"
+                class="financial-tab flex-1 rounded-lg px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-500 transition hover:bg-white hover:text-zinc-900 sm:flex-none"
+                data-financial-tab="laba-rugi"
+                role="tab"
+                aria-selected="false"
+            >
+                Laba Rugi
+            </button>
+
+            <button
+                type="button"
+                class="financial-tab flex-1 rounded-lg px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-500 transition hover:bg-white hover:text-zinc-900 sm:flex-none"
+                data-financial-tab="neraca"
+                role="tab"
+                aria-selected="false"
+            >
+                Neraca
+            </button>
+
+            <button
+                type="button"
+                class="financial-tab flex-1 rounded-lg px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-500 transition hover:bg-white hover:text-zinc-900 sm:flex-none"
+                data-financial-tab="modal"
+                role="tab"
+                aria-selected="false"
+            >
+                Modal
+            </button>
+        </div>
+
+
+        {{-- =========================================================
+             ARUS KAS
+        ========================================================== --}}
+        <div
+            id="financial-arus-kas"
+            class="financial-pane active"
+        >
+
+            {{-- SUMMARY CARDS --}}
+            <div class="mb-6 grid grid-cols-1 gap-3 md:grid-cols-3">
+
+                {{-- SALDO AWAL --}}
+                <div class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
+                    <span class="block text-[9px] font-semibold uppercase tracking-[0.18em] text-zinc-400">
+                        Saldo Awal Kas & Bank
+                    </span>
+
+                    <span class="mt-2 block text-lg font-semibold tracking-tight text-zinc-900">
+                        Rp {{ number_format($totalSaldoAwal, 2, ',', '.') }}
+                    </span>
+                </div>
+
+                {{-- KENAIKAN --}}
+                <div class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
+                    <span class="block text-[9px] font-semibold uppercase tracking-[0.18em] text-zinc-400">
+                        Kenaikan / (Penurunan) Bersih
+                    </span>
+
+                    <span class="mt-2 block text-lg font-semibold tracking-tight {{ $kenaikanPenurunanBersih >= 0 ? 'text-emerald-600' : 'text-red-600' }}">
+                        {{ $kenaikanPenurunanBersih < 0 ? '-' : '' }}Rp
+                        {{ number_format(abs($kenaikanPenurunanBersih), 2, ',', '.') }}
+                    </span>
+                </div>
+
+                {{-- SALDO AKHIR --}}
+                <div class="rounded-2xl border border-zinc-900 bg-zinc-950 p-5 shadow-[0_4px_20px_rgba(0,0,0,0.08)]">
+                    <span class="block text-[9px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
+                        Saldo Akhir Kas & Bank
+                    </span>
+
+                    <span class="mt-2 block text-lg font-semibold tracking-tight text-white">
+                        Rp {{ number_format($totalSaldoAkhir, 2, ',', '.') }}
+                    </span>
+                </div>
+
             </div>
-            <div class="table-responsive">
-                <table class="statement-table">
-                    <thead><tr><th style="width:18%">Kode Akun</th><th>Nama Akun</th><th style="width:18%;text-align:right">Debit</th><th style="width:18%;text-align:right">Kredit</th></tr></thead>
-                    <tbody>
-                        @forelse($neraca as $row)
-                            <tr><td class="account-code">{{ $row['kode'] }}</td><td>{{ $row['nama_akun'] }}</td><td class="amount">{{ $row['neraca_debit'] != 0 ? number_format($row['neraca_debit'], 2, ',', '.') : '-' }}</td><td class="amount">{{ $row['neraca_kredit'] != 0 ? number_format($row['neraca_kredit'], 2, ',', '.') : '-' }}</td></tr>
-                        @empty
-                            <tr><td colspan="4" style="padding:2rem;text-align:center;color:#9ca3af;font-style:italic">Tidak ada data neraca pada periode ini.</td></tr>
-                        @endforelse
-                        <tr class="statement-result"><td colspan="2">{{ $labaRugiBersih >= 0 ? 'Laba Bersih Periode Berjalan' : 'Rugi Bersih Periode Berjalan' }}</td><td class="amount">{{ $labaRugiBersih >= 0 ? number_format($labaRugiBersih, 2, ',', '.') : '-' }}</td><td class="amount">{{ $labaRugiBersih < 0 ? number_format(abs($labaRugiBersih), 2, ',', '.') : '-' }}</td></tr>
-                        <tr class="statement-total"><td colspan="2" style="text-align:right">Total Neraca</td><td class="amount">{{ number_format($totalNeracaDebit, 2, ',', '.') }}</td><td class="amount">{{ number_format($totalNeracaKredit, 2, ',', '.') }}</td></tr>
-                    </tbody>
-                </table>
+
+
+            {{-- CASH FLOW TABLE --}}
+            <div class="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_6px_25px_rgba(0,0,0,0.04)]">
+
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-[900px] border-collapse text-xs">
+
+                        <thead>
+                            <tr class="bg-zinc-950 text-white">
+                                <th class="w-[15%] border border-zinc-800 px-4 py-3 text-left font-mono text-[10px] font-semibold uppercase tracking-wider">
+                                    Kode Akun
+                                </th>
+
+                                <th class="w-[55%] border border-zinc-800 px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider">
+                                    Deskripsi Aliran Arus Kas
+                                </th>
+
+                                <th class="w-[15%] border border-zinc-800 px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-wider">
+                                    Kas Masuk (Dr)
+                                </th>
+
+                                <th class="w-[15%] border border-zinc-800 px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-wider">
+                                    Kas Keluar (Cr)
+                                </th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            {{-- =====================================================
+                                 OPERASIONAL
+                            ====================================================== --}}
+                            <tr class="bg-zinc-100">
+                                <td
+                                    colspan="4"
+                                    class="border-b border-zinc-200 px-4 py-2.5 text-[11px] font-bold uppercase tracking-wide text-zinc-900"
+                                >
+                                    1. Arus Kas dari Aktivitas Operasional
+                                </td>
+                            </tr>
+
+                            @forelse($operasional as $item)
+
+                                <tr class="transition-colors hover:bg-zinc-50">
+                                    <td class="border-b border-zinc-100 px-4 py-2 font-mono text-[10px] text-zinc-400">
+                                        {{ $item['kode'] }}
+                                    </td>
+
+                                    <td class="border-b border-zinc-100 px-4 py-2 text-zinc-700">
+                                        {{ $item['nama_akun'] }}
+                                    </td>
+
+                                    <td class="border-b border-zinc-100 px-4 py-2 text-right font-mono font-medium tabular-nums text-emerald-600">
+                                        {{ $item['jumlah'] >= 0 ? number_format($item['jumlah'], 2, ',', '.') : '-' }}
+                                    </td>
+
+                                    <td class="border-b border-zinc-100 px-4 py-2 text-right font-mono font-medium tabular-nums text-red-600">
+                                        {{ $item['jumlah'] < 0 ? number_format(abs($item['jumlah']), 2, ',', '.') : '-' }}
+                                    </td>
+                                </tr>
+
+                            @empty
+
+                                <tr>
+                                    <td
+                                        colspan="4"
+                                        class="border-b border-zinc-200 px-4 py-8 text-center text-xs italic text-zinc-400"
+                                    >
+                                        Tidak ada transaksi kas operasional
+                                    </td>
+                                </tr>
+
+                            @endforelse
+
+                            <tr class="bg-zinc-50">
+                                <td
+                                    colspan="2"
+                                    class="border-b border-zinc-200 px-4 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-zinc-500"
+                                >
+                                    Total Kas Netto Operasional
+                                </td>
+
+                                <td
+                                    colspan="2"
+                                    class="border-b border-zinc-200 px-4 py-2.5 text-right font-mono text-xs font-bold tabular-nums text-zinc-900"
+                                >
+                                    {{ $totalOperasional < 0 ? '(' . number_format(abs($totalOperasional), 2, ',', '.') . ')' : number_format($totalOperasional, 2, ',', '.') }}
+                                </td>
+                            </tr>
+
+
+                            {{-- =====================================================
+                                 INVESTASI
+                            ====================================================== --}}
+                            <tr class="border-t border-zinc-300 bg-zinc-100">
+                                <td
+                                    colspan="4"
+                                    class="border-b border-zinc-200 px-4 py-2.5 text-[11px] font-bold uppercase tracking-wide text-zinc-900"
+                                >
+                                    2. Arus Kas dari Aktivitas Investasi
+                                </td>
+                            </tr>
+
+                            @forelse($investasi as $item)
+
+                                <tr class="transition-colors hover:bg-zinc-50">
+                                    <td class="border-b border-zinc-100 px-4 py-2 font-mono text-[10px] text-zinc-400">
+                                        {{ $item['kode'] }}
+                                    </td>
+
+                                    <td class="border-b border-zinc-100 px-4 py-2 text-zinc-700">
+                                        {{ $item['nama_akun'] }}
+                                    </td>
+
+                                    <td class="border-b border-zinc-100 px-4 py-2 text-right font-mono font-medium tabular-nums text-emerald-600">
+                                        {{ $item['jumlah'] >= 0 ? number_format($item['jumlah'], 2, ',', '.') : '-' }}
+                                    </td>
+
+                                    <td class="border-b border-zinc-100 px-4 py-2 text-right font-mono font-medium tabular-nums text-red-600">
+                                        {{ $item['jumlah'] < 0 ? number_format(abs($item['jumlah']), 2, ',', '.') : '-' }}
+                                    </td>
+                                </tr>
+
+                            @empty
+
+                                <tr>
+                                    <td
+                                        colspan="4"
+                                        class="border-b border-zinc-200 px-4 py-8 text-center text-xs italic text-zinc-400"
+                                    >
+                                        Tidak ada transaksi kas investasi
+                                    </td>
+                                </tr>
+
+                            @endforelse
+
+                            <tr class="bg-zinc-50">
+                                <td
+                                    colspan="2"
+                                    class="border-b border-zinc-200 px-4 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-zinc-500"
+                                >
+                                    Total Kas Netto Investasi
+                                </td>
+
+                                <td
+                                    colspan="2"
+                                    class="border-b border-zinc-200 px-4 py-2.5 text-right font-mono text-xs font-bold tabular-nums text-zinc-900"
+                                >
+                                    {{ $totalInvestasi < 0 ? '(' . number_format(abs($totalInvestasi), 2, ',', '.') . ')' : number_format($totalInvestasi, 2, ',', '.') }}
+                                </td>
+                            </tr>
+
+
+                            {{-- =====================================================
+                                 PENDANAAN
+                            ====================================================== --}}
+                            <tr class="border-t border-zinc-300 bg-zinc-100">
+                                <td
+                                    colspan="4"
+                                    class="border-b border-zinc-200 px-4 py-2.5 text-[11px] font-bold uppercase tracking-wide text-zinc-900"
+                                >
+                                    3. Arus Kas dari Aktivitas Pendanaan
+                                </td>
+                            </tr>
+
+                            @forelse($pendanaan as $item)
+
+                                <tr class="transition-colors hover:bg-zinc-50">
+                                    <td class="border-b border-zinc-100 px-4 py-2 font-mono text-[10px] text-zinc-400">
+                                        {{ $item['kode'] }}
+                                    </td>
+
+                                    <td class="border-b border-zinc-100 px-4 py-2 text-zinc-700">
+                                        {{ $item['nama_akun'] }}
+                                    </td>
+
+                                    <td class="border-b border-zinc-100 px-4 py-2 text-right font-mono font-medium tabular-nums text-emerald-600">
+                                        {{ $item['jumlah'] >= 0 ? number_format($item['jumlah'], 2, ',', '.') : '-' }}
+                                    </td>
+
+                                    <td class="border-b border-zinc-100 px-4 py-2 text-right font-mono font-medium tabular-nums text-red-600">
+                                        {{ $item['jumlah'] < 0 ? number_format(abs($item['jumlah']), 2, ',', '.') : '-' }}
+                                    </td>
+                                </tr>
+
+                            @empty
+
+                                <tr>
+                                    <td
+                                        colspan="4"
+                                        class="border-b border-zinc-200 px-4 py-8 text-center text-xs italic text-zinc-400"
+                                    >
+                                        Tidak ada transaksi kas pendanaan
+                                    </td>
+                                </tr>
+
+                            @endforelse
+
+                            <tr class="bg-zinc-50">
+                                <td
+                                    colspan="2"
+                                    class="border-b border-zinc-200 px-4 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-zinc-500"
+                                >
+                                    Total Kas Netto Pendanaan
+                                </td>
+
+                                <td
+                                    colspan="2"
+                                    class="border-b border-zinc-200 px-4 py-2.5 text-right font-mono text-xs font-bold tabular-nums text-zinc-900"
+                                >
+                                    {{ $totalPendanaan < 0 ? '(' . number_format(abs($totalPendanaan), 2, ',', '.') . ')' : number_format($totalPendanaan, 2, ',', '.') }}
+                                </td>
+                            </tr>
+
+
+                            {{-- =====================================================
+                                 REKONSILIASI
+                            ====================================================== --}}
+                            <tr class="bg-zinc-800 text-white">
+                                <td
+                                    colspan="2"
+                                    class="px-4 py-3 text-right text-[9px] font-semibold uppercase tracking-[0.15em] text-zinc-300"
+                                >
+                                    Kenaikan / (Penurunan) Bersih Kas Periode Ini
+                                </td>
+
+                                <td
+                                    colspan="2"
+                                    class="px-4 py-3 text-right font-mono text-sm font-bold tabular-nums"
+                                >
+                                    {{ $kenaikanPenurunanBersih < 0 ? '(' . number_format(abs($kenaikanPenurunanBersih), 2, ',', '.') . ')' : number_format($kenaikanPenurunanBersih, 2, ',', '.') }}
+                                </td>
+                            </tr>
+
+                            <tr class="bg-zinc-900 text-zinc-300">
+                                <td
+                                    colspan="2"
+                                    class="px-4 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.15em]"
+                                >
+                                    Saldo Awal Kas & Bank Bersih
+                                </td>
+
+                                <td
+                                    colspan="2"
+                                    class="px-4 py-2.5 text-right font-mono text-xs font-semibold tabular-nums"
+                                >
+                                    {{ number_format($totalSaldoAwal, 2, ',', '.') }}
+                                </td>
+                            </tr>
+
+                            <tr class="border-t border-zinc-700 bg-black text-emerald-400">
+                                <td
+                                    colspan="2"
+                                    class="px-4 py-3 text-right text-[9px] font-bold uppercase tracking-[0.15em]"
+                                >
+                                    Saldo Akhir Kas & Bank Riil
+                                </td>
+
+                                <td
+                                    colspan="2"
+                                    class="px-4 py-3 text-right font-mono text-sm font-bold tracking-wide tabular-nums"
+                                >
+                                    {{ number_format($kenaikanPenurunanBersih + $totalSaldoAwal, 2, ',', '.') }}
+                                </td>
+                            </tr>
+
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+
+        {{-- =========================================================
+             LABA RUGI
+        ========================================================== --}}
+        <div
+            id="financial-laba-rugi"
+            class="financial-pane hidden"
+        >
+
+            <div class="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_6px_25px_rgba(0,0,0,0.04)]">
+
+                <div class="border-b border-zinc-200 bg-zinc-50 px-5 py-4">
+                    <div class="flex items-center gap-2">
+                        <span class="h-5 w-1 rounded-full bg-zinc-950"></span>
+
+                        <div>
+                            <h2 class="text-sm font-semibold text-zinc-950">
+                                Laporan Laba Rugi
+                            </h2>
+
+                            <p class="mt-0.5 text-[11px] text-zinc-500">
+                                Pendapatan dan beban berdasarkan saldo disesuaikan pada neraca lajur.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-[700px] border-collapse text-xs">
+
+                        <thead>
+                            <tr class="bg-zinc-950 text-white">
+                                <th class="w-[18%] border border-zinc-800 px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider">
+                                    Kode Akun
+                                </th>
+
+                                <th class="border border-zinc-800 px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider">
+                                    Nama Akun
+                                </th>
+
+                                <th class="w-[18%] border border-zinc-800 px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-wider">
+                                    Debit
+                                </th>
+
+                                <th class="w-[18%] border border-zinc-800 px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-wider">
+                                    Kredit
+                                </th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            @forelse($labaRugi as $row)
+
+                                <tr class="transition-colors hover:bg-zinc-50">
+
+                                    <td class="border-b border-zinc-100 px-4 py-2.5 font-mono text-[10px] text-zinc-400">
+                                        {{ $row['kode'] }}
+                                    </td>
+
+                                    <td class="border-b border-zinc-100 px-4 py-2.5 text-zinc-700">
+                                        {{ $row['nama_akun'] }}
+                                    </td>
+
+                                    <td class="border-b border-zinc-100 px-4 py-2.5 text-right font-mono tabular-nums text-zinc-700">
+                                        {{ $row['lr_debit'] != 0 ? number_format($row['lr_debit'], 2, ',', '.') : '-' }}
+                                    </td>
+
+                                    <td class="border-b border-zinc-100 px-4 py-2.5 text-right font-mono tabular-nums text-zinc-700">
+                                        {{ $row['lr_kredit'] != 0 ? number_format($row['lr_kredit'], 2, ',', '.') : '-' }}
+                                    </td>
+
+                                </tr>
+
+                            @empty
+
+                                <tr>
+                                    <td
+                                        colspan="4"
+                                        class="px-4 py-10 text-center text-xs italic text-zinc-400"
+                                    >
+                                        Tidak ada data laba rugi pada periode ini.
+                                    </td>
+                                </tr>
+
+                            @endforelse
+
+                            {{-- JUMLAH --}}
+                            <tr class="bg-zinc-100 font-semibold text-zinc-900">
+
+                                <td
+                                    colspan="2"
+                                    class="border-t border-zinc-300 px-4 py-3 text-right text-[10px] uppercase tracking-wider"
+                                >
+                                    Jumlah
+                                </td>
+
+                                <td class="border-t border-zinc-300 px-4 py-3 text-right font-mono tabular-nums">
+                                    {{ number_format($worksheetTotals['lr_debit'], 2, ',', '.') }}
+                                </td>
+
+                                <td class="border-t border-zinc-300 px-4 py-3 text-right font-mono tabular-nums">
+                                    {{ number_format($worksheetTotals['lr_kredit'], 2, ',', '.') }}
+                                </td>
+
+                            </tr>
+
+                            {{-- HASIL --}}
+                            <tr class="bg-zinc-950 text-white">
+
+                                <td
+                                    colspan="3"
+                                    class="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider"
+                                >
+                                    {{ $labaRugiBersih >= 0 ? 'Laba Bersih Periode Berjalan' : 'Rugi Bersih Periode Berjalan' }}
+                                </td>
+
+                                <td class="px-4 py-3 text-right font-mono text-sm font-bold tabular-nums">
+                                    {{ number_format(abs($labaRugiBersih), 2, ',', '.') }}
+                                </td>
+
+                            </tr>
+
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+
+        {{-- =========================================================
+             PERUBAHAN MODAL
+        ========================================================== --}}
+        <div id="financial-modal" class="financial-pane hidden">
+            <div class="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_6px_25px_rgba(0,0,0,0.04)]">
+                <div class="border-b border-zinc-200 bg-zinc-50 px-5 py-4">
+                    <div class="flex items-center gap-2"><span class="h-5 w-1 rounded-full bg-lime-400"></span><div><h2 class="text-sm font-semibold text-zinc-950">Laporan Perubahan Modal</h2><p class="mt-0.5 text-[11px] text-zinc-500">Posisi akun modal 301 setelah membawa laba atau rugi bersih periode sebelumnya.</p></div></div>
+                </div>
+                <div class="px-4 py-8 sm:px-8">
+                    <div class="mx-auto max-w-3xl text-center">
+                        <h3 class="text-sm font-bold uppercase tracking-wide text-zinc-950">{{ $namaPerusahaan }}</h3>
+                        <p class="mt-1 text-xs font-semibold uppercase text-zinc-700">Laporan Perubahan Modal</p>
+                        <p class="mt-1 text-xs uppercase text-zinc-500">{{ \Carbon\Carbon::parse($periode . '-01')->translatedFormat('F Y') }} (dalam Rp)</p>
+                    </div>
+                    <div class="mx-auto mt-7 max-w-3xl overflow-hidden rounded-xl border border-zinc-300">
+                        <div class="grid grid-cols-[1fr_auto] border-b border-zinc-200 px-4 py-3 text-sm"><span class="text-zinc-700">Modal Awal, 1 {{ \Carbon\Carbon::parse($periode . '-01')->translatedFormat('F Y') }}</span><span class="min-w-44 text-right font-mono font-semibold tabular-nums text-zinc-950">{{ number_format($modalAwal, 0, ',', '.') }}</span></div>
+                        <div class="grid grid-cols-[1fr_auto] border-b border-zinc-300 px-4 py-3 text-sm"><span class="text-zinc-700">{{ $modalLabaRugi >= 0 ? 'Laba Bersih' : 'Rugi Bersih' }} {{ \Carbon\Carbon::parse($periodeModal . '-01')->translatedFormat('F Y') }}</span><span class="min-w-44 text-right font-mono font-semibold tabular-nums {{ $modalLabaRugi < 0 ? 'text-rose-600' : 'text-emerald-600' }}">{{ number_format($modalLabaRugi, 0, ',', '.') }}</span></div>
+                        <div class="grid grid-cols-[1fr_auto] bg-zinc-950 px-4 py-4 text-sm text-white"><span class="font-bold">Modal Akhir, {{ \Carbon\Carbon::parse($periode . '-01')->endOfMonth()->translatedFormat('d F Y') }}</span><span class="min-w-44 text-right font-mono font-bold tabular-nums">{{ number_format($modalAkhir, 0, ',', '.') }}</span></div>
+                    </div>
+                    <p class="mx-auto mt-3 max-w-3xl text-right text-[10px] text-zinc-400">Modal akhir = saldo akhir akun 301 {{ \Carbon\Carbon::parse($periodeModal . '-01')->translatedFormat('F Y') }} + laba/rugi bersih pada periode yang sama.</p>
+                </div>
             </div>
         </div>
+
+        {{-- =========================================================
+             NERACA
+        ========================================================== --}}
+        <div
+            id="financial-neraca"
+            class="financial-pane hidden"
+        >
+
+            <div class="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_6px_25px_rgba(0,0,0,0.04)]">
+
+                <div class="border-b border-zinc-200 bg-zinc-50 px-5 py-4">
+                    <div class="flex items-center gap-2">
+                        <span class="h-5 w-1 rounded-full bg-zinc-950"></span>
+
+                        <div>
+                            <h2 class="text-sm font-semibold text-zinc-950">
+                                Laporan Neraca
+                            </h2>
+
+                            <p class="mt-0.5 text-[11px] text-zinc-500">
+                                Aset, liabilitas, dan ekuitas berdasarkan saldo disesuaikan pada neraca lajur.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-[700px] border-collapse text-xs">
+
+                        <thead>
+                            <tr class="bg-zinc-950 text-white">
+
+                                <th class="w-[18%] border border-zinc-800 px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider">
+                                    Kode Akun
+                                </th>
+
+                                <th class="border border-zinc-800 px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider">
+                                    Nama Akun
+                                </th>
+
+                                <th class="w-[18%] border border-zinc-800 px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-wider">
+                                    Debit
+                                </th>
+
+                                <th class="w-[18%] border border-zinc-800 px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-wider">
+                                    Kredit
+                                </th>
+
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            @forelse($neraca as $row)
+
+                                <tr class="transition-colors hover:bg-zinc-50">
+
+                                    <td class="border-b border-zinc-100 px-4 py-2.5 font-mono text-[10px] text-zinc-400">
+                                        {{ $row['kode'] }}
+                                    </td>
+
+                                    <td class="border-b border-zinc-100 px-4 py-2.5 text-zinc-700">
+                                        {{ $row['nama_akun'] }}
+                                    </td>
+
+                                    <td class="border-b border-zinc-100 px-4 py-2.5 text-right font-mono tabular-nums text-zinc-700">
+                                        {{ $row['neraca_debit'] != 0 ? number_format($row['neraca_debit'], 2, ',', '.') : '-' }}
+                                    </td>
+
+                                    <td class="border-b border-zinc-100 px-4 py-2.5 text-right font-mono tabular-nums text-zinc-700">
+                                        {{ $row['neraca_kredit'] != 0 ? number_format($row['neraca_kredit'], 2, ',', '.') : '-' }}
+                                    </td>
+
+                                </tr>
+
+                            @empty
+
+                                <tr>
+                                    <td
+                                        colspan="4"
+                                        class="px-4 py-10 text-center text-xs italic text-zinc-400"
+                                    >
+                                        Tidak ada data neraca pada periode ini.
+                                    </td>
+                                </tr>
+
+                            @endforelse
+
+
+                            {{-- LABA / RUGI --}}
+                            <tr class="bg-zinc-950 text-white">
+
+                                <td
+                                    colspan="2"
+                                    class="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider"
+                                >
+                                    {{ $labaRugiBersih >= 0 ? 'Laba Bersih Periode Berjalan' : 'Rugi Bersih Periode Berjalan' }}
+                                </td>
+
+                                <td class="px-4 py-3 text-right font-mono text-sm font-bold tabular-nums">
+                                    {{ $labaRugiBersih >= 0 ? number_format($labaRugiBersih, 2, ',', '.') : '-' }}
+                                </td>
+
+                                <td class="px-4 py-3 text-right font-mono text-sm font-bold tabular-nums">
+                                    {{ $labaRugiBersih < 0 ? number_format(abs($labaRugiBersih), 2, ',', '.') : '-' }}
+                                </td>
+
+                            </tr>
+
+
+                            {{-- TOTAL --}}
+                            <tr class="bg-zinc-100 font-bold text-zinc-900">
+
+                                <td
+                                    colspan="2"
+                                    class="border-t-2 border-zinc-300 px-4 py-3 text-right text-[10px] uppercase tracking-wider"
+                                >
+                                    Total Neraca
+                                </td>
+
+                                <td class="border-t-2 border-zinc-300 px-4 py-3 text-right font-mono tabular-nums">
+                                    {{ number_format($totalNeracaDebit, 2, ',', '.') }}
+                                </td>
+
+                                <td class="border-t-2 border-zinc-300 px-4 py-3 text-right font-mono tabular-nums">
+                                    {{ number_format($totalNeracaKredit, 2, ',', '.') }}
+                                </td>
+
+                            </tr>
+
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
     </div>
 </div>
 
+
+{{-- =============================================================
+     TAB SCRIPT
+============================================================= --}}
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const buttons = document.querySelectorAll('[data-financial-tab]');
-        const exportButton = document.getElementById('financial-pdf-export');
-        const exportLabels = {
-            'arus-kas': 'PDF Arus Kas',
-            'laba-rugi': 'PDF Laba Rugi',
-            'neraca': 'PDF Neraca'
-        };
-        const exportUrlKeys = {
-            'arus-kas': 'arusKasUrl',
-            'laba-rugi': 'labaRugiUrl',
-            'neraca': 'neracaUrl'
-        };
-        buttons.forEach(function (button) {
-            button.addEventListener('click', function () {
-                buttons.forEach(function (item) {
-                    item.classList.remove('active');
-                    item.setAttribute('aria-selected', 'false');
-                });
-                document.querySelectorAll('.financial-pane').forEach(function (pane) { pane.classList.remove('active'); });
-                button.classList.add('active');
-                button.setAttribute('aria-selected', 'true');
-                document.getElementById('financial-' + button.dataset.financialTab).classList.add('active');
-                exportButton.href = exportButton.dataset[exportUrlKeys[button.dataset.financialTab]];
-                exportButton.innerHTML = '<i class="fas fa-file-pdf mr-1"></i> ' + exportLabels[button.dataset.financialTab];
+document.addEventListener('DOMContentLoaded', function () {
+
+    const buttons = document.querySelectorAll('[data-financial-tab]');
+    const panes = document.querySelectorAll('.financial-pane');
+    const exportButton = document.getElementById('financial-pdf-export');
+    const exportLabel = exportButton.querySelector('.financial-export-label');
+
+    const exportLabels = {
+        'arus-kas': 'PDF Arus Kas',
+        'laba-rugi': 'PDF Laba Rugi',
+        'neraca': 'PDF Neraca'
+    };
+
+    const exportUrlKeys = {
+        'arus-kas': 'arusKasUrl',
+        'laba-rugi': 'labaRugiUrl',
+        'neraca': 'neracaUrl'
+    };
+
+    buttons.forEach(function (button) {
+
+        button.addEventListener('click', function () {
+
+            const selectedTab = button.dataset.financialTab;
+
+            // Reset semua button
+            buttons.forEach(function (item) {
+
+                item.classList.remove(
+                    'active',
+                    'bg-zinc-950',
+                    'text-white',
+                    'shadow-sm'
+                );
+
+                item.classList.add(
+                    'text-zinc-500'
+                );
+
+                item.setAttribute(
+                    'aria-selected',
+                    'false'
+                );
             });
+
+            // Reset semua pane
+            panes.forEach(function (pane) {
+                pane.classList.remove('active');
+                pane.classList.add('hidden');
+            });
+
+            // Active button
+            button.classList.add(
+                'active',
+                'bg-zinc-950',
+                'text-white',
+                'shadow-sm'
+            );
+
+            button.classList.remove(
+                'text-zinc-500'
+            );
+
+            button.setAttribute(
+                'aria-selected',
+                'true'
+            );
+
+            // Active pane
+            const activePane = document.getElementById(
+                'financial-' + selectedTab
+            );
+
+            if (activePane) {
+                activePane.classList.remove('hidden');
+                activePane.classList.add('active');
+            }
+
+            // Update export URL
+            if (selectedTab === 'modal') {
+                exportButton.classList.add('hidden');
+            } else {
+                exportButton.classList.remove('hidden');
+                exportButton.href = exportButton.dataset[exportUrlKeys[selectedTab]];
+                exportLabel.textContent = exportLabels[selectedTab];
+            }
         });
     });
+
+});
 </script>
 
 @endsection

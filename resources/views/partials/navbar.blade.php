@@ -9,8 +9,10 @@
         <button
             id="sidebarToggleTop"
             type="button"
-            class="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-100 hover:text-zinc-950 lg:hidden"
-            aria-label="Open sidebar"
+            class="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-100 hover:text-zinc-950"
+            aria-label="Buka atau tutup sidebar"
+            aria-controls="accordionSidebar"
+            aria-expanded="true"
         >
             <svg
                 class="h-5 w-5"
@@ -424,64 +426,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
 
-    /* =========================================================
-       MOBILE SIDEBAR
-    ========================================================== */
-
-    const sidebarToggle =
-        document.getElementById(
-            'sidebarToggleTop'
-        );
-
-    const sidebar =
-        document.getElementById(
-            'accordionSidebar'
-        );
-
-
-    if (
-        sidebarToggle &&
-        sidebar
-    ) {
-
-        sidebarToggle.addEventListener(
-            'click',
-            function () {
-
-                sidebar.classList.toggle(
-                    'show'
-                );
-
-            }
-        );
-
-    }
-
-
-    /* =========================================================
-       CLOSE SIDEBAR WHEN CLICKING OUTSIDE ON MOBILE
-    ========================================================== */
-
-    document.addEventListener(
-        'click',
-        function (event) {
-
-            if (
-                window.innerWidth <= 1024 &&
-                sidebar &&
-                sidebar.classList.contains('show') &&
-                !sidebar.contains(event.target) &&
-                !sidebarToggle?.contains(event.target)
-            ) {
-
-                sidebar.classList.remove(
-                    'show'
-                );
-
-            }
-
-        }
-    );
+    /*
+     * Sidebar dikendalikan dari sidebar_new agar perilaku desktop dan mobile
+     * menggunakan satu sumber state yang sama.
+     */
 
 });
 </script>

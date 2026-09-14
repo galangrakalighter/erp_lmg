@@ -320,6 +320,33 @@ class LedgerController extends Controller
         $totalNeracaDebit = (float) $neraca->sum('neraca_debit') + abs($labaRugiBersih);
         $totalNeracaKredit = (float) $neraca->sum('neraca_kredit');
 
+        // Laporan perubahan modal menggunakan akun 301 dan laba/rugi dari
+        // periode sebelumnya, sama persis dengan proses carry-forward bulanan.
+        $akunModal = DB::table('chart_of_account')
+            ->where('perusahaan', $id)
+            ->where('is_active', true)
+            ->where('kode', '301')
+            ->first();
+        $periodeModal = Carbon::createFromFormat('Y-m', $periode)
+            ->subMonth()
+            ->format('Y-m');
+        $laporanModal = $this->getWorksheetData(
+            $id,
+            $periodeModal,
+            $this->trialBalanceService
+        );
+        $modalLabaRugi = (float) ($laporanModal['lr_balance'] ?? 0);
+        $modalAwal = $akunModal
+            ? (float) ($this->ledgerService->getAccountLedger(
+                (int) $akunModal->id,
+                $periodeModal
+            )['final_balance'] ?? 0)
+            : 0.0;
+        $modalAkhir = $modalAwal + $modalLabaRugi;
+        $namaPerusahaan = DB::table('perusahaan')
+            ->where('id', $id)
+            ->value('nama_perusahaan') ?? 'Perusahaan';
+
         /*
         * 1. Ambil akun Kas/Bank.
         *
@@ -373,6 +400,11 @@ class LedgerController extends Controller
                 'labaRugiBersih'          => $labaRugiBersih,
                 'totalNeracaDebit'        => $totalNeracaDebit,
                 'totalNeracaKredit'       => $totalNeracaKredit,
+                'modalAwal'               => $modalAwal,
+                'modalAkhir'              => $modalAkhir,
+                'modalLabaRugi'           => $modalLabaRugi,
+                'periodeModal'             => $periodeModal,
+                'namaPerusahaan'          => $namaPerusahaan,
             ])->with(
                 'error',
                 'Tidak ada akun Kas atau Bank dengan kode 111 atau 113.'
@@ -604,7 +636,12 @@ class LedgerController extends Controller
             'worksheetTotals',
             'labaRugiBersih',
             'totalNeracaDebit',
-            'totalNeracaKredit'
+            'totalNeracaKredit',
+            'modalAwal',
+            'modalAkhir',
+            'modalLabaRugi',
+            'periodeModal',
+            'namaPerusahaan'
         ));
     }
 

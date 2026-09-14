@@ -54,6 +54,7 @@ class InvoiceController extends Controller
                 'customer_name' => $invoice->customer->nama,
                 'customer_id' => $invoice->customer_id,
                 'due_date'      => \Carbon\Carbon::parse($invoice->due_date)->format('d M Y'),
+                'due_date_raw'  => \Carbon\Carbon::parse($invoice->due_date)->format('Y-m-d'),
                 'total_amount'  => number_format($invoice->total_amount, 0, ',', '.'),
                 'remaining'     => number_format($invoice->remaining, 0, ',', '.'),
                 'status'        => $invoice->status

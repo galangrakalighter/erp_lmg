@@ -8,6 +8,40 @@
         return;
     }
 
+    const crmModal = {
+        open(id) {
+            const modal = document.getElementById(id);
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            modal.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('overflow-hidden');
+        },
+        close(id) {
+            const modal = document.getElementById(id);
+            if (!modal) return;
+            modal.classList.add('hidden');
+            modal.setAttribute('aria-hidden', 'true');
+            if (!document.querySelector('[id$="Modal"]:not(.hidden)')) {
+                document.body.classList.remove('overflow-hidden');
+            }
+        },
+    };
+
+    window.CRMModal = crmModal;
+
+    document.addEventListener('click', function (event) {
+        const closer = event.target.closest('[data-modal-close], [data-modal-backdrop]');
+        if (!closer) return;
+        crmModal.close(closer.dataset.modalClose || closer.dataset.modalBackdrop);
+    });
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key !== 'Escape') return;
+        document.querySelectorAll('[id$="Modal"]:not(.hidden)').forEach(function (modal) {
+            crmModal.close(modal.id);
+        });
+    });
+
     const elements = {
         error:
             document.getElementById('crmError'),
@@ -265,7 +299,7 @@
 
     function hideError() {
         elements.error?.classList.add(
-            'd-none'
+            'hidden'
         );
     }
 
@@ -277,7 +311,7 @@
         }
 
         elements.error?.classList.remove(
-            'd-none'
+            'hidden'
         );
 
         if (elements.total) {
@@ -309,15 +343,12 @@
                     button.dataset.tab ===
                     state.activeTab;
 
-                button.classList.toggle(
-                    'active',
-                    active
-                );
-
-                button.classList.toggle(
-                    'font-weight-bold',
-                    active
-                );
+                button.classList.toggle('bg-zinc-950', active);
+                button.classList.toggle('text-white', active);
+                button.classList.toggle('shadow-sm', active);
+                button.classList.toggle('font-semibold', active);
+                button.classList.toggle('text-zinc-500', !active);
+                button.classList.toggle('font-medium', !active);
             });
 
         document
@@ -326,7 +357,7 @@
             )
             .forEach(content => {
                 content.classList.add(
-                    'd-none'
+                    'hidden'
                 );
             });
 
@@ -334,7 +365,7 @@
             .getElementById(
                 `${state.activeTab}TabContent`
             )
-            ?.classList.remove('d-none');
+            ?.classList.remove('hidden');
 
         const dateContext = state.activeTab === 'meeting'
             ? 'Meeting'
@@ -453,8 +484,6 @@
 
     function renderCurrentTab() {
         const activeTab = state.activeTab;
-        console.log(window.CRMRenderers);
-
         const availableRenderers =
             window.CRMRenderers || {};
 
@@ -589,6 +618,12 @@
             ) {
                 return;
             }
+
+            showError(
+                error.name === 'AbortError'
+                    ? 'Permintaan data CRM melewati batas waktu. Silakan coba lagi.'
+                    : error.message || 'Data CRM tidak dapat diambil.'
+            );
         } finally {
             clearTimeout(timeoutId);
         }
@@ -708,7 +743,7 @@
                     : 'Tambah Lead AI';
         }
 
-        $('#leadFormModal').modal('show');
+        crmModal.open('leadFormModal');
     }
 
     function populateEditForm(lead) {
@@ -856,7 +891,7 @@
             }
         );
 
-        $('#leadFormModal').modal('show');
+        crmModal.open('leadFormModal');
     }
 
     function createPayload() {
@@ -985,8 +1020,7 @@
                 );
             }
 
-            $('#leadFormModal')
-                .modal('hide');
+            crmModal.close('leadFormModal');
 
             await loadData();
         } catch (error) {
@@ -1085,7 +1119,7 @@
                     showTab(tab);
 
                     elements.addButton?.classList.toggle(
-                        'd-none',
+                        'hidden',
                         tab === 'meeting'
                     );
 

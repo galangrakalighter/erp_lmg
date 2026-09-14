@@ -1,108 +1,193 @@
+{{-- =========================================================
+     MODAL TAMBAH / EDIT LEAD
+========================================================= --}}
 <div
-    class="modal fade"
     id="leadFormModal"
-    tabindex="-1"
-    role="dialog"
+    class="fixed inset-0 z-50 hidden overflow-y-auto"
+    aria-labelledby="leadFormTitle"
     aria-hidden="true"
 >
-    <div
-        class="modal-dialog modal-lg modal-dialog-centered"
-        role="document"
-    >
-        <div class="modal-content">
+    <div class="flex min-h-full items-center justify-center p-4 sm:p-6">
+
+        {{-- Backdrop --}}
+        <div
+            class="fixed inset-0 bg-zinc-950/60 backdrop-blur-sm"
+            data-modal-backdrop="leadFormModal"
+        ></div>
+
+        {{-- Modal --}}
+        <div class="relative z-10 w-full max-w-4xl overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl">
+
             <form id="leadForm">
 
-                <div class="modal-header bg-primary text-white">
-                    <h5 id="leadFormTitle" class="modal-title">
-                        Tambah Lead
-                    </h5>
+                {{-- Header --}}
+                <div class="border-b border-zinc-200 bg-zinc-950 px-5 py-5 text-white sm:px-6">
+                    <div class="flex items-start justify-between gap-4">
 
-                    <button
-                        type="button"
-                        class="close text-white"
-                        data-dismiss="modal"
-                    >
-                        <span>&times;</span>
-                    </button>
+                        <div>
+                            <div class="mb-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-400">
+                                Lighter Media Group
+                            </div>
+
+                            <h2
+                                id="leadFormTitle"
+                                class="text-lg font-semibold tracking-tight"
+                            >
+                                Tambah Lead
+                            </h2>
+
+                            <p class="mt-1 text-xs text-zinc-400">
+                                Masukkan informasi lead dan kebutuhan calon klien.
+                            </p>
+                        </div>
+
+                        <button
+                            type="button"
+                            class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-white/10 hover:text-white"
+                            data-modal-close="leadFormModal"
+                            aria-label="Tutup"
+                        >
+                            <svg
+                                class="h-5 w-5"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+                                <path d="M6 6l12 12M18 6 6 18" />
+                            </svg>
+                        </button>
+
+                    </div>
                 </div>
 
-                <div class="modal-body">
+
+                {{-- Body --}}
+                <div class="max-h-[75vh] overflow-y-auto px-5 py-6 sm:px-6">
+
+                    {{-- Error --}}
                     <div
                         id="leadFormError"
-                        class="alert alert-danger d-none"
+                        class="mb-6 hidden rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
                     ></div>
 
-                    <div class="row">
 
-                        <div class="col-md-6 mb-3">
-                            <label>Nama</label>
+                    <div class="grid grid-cols-1 gap-x-5 gap-y-5 md:grid-cols-2">
+
+                        {{-- Nama --}}
+                        <div>
+                            <label
+                                for="leadNama"
+                                class="mb-2 block text-xs font-semibold text-zinc-700"
+                            >
+                                Nama
+                            </label>
 
                             <input
                                 type="text"
                                 id="leadNama"
-                                class="form-control"
+                                class="block w-full rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950"
                             >
                         </div>
 
-                        <div class="col-md-6 mb-3">
-                            <label>Brand/Nama Usaha</label>
+
+                        {{-- Brand --}}
+                        <div>
+                            <label
+                                for="leadBrand"
+                                class="mb-2 block text-xs font-semibold text-zinc-700"
+                            >
+                                Brand / Nama Usaha
+                            </label>
 
                             <input
                                 type="text"
                                 id="leadBrand"
-                                class="form-control"
+                                class="block w-full rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950"
                             >
                         </div>
 
-                        <div class="col-md-6 mb-3">
-                            <label>Nomor WhatsApp</label>
+
+                        {{-- Phone --}}
+                        <div>
+                            <label
+                                for="leadPhone"
+                                class="mb-2 block text-xs font-semibold text-zinc-700"
+                            >
+                                Nomor WhatsApp
+                            </label>
 
                             <input
                                 type="text"
                                 id="leadPhone"
-                                class="form-control"
+                                class="block w-full rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950"
                             >
                         </div>
 
-                        <div
-                            id="emailField"
-                            class="col-md-6 mb-3"
-                        >
-                            <label>Email</label>
+
+                        {{-- Email --}}
+                        <div id="emailField">
+                            <label
+                                for="leadEmail"
+                                class="mb-2 block text-xs font-semibold text-zinc-700"
+                            >
+                                Email
+                            </label>
 
                             <input
                                 type="email"
                                 id="leadEmail"
-                                class="form-control"
+                                class="block w-full rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950"
                             >
                         </div>
 
-                        <div class="col-md-6 mb-3">
-                            <label>Kategori</label>
+
+                        {{-- Kategori --}}
+                        <div>
+                            <label
+                                for="leadKategori"
+                                class="mb-2 block text-xs font-semibold text-zinc-700"
+                            >
+                                Kategori
+                            </label>
 
                             <input
                                 type="text"
                                 id="leadKategori"
-                                class="form-control"
+                                class="block w-full rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950"
                             >
                         </div>
 
-                        <div class="col-md-6 mb-3">
-                            <label>Layanan</label>
+
+                        {{-- Layanan --}}
+                        <div>
+                            <label
+                                for="leadLayanan"
+                                class="mb-2 block text-xs font-semibold text-zinc-700"
+                            >
+                                Layanan
+                            </label>
 
                             <input
                                 type="text"
                                 id="leadLayanan"
-                                class="form-control"
+                                class="block w-full rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950"
                             >
                         </div>
 
-                        <div class="col-md-6 mb-3">
-                            <label>Prospek</label>
+
+                        {{-- Prospek --}}
+                        <div>
+                            <label
+                                for="leadProspek"
+                                class="mb-2 block text-xs font-semibold text-zinc-700"
+                            >
+                                Prospek
+                            </label>
 
                             <select
                                 id="leadProspek"
-                                class="form-control"
+                                class="block w-full rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950"
                             >
                                 <option value="cold">Cold</option>
                                 <option value="warm">Warm</option>
@@ -110,18 +195,19 @@
                             </select>
                         </div>
 
-                        {{-- Status khusus AI --}}
-                        <div
-                            id="aiStatusField"
-                            class="col-md-6 mb-3"
-                        >
-                            <label for="leadAiStatus">
+
+                        {{-- AI Status --}}
+                        <div id="aiStatusField">
+                            <label
+                                for="leadAiStatus"
+                                class="mb-2 block text-xs font-semibold text-zinc-700"
+                            >
                                 Status
                             </label>
 
                             <select
                                 id="leadAiStatus"
-                                class="form-control"
+                                class="block w-full rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950"
                             >
                                 <option value="">
                                     Pilih Status
@@ -137,18 +223,22 @@
                             </select>
                         </div>
 
-                        {{-- Status khusus Human --}}
+
+                        {{-- Human Status --}}
                         <div
                             id="humanStatusField"
-                            class="col-md-6 mb-3 d-none"
+                            class="hidden"
                         >
-                            <label for="leadStatus">
+                            <label
+                                for="leadStatus"
+                                class="mb-2 block text-xs font-semibold text-zinc-700"
+                            >
                                 Status
                             </label>
 
                             <select
                                 id="leadStatus"
-                                class="form-control"
+                                class="block w-full rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950"
                             >
                                 <option value="">
                                     Pilih Status
@@ -181,137 +271,235 @@
                                 <option value="no respon">
                                     No Respon
                                 </option>
+
                                 <option value="deals">
                                     Deals
                                 </option>
+
                                 <option value="no deals">
                                     No Deals
                                 </option>
                             </select>
                         </div>
 
-                        <div class="col-md-4 mb-3">
-                            <label>Instagram</label>
 
-                            <input
-                                type="url"
-                                id="leadInstagram"
-                                class="form-control"
-                            >
+                        {{-- Social Media --}}
+                        <div class="md:col-span-2">
+                            <div class="mb-3">
+                                <p class="text-xs font-semibold text-zinc-700">
+                                    Social Media
+                                </p>
+
+                                <p class="mt-1 text-xs text-zinc-400">
+                                    Masukkan link social media lead jika tersedia.
+                                </p>
+                            </div>
+
+                            <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+
+                                <div>
+                                    <label
+                                        for="leadInstagram"
+                                        class="mb-2 block text-xs text-zinc-500"
+                                    >
+                                        Instagram
+                                    </label>
+
+                                    <input
+                                        type="url"
+                                        id="leadInstagram"
+                                        class="block w-full rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950"
+                                    >
+                                </div>
+
+                                <div>
+                                    <label
+                                        for="leadFacebook"
+                                        class="mb-2 block text-xs text-zinc-500"
+                                    >
+                                        Facebook
+                                    </label>
+
+                                    <input
+                                        type="url"
+                                        id="leadFacebook"
+                                        class="block w-full rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950"
+                                    >
+                                </div>
+
+                                <div>
+                                    <label
+                                        for="leadShopee"
+                                        class="mb-2 block text-xs text-zinc-500"
+                                    >
+                                        Shopee
+                                    </label>
+
+                                    <input
+                                        type="url"
+                                        id="leadShopee"
+                                        class="block w-full rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950"
+                                    >
+                                </div>
+
+                            </div>
                         </div>
 
-                        <div class="col-md-4 mb-3">
-                            <label>Facebook</label>
 
-                            <input
-                                type="url"
-                                id="leadFacebook"
-                                class="form-control"
+                        {{-- Kebutuhan --}}
+                        <div class="md:col-span-2">
+                            <label
+                                for="leadKebutuhan"
+                                class="mb-2 block text-xs font-semibold text-zinc-700"
                             >
-                        </div>
-
-                        <div class="col-md-4 mb-3">
-                            <label>Shopee</label>
-
-                            <input
-                                type="url"
-                                id="leadShopee"
-                                class="form-control"
-                            >
-                        </div>
-
-                        <div class="col-12 mb-3">
-                            <label>Kebutuhan</label>
+                                Kebutuhan
+                            </label>
 
                             <textarea
                                 id="leadKebutuhan"
-                                class="form-control"
                                 rows="3"
+                                class="block w-full resize-y rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm leading-6 text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950"
                             ></textarea>
                         </div>
 
-                        {{-- Field khusus AI --}}
-                        <div id="aiFields" class="col-12">
-                            <div class="form-group">
-                                <label>Kendala</label>
 
-                                <textarea
-                                    id="leadKendala"
-                                    class="form-control"
-                                    rows="3"
-                                ></textarea>
-                            </div>
+                        {{-- AI Fields --}}
+                        <div
+                            id="aiFields"
+                            class="md:col-span-2 space-y-5"
+                        >
+                            <div class="border-t border-zinc-100 pt-5">
+                                <p class="mb-4 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                                    AI Lead Detail
+                                </p>
 
-                            <div class="form-group">
-                                <label>Kesimpulan</label>
+                                <div class="space-y-5">
 
-                                <textarea
-                                    id="leadKesimpulan"
-                                    class="form-control"
-                                    rows="3"
-                                ></textarea>
-                            </div>
+                                    <div>
+                                        <label
+                                            for="leadKendala"
+                                            class="mb-2 block text-xs font-semibold text-zinc-700"
+                                        >
+                                            Kendala
+                                        </label>
 
-                            <div class="form-group">
-                                <label>Waktu Meeting</label>
+                                        <textarea
+                                            id="leadKendala"
+                                            rows="3"
+                                            class="block w-full resize-y rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm leading-6 text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950"
+                                        ></textarea>
+                                    </div>
 
-                                <input
-                                    type="datetime-local"
-                                    id="leadMeeting"
-                                    class="form-control"
-                                >
+                                    <div>
+                                        <label
+                                            for="leadKesimpulan"
+                                            class="mb-2 block text-xs font-semibold text-zinc-700"
+                                        >
+                                            Kesimpulan
+                                        </label>
+
+                                        <textarea
+                                            id="leadKesimpulan"
+                                            rows="3"
+                                            class="block w-full resize-y rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm leading-6 text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950"
+                                        ></textarea>
+                                    </div>
+
+                                    <div>
+                                        <label
+                                            for="leadMeeting"
+                                            class="mb-2 block text-xs font-semibold text-zinc-700"
+                                        >
+                                            Waktu Meeting
+                                        </label>
+
+                                        <input
+                                            type="datetime-local"
+                                            id="leadMeeting"
+                                            class="block w-full rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950"
+                                        >
+                                    </div>
+
+                                </div>
                             </div>
                         </div>
 
-                        {{-- Field khusus Human --}}
+
+                        {{-- Human Fields --}}
                         <div
                             id="humanFields"
-                            class="col-12 d-none"
+                            class="hidden md:col-span-2"
                         >
-                            <div class="form-group">
-                                <label>Note</label>
+                            <div class="border-t border-zinc-100 pt-5">
 
-                                <textarea
-                                    id="leadNote"
-                                    class="form-control"
-                                    rows="3"
-                                ></textarea>
-                            </div>
+                                <p class="mb-4 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                                    Human Lead Detail
+                                </p>
 
-                            <div class="form-check">
-                                <input
-                                    type="checkbox"
-                                    id="leadCanPush"
-                                    class="form-check-input"
-                                >
+                                <div class="space-y-5">
 
-                                <label
-                                    for="leadCanPush"
-                                    class="form-check-label"
-                                >
-                                    Can Push
-                                </label>
+                                    <div>
+                                        <label
+                                            for="leadNote"
+                                            class="mb-2 block text-xs font-semibold text-zinc-700"
+                                        >
+                                            Note
+                                        </label>
+
+                                        <textarea
+                                            id="leadNote"
+                                            rows="3"
+                                            class="block w-full resize-y rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm leading-6 text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950"
+                                        ></textarea>
+                                    </div>
+
+                                    <label
+                                        for="leadCanPush"
+                                        class="flex cursor-pointer items-center gap-3 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 transition hover:bg-zinc-100"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            id="leadCanPush"
+                                            class="h-4 w-4 rounded border-zinc-300 text-zinc-950 focus:ring-zinc-950"
+                                        >
+
+                                        <span>
+                                            <span class="block text-sm font-semibold text-zinc-800">
+                                                Can Push
+                                            </span>
+
+                                            <span class="block text-xs text-zinc-400">
+                                                Lead dapat diteruskan ke proses berikutnya.
+                                            </span>
+                                        </span>
+                                    </label>
+
+                                </div>
                             </div>
                         </div>
 
                     </div>
                 </div>
 
-                <div class="modal-footer">
+
+                {{-- Footer --}}
+                <div class="flex flex-col-reverse gap-2 border-t border-zinc-200 bg-zinc-50 px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
+
                     <button
                         type="button"
-                        class="btn btn-secondary"
-                        data-dismiss="modal"
+                        data-modal-close="leadFormModal"
+                        class="inline-flex items-center justify-center rounded-lg border border-zinc-200 bg-white px-5 py-2.5 text-sm font-medium text-zinc-600 transition hover:border-zinc-300 hover:bg-zinc-100 hover:text-zinc-950"
                     >
                         Batal
                     </button>
 
                     <button
                         type="submit"
-                        class="btn btn-primary"
+                        class="inline-flex items-center justify-center rounded-lg bg-zinc-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-950 focus:ring-offset-2"
                     >
                         Simpan
                     </button>
+
                 </div>
 
             </form>
@@ -319,296 +507,317 @@
     </div>
 </div>
 
+
+{{-- =========================================================
+     MODAL DETAIL TEXT
+========================================================= --}}
 <div
-    class="modal fade"
     id="crmTextDetailModal"
-    tabindex="-1"
-    role="dialog"
+    class="fixed inset-0 z-50 hidden overflow-y-auto"
     aria-labelledby="crmTextDetailModalLabel"
     aria-hidden="true"
 >
-    <div
-        class="modal-dialog modal-dialog-centered modal-lg"
-        role="document"
-    >
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5
-                    class="modal-title"
-                    id="crmTextDetailModalLabel"
-                >
-                    Detail Data
-                </h5>
+    <div class="flex min-h-full items-center justify-center p-4 sm:p-6">
+
+        <div
+            class="fixed inset-0 bg-zinc-950/60 backdrop-blur-sm"
+            data-modal-backdrop="crmTextDetailModal"
+        ></div>
+
+        <div class="relative z-10 w-full max-w-3xl overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl">
+
+            <div class="flex items-center justify-between gap-4 border-b border-zinc-200 bg-zinc-950 px-5 py-4 text-white sm:px-6">
+
+                <div>
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-400">
+                        CRM Detail
+                    </p>
+
+                    <h2
+                        class="mt-1 text-lg font-semibold"
+                        id="crmTextDetailModalLabel"
+                    >
+                        Detail Data
+                    </h2>
+                </div>
 
                 <button
                     type="button"
-                    class="close text-white"
-                    data-dismiss="modal"
+                    data-modal-close="crmTextDetailModal"
+                    class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-white/10 hover:text-white"
                     aria-label="Tutup"
                 >
-                    <span aria-hidden="true">&times;</span>
+                    <svg
+                        class="h-5 w-5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                    >
+                        <path d="M6 6l12 12M18 6 6 18" />
+                    </svg>
                 </button>
+
             </div>
 
-            <div class="modal-body">
+            <div class="p-5 sm:p-6">
                 <div
                     id="crmTextDetailContent"
-                    class="border rounded bg-light p-3 text-dark"
-                    style="
-                        white-space: pre-wrap;
-                        overflow-wrap: anywhere;
-                        line-height: 1.7;
-                        max-height: 500px;
-                        overflow-y: auto;
-                    "
+                    class="max-h-[500px] overflow-y-auto whitespace-pre-wrap break-words rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-sm leading-7 text-zinc-700"
                 ></div>
             </div>
 
-            <div class="modal-footer">
+            <div class="flex justify-end border-t border-zinc-200 bg-zinc-50 px-5 py-4 sm:px-6">
                 <button
                     type="button"
-                    class="btn btn-secondary"
-                    data-dismiss="modal"
+                    data-modal-close="crmTextDetailModal"
+                    class="inline-flex items-center justify-center rounded-lg border border-zinc-200 bg-white px-5 py-2.5 text-sm font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-950"
                 >
                     Tutup
                 </button>
             </div>
+
         </div>
     </div>
 </div>
 
-{{-- Modal history chat --}}
+
+{{-- =========================================================
+     MODAL CHAT HISTORY
+========================================================= --}}
 <div
-    class="modal fade"
     id="crmChatHistoryModal"
-    tabindex="-1"
-    role="dialog"
+    class="fixed inset-0 z-50 hidden overflow-y-auto"
     aria-labelledby="crmChatHistoryModalLabel"
     aria-hidden="true"
 >
-    <div
-        class="modal-dialog modal-dialog-centered modal-lg"
-        role="document"
-    >
-        <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <div>
-                    <h5
-                        class="modal-title"
-                        id="crmChatHistoryModalLabel"
-                    >
-                        <i class="fab fa-whatsapp mr-1"></i>
-                        History Chat
-                    </h5>
+    <div class="flex min-h-full items-center justify-center p-4 sm:p-6">
 
-                    <small id="crmChatHistoryPhone"></small>
+        <div
+            class="fixed inset-0 bg-zinc-950/60 backdrop-blur-sm"
+            data-modal-backdrop="crmChatHistoryModal"
+        ></div>
+
+        <div class="relative z-10 w-full max-w-3xl overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl">
+
+            <div class="flex items-center justify-between gap-4 border-b border-zinc-200 bg-zinc-950 px-5 py-4 text-white sm:px-6">
+
+                <div class="flex items-center gap-3">
+
+                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10">
+                        <svg
+                            class="h-5 w-5"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                        >
+                            <path d="M21 11.5a8.4 8.4 0 0 1-9 8.5 9.5 9.5 0 0 1-4.1-.9L3 20l1.2-4.1A8.2 8.2 0 0 1 3 11.5 8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5Z" />
+                        </svg>
+                    </div>
+
+                    <div>
+                        <h2
+                            class="text-lg font-semibold"
+                            id="crmChatHistoryModalLabel"
+                        >
+                            History Chat
+                        </h2>
+
+                        <small
+                            id="crmChatHistoryPhone"
+                            class="text-xs text-zinc-400"
+                        ></small>
+                    </div>
+
                 </div>
 
                 <button
                     type="button"
-                    class="close text-white"
-                    data-dismiss="modal"
+                    data-modal-close="crmChatHistoryModal"
+                    class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-white/10 hover:text-white"
                     aria-label="Tutup"
                 >
-                    <span aria-hidden="true">&times;</span>
+                    <svg
+                        class="h-5 w-5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                    >
+                        <path d="M6 6l12 12M18 6 6 18" />
+                    </svg>
                 </button>
+
             </div>
+
 
             <div
                 id="crmChatHistoryBody"
-                class="modal-body bg-light"
-                style="
-                    min-height: 250px;
-                    max-height: 600px;
-                    overflow-y: auto;
-                "
+                class="max-h-[600px] min-h-[250px] overflow-y-auto bg-zinc-50 p-5 sm:p-6"
             >
-                <div class="text-center text-muted py-5">
-                    Belum ada chat yang dipilih.
+                <div class="flex min-h-[200px] items-center justify-center text-center">
+                    <div>
+                        <div class="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100">
+                            <svg
+                                class="h-5 w-5 text-zinc-400"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+                                <path d="M8 10h8M8 14h5" />
+                                <path d="M19 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Z" />
+                            </svg>
+                        </div>
+
+                        <p class="text-sm font-medium text-zinc-600">
+                            Belum ada chat yang dipilih.
+                        </p>
+                    </div>
                 </div>
             </div>
 
-            <div class="modal-footer">
+
+            <div class="flex flex-col-reverse gap-2 border-t border-zinc-200 bg-white px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
+
+                <button
+                    type="button"
+                    data-modal-close="crmChatHistoryModal"
+                    class="inline-flex items-center justify-center rounded-lg border border-zinc-200 bg-white px-5 py-2.5 text-sm font-medium text-zinc-600 transition hover:bg-zinc-50 hover:text-zinc-950"
+                >
+                    Tutup
+                </button>
+
                 <a
                     id="crmOpenWhatsApp"
                     href="#"
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="btn btn-success"
-                    style="display: none"
+                    class="hidden items-center justify-center gap-2 rounded-lg bg-zinc-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800"
                 >
-                    <i class="fab fa-whatsapp mr-1"></i>
+                    <svg
+                        class="h-4 w-4"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                    >
+                        <path d="M21 11.5a8.4 8.4 0 0 1-9 8.5 9.5 9.5 0 0 1-4.1-.9L3 20l1.2-4.1A8.2 8.2 0 0 1 3 11.5 8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5Z" />
+                    </svg>
+
                     Buka WhatsApp
                 </a>
 
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+{{-- =========================================================
+     MODAL FOLLOW UP DETAIL
+========================================================= --}}
+<div
+    id="humanFollowUpDetailModal"
+    class="fixed inset-0 z-50 hidden overflow-y-auto"
+    aria-labelledby="humanFollowUpDetailModalLabel"
+    aria-hidden="true"
+>
+    <div class="flex min-h-full items-center justify-center p-4 sm:p-6">
+
+        <div
+            class="fixed inset-0 bg-zinc-950/60 backdrop-blur-sm"
+            data-modal-backdrop="humanFollowUpDetailModal"
+        ></div>
+
+        <div class="relative z-10 w-full max-w-xl overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl">
+
+            <div class="flex items-center justify-between gap-4 border-b border-zinc-200 px-5 py-4 sm:px-6">
+
+                <div>
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-400">
+                        Human CRM
+                    </p>
+
+                    <h2
+                        class="mt-1 text-lg font-semibold tracking-tight text-zinc-950"
+                        id="humanFollowUpDetailModalLabel"
+                    >
+                        Detail Follow Up
+                    </h2>
+                </div>
+
                 <button
                     type="button"
-                    class="btn btn-secondary"
-                    data-dismiss="modal"
+                    data-modal-close="humanFollowUpDetailModal"
+                    class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-950"
+                    aria-label="Tutup"
+                >
+                    <svg
+                        class="h-5 w-5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                    >
+                        <path d="M6 6l12 12M18 6 6 18" />
+                    </svg>
+                </button>
+
+            </div>
+
+
+            <div
+                class="max-h-[70vh] overflow-y-auto px-5 py-6 sm:px-6"
+                id="humanFollowUpDetailBody"
+            >
+                <div class="flex min-h-[120px] items-center justify-center text-center">
+
+                    <div>
+                        <div class="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100">
+                            <svg
+                                class="h-5 w-5 animate-spin text-zinc-400"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                            >
+                                <circle
+                                    cx="12"
+                                    cy="12"
+                                    r="9"
+                                    class="opacity-25"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                />
+
+                                <path
+                                    d="M21 12a9 9 0 0 0-9-9"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                />
+                            </svg>
+                        </div>
+
+                        <p class="text-sm text-zinc-500">
+                            Memuat detail follow up...
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+
+
+            <div class="flex justify-end border-t border-zinc-200 bg-zinc-50 px-5 py-4 sm:px-6">
+                <button
+                    type="button"
+                    data-modal-close="humanFollowUpDetailModal"
+                    class="inline-flex items-center justify-center rounded-lg border border-zinc-200 bg-white px-5 py-2.5 text-sm font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-950"
                 >
                     Tutup
                 </button>
             </div>
+
         </div>
     </div>
 </div>
-
-<div
-    class="modal fade"
-    id="humanFollowUpDetailModal"
-    tabindex="-1"
-    role="dialog"
-    aria-labelledby="humanFollowUpDetailModalLabel"
-    aria-hidden="true"
->
-    <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="humanFollowUpDetailModalLabel">
-                    Detail Follow Up
-                </h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Tutup">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body" id="humanFollowUpDetailBody">
-                <div class="text-center text-muted py-4">
-                    Memuat detail follow up...
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                    Tutup
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    'use strict';
-
-    const form = document.getElementById('leadForm');
-    const aiFields = document.getElementById('aiFields');
-    const aiStatusField = document.getElementById('aiStatusField');
-    const humanStatusField = document.getElementById('humanStatusField');
-    const aiStatus = document.getElementById('leadAiStatus');
-    const humanStatus = document.getElementById('leadStatus');
-
-    if (
-        !form ||
-        !aiStatusField ||
-        !humanStatusField ||
-        !aiStatus ||
-        !humanStatus
-    ) {
-        return;
-    }
-
-    let currentFormType = 'ai';
-
-    function normalizeAiStatus(value) {
-        const status = String(value ?? '')
-            .trim()
-            .toLowerCase();
-
-        const statusMap = {
-            '1': '1',
-            '2': '2',
-            'in progress': '1',
-            'meeting schedule': '2',
-            'meeting scheduled': '2',
-        };
-
-        return statusMap[status] || '';
-    }
-
-    function useStatusType(type) {
-        const isAi = type === 'ai';
-
-        currentFormType = isAi ? 'ai' : 'human';
-
-        aiStatusField.classList.toggle('d-none', !isAi);
-        humanStatusField.classList.toggle('d-none', isAi);
-
-        aiStatus.disabled = !isAi;
-
-        /*
-         * #leadStatus tidak dinonaktifkan karena kode
-         * submit lama Anda masih membacanya.
-         */
-        humanStatus.disabled = false;
-
-        if (isAi) {
-            const normalizedStatus = normalizeAiStatus(
-                humanStatus.value
-            );
-
-            aiStatus.value = normalizedStatus;
-            humanStatus.value = normalizedStatus;
-        }
-    }
-
-    aiStatus.addEventListener('change', function () {
-        /*
-         * Sinkronkan select AI ke field lama agar payload
-         * lama tetap mengirim property status.
-         */
-        humanStatus.value = aiStatus.value;
-
-        humanStatus.dispatchEvent(
-            new Event('change', {
-                bubbles: true,
-            })
-        );
-    });
-
-    document.addEventListener(
-        'click',
-        function (event) {
-            const editButton = event.target.closest('.edit-lead');
-
-            if (!editButton) {
-                return;
-            }
-
-            if (editButton.closest('#aiTableBody')) {
-                useStatusType('ai');
-                return;
-            }
-
-            if (editButton.closest('#humanTableBody')) {
-                useStatusType('human');
-            }
-        },
-        true
-    );
-
-    /*
-     * Handler utama Anda sudah mengatur aiFields/humanFields.
-     * Setelah modal muncul, status mengikuti field tersebut.
-     */
-    $('#leadFormModal').on('shown.bs.modal', function () {
-        const isAi =
-            aiFields &&
-            !aiFields.classList.contains('d-none');
-
-        useStatusType(isAi ? 'ai' : 'human');
-    });
-
-    /*
-     * Capture=true membuat sinkronisasi berjalan sebelum
-     * listener submit lama menyusun payload.
-     */
-    form.addEventListener(
-        'submit',
-        function () {
-            if (currentFormType === 'ai') {
-                humanStatus.value = aiStatus.value;
-            }
-        },
-        true
-    );
-});
-</script>

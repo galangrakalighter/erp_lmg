@@ -346,7 +346,6 @@ window.CRMRenderers =
         const doneToday = booleanValue(lead.today);
         const disabled = doneToday || count >= 3;
 
-        console.log('masuk sini');
 
         return `
             <div
@@ -409,7 +408,7 @@ window.CRMRenderers =
                 body.innerHTML = `
                     <tr>
                         <td
-                            colspan="26"
+                            colspan="10"
                             class="
                                 text-center
                                 text-muted
@@ -784,12 +783,7 @@ window.CRMRenderers =
                                     data-phone="${phone}"
                                     title="History Chat"
                                 >
-                                    <i
-                                        class="
-                                            fab
-                                            fa-whatsapp
-                                        "
-                                    ></i>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.5 9.5 9.5 0 0 1-4.1-.9L3 20l1.2-4.1A8.2 8.2 0 0 1 3 11.5 8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5Z"/><path d="M8.5 9.2c.7 3 2.3 4.7 5.4 5.5"/></svg>
                                 </button>
 
                                 <button
@@ -803,12 +797,7 @@ window.CRMRenderers =
                                     data-id="${id}"
                                     title="Edit"
                                 >
-                                    <i
-                                        class="
-                                            fas
-                                            fa-edit
-                                        "
-                                    ></i>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>
                                 </button>
 
                                 <button
@@ -822,18 +811,44 @@ window.CRMRenderers =
                                     data-id="${id}"
                                     title="Hapus"
                                 >
-                                    <i
-                                        class="
-                                            fas
-                                            fa-trash
-                                        "
-                                    ></i>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v5M14 11v5"/></svg>
                                 </button>
                             </td>
                         </tr>
                     `;
                 })
                 .join('');
+
+            body.querySelectorAll('tr').forEach(function (row) {
+                const cells = Array.from(row.children);
+
+                if (cells.length !== 26) {
+                    return;
+                }
+
+                const value = index => cells[index].innerHTML;
+                const progress = [
+                    ['Can Push', 15], ['Service Plan', 16],
+                    ['Need Analysis', 17], ['Meeting', 18],
+                    ['Mini Audit', 19], ['Insight', 20],
+                    ['Study Kasus', 21], ['Today', 22],
+                ].map(function ([label, index]) {
+                    return `<div class="crm-progress-item"><span>${label}</span>${value(index)}</div>`;
+                }).join('');
+
+                row.innerHTML = `
+                    <td>${value(0)}</td>
+                    <td><div class="crm-stack"><span class="crm-field-label">Terakhir chat</span>${value(1)}<span class="crm-field-label crm-field-gap">Pertama chat</span>${value(2)}</div></td>
+                    <td><div class="crm-stack"><strong class="crm-lead-name">${value(3)}</strong><span>${value(4)}</span><span class="crm-muted">${value(5)}</span></div></td>
+                    <td><div class="crm-stack">${value(7)}<span class="crm-field-label crm-field-gap">Rate balasan</span>${value(8)}${value(11)}</div></td>
+                    <td><div class="crm-stack">${value(6)}<span class="crm-field-label crm-field-gap">Layanan</span>${value(9)}<span class="crm-muted">${value(10)}</span></div></td>
+                    <td>${value(12)}</td>
+                    <td class="human-lead-status"><div class="crm-stack">${value(13)}${value(14)}</div></td>
+                    <td><div class="crm-progress-grid">${progress}</div><div class="crm-follow-up-detail">${value(23)}</div></td>
+                    <td>${value(24)}</td>
+                    <td><div class="crm-actions">${value(25)}</div></td>
+                `;
+            });
         };
 
     document.addEventListener(
@@ -1027,7 +1042,7 @@ window.CRMRenderers =
         const modal = $('#humanFollowUpDetailModal');
 
         if (modal.length && typeof modal.modal === 'function') {
-            modal.modal('show');
+            window.CRMModal?.open('humanFollowUpDetailModal');
         }
     }
 
@@ -1040,7 +1055,6 @@ window.CRMRenderers =
     async function updateHumanChecklist(
         checkbox
     ) {
-        console.log(checkbox.dataset.field);
         const app =
             document.getElementById(
                 'crmApp'
@@ -1123,7 +1137,6 @@ window.CRMRenderers =
                 );
             }
 
-            console.log("berhasil");
 
             /*
             * Simpan state terakhir yang
@@ -1206,8 +1219,7 @@ window.CRMRenderers =
             'crmTextDetailContent'
         ).textContent = detail.content;
 
-        $('#crmTextDetailModal')
-            .modal('show');
+        window.CRMModal?.open('crmTextDetailModal');
     }
 
     async function loadHistory(lead) {
@@ -1287,8 +1299,7 @@ window.CRMRenderers =
             </div>
         `;
 
-        $('#crmChatHistoryModal')
-            .modal('show');
+        window.CRMModal?.open('crmChatHistoryModal');
 
         try {
             const response = await fetch(
@@ -1404,10 +1415,10 @@ window.CRMRenderers =
                 document.createElement('div');
 
             row.className =
-                `d-flex mb-3 ${
+                `flex w-full mb-4 ${
                     isAdmin
-                        ? 'justify-content-end'
-                        : 'justify-content-start'
+                        ? 'justify-end'
+                        : 'justify-start'
                 }`;
 
             const bubble =
@@ -1415,8 +1426,8 @@ window.CRMRenderers =
 
             bubble.className =
                 isAdmin
-                    ? 'bg-success text-white rounded p-3 shadow-sm'
-                    : 'bg-white border rounded p-3 shadow-sm';
+                    ? 'rounded-2xl rounded-br-md bg-zinc-950 px-4 py-3 text-white shadow-sm'
+                    : 'rounded-2xl rounded-bl-md border border-zinc-200 bg-white px-4 py-3 text-zinc-800 shadow-sm';
 
             bubble.style.maxWidth = '85%';
             bubble.style.whiteSpace = 'pre-wrap';
@@ -1425,8 +1436,9 @@ window.CRMRenderers =
             const sender =
                 document.createElement('div');
 
-            sender.className =
-                'font-weight-bold small mb-2';
+            sender.className = isAdmin
+                ? 'mb-1.5 text-[10px] font-bold uppercase tracking-wider text-zinc-400'
+                : 'mb-1.5 text-[10px] font-bold uppercase tracking-wider text-zinc-500';
 
             sender.textContent =
                 isAdmin
@@ -1470,10 +1482,10 @@ window.CRMRenderers =
                 document.createElement('small');
 
             time.className =
-                `d-block mt-2 ${
+                `mt-2 block text-[10px] ${
                     isAdmin
-                        ? 'text-light'
-                        : 'text-muted'
+                        ? 'text-zinc-400'
+                        : 'text-zinc-500'
                 }`;
 
             time.textContent =

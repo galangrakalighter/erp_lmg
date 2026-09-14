@@ -1,692 +1,1668 @@
-<style>
-    .collapse-container{
-        padding: 0 .75rem;
-    }
+{{-- =========================================================
+    LMG SIDEBAR
+    Tailwind CSS version
+========================================================= --}}
 
-    .client-item-wrapper{
-        border-radius: .35rem;
-        overflow: hidden;
-    }
+<aside
+    id="accordionSidebar"
+    class="fixed inset-y-0 left-0 z-[1100] flex w-[280px] -translate-x-full flex-col border-r border-zinc-800 bg-zinc-950 text-white transition-transform duration-300 ease-out lg:translate-x-0"
+>
 
-    .client-dropdown-link{
-        display: flex;
-        align-items: center;
-        gap: .75rem;
-        width: 100%;
-        padding: .7rem .9rem;
-        color: rgba(255,255,255,.85);
-        text-decoration: none;
-        background: rgba(255,255,255,.06);
-        border: 1px solid rgba(255,255,255,.12);
-        border-radius: .35rem;
-        transition: all .2s ease;
-    }
+    {{-- =====================================================
+        BRAND
+    ====================================================== --}}
+    <div class="flex h-[76px] shrink-0 items-center border-b border-zinc-800 px-5">
+        <a
+            href="{{ route('home') }}"
+            class="group flex min-w-0 items-center gap-3"
+        >
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white">
+                <img
+                    src="{{ asset('img/logo.jpg') }}"
+                    class="h-full w-full object-cover"
+                    alt="Lighter Media Group"
+                >
+            </div>
 
-    .client-dropdown-link{
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-    }
+            <div class="min-w-0">
+                <div class="truncate text-sm font-bold tracking-tight text-white">
+                    Lighter
+                </div>
 
-    .client-dropdown-link:hover{
-        color: #fff;
-        background: rgba(255,255,255,.14);
-        border-color: rgba(255,255,255,.25);
-        text-decoration: none;
-    }
+                <div class="truncate text-[9px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
+                    Media Group
+                </div>
+            </div>
+        </a>
 
-    .client-dropdown-link.active{
-        color: #4e73df;
-        background: #fff;
-        font-weight: 600;
-        border-color: #fff;
-        box-shadow: 0 2px 8px rgba(0,0,0,.15);
-    }
-
-    .client-dropdown-link.active i{
-        color: #4e73df;
-    }
-
-    /* Pemisah */
-
-    .client-dropdown-link > div{
-        display:flex;
-        align-items:center;
-    }
-
-    .client-dropdown-link-out-div {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 6px 10px;
-        color: rgba(255,255,255,0.85) !important;
-        font-size: 0.8rem;
-        font-weight: 600;
-        text-decoration: none !important;
-        cursor: pointer;
-    }
-    .client-dropdown-link-out-div:hover { color: #fff !important; }
-    .client-dropdown-link-out-div.active{
-        color:#ffffff;
-        font-weight:700;
-        border-left:4px solid #fdfdfd;
-    }
-
-    .active-menu{
-        color:#ffffff;
-        font-weight:700;
-        border-left:4px solid #fdfdfd;
-    }
-
-    .platform-group-out-div {
-        margin-bottom: 8px;
-        background: rgba(0,0,0,0.1);
-        padding: 5px;
-        border-radius: 6px;
-    }
-    .platform-label-out-div {
-        font-size: 0.65rem;
-        font-weight: 800;
-        color: #f6c23e;
-        padding-left: 8px;
-        margin-bottom: 2px;
-        text-transform: uppercase;
-    }
-    .platform-sub-links-out-div a {
-        display: block;
-        padding: 4px 10px 4px 20px;
-        color: rgba(255,255,255,0.7) !important;
-        font-size: 0.75rem;
-        text-decoration: none !important;
-    }
-    .platform-sub-links-out-div a:hover { color: #fff !important; background: rgba(255,255,255,0.1); border-radius: 4px; }
+        {{-- Mobile close --}}
+        <button
+            id="sidebarClose"
+            type="button"
+            class="ml-auto flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-800 hover:text-white lg:hidden"
+            aria-label="Close sidebar"
+        >
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.8"
+                    d="M6 6l12 12M18 6L6 18"
+                />
+            </svg>
+        </button>
+    </div>
 
 
-    .dropdown-arrow{
-        font-size:12px;
-        transition:.25s;
-    }
+    {{-- =====================================================
+        SIDEBAR CONTENT
+    ====================================================== --}}
+    <div class="min-h-0 flex-1 overflow-y-auto px-3 py-4 scrollbar-thin">
 
-    .client-dropdown-link[aria-expanded="true"] .dropdown-arrow{
-        transform:rotate(180deg);
-    }
+        {{-- =================================================
+            PRIMARY NAVIGATION
+        ================================================== --}}
+        <div class="mb-6">
 
-    /* submenu */
+            <div class="mb-2 px-3 text-[9px] font-bold uppercase tracking-[0.18em] text-zinc-600">
+                Workspace
+            </div>
 
-    .submenu-link{
-        display:block;
-        margin:6px 0 0 18px;
-        padding:8px 12px;
-        border-left:2px solid rgba(255,255,255,.2);
-        color:rgba(255,255,255,.8);
-        text-decoration:none;
-        font-size:.88rem;
-        transition:.2s;
-    }
 
-    .submenu-link:hover{
-        color:#fff;
-        border-left-color:#fff;
-        padding-left:18px;
-        text-decoration:none;
-    }
+            {{-- Dashboard --}}
+            <a
+                href="{{ route('home') }}"
+                class="group mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition
+                {{ request()->routeIs('home')
+                    ? 'bg-white text-zinc-950'
+                    : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
+                }}"
+            >
+                <svg class="h-[18px] w-[18px] shrink-0 {{ request()->routeIs('home') ? 'text-zinc-950' : 'text-zinc-500 group-hover:text-white' }}"
+                     fill="none"
+                     stroke="currentColor"
+                     viewBox="0 0 24 24">
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.8"
+                        d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10"
+                    />
+                </svg>
 
-    .submenu-link.active{
-        color:#fff;
-        font-weight:600;
-        border-left-color:#fff;
-    }
+                <span class="font-medium">
+                    Dashboard
+                </span>
+            </a>
 
-    .btn-cms-link {
-        display: block;
-        width: 100%;
-        padding: 8px 12px;
-        border-radius: 4px;
-        color: #333;
-        text-decoration: none;
-        transition: background-color 0.2s ease-in-out;
-    }
 
-    .btn-cms-link-out-div {
-        display: block;
-        background: #f8f9fc;
-        color: #4e73df !important;
-        font-size: 0.65rem;
-        font-weight: 800;
-        text-align: center;
-        padding: 6px;
-        border-radius: 6px;
-        text-transform: uppercase;
-        text-decoration: none !important;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    }
+            {{-- Folder Master --}}
+            <a
+                href="{{ route('master-folder.index') }}"
+                class="group mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition
+                {{ request()->routeIs('master-folder.*')
+                    ? 'bg-white text-zinc-950'
+                    : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
+                }}"
+            >
+                <svg class="h-[18px] w-[18px] shrink-0 {{ request()->routeIs('master-folder.*') ? 'text-zinc-950' : 'text-zinc-500 group-hover:text-white' }}"
+                     fill="none"
+                     stroke="currentColor"
+                     viewBox="0 0 24 24">
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.8"
+                        d="M3 7a2 2 0 012-2h5l2 2h7a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"
+                    />
+                </svg>
 
-    .btn-cms-link:hover {
-        background-color: #e9ecef; /* Warna abu-abu standar Bootstrap */
-        color: #000;
-        text-decoration: none;
-    }
-    .category-dropdown-link {
-        transition: background-color 0.2s ease-in-out;
-        color: inherit; /* Menyesuaikan warna teks dengan tema sidebar */
-    }
+                <span class="font-medium">
+                    Folder Master
+                </span>
+            </a>
 
-    .category-dropdown-link-out-div {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 7px 10px;
-        color: #fff !important;
-        font-size: 0.7rem;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        text-decoration: none !important;
-        background: rgba(255,255,255,0.08);
-        border-radius: 6px;
-        cursor: pointer;
-    }
 
-    .category-dropdown-link-out-div:not(.collapsed) .arrow-icon-xs { transform: rotate(180deg); }
+            {{-- File Master --}}
+            <a
+                href="{{ route('file-master.index') }}"
+                class="group mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition
+                {{ request()->routeIs('file-master.*')
+                    ? 'bg-white text-zinc-950'
+                    : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
+                }}"
+            >
+                <svg class="h-[18px] w-[18px] shrink-0 {{ request()->routeIs('file-master.*') ? 'text-zinc-950' : 'text-zinc-500 group-hover:text-white' }}"
+                     fill="none"
+                     stroke="currentColor"
+                     viewBox="0 0 24 24">
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.8"
+                        d="M6 3h8l4 4v14H6V3z"
+                    />
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.8"
+                        d="M14 3v5h5M9 13h6M9 17h6"
+                    />
+                </svg>
 
-    .category-dropdown-link:hover {
-        background-color: #e9ecef; /* Warna abu-abu saat di-hover */
-        text-decoration: none;
-    }
+                <span class="font-medium">
+                    File Master
+                </span>
+            </a>
 
-    .brand-sub-header {
-        font-size: 0.7rem;
-        font-weight: 900;
-        background: white;
-        padding: 4px;
-        border-radius: 4px;
-        text-align: center;
-        letter-spacing: 1px;
-    }
-
-    .client-sub-menu-link {
-        display: block;
-        padding: 6px 10px;
-        margin-bottom: 4px;
-        color: rgba(0, 0, 0, 0.85) !important;
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-decoration: none !important;
-        border-radius: 4px;
-        transition: all 0.2s ease;
-    }
-
-    .client-sub-menu-link:hover {
-        color: #050505 !important;
-        border-color: #000000;
-        text-decoration: none !important;
-    }
-
-    .client-sub-menu-link.active {
-        color: #000000 !important;
-        font-weight: 700;
-        border-left: 4px solid #000000; /* Aksen border kiri hitam yang tegas saat aktif */
-        border-color: #000000;
-    }
-
-    .client-sub-menu-link-client {
-        display: block;
-        padding: 6px 10px;
-        margin-bottom: 4px;
-        color: rgba(0, 0, 0, 0.85) !important;
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-decoration: none !important;
-        border-radius: 4px;
-        transition: all 0.2s ease;
-    }
-
-    .client-sub-menu-link-client:hover {
-        color: #050505 !important;
-        text-decoration: none !important;
-    }
-
-    .client-sub-menu-link-client.active {
-        color: #000000 !important;
-        font-weight: 700;
-        border-left: 4px solid #000000; /* Aksen border kiri hitam yang tegas saat aktif */
-    }
-</style>
-<ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
-
-    <!-- Logo -->
-    <a class="sidebar-brand d-flex align-items-center justify-content-center py-3"
-        href="{{ route('home') }}">
-
-        <img src="{{ asset('img/logo.jpg') }}"
-            class="rounded-circle shadow-sm mr-2"
-            style="width:42px;height:42px;object-fit:cover;"
-            alt="Logo">
-
-        <div class="sidebar-brand-text">
-            Lighter
         </div>
 
-    </a>
 
-    <hr class="sidebar-divider my-0">
+        {{-- =================================================
+            ROUTE STATE
+        ================================================== --}}
+        @php
+            $currentProduct = request()->route('id_produk');
+            $currentPlatform = request()->route('platform');
 
-    <!-- Dashboard -->
-    <li class="nav-item {{ request()->routeIs('home') ? 'active' : '' }}">
-        <a class="nav-link" href="{{ route('home') }}">
-            <i class="fas fa-fw fa-home"></i>
-            <span>Dashboard</span>
-        </a>
-    </li>
+            $isDMProduct = $digitalMarketingProduk->contains('client_id', $currentProduct);
+            $isBDProduct = $businessDevProduk->contains('client_id', $currentProduct);
+            $isMCNProduct = $mcnProduk->contains('client_id', $currentProduct);
+            $techProdukList = $techProduk->contains('client_id', $currentProduct);
+            $isEcommerceList = $ecommerceProduk->contains('client_id', $currentProduct);
 
-    <li class="nav-item {{ request()->routeIs('master-folder.*') ? 'active' : '' }}">
-        <a class="nav-link" href="{{ route('master-folder.index') }}">
-            <i class="fas fa-fw fa-folder"></i>
-            <span>Folder Master</span>
-        </a>
-    </li>
+            $isMarketingPage = Route::is([
+                'market_research',
+                'branding',
+                'analisis',
+                'manajemen',
+                'PDF'
+            ]);
 
-    <li class="nav-item {{ request()->routeIs('file-master.*') ? 'active' : '' }}">
-        <a class="nav-link" href="{{ route('file-master.index') }}">
-            <i class="fas fa-fw fa-file-alt"></i>
-            <span>File Master</span>
-        </a>
-    </li>
+            $divisiOpen = Route::is([
+                'client.produk_divisi',
+                'barang_client.index',
+                'social_creator.index',
+                'blacklist.index',
+                'tools.index',
+                'gform_affiliate.index',
+                'selection.index',
+            ]);
 
-    <hr class="sidebar-divider">
-    @php
-        $currentProduct = request()->route('id_produk');
-        $currentPlatform = request()->route('platform');
-        
-        // Identifikasi apakah produk saat ini ada di list Digital Marketing atau Business Dev
-        $isDMProduct = $digitalMarketingProduk->contains('client_id', $currentProduct);
-        $isBDProduct = $businessDevProduk->contains('client_id', $currentProduct);
-        $isMCNProduct = $mcnProduk->contains('client_id', $currentProduct);
-        $techProdukList = $techProduk->contains('client_id', $currentProduct);
-        $isEcommerceList = $ecommerceProduk->contains('client_id', $currentProduct);
+            $isPdf = Route::is('PDF');
 
-        $isMarketingPage = Route::is(['market_research', 'branding', 'analisis', 'manajemen', 'PDF']);
+            $divisiActive =
+                $divisiOpen ||
+                ($isMarketingPage && $isDMProduct) ||
+                ($isMCNProduct && $isPdf) ||
+                ($techProdukList && $isPdf) ||
+                ($isEcommerceList && $isPdf);
+        @endphp
 
-        $divisiOpen = Route::is([
-            'client.produk_divisi',
-            'barang_client.index',
-            'social_creator.index',
-            'blacklist.index',
-            'tools.index',
-            'gform_affiliate.index',
-            'selection.index',
-        ]);
 
-        $isPdf = Route::is('PDF');
-    @endphp
+        {{-- =================================================
+            DIVISI
+        ================================================== --}}
+        <div class="mb-2">
 
-    <!-- Nav Item: Divisi -->
-    <li class="nav-item {{ $divisiOpen || ($isMarketingPage && $isDMProduct) || ($isMCNProduct && $isPdf) || ($techProdukList && $isPdf) || ($isEcommerceList && $isPdf) ? 'active' : '' }}">
-        <a class="nav-link" href="#" data-toggle="collapse" data-target="#collapseDivisi" aria-expanded="true">
-            <span>Divisi</span>
-        </a>
+            <button
+                type="button"
+                data-sidebar-collapse="collapseDivisi"
+                class="group flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition
+                {{ $divisiActive
+                    ? 'bg-zinc-900 text-white'
+                    : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
+                }}"
+                aria-expanded="{{ $divisiActive ? 'true' : 'false' }}"
+            >
+                <span class="flex items-center gap-3">
 
-        <div id="collapseDivisi" class="collapse {{ $divisiOpen || ($isMarketingPage && $isDMProduct) || ($isMCNProduct && $isPdf) || ($techProdukList && $isPdf) || ($isEcommerceList && $isPdf) ? 'show' : '' }}" data-parent="#accordionSidebar">
-            <div class="bg-white py-2 collapse-inner rounded">
-                
-                @include('partials.sidebar_digital_marketing')
-                
-                @include('partials.sidebar_mcn')
-                
-                @include('partials.sidebar_tech')
-                
-                @include('partials.sidebar_commerce')
+                    <svg
+                        class="h-[18px] w-[18px] shrink-0 {{ $divisiActive ? 'text-white' : 'text-zinc-500' }}"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="1.8"
+                            d="M4 6a2 2 0 012-2h4l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"
+                        />
+                    </svg>
+
+                    <span class="font-semibold">
+                        Divisi
+                    </span>
+                </span>
+
+                <svg
+                    class="sidebar-chevron h-4 w-4 shrink-0 text-zinc-600 transition-transform duration-200 {{ $divisiActive ? 'rotate-180' : '' }}"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.8"
+                        d="M6 9l6 6 6-6"
+                    />
+                </svg>
+            </button>
+
+
+            <div
+                id="collapseDivisi"
+                class="{{ $divisiActive ? '' : 'hidden' }} mt-1 space-y-1 pl-3"
+            >
+
+                <div class="rounded-xl border border-zinc-800 bg-zinc-900/50 p-2">
+
+                    @include('partials.sidebar_digital_marketing')
+
+                    @include('partials.sidebar_mcn')
+
+                    @include('partials.sidebar_tech')
+
+                    @include('partials.sidebar_commerce')
+
+                </div>
 
             </div>
         </div>
-    </li>
 
-    @if(request()->routeIs('cms*'))
-        <div class="sidebar-heading mt-3 text-warning">CMS MANAGEMENT</div>
-        <div class="cms-nav-group mx-2 mb-3">
+
+        {{-- =================================================
+            CMS MANAGEMENT
+        ================================================== --}}
+        @if(request()->routeIs('cms*'))
+
+            <div class="my-5 border-t border-zinc-800"></div>
+
+            <div class="mb-2 px-3 text-[9px] font-bold uppercase tracking-[0.18em] text-zinc-600">
+                CMS Management
+            </div>
+
             @php
                 $cmsMenus = [
-                    ['route' => 'cms.produk', 'icon' => 'fa-box', 'label' => 'Produk'],
-                    ['route' => 'cms.hook', 'icon' => 'fa-anchor', 'label' => 'Hook'],
-                    ['route' => 'cms.strategy', 'icon' => 'fa-chess', 'label' => 'Strategy'],
-                    ['route' => 'cms.status', 'icon' => 'fa-info-circle', 'label' => 'Status'],
-                    ['route' => 'cms.type', 'icon' => 'fa-tags', 'label' => 'Type'],
-                    ['route' => 'cms.pilar', 'icon' => 'fa-columns', 'label' => 'Pilar'],
-                    ['route' => 'cms.body', 'icon' => 'fa-paragraph', 'label' => 'Body'],
-                    ['route' => 'cms.cta', 'icon' => 'fa-mouse-pointer', 'label' => 'CTA'],
+                    ['route' => 'cms.produk', 'label' => 'Produk'],
+                    ['route' => 'cms.hook', 'label' => 'Hook'],
+                    ['route' => 'cms.strategy', 'label' => 'Strategy'],
+                    ['route' => 'cms.status', 'label' => 'Status'],
+                    ['route' => 'cms.type', 'label' => 'Type'],
+                    ['route' => 'cms.pilar', 'label' => 'Pilar'],
+                    ['route' => 'cms.body', 'label' => 'Body'],
+                    ['route' => 'cms.cta', 'label' => 'CTA'],
                 ];
             @endphp
-            @foreach($cmsMenus as $item)
-            <li class="nav-item {{ request()->routeIs($item['route']) ? 'active' : '' }}">
-                <a class="nav-link py-2 px-3" href="{{ route($item['route'], $activeProductCode) }}">
-                    <i class="fas fa-fw {{ $item['icon'] }}"></i>
-                    <span>{{ $item['label'] }}</span>
-                </a>
-            </li>
-            @endforeach
-        </div>
-        <hr class="sidebar-divider">
-        <li class="nav-item">
-            <a class="nav-link text-warning font-weight-bold" href="{{ route('home') }}">
-                <i class="fas fa-fw fa-arrow-left"></i><span>Kembali</span>
-            </a>
-        </li>
-    @endif
 
-    <li class="nav-item {{ ($isMarketingPage && $isBDProduct) ? 'active' : '' }}">
-        <a class="nav-link {{ ($isMarketingPage && $isBDProduct) ? '' : 'collapsed' }}" href="#" data-toggle="collapse" data-target="#collapseBD" aria-expanded="{{ ($isMarketingPage && $isBDProduct) ? 'true' : 'false' }}" aria-controls="collapseBD">
-            <span>Business Dev</span>
-        </a>
-        
-        <div id="collapseBD" class="collapse {{ ($isMarketingPage && $isBDProduct) ? 'show' : '' }}" 
-            aria-labelledby="headingBD" data-parent="#accordionSidebar">
-            <div class="collapse-container">
+            <div class="space-y-1">
 
-                <div class="brand-sub-header text-primary mb-3">
-                    <i class="fas fa-store mr-2"></i> MR. CREPE
-                </div>
-                
+                @foreach($cmsMenus as $item)
 
-                @if ($isSuperAdmin || $myDivision->name == "Business Dev" && $myRole->level < 4)
-                    <div class="px-2 mb-3">
-                        <a class="btn-cms-link-out-div" href="{{ route('cms.produk', 'BD') }}">
-                            <i class="fas fa-cog mr-1"></i> Dashboard CMS
-                        </a>
-                    </div>
-                @endif
+                    <a
+                        href="{{ route($item['route'], $activeProductCode) }}"
+                        class="flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition
+                        {{ request()->routeIs($item['route'])
+                            ? 'bg-white font-semibold text-zinc-950'
+                            : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
+                        }}"
+                    >
+                        <span class="h-1.5 w-1.5 rounded-full
+                            {{ request()->routeIs($item['route'])
+                                ? 'bg-zinc-950'
+                                : 'bg-zinc-600'
+                            }}">
+                        </span>
 
-                @php
-                    // Persiapan data di atas loop agar tidak membebani performa
-                    $isPowerUser = $isSuperAdmin || ($myRole->role_name ?? '') == "Performance & Reporting";
-                    $divisionIds = $myDivision instanceof \Illuminate\Support\Collection ? $myDivision->pluck('id')->toArray() : [];
-                    $isDigitalMarketing = ($myDivision->name ?? '') == "Business Dev";
-                    if($myDivision->name == 'All Divisions'){
-                        $isDigitalMarketing = true;
-                    }
-                    
-                    // Kelompokkan data produk berdasarkan kategori untuk meminimalisir loop
-                    $groupedProduk = $businessDevProduk->groupBy('kategori_jasa_id');
-                    
-                    // Fungsi bantuan untuk cek akses
-                    $checkAccess = function($client) use ($isPowerUser, $divisionIds, $myClientIds) {
-                        return $isPowerUser || (in_array(1, $divisionIds) && in_array($client->client_id, $myClientIds));
-                    };
-                @endphp
-
-                @foreach([2 => 'Jasa', 3 => 'Barang'] as $catId => $catLabel)
-                    <a class="category-dropdown-link-out-div collapsed mb-3 d-block" data-toggle="collapse" data-target="#cat_bd_{{ strtolower($catLabel) }}">
-                        <span><i class="fas fa-folder-open mr-2 text-info"></i>Internal {{ $catLabel }}</span>
+                        {{ $item['label'] }}
                     </a>
 
-                    <div id="cat_bd_{{ strtolower($catLabel) }}" class="collapse {{ ($isMarketingPage) ? 'show' : '' }} ml-2 border-left-custom mb-2">
-                        @php
-                            // Filter data yang hanya boleh dilihat user ini
-                            $filteredClients = $groupedProduk->get($catId, collect())->filter(function($client) use ($isDigitalMarketing, $isSuperAdmin) {
-                                return $isDigitalMarketing || $isSuperAdmin;
-                            });
-                        @endphp
+                @endforeach
 
-                        @forelse ($filteredClients as $client)
-                            @php 
-                                $canOpen = $checkAccess($client); 
-                                $isActiveClient = $currentProduct == $client->client_id;
+            </div>
+
+
+            <a
+                href="{{ route('home') }}"
+                class="mt-3 flex items-center gap-3 rounded-xl border border-zinc-800 px-3 py-2.5 text-sm font-semibold text-zinc-400 transition hover:border-zinc-700 hover:bg-zinc-900 hover:text-white"
+            >
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.8"
+                        d="M10 19l-7-7 7-7M3 12h18"
+                    />
+                </svg>
+
+                <span>Kembali</span>
+            </a>
+
+        @endif
+
+
+        {{-- =================================================
+            BUSINESS DEVELOPMENT
+        ================================================== --}}
+        <div class="mt-5 border-t border-zinc-800 pt-4">
+
+            @php
+                $isBDOpen = $isMarketingPage && $isBDProduct;
+            @endphp
+
+            <button
+                type="button"
+                data-sidebar-collapse="collapseBD"
+                class="group flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition
+                {{ $isBDOpen
+                    ? 'bg-zinc-900 text-white'
+                    : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
+                }}"
+                aria-expanded="{{ $isBDOpen ? 'true' : 'false' }}"
+            >
+                <span class="flex items-center gap-3">
+
+                    <svg
+                        class="h-[18px] w-[18px] text-zinc-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="1.8"
+                            d="M3 10h18M5 10v9M9 10v9M15 10v9M19 10v9M3 20h18M4 7l8-4 8 4v3H4V7z"
+                        />
+                    </svg>
+
+                    <span class="font-semibold">
+                        Business Dev
+                    </span>
+
+                </span>
+
+                <svg
+                    class="sidebar-chevron h-4 w-4 text-zinc-600 transition-transform duration-200 {{ $isBDOpen ? 'rotate-180' : '' }}"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.8"
+                        d="M6 9l6 6 6-6"
+                    />
+                </svg>
+
+            </button>
+
+
+            <div
+                id="collapseBD"
+                class="{{ $isBDOpen ? '' : 'hidden' }} mt-2 space-y-2 pl-3"
+            >
+
+                <div class="rounded-xl border border-zinc-800 bg-zinc-900/50 p-2">
+
+                    {{-- Brand --}}
+                    <div class="mb-3 rounded-lg bg-white px-3 py-2 text-center text-[10px] font-black uppercase tracking-[0.15em] text-zinc-950">
+                        MR. CREPE
+                    </div>
+
+
+                    {{-- CMS --}}
+                    @if ($isSuperAdmin || ($myDivision->name == "Business Dev" && $myRole->level < 4))
+
+                        <a
+                            href="{{ route('cms.produk', 'BD') }}"
+                            class="mb-3 flex items-center justify-center gap-2 rounded-lg bg-white px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-zinc-950 transition hover:bg-zinc-200"
+                        >
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="1.8"
+                                    d="M12 15.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7z"
+                                />
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="1.8"
+                                    d="M19.4 15a1.7 1.7 0 00.3 1.9l.1.1-1.8 1.8-.1-.1a1.7 1.7 0 00-1.9-.3 1.7 1.7 0 00-1 1.5v.1h-2.6v-.1a1.7 1.7 0 00-1-1.5 1.7 1.7 0 00-1.9.3l-.1.1-1.8-1.8.1-.1a1.7 1.7 0 00.3-1.9 1.7 1.7 0 00-1.5-1H6.4v-2.6h.1a1.7 1.7 0 001.5-1 1.7 1.7 0 00-.3-1.9l-.1-.1 1.8-1.8.1.1a1.7 1.7 0 001.9.3 1.7 1.7 0 001-1.5V5.4h2.6v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.9-.3l.1-.1 1.8 1.8-.1.1a1.7 1.7 0 00-.3 1.9 1.7 1.7 0 001.5 1h.1V14h-.1a1.7 1.7 0 00-1.5 1z"
+                                />
+                            </svg>
+
+                            Dashboard CMS
+                        </a>
+
+                    @endif
+
+
+                    @php
+                        $isPowerUser =
+                            $isSuperAdmin ||
+                            ($myRole->role_name ?? '') == "Performance & Reporting";
+
+                        $divisionIds =
+                            $myDivision instanceof \Illuminate\Support\Collection
+                                ? $myDivision->pluck('id')->toArray()
+                                : [];
+
+                        $isDigitalMarketing =
+                            ($myDivision->name ?? '') == "Business Dev";
+
+                        if($myDivision->name == 'All Divisions'){
+                            $isDigitalMarketing = true;
+                        }
+
+                        $groupedProduk =
+                            $businessDevProduk->groupBy('kategori_jasa_id');
+
+                        $checkAccess = function($client) use (
+                            $isPowerUser,
+                            $divisionIds,
+                            $myClientIds
+                        ) {
+                            return
+                                $isPowerUser ||
+                                (
+                                    in_array(1, $divisionIds) &&
+                                    in_array($client->client_id, $myClientIds)
+                                );
+                        };
+                    @endphp
+
+
+                    {{-- Internal Jasa / Barang --}}
+                    @foreach([2 => 'Jasa', 3 => 'Barang'] as $catId => $catLabel)
+
+                        <button
+                            type="button"
+                            data-sidebar-collapse="cat_bd_{{ strtolower($catLabel) }}"
+                            class="mb-2 flex w-full items-center justify-between rounded-lg bg-zinc-800/70 px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wide text-zinc-300 transition hover:bg-zinc-800 hover:text-white"
+                            aria-expanded="{{ $isMarketingPage ? 'true' : 'false' }}"
+                        >
+                            <span>
+                                {{ $catLabel }}
+                            </span>
+
+                            <svg
+                                class="sidebar-chevron h-3.5 w-3.5 text-zinc-600 transition-transform duration-200 {{ $isMarketingPage ? 'rotate-180' : '' }}"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="1.8"
+                                    d="M6 9l6 6 6-6"
+                                />
+                            </svg>
+                        </button>
+
+
+                        <div
+                            id="cat_bd_{{ strtolower($catLabel) }}"
+                            class="{{ $isMarketingPage ? '' : 'hidden' }} mb-3 ml-2 border-l border-zinc-700 pl-2"
+                        >
+
+                            @php
+                                $filteredClients =
+                                    $groupedProduk
+                                        ->get($catId, collect())
+                                        ->filter(function($client) use (
+                                            $isDigitalMarketing,
+                                            $isSuperAdmin
+                                        ) {
+                                            return
+                                                $isDigitalMarketing ||
+                                                $isSuperAdmin;
+                                        });
                             @endphp
 
-                            <div class="client-item-wrapper" style="width: 7vw">
-                                @if($canOpen)
-                                    <a class="client-dropdown-link-out-div {{ $isActiveClient ? '' : 'collapsed' }}" data-toggle="collapse" data-target="#client_bd_{{ $catLabel }}_{{ $client->client_id }}" aria-expanded="{{ $isActiveClient ? 'true' : 'false' }}">
-                                        <span><i class="far fa-user-circle mr-2"></i>{{ $client->nama }}</span>
-                                        <i class="fas fa-caret-right arrow-icon-xs"></i>
-                                    </a>
-                                    <div id="client_bd_{{ $catLabel }}_{{ $client->client_id }}" class="collapse ml-3 {{ $isActiveClient ? 'show' : '' }}">
-                                        <div class="platform-sub-links-out-div">
-                                            @php $platforms = collect(json_decode($client->access_token, true)['platform'] ?? [])->filter(); @endphp
+
+                            @forelse ($filteredClients as $client)
+
+                                @php
+                                    $canOpen = $checkAccess($client);
+                                    $isActiveClient =
+                                        $currentProduct == $client->client_id;
+                                @endphp
+
+
+                                <div class="mb-1">
+
+                                    @if($canOpen)
+
+                                        <button
+                                            type="button"
+                                            data-sidebar-collapse="client_bd_{{ $catLabel }}_{{ $client->client_id }}"
+                                            class="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-xs transition
+                                            {{ $isActiveClient
+                                                ? 'bg-white font-semibold text-zinc-950'
+                                                : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                                            }}"
+                                            aria-expanded="{{ $isActiveClient ? 'true' : 'false' }}"
+                                        >
+
+                                            <span class="flex min-w-0 items-center gap-2">
+
+                                                <svg
+                                                    class="h-4 w-4 shrink-0"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="1.7"
+                                                        d="M15 19a4 4 0 00-8 0M11 11a3 3 0 100-6 3 3 0 000 6zM19 19a4 4 0 00-3-3.87M16 5a3 3 0 012 5.24"
+                                                    />
+                                                </svg>
+
+                                                <span class="truncate">
+                                                    {{ $client->nama }}
+                                                </span>
+
+                                            </span>
+
+                                            <svg
+                                                class="sidebar-chevron h-3.5 w-3.5 shrink-0 transition-transform duration-200 {{ $isActiveClient ? 'rotate-90' : '' }}"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    stroke-width="1.8"
+                                                    d="M9 6l6 6-6 6"
+                                                />
+                                            </svg>
+
+                                        </button>
+
+
+                                        <div
+                                            id="client_bd_{{ $catLabel }}_{{ $client->client_id }}"
+                                            class="{{ $isActiveClient ? '' : 'hidden' }} ml-2 mt-1 border-l border-zinc-700 pl-2"
+                                        >
+
+                                            @php
+                                                $platforms = collect(
+                                                    json_decode(
+                                                        $client->access_token,
+                                                        true
+                                                    )['platform'] ?? []
+                                                )->filter();
+                                            @endphp
+
+
                                             @forelse ($platforms as $plt)
+
                                                 @php
-                                                    $isPlatform = $currentPlatform == $plt;
+                                                    $isPlatform =
+                                                        $currentPlatform == $plt;
                                                 @endphp
-                                                <div class="platform-group-out-div">
-                                                    <div class="platform-label-out-div"><i class="fab fa-{{ strtolower($plt) }}"></i> {{ $plt }}</div>
-                                                    <a href="{{ route('market_research', ['id_produk' => $client->id, 'platform' => $plt]) }}" class="{{ Route::is('market_research') && $isPlatform && $isActiveClient ? 'active-menu' : '' }}">Market Research</a>
-                                                    <a href="{{ route('branding', ['id_produk' => $client->id, 'platform' => $plt]) }}" class="{{ Route::is('branding') && $isPlatform && $isActiveClient ? 'active-menu' : '' }}">Branding</a>
-                                                    <a href="{{ route('analisis', ['id_produk' => $client->id, 'platform' => $plt]) }}" class="{{ Route::is('analisis') && $isPlatform && $isActiveClient ? 'active-menu' : '' }}">Analisis</a>
-                                                    <a href="{{ route('manajemen', ['id_produk' => $client->id, 'platform' => $plt]) }}" class="{{ Route::is('manajemen') && $isPlatform && $isActiveClient ? 'active-menu' : '' }}">Content Plan</a>
-                                                    <a href="{{ route('PDF', ['id_produk' => $client->id]) }}" class="{{ Route::is('PDF') && $isActiveClient ? 'active-menu' : '' }}">File</a>
+
+
+                                                <div class="mb-2 rounded-lg bg-zinc-950/80 p-1.5">
+
+                                                    <div class="mb-1 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.12em] text-zinc-500">
+                                                        {{ $plt }}
+                                                    </div>
+
+
+                                                    <a
+                                                        href="{{ route('market_research', ['id_produk' => $client->id, 'platform' => $plt]) }}"
+                                                        class="block rounded-md px-2 py-1.5 text-[11px] transition
+                                                        {{ Route::is('market_research') && $isPlatform && $isActiveClient
+                                                            ? 'bg-white font-semibold text-zinc-950'
+                                                            : 'text-zinc-500 hover:bg-zinc-800 hover:text-white'
+                                                        }}"
+                                                    >
+                                                        Market Research
+                                                    </a>
+
+
+                                                    <a
+                                                        href="{{ route('branding', ['id_produk' => $client->id, 'platform' => $plt]) }}"
+                                                        class="block rounded-md px-2 py-1.5 text-[11px] transition
+                                                        {{ Route::is('branding') && $isPlatform && $isActiveClient
+                                                            ? 'bg-white font-semibold text-zinc-950'
+                                                            : 'text-zinc-500 hover:bg-zinc-800 hover:text-white'
+                                                        }}"
+                                                    >
+                                                        Branding
+                                                    </a>
+
+
+                                                    <a
+                                                        href="{{ route('analisis', ['id_produk' => $client->id, 'platform' => $plt]) }}"
+                                                        class="block rounded-md px-2 py-1.5 text-[11px] transition
+                                                        {{ Route::is('analisis') && $isPlatform && $isActiveClient
+                                                            ? 'bg-white font-semibold text-zinc-950'
+                                                            : 'text-zinc-500 hover:bg-zinc-800 hover:text-white'
+                                                        }}"
+                                                    >
+                                                        Analisis
+                                                    </a>
+
+
+                                                    <a
+                                                        href="{{ route('manajemen', ['id_produk' => $client->id, 'platform' => $plt]) }}"
+                                                        class="block rounded-md px-2 py-1.5 text-[11px] transition
+                                                        {{ Route::is('manajemen') && $isPlatform && $isActiveClient
+                                                            ? 'bg-white font-semibold text-zinc-950'
+                                                            : 'text-zinc-500 hover:bg-zinc-800 hover:text-white'
+                                                        }}"
+                                                    >
+                                                        Content Plan
+                                                    </a>
+
+
+                                                    <a
+                                                        href="{{ route('PDF', ['id_produk' => $client->id]) }}"
+                                                        class="block rounded-md px-2 py-1.5 text-[11px] transition
+                                                        {{ Route::is('PDF') && $isActiveClient
+                                                            ? 'bg-white font-semibold text-zinc-950'
+                                                            : 'text-zinc-500 hover:bg-zinc-800 hover:text-white'
+                                                        }}"
+                                                    >
+                                                        File
+                                                    </a>
+
                                                 </div>
+
                                             @empty
-                                                <span class="text-muted small p-2 d-block">Platform belum diset</span>
+
+                                                <div class="rounded-lg px-2 py-2 text-[10px] italic text-zinc-600">
+                                                    Platform belum diset
+                                                </div>
+
                                             @endforelse
+
                                         </div>
-                                    </div>
-                                @else
-                                    <div class="p-1 text-muted" style="opacity: 0.6; cursor: not-allowed;">
-                                        <span><i class="far fa-user-circle mr-2"></i>{{ $client->nama }}</span>
-                                    </div>
-                                @endif
-                            </div>
-                        @empty
-                            <div class="p-2 text-muted small font-italic">
-                                <i class="fas fa-info-circle mr-2"></i>Tidak ada data client tersedia.
-                            </div>
-                        @endforelse
-                    </div>
-                @endforeach
-            </div>
-        </div>
-    </li>
 
-    @php
-        // Definisikan route yang termasuk dalam menu Human Capital
-        $isHCPage = Route::is([
-            'hc_daily.index',
-            'hc_overview.list',
-            'overview.dashboard_kpi',
-            'overview.dashboard'
-        ]);
-    @endphp
-    <li class="nav-item {{ $isHCPage ? 'active' : '' }}">
-        <a class="nav-link {{ $isHCPage ? '' : 'collapsed' }}" href="#" 
-        data-toggle="collapse" data-target="#collapseHC" 
-        aria-expanded="{{ $isHCPage ? 'true' : 'false' }}" aria-controls="collapseHC">
-            <span>Human Capital</span>
-        </a>
-        
-        @php
-            $isKPIActive = Route::is(['overview.dashboard_kpi', 'hc_overview.list']);
-            $isHarianActive = Route::is(['overview.dashboard', 'hc_daily.index']);
-        @endphp
+                                    @else
 
-        <div id="collapseHC" class="collapse {{ $isHCPage ? 'show' : '' }}" 
-            aria-labelledby="headingHC" data-parent="#accordionSidebar">
-            <div class="collapse-container-class-outdiv">
-                
-                {{-- Dropdown KPI (Berisi KPI & Project Overview) --}}
-                <div class="client-item-wrapper-class-outdiv mb-2">
-                     <a class="category-dropdown-link-out-div collapsed mb-3 d-block" data-toggle="collapse" data-target="#collapseSubKPI">
-                        <span>KPI</span>
-                    </a>
-                    
-                    <div id="collapseSubKPI" class="collapse ml-3 {{ $isKPIActive ? 'show' : '' }}">
-                        <div class="platform-sub-links">
-                            <div class="platform-group">
-                                <a href="{{ route('overview.dashboard_kpi') }}" class="client-dropdown-link-out-div {{ Route::is('overview.dashboard_kpi') ? 'active-menu' : '' }}">Dashboard</a>
-                                <a href="{{ route('hc_overview.list') }}" class="client-dropdown-link-out-div {{ Route::is('hc_overview.list') ? 'active-menu' : '' }}">Overview</a>
-                            </div>
+                                        <div class="flex cursor-not-allowed items-center gap-2 rounded-lg px-2.5 py-2 text-xs text-zinc-700">
+                                            <svg
+                                                class="h-4 w-4"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    stroke-width="1.7"
+                                                    d="M15 19a4 4 0 00-8 0M11 11a3 3 0 100-6 3 3 0 000 6z"
+                                                />
+                                            </svg>
+
+                                            {{ $client->nama }}
+                                        </div>
+
+                                    @endif
+
+                                </div>
+
+                            @empty
+
+                                <div class="rounded-lg px-2 py-2 text-[10px] italic text-zinc-600">
+                                    Tidak ada data client tersedia.
+                                </div>
+
+                            @endforelse
+
                         </div>
-                    </div>
-                </div>
 
-                {{-- Dropdown Harian (Berisi Dashboard & Daily Work) --}}
-                <div class="client-item-wrapper-class-outdiv">
-                    <a class="category-dropdown-link-out-div collapsed mb-3 d-block" data-toggle="collapse" data-target="#collapseSubHarian">
-                        <span>Harian</span>
-                    </a>
-                    
-                    <div id="collapseSubHarian" class="collapse ml-3 {{ $isHarianActive ? 'show' : '' }}">
-                        <div class="platform-sub-links">
-                            <div class="platform-group">
-                                <a href="{{ route('overview.dashboard') }}" class="client-dropdown-link-out-div {{ Route::is('overview.dashboard') ? 'active-menu' : '' }}">Dashboard</a>
-                                <a href="{{ route('hc_daily.index') }}" class="client-dropdown-link-out-div {{ Route::is('hc_daily.index') ? 'active-menu' : '' }}">Daily Work</a>
-                            </div>
-                        </div>
-                    </div>
+                    @endforeach
+
                 </div>
 
             </div>
-        </div>
-    </li>
 
-    @if(Auth::user()->isAdmin == true || $myDivision->name == 'Finance')
+        </div>
+
+
+        {{-- =================================================
+            HUMAN CAPITAL
+        ================================================== --}}
         @php
-            $isFinancePage = Route::is([
-                'finance_coa.index',
-                'general_journal.index',
-                'finance_ledger.list_account',
-                'Ledger.neraca_saldo',
-                'adjustment_journal.index',
-                'Ledger.neraca_lajur',
-                'Ledger.arus_kas',
-                'Ledger.jurnal_penutup',
-                'invoice.index',
-                'profit.list',
-                'payroll.index',
-                'audit.index'
+            $isHCPage = Route::is([
+                'hc_daily.index',
+                'hc_overview.list',
+                'overview.dashboard_kpi',
+                'overview.dashboard'
+            ]);
+
+            $isKPIActive = Route::is([
+                'overview.dashboard_kpi',
+                'hc_overview.list'
+            ]);
+
+            $isHarianActive = Route::is([
+                'overview.dashboard',
+                'hc_daily.index'
             ]);
         @endphp
-        <li class="nav-item {{ $isFinancePage ? 'active' : '' }}">
-            <a class="nav-link {{ $isFinancePage ? '' : 'collapsed' }}" href="#" 
-            data-toggle="collapse" data-target="#collapseFinance" 
-            aria-expanded="{{ $isFinancePage ? 'true' : 'false' }}" aria-controls="collapseFinance">
-                <span>Finance</span>
-            </a>
-            
-            <div id="collapseFinance" class="collapse {{ $isFinancePage ? 'show' : '' }}" 
-                aria-labelledby="headingHC" data-parent="#accordionSidebar">
-                <div class="collapse-container">
-                    @if ($isSuperAdmin || ($myDivision->name == "Finance" && $myRole->level < 2))
-                        <div class="mb-2">
-                            <a href="{{ route('client.produk_divisi', 6) }}" class="btn-cms-link-out-div d-flex align-items-center text-dark py-2 px-2 rounded text-decoration-none transition-hover">
-                                <i class="fas fa-cog mr-2"></i> <span>Dashboard CMS</span>
-                            </a>
-                        </div>
-                    @endif
-                    <div class="client-item-wrapper mb-2">
-                        <a class="client-dropdown-link-out-div {{ Route::is('perusahaan.index') ? 'active' : '' }}" href="{{ route('perusahaan.index') }}">
-                            <span>Perusahaan</span>
+
+
+        <div class="mt-5 border-t border-zinc-800 pt-4">
+
+            <button
+                type="button"
+                data-sidebar-collapse="collapseHC"
+                class="group flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition
+                {{ $isHCPage
+                    ? 'bg-zinc-900 text-white'
+                    : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
+                }}"
+                aria-expanded="{{ $isHCPage ? 'true' : 'false' }}"
+            >
+
+                <span class="flex items-center gap-3">
+
+                    <svg
+                        class="h-[18px] w-[18px] text-zinc-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="1.8"
+                            d="M16 21v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2M9.5 11a4 4 0 100-8 4 4 0 000 8zM17 8h4M19 6v4"
+                        />
+                    </svg>
+
+                    <span class="font-semibold">
+                        Human Capital
+                    </span>
+
+                </span>
+
+                <svg
+                    class="sidebar-chevron h-4 w-4 text-zinc-600 transition-transform duration-200 {{ $isHCPage ? 'rotate-180' : '' }}"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.8"
+                        d="M6 9l6 6 6-6"
+                    />
+                </svg>
+
+            </button>
+
+
+            <div
+                id="collapseHC"
+                class="{{ $isHCPage ? '' : 'hidden' }} mt-1 space-y-2 pl-3"
+            >
+
+                {{-- KPI --}}
+                <div>
+
+                    <button
+                        type="button"
+                        data-sidebar-collapse="collapseSubKPI"
+                        class="flex w-full items-center justify-between rounded-lg bg-zinc-900/50 px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wide text-zinc-400 transition hover:bg-zinc-900 hover:text-white"
+                        aria-expanded="{{ $isKPIActive ? 'true' : 'false' }}"
+                    >
+                        <span>KPI</span>
+
+                        <svg
+                            class="sidebar-chevron h-3.5 w-3.5 text-zinc-600 transition-transform duration-200 {{ $isKPIActive ? 'rotate-180' : '' }}"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="1.8"
+                                d="M6 9l6 6 6-6"
+                            />
+                        </svg>
+                    </button>
+
+
+                    <div
+                        id="collapseSubKPI"
+                        class="{{ $isKPIActive ? '' : 'hidden' }} ml-2 mt-1 border-l border-zinc-800 pl-2"
+                    >
+
+                        <a
+                            href="{{ route('overview.dashboard_kpi') }}"
+                            class="block rounded-lg px-3 py-2 text-xs transition
+                            {{ Route::is('overview.dashboard_kpi')
+                                ? 'bg-white font-semibold text-zinc-950'
+                                : 'text-zinc-500 hover:bg-zinc-900 hover:text-white'
+                            }}"
+                        >
+                            Dashboard
                         </a>
+
+                        <a
+                            href="{{ route('hc_overview.list') }}"
+                            class="block rounded-lg px-3 py-2 text-xs transition
+                            {{ Route::is('hc_overview.list')
+                                ? 'bg-white font-semibold text-zinc-950'
+                                : 'text-zinc-500 hover:bg-zinc-900 hover:text-white'
+                            }}"
+                        >
+                            Overview
+                        </a>
+
                     </div>
 
-                    @foreach ($perusahaan as $pe)
-                        <a class="category-dropdown-link-out-div collapsed mb-3 d-block" data-toggle="collapse" data-target="#cat_perusahaan_{{ $pe->id }}">
-                            <span><i class="fas fa-folder-open mr-2 text-info"></i>{{ $pe->nama_perusahaan }}</span>
+                </div>
+
+
+                {{-- Harian --}}
+                <div>
+
+                    <button
+                        type="button"
+                        data-sidebar-collapse="collapseSubHarian"
+                        class="flex w-full items-center justify-between rounded-lg bg-zinc-900/50 px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wide text-zinc-400 transition hover:bg-zinc-900 hover:text-white"
+                        aria-expanded="{{ $isHarianActive ? 'true' : 'false' }}"
+                    >
+                        <span>Harian</span>
+
+                        <svg
+                            class="sidebar-chevron h-3.5 w-3.5 text-zinc-600 transition-transform duration-200 {{ $isHarianActive ? 'rotate-180' : '' }}"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="1.8"
+                                d="M6 9l6 6 6-6"
+                            />
+                        </svg>
+                    </button>
+
+
+                    <div
+                        id="collapseSubHarian"
+                        class="{{ $isHarianActive ? '' : 'hidden' }} ml-2 mt-1 border-l border-zinc-800 pl-2"
+                    >
+
+                        <a
+                            href="{{ route('overview.dashboard') }}"
+                            class="block rounded-lg px-3 py-2 text-xs transition
+                            {{ Route::is('overview.dashboard')
+                                ? 'bg-white font-semibold text-zinc-950'
+                                : 'text-zinc-500 hover:bg-zinc-900 hover:text-white'
+                            }}"
+                        >
+                            Dashboard
                         </a>
 
-                        <div id="cat_perusahaan_{{ $pe->id }}" class="collapse ml-2 border-left-custom mb-2">
-                            <div class="client-item-wrapper mb-2">
-                                <a class="client-dropdown-link-out-div {{ Route::is('finance.dashboard') ? 'active' : '' }}" href="{{ route('finance.dashboard', $pe->id) }}">
-                                    <span>Dashboard</span>
+                        <a
+                            href="{{ route('hc_daily.index') }}"
+                            class="block rounded-lg px-3 py-2 text-xs transition
+                            {{ Route::is('hc_daily.index')
+                                ? 'bg-white font-semibold text-zinc-950'
+                                : 'text-zinc-500 hover:bg-zinc-900 hover:text-white'
+                            }}"
+                        >
+                            Daily Work
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        {{-- =================================================
+            FINANCE
+        ================================================== --}}
+        @if(Auth::user()->isAdmin == true || $myDivision->name == 'Finance')
+
+            @php
+                $isFinancePage = Route::is([
+                    'finance_coa.index',
+                    'general_journal.index',
+                    'finance_ledger.list_account',
+                    'Ledger.neraca_saldo',
+                    'adjustment_journal.index',
+                    'Ledger.neraca_lajur',
+                    'Ledger.arus_kas',
+                    'Ledger.jurnal_penutup',
+                    'invoice.index',
+                    'profit.list',
+                    'payroll.index',
+                    'audit.index'
+                ]);
+            @endphp
+
+
+            <div class="mt-5 border-t border-zinc-800 pt-4">
+
+                <button
+                    type="button"
+                    data-sidebar-collapse="collapseFinance"
+                    class="group flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition
+                    {{ $isFinancePage
+                        ? 'bg-zinc-900 text-white'
+                        : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
+                    }}"
+                    aria-expanded="{{ $isFinancePage ? 'true' : 'false' }}"
+                >
+
+                    <span class="flex items-center gap-3">
+
+                        <svg
+                            class="h-[18px] w-[18px] text-zinc-500"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="1.8"
+                                d="M12 3v18M17 7.5c0-1.7-2.2-3-5-3s-5 1.3-5 3 2.2 3 5 3 5 1.3 5 3-2.2 3-5 3-5-1.3-5-3"
+                            />
+                        </svg>
+
+                        <span class="font-semibold">
+                            Finance
+                        </span>
+
+                    </span>
+
+                    <svg
+                        class="sidebar-chevron h-4 w-4 text-zinc-600 transition-transform duration-200 {{ $isFinancePage ? 'rotate-180' : '' }}"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="1.8"
+                            d="M6 9l6 6 6-6"
+                        />
+                    </svg>
+
+                </button>
+
+
+                <div
+                    id="collapseFinance"
+                    class="{{ $isFinancePage ? '' : 'hidden' }} mt-1 space-y-2 pl-3"
+                >
+
+                    <div class="rounded-xl border border-zinc-800 bg-zinc-900/50 p-2">
+
+                        {{-- CMS Finance --}}
+                        @if ($isSuperAdmin || ($myDivision->name == "Finance" && $myRole->level < 2))
+
+                            <a
+                                href="{{ route('client.produk_divisi', 6) }}"
+                                class="mb-2 flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-xs font-semibold text-zinc-950 transition hover:bg-zinc-200"
+                            >
+                                <svg
+                                    class="h-4 w-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="1.8"
+                                        d="M12 15.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7z"
+                                    />
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="1.8"
+                                        d="M19 13a7 7 0 00-.1-2l2-1.5-2-3.5-2.3 1a7 7 0 00-1.7-1L14.5 3h-5L9 6a7 7 0 00-1.7 1L5 6 3 9.5 5 11a7 7 0 000 2l-2 1.5L5 18l2.3-1a7 7 0 001.7 1l.5 3h5l.5-3a7 7 0 001.7-1l2.3 1 2-3.5L19 13z"
+                                    />
+                                </svg>
+
+                                Dashboard CMS
+                            </a>
+
+                        @endif
+
+
+                        {{-- Perusahaan --}}
+                        <a
+                            href="{{ route('perusahaan.index') }}"
+                            class="mb-2 flex items-center rounded-lg px-3 py-2 text-xs font-semibold transition
+                            {{ Route::is('perusahaan.index')
+                                ? 'bg-white text-zinc-950'
+                                : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                            }}"
+                        >
+                            Perusahaan
+                        </a>
+
+
+                        @foreach ($perusahaan as $pe)
+
+                            <button
+                                type="button"
+                                data-sidebar-collapse="cat_perusahaan_{{ $pe->id }}"
+                                class="mb-1 flex w-full items-center justify-between rounded-lg bg-zinc-800/70 px-3 py-2 text-left text-xs font-semibold text-zinc-300 transition hover:bg-zinc-800 hover:text-white"
+                                aria-expanded="false"
+                            >
+                                <span class="truncate">
+                                    {{ $pe->nama_perusahaan }}
+                                </span>
+
+                                <svg
+                                    class="sidebar-chevron h-3.5 w-3.5 shrink-0 text-zinc-600 transition-transform duration-200"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="1.8"
+                                        d="M6 9l6 6 6-6"
+                                    />
+                                </svg>
+                            </button>
+
+
+                            <div
+                                id="cat_perusahaan_{{ $pe->id }}"
+                                class="hidden mb-3 ml-2 space-y-1 border-l border-zinc-700 pl-2"
+                            >
+
+                                <a
+                                    href="{{ route('finance.dashboard', $pe->id) }}"
+                                    class="block rounded-lg px-3 py-2 text-xs transition
+                                    {{ Route::is('finance.dashboard')
+                                        ? 'bg-white font-semibold text-zinc-950'
+                                        : 'text-zinc-500 hover:bg-zinc-800 hover:text-white'
+                                    }}"
+                                >
+                                    Dashboard
                                 </a>
+
+
+                                <a
+                                    href="{{ route('finance_coa.index', $pe->id) }}"
+                                    class="block rounded-lg px-3 py-2 text-xs transition
+                                    {{ Route::is('finance_coa.index')
+                                        ? 'bg-white font-semibold text-zinc-950'
+                                        : 'text-zinc-500 hover:bg-zinc-800 hover:text-white'
+                                    }}"
+                                >
+                                    Daftar Akun
+                                </a>
+
+
+                                <a
+                                    href="{{ route('general_journal.index', $pe->id) }}"
+                                    class="block rounded-lg px-3 py-2 text-xs transition
+                                    {{ Route::is('general_journal.index')
+                                        ? 'bg-white font-semibold text-zinc-950'
+                                        : 'text-zinc-500 hover:bg-zinc-800 hover:text-white'
+                                    }}"
+                                >
+                                    Jurnal Umum
+                                </a>
+
+
+                                <a
+                                    href="{{ route('finance_ledger.list_account', $pe->id) }}"
+                                    class="block rounded-lg px-3 py-2 text-xs transition
+                                    {{ Route::is('finance_ledger.list_account')
+                                        ? 'bg-white font-semibold text-zinc-950'
+                                        : 'text-zinc-500 hover:bg-zinc-800 hover:text-white'
+                                    }}"
+                                >
+                                    Buku Besar
+                                </a>
+
+
+                                <a
+                                    href="{{ route('Ledger.neraca_saldo', $pe->id) }}"
+                                    class="block rounded-lg px-3 py-2 text-xs transition
+                                    {{ Route::is('Ledger.neraca_saldo')
+                                        ? 'bg-white font-semibold text-zinc-950'
+                                        : 'text-zinc-500 hover:bg-zinc-800 hover:text-white'
+                                    }}"
+                                >
+                                    Neraca Saldo
+                                </a>
+
+
+                                <a
+                                    href="{{ route('adjustment_journal.index', $pe->id) }}"
+                                    class="block rounded-lg px-3 py-2 text-xs transition
+                                    {{ Route::is('adjustment_journal.index')
+                                        ? 'bg-white font-semibold text-zinc-950'
+                                        : 'text-zinc-500 hover:bg-zinc-800 hover:text-white'
+                                    }}"
+                                >
+                                    Jurnal Penyesuaian
+                                </a>
+
+
+                                <a
+                                    href="{{ route('Ledger.neraca_lajur', $pe->id) }}"
+                                    class="block rounded-lg px-3 py-2 text-xs transition
+                                    {{ Route::is('Ledger.neraca_lajur')
+                                        ? 'bg-white font-semibold text-zinc-950'
+                                        : 'text-zinc-500 hover:bg-zinc-800 hover:text-white'
+                                    }}"
+                                >
+                                    Neraca Lajur
+                                </a>
+
+
+                                <a
+                                    href="{{ route('Ledger.arus_kas', $pe->id) }}"
+                                    class="block rounded-lg px-3 py-2 text-xs transition
+                                    {{ Route::is('Ledger.arus_kas')
+                                        ? 'bg-white font-semibold text-zinc-950'
+                                        : 'text-zinc-500 hover:bg-zinc-800 hover:text-white'
+                                    }}"
+                                >
+                                    Laporan Keuangan
+                                </a>
+
+
+                                <a
+                                    href="{{ route('Ledger.jurnal_penutup', $pe->id) }}"
+                                    class="block rounded-lg px-3 py-2 text-xs transition
+                                    {{ Route::is('Ledger.jurnal_penutup')
+                                        ? 'bg-white font-semibold text-zinc-950'
+                                        : 'text-zinc-500 hover:bg-zinc-800 hover:text-white'
+                                    }}"
+                                >
+                                    Jurnal Tutup Akun
+                                </a>
+
+
+                                <a
+                                    href="{{ route('invoice.index', $pe->id) }}"
+                                    class="block rounded-lg px-3 py-2 text-xs transition
+                                    {{ Route::is('invoice.index')
+                                        ? 'bg-white font-semibold text-zinc-950'
+                                        : 'text-zinc-500 hover:bg-zinc-800 hover:text-white'
+                                    }}"
+                                >
+                                    Pembayaran
+                                </a>
+
+
+                                <a
+                                    href="{{ route('profit.list', $pe->id) }}"
+                                    class="block rounded-lg px-3 py-2 text-xs transition
+                                    {{ Route::is('profit.list')
+                                        ? 'bg-white font-semibold text-zinc-950'
+                                        : 'text-zinc-500 hover:bg-zinc-800 hover:text-white'
+                                    }}"
+                                >
+                                    Profit
+                                </a>
+
+
+                                <a
+                                    href="{{ route('payroll.index', $pe->id) }}"
+                                    class="block rounded-lg px-3 py-2 text-xs transition
+                                    {{ Route::is('payroll.index')
+                                        ? 'bg-white font-semibold text-zinc-950'
+                                        : 'text-zinc-500 hover:bg-zinc-800 hover:text-white'
+                                    }}"
+                                >
+                                    Payroll
+                                </a>
+
+
+                                @if(Auth::user()->isAdmin == true)
+
+                                    <a
+                                        href="{{ route('audit.index', $pe->id) }}"
+                                        class="block rounded-lg px-3 py-2 text-xs transition
+                                        {{ Route::is('audit.index')
+                                            ? 'bg-white font-semibold text-zinc-950'
+                                            : 'text-zinc-500 hover:bg-zinc-800 hover:text-white'
+                                        }}"
+                                    >
+                                        Audit
+                                    </a>
+
+                                @endif
+
                             </div>
 
-                            <div class="client-item-wrapper mb-2">
-                                <a class="client-dropdown-link-out-div {{ Route::is('finance_coa.index') ? 'active' : '' }}" href="{{ route('finance_coa.index', $pe->id) }}">
-                                    <span>Daftar Akun</span>
-                                </a>
-                            </div>
-                            
-                            <div class="client-item-wrapper mb-2">
-                                <a class="client-dropdown-link-out-div {{ Route::is('general_journal.index') ? 'active' : '' }}" href="{{ route('general_journal.index', $pe->id) }}">
-                                    <span>Jurnal Umum</span>
-                                </a>
-                            </div>
-                            
-                            <div class="client-item-wrapper mb-2">
-                                <a class="client-dropdown-link-out-div {{ Route::is('finance_ledger.list_account') ? 'active' : '' }}" href="{{ route('finance_ledger.list_account', $pe->id) }}">
-                                    <span>Buku Besar</span>
-                                </a>
-                            </div>
-                            
-                            <div class="client-item-wrapper mb-2">
-                                <a class="client-dropdown-link-out-div {{ Route::is('Ledger.neraca_saldo') ? 'active' : '' }}" href="{{ route('Ledger.neraca_saldo', $pe->id) }}">
-                                    <span>Neraca Saldo</span>
-                                </a>
-                            </div>
-                            
-                            <div class="client-item-wrapper mb-2">
-                                <a class="client-dropdown-link-out-div {{ Route::is('adjustment_journal.index') ? 'active' : '' }}" href="{{ route('adjustment_journal.index', $pe->id) }}">
-                                    <span>Jurnal Penyesuaian</span>
-                                </a>
-                            </div>
+                        @endforeach
 
-                            <div class="client-item-wrapper mb-2">
-                                <a class="client-dropdown-link-out-div {{ Route::is('Ledger.neraca_lajur') ? 'active' : '' }}" href="{{ route('Ledger.neraca_lajur', $pe->id) }}">
-                                    <span>Neraca Lajur</span>
-                                </a>
-                            </div>
-                            
-                            <div class="client-item-wrapper mb-2">
-                                <a class="client-dropdown-link-out-div {{ Route::is('Ledger.arus_kas') ? 'active' : '' }}" href="{{ route('Ledger.arus_kas', $pe->id) }}">
-                                    <span>Laporan Keuangan</span>
-                                </a>
-                            </div>
-                            
-                            <div class="client-item-wrapper mb-2">
-                                <a class="client-dropdown-link-out-div {{ Route::is('Ledger.jurnal_penutup') ? 'active' : '' }}" href="{{ route('Ledger.jurnal_penutup', $pe->id) }}">
-                                    <span>Jurnal Tutup Akun</span>
-                                </a>
-                            </div>
+                    </div>
 
-                            <div class="client-item-wrapper mb-2">
-                                <a class="client-dropdown-link-out-div {{ Route::is('invoice.index') ? 'active' : '' }}" href="{{ route('invoice.index', $pe->id) }}">
-                                    <span>Pembayaran</span>
-                                </a>
-                            </div>
+                </div>
 
-                            <div class="client-item-wrapper mb-2">
-                                <a class="client-dropdown-link-out-div {{ Route::is('profit.list') ? 'active' : '' }}" href="{{ route('profit.list', $pe->id) }}">
-                                    <span>Profit</span>
-                                </a>
-                            </div>
+            </div>
 
-                            <div class="client-item-wrapper mb-2">
-                                <a class="client-dropdown-link-out-div {{ Route::is('payroll.index') ? 'active' : '' }}" href="{{ route('payroll.index', $pe->id) }}">
-                                    <span>Payroll</span>
-                                </a>
-                            </div>
+        @endif
 
-                            @if(Auth::user()->isAdmin == true)
-                            <div class="client-item-wrapper mb-2">
-                                <a class="client-dropdown-link-out-div {{ Route::is('audit.index') ? 'active' : '' }}" href="{{ route('audit.index', $pe->id) }}">
-                                    <span>Audit</span>
-                                </a>
-                            </div>
-                            @endif
-                        </div>
-                    @endforeach
+
+        {{-- =================================================
+            SUPER ADMIN
+        ================================================== --}}
+        @if($isSuperAdmin)
+
+            <div class="mt-5 border-t border-zinc-800 pt-4">
+
+                <div class="mb-2 px-3 text-[9px] font-bold uppercase tracking-[0.18em] text-zinc-600">
+                    Administration
+                </div>
+
+
+                <a
+                    href="{{ route('activity-logs.index') }}"
+                    class="mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition
+                    {{ Route::is('activity-logs.*')
+                        ? 'bg-white font-semibold text-zinc-950'
+                        : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
+                    }}"
+                >
+                    <svg
+                        class="h-[18px] w-[18px]"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="1.8"
+                            d="M12 8v4l3 2M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                    </svg>
+
+                    Activity Log
+                </a>
+
+
+                <a
+                    href="{{ route('manajemen_user.index') }}"
+                    class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition
+                    {{ Route::is('manajemen_user.index')
+                        ? 'bg-white font-semibold text-zinc-950'
+                        : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
+                    }}"
+                >
+                    <svg
+                        class="h-[18px] w-[18px]"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="1.8"
+                            d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM17 11a3 3 0 100-6M22 21v-2a4 4 0 00-3-3.87"
+                        />
+                    </svg>
+
+                    Manajemen User
+                </a>
+
+            </div>
+
+        @endif
+
+
+        {{-- =================================================
+            CRM
+        ================================================== --}}
+        <div class="mt-5 border-t border-zinc-800 pt-4">
+
+            <a
+                href="{{ route('crm.index') }}"
+                class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition
+                {{ Route::is('crm.index')
+                    ? 'bg-white font-semibold text-zinc-950'
+                    : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
+                }}"
+            >
+
+                <svg
+                    class="h-[18px] w-[18px] shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.8"
+                        d="M17 20v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2M10 10a4 4 0 100-8 4 4 0 000 8zM21 20v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"
+                    />
+                </svg>
+
+                <span class="font-medium">
+                    Customer Relationship Management
+                </span>
+
+            </a>
+
+        </div>
+
+    </div>
+
+
+    {{-- =====================================================
+        SIDEBAR FOOTER
+    ====================================================== --}}
+    <div class="shrink-0 border-t border-zinc-800 p-4">
+
+        <div class="flex items-center justify-between">
+
+            <div>
+                <div class="text-[9px] font-bold uppercase tracking-[0.16em] text-zinc-600">
+                    Lighter ERP
+                </div>
+
+                <div class="mt-0.5 text-[10px] text-zinc-700">
+                    Integrated Digital Ecosystem
                 </div>
             </div>
-        </li>
-    @endif
 
-    @if($isSuperAdmin)
-        <li class="nav-item {{ Route::is('activity-logs.*') ? 'active' : '' }}">
-            <a class="nav-link" href="{{ route('activity-logs.index') }}">
-                <i class="fas fa-history fa-fw mr-2"></i>
-                <span>Activity Log</span>
-            </a>
-        </li>
+            <div class="h-2 w-2 rounded-full bg-emerald-500/70"></div>
 
-        <li class="nav-item {{ Route::is('manajemen_user.index') ? 'active' : '' }}">
-            <a class="nav-link collapsed" href="{{ route('manajemen_user.index') }}">
-                <span>Manajemen User</span>
-            </a>
-        </li>
-    @endif
+        </div>
 
-    <li class="nav-item {{ Route::is('crm.index') ? 'active' : '' }}">
-        <a class="nav-link collapsed" href="{{ route('crm.index') }}">
-            <span>Customer Relationship Management</span>
-        </a>
-    </li>
+    </div>
 
-</ul>
+</aside>
+
+
+{{-- =========================================================
+    MOBILE SIDEBAR BACKDROP
+========================================================= --}}
+<div
+    id="sidebarBackdrop"
+    class="fixed inset-0 z-[1050] hidden bg-black/50 backdrop-blur-sm lg:hidden"
+></div>
+
+
+{{-- =========================================================
+    SIDEBAR JAVASCRIPT
+========================================================= --}}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    /*
+    |--------------------------------------------------------------------------
+    | COLLAPSIBLE MENUS
+    |--------------------------------------------------------------------------
+    */
+
+    document.querySelectorAll('[data-sidebar-collapse]').forEach(function (button) {
+
+        const targetId = button.getAttribute('data-sidebar-collapse');
+        const target = document.getElementById(targetId);
+
+        if (!target) {
+            return;
+        }
+
+        const initiallyOpen = button.getAttribute('aria-expanded') === 'true';
+
+        target.classList.add('overflow-hidden');
+        target.style.transition = 'height 280ms ease, opacity 220ms ease, transform 280ms ease';
+
+        if (initiallyOpen) {
+            target.classList.remove('hidden');
+            target.style.height = 'auto';
+            target.style.opacity = '1';
+            target.style.transform = 'translateY(0)';
+        } else {
+            target.classList.add('hidden');
+            target.style.height = '0px';
+            target.style.opacity = '0';
+            target.style.transform = 'translateY(-6px)';
+        }
+
+        button.addEventListener('click', function () {
+
+            const willOpen = this.getAttribute('aria-expanded') !== 'true';
+
+            this.setAttribute(
+                'aria-expanded',
+                willOpen ? 'true' : 'false'
+            );
+
+            if (willOpen) {
+                target.classList.remove('hidden');
+                target.style.height = '0px';
+                target.style.opacity = '0';
+                target.style.transform = 'translateY(-6px)';
+
+                requestAnimationFrame(function () {
+                    target.style.height = target.scrollHeight + 'px';
+                    target.style.opacity = '1';
+                    target.style.transform = 'translateY(0)';
+                });
+            } else {
+                target.style.height = target.scrollHeight + 'px';
+
+                requestAnimationFrame(function () {
+                    target.style.height = '0px';
+                    target.style.opacity = '0';
+                    target.style.transform = 'translateY(-6px)';
+                });
+            }
+
+            const chevron =
+                this.querySelector('.sidebar-chevron');
+
+            if (chevron) {
+                chevron.classList.toggle(
+                    'rotate-180',
+                    willOpen
+                );
+
+                /*
+                 * Client arrows are slightly different.
+                 */
+                if (targetId.startsWith('client_bd_')) {
+                    chevron.classList.toggle(
+                        'rotate-90',
+                        willOpen
+                    );
+                    chevron.classList.remove(
+                        'rotate-180'
+                    );
+                }
+            }
+
+        });
+
+        target.addEventListener('transitionend', function (event) {
+            if (event.propertyName !== 'height') {
+                return;
+            }
+
+            const isOpen = button.getAttribute('aria-expanded') === 'true';
+
+            if (isOpen) {
+                target.style.height = 'auto';
+            } else {
+                target.classList.add('hidden');
+            }
+        });
+
+    });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | MOBILE SIDEBAR
+    |--------------------------------------------------------------------------
+    */
+
+    const sidebar =
+        document.getElementById('accordionSidebar');
+
+    const sidebarToggle =
+        document.getElementById('sidebarToggleTop');
+
+    const sidebarClose =
+        document.getElementById('sidebarClose');
+
+    const sidebarBackdrop =
+        document.getElementById('sidebarBackdrop');
+
+
+    function openSidebar() {
+
+        if (!sidebar) {
+            return;
+        }
+
+        sidebar.classList.remove('-translate-x-full');
+
+        sidebar.classList.add('translate-x-0');
+
+        if (sidebarBackdrop) {
+            sidebarBackdrop.classList.remove('hidden');
+        }
+
+        document.body.classList.add('overflow-hidden');
+    }
+
+
+    function closeSidebar() {
+
+        if (!sidebar) {
+            return;
+        }
+
+        sidebar.classList.add('-translate-x-full');
+
+        sidebar.classList.remove('translate-x-0');
+
+        if (sidebarBackdrop) {
+            sidebarBackdrop.classList.add('hidden');
+        }
+
+        document.body.classList.remove('overflow-hidden');
+    }
+
+
+    if (sidebarToggle) {
+
+        sidebarToggle.addEventListener(
+            'click',
+            function (event) {
+
+                event.preventDefault();
+
+                openSidebar();
+
+            }
+        );
+
+    }
+
+
+    if (sidebarClose) {
+
+        sidebarClose.addEventListener(
+            'click',
+            function () {
+
+                closeSidebar();
+
+            }
+        );
+
+    }
+
+
+    if (sidebarBackdrop) {
+
+        sidebarBackdrop.addEventListener(
+            'click',
+            function () {
+
+                closeSidebar();
+
+            }
+        );
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | ESC TO CLOSE MOBILE SIDEBAR
+    |--------------------------------------------------------------------------
+    */
+
+    document.addEventListener(
+        'keydown',
+        function (event) {
+
+            if (event.key === 'Escape') {
+
+                closeSidebar();
+
+            }
+
+        }
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | CLOSE MOBILE SIDEBAR AFTER NAVIGATION
+    |--------------------------------------------------------------------------
+    */
+
+    if (sidebar) {
+
+        sidebar.querySelectorAll('a').forEach(function (link) {
+
+            link.addEventListener(
+                'click',
+                function () {
+
+                    if (window.innerWidth < 1024) {
+                        closeSidebar();
+                    }
+
+                }
+            );
+
+        });
+
+    }
+
+});
+</script>

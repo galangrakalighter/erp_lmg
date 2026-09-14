@@ -278,7 +278,7 @@ window.CRMRenderers =
                             mr-1
                         "
                     ></i>
-                    Belum ada
+                    Belum ada Sosial Media
                 </span>
             `;
         }
@@ -288,6 +288,29 @@ window.CRMRenderers =
             'Sosial Media',
             helpers
         );
+    }
+
+    function compactAiRows(body) {
+        body.querySelectorAll('tr').forEach(function (row) {
+            const cells = Array.from(row.children);
+
+            if (cells.length !== 17) {
+                return;
+            }
+
+            const value = index => cells[index].innerHTML;
+            row.innerHTML = `
+                <td>${value(0)}</td>
+                <td><div class="crm-stack"><span class="crm-field-label">Terakhir chat</span>${value(1)}<span class="crm-field-label crm-field-gap">Pertama chat</span>${value(2)}</div></td>
+                <td><div class="crm-stack"><strong class="crm-lead-name">${value(3)}</strong><span>${value(6)}</span><span class="crm-muted">${value(4)}</span></div></td>
+                <td><div class="crm-stack">${value(7)}<span class="crm-muted">${value(5)}</span>${value(11)}</div></td>
+                <td>${value(8)}</td>
+                <td><div class="crm-stack"><span class="crm-field-label">Kendala</span>${value(9)}<span class="crm-field-label crm-field-gap">Kebutuhan</span>${value(10)}</div></td>
+                <td>${value(12)}</td>
+                <td><div class="crm-stack">${value(13)}${value(14)}<span class="crm-field-label crm-field-gap">Meeting</span>${value(15)}</div></td>
+                <td><div class="crm-actions">${value(16)}</div></td>
+            `;
+        });
     }
 
     window.CRMRenderers.ai = function (
@@ -313,7 +336,7 @@ window.CRMRenderers =
             body.innerHTML = `
                 <tr>
                     <td
-                        colspan="17"
+                        colspan="9"
                         class="
                             text-center
                             text-muted
@@ -552,12 +575,7 @@ window.CRMRenderers =
                                 data-phone="${leadPhone}"
                                 title="History Chat"
                             >
-                                <i
-                                    class="
-                                        fab
-                                        fa-whatsapp
-                                    "
-                                ></i>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.5 9.5 9.5 0 0 1-4.1-.9L3 20l1.2-4.1A8.2 8.2 0 0 1 3 11.5 8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5Z"/><path d="M8.5 9.2c.7 3 2.3 4.7 5.4 5.5"/></svg>
                             </button>
 
                             <button
@@ -576,12 +594,7 @@ window.CRMRenderers =
                                 }"
                                 title="Edit"
                             >
-                                <i
-                                    class="
-                                        fas
-                                        fa-edit
-                                    "
-                                ></i>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>
                             </button>
 
                             <button
@@ -595,18 +608,15 @@ window.CRMRenderers =
                                 data-id="${leadId}"
                                 title="Hapus"
                             >
-                                <i
-                                    class="
-                                        fas
-                                        fa-trash
-                                    "
-                                ></i>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v5M14 11v5"/></svg>
                             </button>
                         </td>
                     </tr>
                 `;
             })
             .join('');
+
+        compactAiRows(body);
     };
 
     /**
@@ -615,7 +625,6 @@ window.CRMRenderers =
     document.addEventListener(
         'click',
         function (event) {
-            console.log("di klik");
             const button =
                 event.target.closest(
                     '.crm-show-detail'
@@ -653,8 +662,7 @@ window.CRMRenderers =
                     detail.content;
             }
 
-            $('#crmTextDetailModal')
-                .modal('show');
+            window.CRMModal?.open('crmTextDetailModal');
         }
     );
 
@@ -772,8 +780,7 @@ window.CRMRenderers =
             </div>
         `;
 
-        $('#crmChatHistoryModal')
-            .modal('show');
+        window.CRMModal?.open('crmChatHistoryModal');
 
         try {
             const response = await fetch(
@@ -792,7 +799,6 @@ window.CRMRenderers =
             const result =
                 await response.json();
 
-            console.log(result);
 
             if (
                 !response.ok ||
@@ -984,10 +990,10 @@ window.CRMRenderers =
                     );
 
                 row.className =
-                    `d-flex mb-3 ${
+                    `flex w-full mb-4 ${
                         isAdmin
-                            ? 'justify-content-end'
-                            : 'justify-content-start'
+                            ? 'justify-end'
+                            : 'justify-start'
                     }`;
 
                 const bubble =
@@ -997,8 +1003,8 @@ window.CRMRenderers =
 
                 bubble.className =
                     isAdmin
-                        ? 'bg-success text-white rounded p-3 shadow-sm'
-                        : 'bg-white border rounded p-3 shadow-sm';
+                        ? 'rounded-2xl rounded-br-md bg-zinc-950 px-4 py-3 text-white shadow-sm'
+                        : 'rounded-2xl rounded-bl-md border border-zinc-200 bg-white px-4 py-3 text-zinc-800 shadow-sm';
 
                 bubble.style.maxWidth =
                     '80%';
@@ -1014,8 +1020,9 @@ window.CRMRenderers =
                         'div'
                     );
 
-                sender.className =
-                    'font-weight-bold small mb-1';
+                sender.className = isAdmin
+                    ? 'mb-1.5 text-[10px] font-bold uppercase tracking-wider text-zinc-400'
+                    : 'mb-1.5 text-[10px] font-bold uppercase tracking-wider text-zinc-500';
 
                 sender.textContent =
                     isAdmin
@@ -1037,10 +1044,10 @@ window.CRMRenderers =
                     );
 
                 time.className =
-                    `d-block mt-2 ${
+                    `mt-2 block text-[10px] ${
                         isAdmin
-                            ? 'text-light'
-                            : 'text-muted'
+                            ? 'text-zinc-400'
+                            : 'text-zinc-500'
                     }`;
 
                 time.textContent =

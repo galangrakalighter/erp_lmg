@@ -4,7 +4,6 @@ window.CRMRenderers = window.CRMRenderers || {};
     'use strict';
 
     window.CRMRenderers.meeting = function (data, helpers) {
-        console.log(data);
         const body = document.getElementById('meetingTableBody');
 
         if (!body) {
@@ -37,8 +36,6 @@ window.CRMRenderers = window.CRMRenderers || {};
                     </a>
                 `
                 : '<span class="text-muted">-</span>';
-
-                console.log(lead);
 
             return `
                 <tr>

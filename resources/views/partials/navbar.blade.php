@@ -1,67 +1,487 @@
-<nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+<nav
+    class="lmg-navbar flex items-center justify-between px-4 sm:px-6 lg:px-8"
+>
+    <div class="flex min-w-0 items-center gap-3">
 
-<!-- Sidebar Toggle (Topbar) -->
-<button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
-    <i class="fa fa-bars"></i>
-</button>
+        {{-- =====================================================
+            MOBILE SIDEBAR TOGGLE
+        ====================================================== --}}
+        <button
+            id="sidebarToggleTop"
+            type="button"
+            class="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-100 hover:text-zinc-950 lg:hidden"
+            aria-label="Open sidebar"
+        >
+            <svg
+                class="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+            >
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.8"
+                    d="M4 6h16M4 12h16M4 18h16"
+                />
+            </svg>
+        </button>
 
-<!-- Topbar Navbar -->
-<ul class="navbar-nav ml-auto">
 
-    <!-- Nav Item - Search Dropdown (Visible Only XS) -->
-    <li class="nav-item dropdown no-arrow d-sm-none">
-        <a class="nav-link dropdown-toggle" href="#" id="searchDropdown" role="button"
-            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            <i class="fas fa-search fa-fw"></i>
-        </a>
-        <!-- Dropdown - Messages -->
-        <div class="dropdown-menu dropdown-menu-right p-3 shadow animated--grow-in"
-            aria-labelledby="searchDropdown">
-            <form class="form-inline mr-auto w-100 navbar-search">
-                <div class="input-group">
-                    <input type="text" class="form-control bg-light border-0 small"
-                        placeholder="Search for..." aria-label="Search"
-                        aria-describedby="basic-addon2">
-                    <div class="input-group-append">
-                        <button class="btn btn-primary" type="button">
-                            <i class="fas fa-search fa-sm"></i>
-                        </button>
-                    </div>
+        {{-- =====================================================
+            BRAND / PAGE CONTEXT
+        ====================================================== --}}
+        <div class="min-w-0">
+
+            <p
+                class="hidden text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400 sm:block"
+            >
+                Lighter Media Group
+            </p>
+
+        </div>
+
+    </div>
+
+
+    {{-- =========================================================
+        RIGHT SIDE
+    ========================================================== --}}
+    <div class="flex items-center gap-2 sm:gap-3">
+
+
+        {{-- =====================================================
+            DOWNLOAD PDF
+        ====================================================== --}}
+        @if(
+            isset($produk) &&
+            (
+                request()->routeIs('manajemen*') ||
+                request()->routeIs('branding*') ||
+                request()->routeIs('market_research*')
+            )
+        )
+
+            <a
+                href="{{ route(
+                    'invoice.download',
+                    array_merge(
+                        [
+                            'id' => $produk->id,
+                            'halaman' => $halaman
+                        ],
+                        request()->only([
+                            'start_date',
+                            'end_date'
+                        ])
+                    )
+                ) }}"
+                class="hidden items-center gap-2 rounded-lg bg-zinc-950 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-zinc-800 sm:inline-flex"
+            >
+
+                <svg
+                    class="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.8"
+                        d="M12 3v12"
+                    />
+
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.8"
+                        d="M8 11l4 4 4-4"
+                    />
+
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.8"
+                        d="M5 21h14"
+                    />
+                </svg>
+
+                <span>
+                    Download PDF
+                </span>
+
+            </a>
+
+
+            {{-- Mobile PDF --}}
+            <a
+                href="{{ route(
+                    'invoice.download',
+                    array_merge(
+                        [
+                            'id' => $produk->id,
+                            'halaman' => $halaman
+                        ],
+                        request()->only([
+                            'start_date',
+                            'end_date'
+                        ])
+                    )
+                ) }}"
+                class="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-950 sm:hidden"
+                title="Download PDF"
+                aria-label="Download PDF"
+            >
+
+                <svg
+                    class="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.8"
+                        d="M12 3v12"
+                    />
+
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.8"
+                        d="M8 11l4 4 4-4"
+                    />
+
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.8"
+                        d="M5 21h14"
+                    />
+                </svg>
+
+            </a>
+
+        @endif
+
+
+        {{-- =====================================================
+            USER MENU
+        ====================================================== --}}
+        <div class="relative">
+
+            <button
+                id="userDropdownButton"
+                type="button"
+                class="flex items-center gap-2 rounded-xl border border-transparent px-2 py-1.5 transition hover:border-zinc-200 hover:bg-white"
+                aria-expanded="false"
+                aria-haspopup="true"
+            >
+
+                {{-- User Avatar --}}
+                <div
+                    class="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-950 text-xs font-bold text-white"
+                >
+                    {{ strtoupper(substr(Auth::user()->email, 0, 1)) }}
                 </div>
-            </form>
+
+
+                {{-- Email --}}
+                <div class="hidden text-left lg:block">
+
+                    <div
+                        class="max-w-[180px] truncate text-xs font-semibold text-zinc-800"
+                    >
+                        {{ Auth::user()->email }}
+                    </div>
+
+                    <div
+                        class="text-[10px] uppercase tracking-[0.12em] text-zinc-400"
+                    >
+                        Account
+                    </div>
+
+                </div>
+
+
+                {{-- Chevron --}}
+                <svg
+                    id="userDropdownChevron"
+                    class="hidden h-4 w-4 text-zinc-400 transition-transform lg:block"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.8"
+                        d="M6 9l6 6 6-6"
+                    />
+                </svg>
+
+            </button>
+
+
+            {{-- =================================================
+                USER DROPDOWN
+            ================================================== --}}
+            <div
+                id="userDropdownMenu"
+                class="absolute right-0 top-full z-[1200] mt-2 hidden w-64 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xl shadow-zinc-950/10"
+            >
+
+                {{-- User Info --}}
+                <div class="border-b border-zinc-100 px-4 py-4">
+
+                    <p
+                        class="mb-1 text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400"
+                    >
+                        Signed in as
+                    </p>
+
+                    <p
+                        class="truncate text-sm font-semibold text-zinc-900"
+                    >
+                        {{ Auth::user()->email }}
+                    </p>
+
+                </div>
+
+
+                {{-- Logout --}}
+                <div class="p-2">
+
+                    <button
+                        type="button"
+                        id="logoutButton"
+                        data-logout
+                        class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-950"
+                    >
+
+                        <span
+                            class="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600"
+                        >
+
+                            <svg
+                                class="h-4 w-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="1.8"
+                                    d="M10 17l5-5-5-5"
+                                />
+
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="1.8"
+                                    d="M15 12H3"
+                                />
+
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="1.8"
+                                    d="M14 5h4a2 2 0 012 2v10a2 2 0 01-2 2h-4"
+                                />
+                            </svg>
+
+                        </span>
+
+                        <span>
+                            Logout
+                        </span>
+
+                    </button>
+
+                </div>
+
+            </div>
+
         </div>
-    </li>
 
-    @if(isset($produk) && (request()->routeIs('manajemen*') || request()->routeIs('branding*') || request()->routeIs('market_research*')))
-        <li class="nav-item d-flex align-items-center mr-2">
-            <a href="{{ route('invoice.download', array_merge(['id' => $produk->id, 'halaman' => $halaman], request()->only(['start_date', 'end_date']))) }}" 
-            class="btn btn-primary btn-sm rounded shadow-sm">
-                <i class="fas fa-file-pdf mr-1"></i> Download PDF
-            </a>
-        </li>
-    @endif
-
-    <div class="topbar-divider d-none d-sm-block"></div>
-
-    <!-- Nav Item - User Information -->
-    <li class="nav-item dropdown no-arrow">
-        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
-            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            <span class="mr-2 d-none d-lg-inline text-gray-600 small">{{ Auth::user()->email }}</span>
-            <img class="img-profile rounded-circle"
-                src="img/undraw_profile.svg">
-        </a>
-        <!-- Dropdown - User Information -->
-        <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
-            aria-labelledby="userDropdown">
-            <div class="dropdown-divider"></div>
-            <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
-                <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
-                Logout
-            </a>
-        </div>
-    </li>
-
-</ul>
+    </div>
 
 </nav>
+
+
+{{-- =============================================================
+    NAVBAR JAVASCRIPT
+============================================================= --}}
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    /* =========================================================
+       USER DROPDOWN
+    ========================================================== */
+
+    const dropdownButton =
+        document.getElementById(
+            'userDropdownButton'
+        );
+
+    const dropdownMenu =
+        document.getElementById(
+            'userDropdownMenu'
+        );
+
+    const dropdownChevron =
+        document.getElementById(
+            'userDropdownChevron'
+        );
+
+
+    if (
+        dropdownButton &&
+        dropdownMenu
+    ) {
+
+        dropdownButton.addEventListener(
+            'click',
+            function (event) {
+
+                event.stopPropagation();
+
+                const isOpen =
+                    !dropdownMenu.classList.contains(
+                        'hidden'
+                    );
+
+
+                if (isOpen) {
+
+                    dropdownMenu.classList.add(
+                        'hidden'
+                    );
+
+                    dropdownButton.setAttribute(
+                        'aria-expanded',
+                        'false'
+                    );
+
+                    dropdownChevron?.classList.remove(
+                        'rotate-180'
+                    );
+
+                } else {
+
+                    dropdownMenu.classList.remove(
+                        'hidden'
+                    );
+
+                    dropdownButton.setAttribute(
+                        'aria-expanded',
+                        'true'
+                    );
+
+                    dropdownChevron?.classList.add(
+                        'rotate-180'
+                    );
+
+                }
+
+            }
+        );
+
+
+        /* Close when clicking outside */
+
+        document.addEventListener(
+            'click',
+            function (event) {
+
+                if (
+                    !dropdownButton.contains(event.target) &&
+                    !dropdownMenu.contains(event.target)
+                ) {
+
+                    dropdownMenu.classList.add(
+                        'hidden'
+                    );
+
+                    dropdownButton.setAttribute(
+                        'aria-expanded',
+                        'false'
+                    );
+
+                    dropdownChevron?.classList.remove(
+                        'rotate-180'
+                    );
+
+                }
+
+            }
+        );
+
+    }
+
+
+    /* =========================================================
+       MOBILE SIDEBAR
+    ========================================================== */
+
+    const sidebarToggle =
+        document.getElementById(
+            'sidebarToggleTop'
+        );
+
+    const sidebar =
+        document.getElementById(
+            'accordionSidebar'
+        );
+
+
+    if (
+        sidebarToggle &&
+        sidebar
+    ) {
+
+        sidebarToggle.addEventListener(
+            'click',
+            function () {
+
+                sidebar.classList.toggle(
+                    'show'
+                );
+
+            }
+        );
+
+    }
+
+
+    /* =========================================================
+       CLOSE SIDEBAR WHEN CLICKING OUTSIDE ON MOBILE
+    ========================================================== */
+
+    document.addEventListener(
+        'click',
+        function (event) {
+
+            if (
+                window.innerWidth <= 1024 &&
+                sidebar &&
+                sidebar.classList.contains('show') &&
+                !sidebar.contains(event.target) &&
+                !sidebarToggle?.contains(event.target)
+            ) {
+
+                sidebar.classList.remove(
+                    'show'
+                );
+
+            }
+
+        }
+    );
+
+});
+</script>

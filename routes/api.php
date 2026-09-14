@@ -12,10 +12,16 @@ Route::get('/get-dm/{id}', [App\Http\Controllers\ProdukController::class, 'getBa
 Route::get('/get-cc/{id}', [App\Http\Controllers\ProdukController::class, 'getBawahanCC'])->name('getBawahanCC');
 Route::get('/dashboard-bawahan/{id}', [App\Http\Controllers\HCOverviewController::class, 'getDataDashboardBawahan'])->name('getDataDashboardBawahan');
 Route::get('/get-tasks-by-date', [App\Http\Controllers\HCOverviewController::class, 'getTasksByDate'])->name('getTaskByDate');
-Route::post('/hc/update-schedule', [App\Http\Controllers\HCDailyController::class, 'updateSchedule'])->name('hc.updateSchedule');
-Route::post('/hc/update-status', [App\Http\Controllers\HCDailyController::class, 'updateStatus'])->name('hc.updateStatus');
-Route::post('hc/cancel-remaining', [App\Http\Controllers\HCDailyController::class, 'cancelRemaining'])->name('hc.cancelRemaining');
-Route::delete('/hc/delete-task/{id}', [App\Http\Controllers\HCDailyController::class, 'destroy']);
+Route::middleware(['web', 'auth'])->prefix('hc')->group(function () {
+    Route::get('/daily-work', [App\Http\Controllers\HCDailyController::class, 'dailyWorkData'])->name('hc_daily.data');
+    Route::post('/daily-work/tasks', [App\Http\Controllers\HCDailyController::class, 'storeTaskApi']);
+    Route::put('/daily-work/tasks/{task}', [App\Http\Controllers\HCDailyController::class, 'updateTaskApi']);
+    Route::delete('/daily-work/tasks/{task}', [App\Http\Controllers\HCDailyController::class, 'deleteTaskApi']);
+    Route::post('/update-schedule', [App\Http\Controllers\HCDailyController::class, 'updateSchedule'])->name('hc.updateSchedule');
+    Route::post('/update-status', [App\Http\Controllers\HCDailyController::class, 'updateStatus'])->name('hc.updateStatus');
+    Route::post('/cancel-remaining', [App\Http\Controllers\HCDailyController::class, 'cancelRemaining'])->name('hc.cancelRemaining');
+    Route::delete('/delete-task/{id}', [App\Http\Controllers\HCDailyController::class, 'destroy']);
+});
 Route::post('/updateStatusChecked', [App\Http\Controllers\selectionController::class, 'updateStatus'])->name('selection.updateStatus');
 Route::get('/client-pics/{id}/{userId}', [App\Http\Controllers\HCDailyController::class, 'getPic']);
 Route::get('/hc-daily/get-data/{id}', [App\Http\Controllers\HCDailyController::class, 'getTasksById']);

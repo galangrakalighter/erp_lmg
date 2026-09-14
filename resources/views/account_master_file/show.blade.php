@@ -1,6 +1,8 @@
 @extends('layout.app')
 
 @section('content')
+<div class="lmg-master-page">
+@include('partials.lmg_legacy_workspace')
 <style>
     .account-document-workspace.fullscreen { position:fixed; inset:0; z-index:100000; background:#dfe3e8; padding:16px; display:flex; flex-direction:column; }
     .account-document-workspace.fullscreen .account-editor-stage { flex:1; height:auto!important; max-height:none!important; }
@@ -62,4 +64,5 @@ document.addEventListener('DOMContentLoaded',function(){
     if(form&&editor) form.addEventListener('submit',function(){document.getElementById('account-document-content').value=editor.innerHTML;});
 });
 </script>
+</div>
 @endsection

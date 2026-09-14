@@ -1,395 +1,1435 @@
 @extends('layout.app')
+
 @section('content')
-<div class="container-fluid mt-4">
-    <div class="row mb-3">
-        <div class="col-md-3">
-            <div class="card border-left-warning shadow-sm">
-                <div class="card-body">
-                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                        Point Belum Selesai
-                    </div>
-                    <div class="h4 mb-0 font-weight-bold" id="pointBelum">0</div>
-                </div>
-            </div>
-        </div>
+<div class="min-h-screen bg-[#f7f7f5] px-4 py-6 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-[1600px]">
 
-        <div class="col-md-3">
-            <div class="card border-left-success shadow-sm">
-                <div class="card-body">
-                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                        Point Selesai
-                    </div>
-                    <div class="h4 mb-0 font-weight-bold" id="pointSelesai">0</div>
-                </div>
-            </div>
-        </div>
+        {{-- =========================================================
+            HEADER
+        ========================================================== --}}
+        <div class="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+                <p class="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
+                    KPI Management
+                </p>
 
-        <div class="col-md-3">
-            <div class="card border-left-primary shadow-sm">
-                <div class="card-body">
-                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                        Total Point
-                    </div>
-                    <div class="h4 mb-0 font-weight-bold" id="totalPoint">0</div>
-                </div>
+                <h1 class="text-3xl font-semibold tracking-[-0.03em] text-zinc-950 sm:text-4xl">
+                    Project Overview
+                </h1>
+
+                <p class="mt-2 text-sm text-zinc-500">
+                    Kelola KPI dan task untuk
+                    <span class="font-medium text-zinc-800">{{ $client->nama }}</span>
+                </p>
             </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-left-primary shadow-sm">
-                <div class="card-body">
-                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                        Total KPI
-                    </div>
-                    <div class="h4 mb-0 font-weight-bold" id="totalKPI">0</div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="card shadow">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            {{-- Menampilkan Nama Client jika tersedia --}}
-            <h6 class="m-0 font-weight-bold text-primary">Project Overview: {{ $client->nama }}</h6>
-            
+
             @if(Auth::user()->role != "content_creator")
-            <button type="button" class="btn btn-primary btn-sm shadow-sm" data-toggle="modal" data-target="#tambahModal">
-                <i class="fas fa-plus fa-sm mr-1"></i> Tambah Task
-            </button>
+                <button
+                    type="button"
+                    data-modal-open="tambahModal"
+                    class="inline-flex w-fit items-center gap-2 rounded-xl bg-zinc-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-950 focus:ring-offset-2"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         class="h-4 w-4"
+                         viewBox="0 0 24 24"
+                         fill="none"
+                         stroke="currentColor"
+                         stroke-width="2">
+                        <path d="M12 5v14M5 12h14"/>
+                    </svg>
+
+                    Tambah Task
+                </button>
             @endif
         </div>
 
-        <div class="card-body border-bottom bg-light">
-            {{-- Pastikan action mengarah ke route index dengan parameter id_client --}}
-            <form id="filterForm" action="{{ route('hc_overview.index', $id) }}" method="GET">
-                <div class="row">
-                    {{-- Filter Baris 1 --}}
-                    <div class="col-md-2 mb-3">
-                        <label class="small font-weight-bold text-dark">Mulai:</label>
-                        <input type="date" name="start_date" class="form-control form-control-sm border-primary" value="{{ request('start_date') }}">
-                    </div>
-                    <div class="col-md-2 mb-3">
-                        <label class="small font-weight-bold text-dark">Sampai:</label>
-                        <input type="date" name="end_date" class="form-control form-control-sm border-primary" value="{{ request('end_date') }}">
-                    </div>
-                    <div class="col-md-2 mb-3">
-                        <label class="small font-weight-bold text-dark">Divisi:</label>
-                        <select name="divisi" class="form-control form-control-sm border-primary">
-                            <option value="">- Semua -</option>
-                            @foreach($result as $divId => $nama)
-                                <option value="{{ $divId }}" {{ request('divisi') == $divId ? 'selected' : '' }}>{{ $nama }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-md-2 mb-3">
-                        <label class="small font-weight-bold text-dark">Point:</label>
-                        <select name="priority" class="form-control form-control-sm border-primary">
-                        <option value="">- Semua -</option>
-                        @foreach($difficultyLabels as $key => $label)
-                            <option value="{{ $key }}" {{ request('priority') == $key ? 'selected' : '' }}>
-                                {{ $key }} - {{ $label }}
-                            </option>
-                        @endforeach
-                    </select>
-                    </div>
-                    <div class="col-md-2 mb-3">
-                        <label class="small font-weight-bold text-dark">PIC:</label>
-                        <select name="pic" class="form-control form-control-sm border-primary">
-                            <option value="">- Semua PIC -</option>
-                            @foreach($vic_list as $user)
-                                <option value="{{ $user->id }}" {{ request('pic') == $user->id ? 'selected' : '' }}>{{ $user->email }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-md-2 mb-3">
-                        <label class="small font-weight-bold text-dark">Status:</label>
-                        <select name="status" class="form-control form-control-sm border-primary">
-                            <option value="">- Semua -</option>
-                            <option value="0" {{ request('status') === '0' ? 'selected' : '' }}>Belum Selesai</option>
-                            <option value="1" {{ request('status') === '1' ? 'selected' : '' }}>Sudah Selesai</option>
-                        </select>
-                    </div>
-                </div>
 
-                <div class="row mt-2">
-                    <div class="col-12 d-flex justify-content-start">
-                        <button type="submit" class="btn btn-sm btn-primary px-4 shadow-sm mr-2">
-                            <i class="fas fa-filter fa-sm mr-1"></i> Filter
-                        </button>
-                        <a href="#" id="resetFilter" class="btn btn-sm btn-secondary">
-                            <i class="fas fa-undo"></i> Reset
-                        </a>
+        {{-- =========================================================
+            STAT CARDS
+        ========================================================== --}}
+        <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+
+            {{-- Belum selesai --}}
+            <div class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                            Point Belum Selesai
+                        </p>
+
+                        <p
+                            id="pointBelum"
+                            class="mt-3 text-3xl font-semibold tracking-[-0.03em] text-zinc-950"
+                        >
+                            0
+                        </p>
+                    </div>
+
+                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                             class="h-5 w-5"
+                             viewBox="0 0 24 24"
+                             fill="none"
+                             stroke="currentColor"
+                             stroke-width="1.8">
+                            <circle cx="12" cy="12" r="9"/>
+                            <path d="M12 7v5l3 2"/>
+                        </svg>
                     </div>
                 </div>
-            </form>
+            </div>
+
+
+            {{-- Selesai --}}
+            <div class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                            Point Selesai
+                        </p>
+
+                        <p
+                            id="pointSelesai"
+                            class="mt-3 text-3xl font-semibold tracking-[-0.03em] text-zinc-950"
+                        >
+                            0
+                        </p>
+                    </div>
+
+                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                             class="h-5 w-5"
+                             viewBox="0 0 24 24"
+                             fill="none"
+                             stroke="currentColor"
+                             stroke-width="1.8">
+                            <path d="M5 12l4 4L19 6"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+
+            {{-- Total point --}}
+            <div class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                            Total Point
+                        </p>
+
+                        <p
+                            id="totalPoint"
+                            class="mt-3 text-3xl font-semibold tracking-[-0.03em] text-zinc-950"
+                        >
+                            0
+                        </p>
+                    </div>
+
+                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 text-zinc-900">
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                             class="h-5 w-5"
+                             viewBox="0 0 24 24"
+                             fill="none"
+                             stroke="currentColor"
+                             stroke-width="1.8">
+                            <path d="M4 19h16M6 17V9M12 17V5M18 17v-7"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+
+            {{-- Total KPI --}}
+            <div class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                            Total KPI
+                        </p>
+
+                        <p
+                            id="totalKPI"
+                            class="mt-3 text-3xl font-semibold tracking-[-0.03em] text-zinc-950"
+                        >
+                            0
+                        </p>
+                    </div>
+
+                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 text-zinc-900">
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                             class="h-5 w-5"
+                             viewBox="0 0 24 24"
+                             fill="none"
+                             stroke="currentColor"
+                             stroke-width="1.8">
+                            <rect x="4" y="4" width="16" height="16" rx="2"/>
+                            <path d="M8 9h8M8 13h8M8 17h5"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover text-center" id="dataTable" width="100%" cellspacing="0">
-                    <thead class="thead-light">
-                        <tr>
-                            <th>No</th>
-                            <th>KPI</th>
-                            <th>Divisi</th>
-                            <th>Pembuat</th>
-                            <th>Penerima</th>
-                            <th>Point</th>
-                            <th>Mulai</th>
-                            <th>Deadline</th>
-                            <th>Status</th>
-                            <th>Note</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
 
-<div class="modal fade" id="tambahModal" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-primary text-white" style="background: linear-gradient(45deg, #4e73df, #224abe);">
-                <h5 class="modal-title font-weight-bold">
-                    <i class="fas fa-plus-circle mr-2"></i>Tambah KPI Baru
-                </h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <form action="{{ route('kpi.store') }}" method="POST">
-                @csrf
-                <input type="hidden" name="project" value="{{ $id }}">
-                
-                <div class="modal-body p-4" style="background-color: #f8f9fc;">
-                    
-                    <h6 class="text-primary font-weight-bold uppercase small mb-3"><i class="fas fa-info-circle mr-1"></i> Informasi KPI</h6>
-                    
-                    <div class="form-group mb-4">
-                        <label class="font-weight-bold text-dark small">NAMA KPI</label>
-                        <input type="text" name="nama_kpi" class="form-control shadow-sm border-0" placeholder="Masukkan nama KPI..." required>
-                    </div>
+        {{-- =========================================================
+            MAIN CARD
+        ========================================================== --}}
+        <div class="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
 
-                    <div class="row">
-                        <div class="col-md-6 form-group mb-4">
-                            <label class="font-weight-bold text-dark small">CLIENT</label>
-                            <select name="project" class="form-control custom-select shadow-sm border-0" required>
-                                <option value="" selected disabled>-- Pilih Client --</option>
-                                    <option value="{{ $client->id }}" {{ $client->id == $id ? 'selected' : '' }}>{{ $client->nama }}</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6 form-group mb-4">
-                            <label class="font-weight-bold text-dark small">DIVISI</label>
-                            <select name="divisi" class="form-control custom-select shadow-sm border-0" onchange="HandleChangeDivsion(this, 'pic_select')" required>
-                                <option value="" selected disabled>-- Pilih Divisi --</option>
-                                @foreach($result as $divId => $nama)
-                                    <option value="{{ $divId }}">{{ $nama }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
+            {{-- Card header --}}
+            <div class="flex flex-col gap-3 border-b border-zinc-200 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-400">
+                        Project
+                    </p>
 
-                    <div class="row">
-                        <div class="col-md-6 form-group mb-4">
-                            <label class="font-weight-bold text-dark small">PIC (PERSON IN CHARGE)</label>
-                            <select name="pic[]" id="pic_select" class="form-control custom-select shadow-sm border-0" multiple required>
-                                </select>
-                            <small class="text-muted">Gunakan Ctrl + Klik untuk memilih banyak PIC</small>
-                        </div>
-                        <div class="col-md-6 form-group mb-4">
-                            <label class="font-weight-bold text-dark small">TINGKAT KESULITAN (POINT)</label>
-                            <select name="point" class="form-control custom-select shadow-sm border-0" required>
-                                <option value="" selected disabled>-- Pilih Tingkat Kesulitan --</option>
-                                @foreach($difficultyLabels as $key => $label)
-                                    <option value="{{ $key }}">{{ $key }} - {{ $label }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6 form-group mb-4">
-                            <label class="font-weight-bold text-dark small">TANGGAL MULAI</label>
-                            <input type="date" name="tanggal_mulai" class="form-control shadow-sm border-0" required>
-                        </div>
-                        <div class="col-md-6 form-group mb-4">
-                            <label class="font-weight-bold text-dark small">DEADLINE</label>
-                            <input type="date" name="tanggal_deadline" class="form-control shadow-sm border-0" required>
-                        </div>
-                    </div>
-
-                    <div class="form-group mb-0">
-                        <label class="font-weight-bold text-dark small">CATATAN</label>
-                        <textarea name="note" class="form-control shadow-sm border-0" rows="3" style="border-radius: 8px;" placeholder="Tambahkan rincian KPI..."></textarea>
-                    </div>
+                    <h2 class="mt-1 text-lg font-semibold tracking-[-0.02em] text-zinc-950">
+                        {{ $client->nama }}
+                    </h2>
                 </div>
 
-                <div class="modal-footer bg-white border-0 px-4 pb-4">
-                    <button type="button" class="btn btn-light font-weight-bold px-4 text-muted" data-dismiss="modal">BATAL</button>
-                    <button type="submit" class="btn btn-primary shadow-lg px-5 font-weight-bold" style="border-radius: 8px; letter-spacing: 1px;">
-                        <i class="fas fa-save mr-2"></i>SIMPAN KPI
+                @if(Auth::user()->role != "content_creator")
+                    <button
+                        type="button"
+                        data-modal-open="tambahModal"
+                        class="inline-flex w-fit items-center gap-2 rounded-lg bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                             class="h-4 w-4"
+                             viewBox="0 0 24 24"
+                             fill="none"
+                             stroke="currentColor"
+                             stroke-width="2">
+                            <path d="M12 5v14M5 12h14"/>
+                        </svg>
+
+                        Tambah Task
                     </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="editModal" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header bg-info text-white">
-                <h5 class="modal-title font-weight-bold">Edit KPI</h5>
-                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                @endif
             </div>
-            <form id="editForm" method="POST">
-                @csrf @method('PUT')
-                <div class="modal-body" id="editModalBody">
+
+
+            {{-- =====================================================
+                FILTER
+            ====================================================== --}}
+            <div class="border-b border-zinc-200 bg-zinc-50/70 px-5 py-5 sm:px-6">
+                <form
+                    id="filterForm"
+                    action="{{ route('hc_overview.index', $id) }}"
+                    method="GET"
+                >
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+
+                        {{-- Mulai --}}
+                        <div>
+                            <label class="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-600">
+                                Mulai
+                            </label>
+
+                            <input
+                                type="date"
+                                name="start_date"
+                                value="{{ request('start_date') }}"
+                                class="block w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950/10"
+                            >
+                        </div>
+
+
+                        {{-- Sampai --}}
+                        <div>
+                            <label class="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-600">
+                                Sampai
+                            </label>
+
+                            <input
+                                type="date"
+                                name="end_date"
+                                value="{{ request('end_date') }}"
+                                class="block w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950/10"
+                            >
+                        </div>
+
+
+                        {{-- Divisi --}}
+                        <div>
+                            <label class="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-600">
+                                Divisi
+                            </label>
+
+                            <select
+                                name="divisi"
+                                class="block w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950/10"
+                            >
+                                <option value="">- Semua -</option>
+
+                                @foreach($result as $divId => $nama)
+                                    <option
+                                        value="{{ $divId }}"
+                                        {{ request('divisi') == $divId ? 'selected' : '' }}
+                                    >
+                                        {{ $nama }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+
+                        {{-- Point --}}
+                        <div>
+                            <label class="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-600">
+                                Point
+                            </label>
+
+                            <select
+                                name="priority"
+                                class="block w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950/10"
+                            >
+                                <option value="">- Semua -</option>
+
+                                @foreach($difficultyLabels as $key => $label)
+                                    <option
+                                        value="{{ $key }}"
+                                        {{ request('priority') == $key ? 'selected' : '' }}
+                                    >
+                                        {{ $key }} - {{ $label }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+
+                        {{-- PIC --}}
+                        <div>
+                            <label class="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-600">
+                                PIC
+                            </label>
+
+                            <select
+                                name="pic"
+                                class="block w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950/10"
+                            >
+                                <option value="">- Semua PIC -</option>
+
+                                @foreach($vic_list as $user)
+                                    <option
+                                        value="{{ $user->id }}"
+                                        {{ request('pic') == $user->id ? 'selected' : '' }}
+                                    >
+                                        {{ $user->email }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+
+                        {{-- Status --}}
+                        <div>
+                            <label class="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-600">
+                                Status
+                            </label>
+
+                            <select
+                                name="status"
+                                class="block w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950/10"
+                            >
+                                <option value="">- Semua -</option>
+
+                                <option
+                                    value="0"
+                                    {{ request('status') === '0' ? 'selected' : '' }}
+                                >
+                                    Belum Selesai
+                                </option>
+
+                                <option
+                                    value="1"
+                                    {{ request('status') === '1' ? 'selected' : '' }}
+                                >
+                                    Sudah Selesai
+                                </option>
+                            </select>
+                        </div>
+
                     </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-info">Update KPI</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 
-<div class="modal fade" id="hapusModal" tabindex="-1" role="dialog">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title font-weight-bold">Konfirmasi Hapus</h5>
-            </div>
-            <div class="modal-body">Yakin ingin menghapus KPI ini?</div>
-            <div class="modal-footer">
-                <form id="hapusForm" method="POST">
-                    @csrf @method('DELETE')
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-danger">Hapus</button>
+
+                    {{-- Filter buttons --}}
+                    <div class="mt-5 flex flex-wrap items-center gap-2">
+
+                        <button
+                            type="submit"
+                            class="inline-flex items-center gap-2 rounded-lg bg-zinc-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-950 focus:ring-offset-2"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg"
+                                 class="h-4 w-4"
+                                 viewBox="0 0 24 24"
+                                 fill="none"
+                                 stroke="currentColor"
+                                 stroke-width="2">
+                                <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/>
+                            </svg>
+
+                            Filter
+                        </button>
+
+                        <a
+                            href="#"
+                            id="resetFilter"
+                            class="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-5 py-2.5 text-sm font-semibold text-zinc-700 transition hover:border-zinc-400 hover:bg-zinc-50"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg"
+                                 class="h-4 w-4"
+                                 viewBox="0 0 24 24"
+                                 fill="none"
+                                 stroke="currentColor"
+                                 stroke-width="2">
+                                <path d="M3 12a9 9 0 1 0 3-6.7"/>
+                                <path d="M3 4v5h5"/>
+                            </svg>
+
+                            Reset
+                        </a>
+
+                    </div>
                 </form>
             </div>
+
+
+            {{-- =====================================================
+                TABLE
+            ====================================================== --}}
+            <div class="p-5 sm:p-6">
+
+                <div class="overflow-x-auto rounded-xl border border-zinc-200">
+                    <table
+                        id="dataTable"
+                        class="min-w-[1200px] w-full border-collapse text-left"
+                    >
+                        <thead>
+                            <tr class="border-b border-zinc-200 bg-zinc-50">
+                                <th class="whitespace-nowrap px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
+                                    No
+                                </th>
+
+                                <th class="whitespace-nowrap px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
+                                    KPI
+                                </th>
+
+                                <th class="whitespace-nowrap px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
+                                    Divisi
+                                </th>
+
+                                <th class="whitespace-nowrap px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
+                                    Pembuat
+                                </th>
+
+                                <th class="whitespace-nowrap px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
+                                    Penerima
+                                </th>
+
+                                <th class="whitespace-nowrap px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
+                                    Point
+                                </th>
+
+                                <th class="whitespace-nowrap px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
+                                    Mulai
+                                </th>
+
+                                <th class="whitespace-nowrap px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
+                                    Deadline
+                                </th>
+
+                                <th class="whitespace-nowrap px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
+                                    Status
+                                </th>
+
+                                <th class="whitespace-nowrap px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
+                                    Note
+                                </th>
+
+                                <th class="whitespace-nowrap px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
+                                    Action
+                                </th>
+                            </tr>
+                        </thead>
+
+                        <tbody class="divide-y divide-zinc-100">
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+{{-- =============================================================
+    TAMBAH KPI MODAL
+============================================================= --}}
+<div
+    id="tambahModal"
+    class="fixed inset-0 z-50 hidden overflow-y-auto"
+    aria-hidden="true"
+>
+    <div
+        class="flex min-h-full items-center justify-center p-4 sm:p-6"
+        data-modal-backdrop="tambahModal"
+    >
+        <div class="fixed inset-0 bg-zinc-950/60 backdrop-blur-sm"></div>
+
+        <div class="relative z-10 w-full max-w-3xl overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl">
+
+            {{-- Header --}}
+            <div class="flex items-center justify-between border-b border-zinc-800 bg-zinc-950 px-5 py-4 sm:px-6">
+                <div>
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-400">
+                        KPI Management
+                    </p>
+
+                    <h2 class="mt-1 text-lg font-semibold text-white">
+                        Tambah KPI Baru
+                    </h2>
+                </div>
+
+                <button
+                    type="button"
+                    data-modal-close="tambahModal"
+                    class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-white/10 hover:text-white"
+                    aria-label="Close"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         class="h-5 w-5"
+                         viewBox="0 0 24 24"
+                         fill="none"
+                         stroke="currentColor"
+                         stroke-width="2">
+                        <path d="M6 6l12 12M18 6L6 18"/>
+                    </svg>
+                </button>
+            </div>
+
+
+            <form
+                action="{{ route('kpi.store') }}"
+                method="POST"
+            >
+                @csrf
+
+                <input
+                    type="hidden"
+                    name="project"
+                    value="{{ $id }}"
+                >
+
+                <div class="max-h-[75vh] overflow-y-auto bg-[#f7f7f5] px-5 py-6 sm:px-6">
+
+                    {{-- Section --}}
+                    <div class="mb-6 flex items-center gap-3">
+                        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-950 text-white">
+                            <svg xmlns="http://www.w3.org/2000/svg"
+                                 class="h-4 w-4"
+                                 viewBox="0 0 24 24"
+                                 fill="none"
+                                 stroke="currentColor"
+                                 stroke-width="2">
+                                <circle cx="12" cy="12" r="9"/>
+                                <path d="M12 11v5M12 8h.01"/>
+                            </svg>
+                        </div>
+
+                        <div>
+                            <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
+                                Information
+                            </p>
+
+                            <h3 class="text-sm font-semibold text-zinc-950">
+                                Informasi KPI
+                            </h3>
+                        </div>
+                    </div>
+
+
+                    {{-- Nama KPI --}}
+                    <div class="mb-5">
+                        <label class="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-700">
+                            Nama KPI
+                        </label>
+
+                        <input
+                            type="text"
+                            name="nama_kpi"
+                            placeholder="Masukkan nama KPI..."
+                            required
+                            class="block w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950/10"
+                        >
+                    </div>
+
+
+                    {{-- Client + Divisi --}}
+                    <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+
+                        <div>
+                            <label class="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-700">
+                                Client
+                            </label>
+
+                            <select
+                                name="project"
+                                required
+                                class="block w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950/10"
+                            >
+                                <option value="" selected disabled>
+                                    -- Pilih Client --
+                                </option>
+
+                                <option
+                                    value="{{ $client->id }}"
+                                    {{ $client->id == $id ? 'selected' : '' }}
+                                >
+                                    {{ $client->nama }}
+                                </option>
+                            </select>
+                        </div>
+
+
+                        <div>
+                            <label class="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-700">
+                                Divisi
+                            </label>
+
+                            <select
+                                name="divisi"
+                                onchange="HandleChangeDivsion(this, 'pic_select')"
+                                required
+                                class="block w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950/10"
+                            >
+                                <option value="" selected disabled>
+                                    -- Pilih Divisi --
+                                </option>
+
+                                @foreach($result as $divId => $nama)
+                                    <option value="{{ $divId }}">
+                                        {{ $nama }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                    </div>
+
+
+                    {{-- PIC + Point --}}
+                    <div class="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
+
+                        <div>
+                            <label class="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-700">
+                                PIC (Person In Charge)
+                            </label>
+
+                            <select
+                                name="pic[]"
+                                id="pic_select"
+                                multiple
+                                required
+                                class="block w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950/10"
+                            >
+                            </select>
+
+                            <p class="mt-1.5 text-xs text-zinc-500">
+                                Gunakan Ctrl + Klik untuk memilih banyak PIC
+                            </p>
+                        </div>
+
+
+                        <div>
+                            <label class="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-700">
+                                Tingkat Kesulitan (Point)
+                            </label>
+
+                            <select
+                                name="point"
+                                required
+                                class="block w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950/10"
+                            >
+                                <option value="" selected disabled>
+                                    -- Pilih Tingkat Kesulitan --
+                                </option>
+
+                                @foreach($difficultyLabels as $key => $label)
+                                    <option value="{{ $key }}">
+                                        {{ $key }} - {{ $label }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                    </div>
+
+
+                    {{-- Dates --}}
+                    <div class="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
+
+                        <div>
+                            <label class="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-700">
+                                Tanggal Mulai
+                            </label>
+
+                            <input
+                                type="date"
+                                name="tanggal_mulai"
+                                required
+                                class="block w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950/10"
+                            >
+                        </div>
+
+
+                        <div>
+                            <label class="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-700">
+                                Deadline
+                            </label>
+
+                            <input
+                                type="date"
+                                name="tanggal_deadline"
+                                required
+                                class="block w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950/10"
+                            >
+                        </div>
+
+                    </div>
+
+
+                    {{-- Note --}}
+                    <div class="mt-5">
+                        <label class="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-700">
+                            Catatan
+                        </label>
+
+                        <textarea
+                            name="note"
+                            rows="3"
+                            placeholder="Tambahkan rincian KPI..."
+                            class="block w-full resize-none rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950/10"
+                        ></textarea>
+                    </div>
+
+                </div>
+
+
+                {{-- Footer --}}
+                <div class="flex flex-col-reverse gap-2 border-t border-zinc-200 bg-white px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
+
+                    <button
+                        type="button"
+                        data-modal-close="tambahModal"
+                        class="inline-flex items-center justify-center rounded-lg border border-zinc-300 px-5 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
+                    >
+                        Batal
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="inline-flex items-center justify-center gap-2 rounded-lg bg-zinc-950 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                             class="h-4 w-4"
+                             viewBox="0 0 24 24"
+                             fill="none"
+                             stroke="currentColor"
+                             stroke-width="2">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                            <path d="M17 21v-8H7v8M7 3v5h8"/>
+                        </svg>
+
+                        Simpan KPI
+                    </button>
+
+                </div>
+
+            </form>
         </div>
     </div>
 </div>
+
+
+{{-- =============================================================
+    EDIT KPI MODAL
+============================================================= --}}
+<div
+    id="editModal"
+    class="fixed inset-0 z-50 hidden overflow-y-auto"
+    aria-hidden="true"
+>
+    <div
+        class="flex min-h-full items-center justify-center p-4 sm:p-6"
+        data-modal-backdrop="editModal"
+    >
+        <div class="fixed inset-0 bg-zinc-950/60 backdrop-blur-sm"></div>
+
+        <div class="relative z-10 w-full max-w-3xl overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl">
+
+            <div class="flex items-center justify-between border-b border-zinc-800 bg-zinc-950 px-5 py-4 sm:px-6">
+                <div>
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-400">
+                        KPI Management
+                    </p>
+
+                    <h2 class="mt-1 text-lg font-semibold text-white">
+                        Edit KPI
+                    </h2>
+                </div>
+
+                <button
+                    type="button"
+                    data-modal-close="editModal"
+                    class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-white/10 hover:text-white"
+                    aria-label="Close"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         class="h-5 w-5"
+                         viewBox="0 0 24 24"
+                         fill="none"
+                         stroke="currentColor"
+                         stroke-width="2">
+                        <path d="M6 6l12 12M18 6L6 18"/>
+                    </svg>
+                </button>
+            </div>
+
+            <form
+                id="editForm"
+                method="POST"
+            >
+                @csrf
+                @method('PUT')
+
+                <div
+                    id="editModalBody"
+                    class="max-h-[75vh] overflow-y-auto bg-[#f7f7f5] px-5 py-6 sm:px-6"
+                >
+                </div>
+
+                <div class="flex justify-end gap-2 border-t border-zinc-200 bg-white px-5 py-4 sm:px-6">
+
+                    <button
+                        type="button"
+                        data-modal-close="editModal"
+                        class="rounded-lg border border-zinc-300 px-5 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
+                    >
+                        Batal
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="rounded-lg bg-zinc-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800"
+                    >
+                        Update KPI
+                    </button>
+
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+{{-- =============================================================
+    HAPUS MODAL
+============================================================= --}}
+<div
+    id="hapusModal"
+    class="fixed inset-0 z-50 hidden overflow-y-auto"
+    aria-hidden="true"
+>
+    <div
+        class="flex min-h-full items-center justify-center p-4"
+        data-modal-backdrop="hapusModal"
+    >
+        <div class="fixed inset-0 bg-zinc-950/60 backdrop-blur-sm"></div>
+
+        <div class="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl">
+
+            <div class="border-b border-zinc-200 px-5 py-4">
+                <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-400">
+                    Confirmation
+                </p>
+
+                <h2 class="mt-1 text-lg font-semibold text-zinc-950">
+                    Konfirmasi Hapus
+                </h2>
+            </div>
+
+            <div class="px-5 py-5">
+                <div class="flex gap-3">
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600">
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                             class="h-5 w-5"
+                             viewBox="0 0 24 24"
+                             fill="none"
+                             stroke="currentColor"
+                             stroke-width="2">
+                            <path d="M12 9v4M12 17h.01"/>
+                            <path d="M10.3 3.7L2.9 16.5A2 2 0 0 0 4.6 19.5h14.8a2 2 0 0 0 1.7-3L13.7 3.7a2 2 0 0 0-3.4 0z"/>
+                        </svg>
+                    </div>
+
+                    <p class="pt-1 text-sm leading-6 text-zinc-600">
+                        Yakin ingin menghapus KPI ini?
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 border-t border-zinc-200 px-5 py-4">
+
+                <form
+                    id="hapusForm"
+                    method="POST"
+                    class="flex gap-2"
+                >
+                    @csrf
+                    @method('DELETE')
+
+                    <button
+                        type="button"
+                        data-modal-close="hapusModal"
+                        class="rounded-lg border border-zinc-300 px-5 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
+                    >
+                        Batal
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="rounded-lg bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700"
+                    >
+                        Hapus
+                    </button>
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
 @push('script')
 <script>
     const baseUrl = window.location.origin;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Helpers
+    |--------------------------------------------------------------------------
+    */
+
+    function getCsrfToken() {
+        return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    }
+
+    function openModal(id) {
+        const modal = document.getElementById(id);
+
+        if (!modal) {
+            return;
+        }
+
+        modal.classList.remove('hidden');
+        modal.setAttribute('aria-hidden', 'false');
+
+        document.body.classList.add('overflow-hidden');
+    }
+
+    function closeModal(id) {
+        const modal = document.getElementById(id);
+
+        if (!modal) {
+            return;
+        }
+
+        modal.classList.add('hidden');
+        modal.setAttribute('aria-hidden', 'true');
+
+        const hasOpenModal = document.querySelector(
+            '[id$="Modal"]:not(.hidden)'
+        );
+
+        if (!hasOpenModal) {
+            document.body.classList.remove('overflow-hidden');
+        }
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Modal triggers
+    |--------------------------------------------------------------------------
+    */
+
+    document.addEventListener('click', function (event) {
+
+        const openButton = event.target.closest('[data-modal-open]');
+
+        if (openButton) {
+            event.preventDefault();
+
+            openModal(
+                openButton.getAttribute('data-modal-open')
+            );
+
+            return;
+        }
+
+
+        const closeButton = event.target.closest('[data-modal-close]');
+
+        if (closeButton) {
+            event.preventDefault();
+
+            closeModal(
+                closeButton.getAttribute('data-modal-close')
+            );
+
+            return;
+        }
+
+
+        const backdrop = event.target.closest('[data-modal-backdrop]');
+
+        if (
+            backdrop &&
+            event.target === backdrop
+        ) {
+            closeModal(
+                backdrop.getAttribute('data-modal-backdrop')
+            );
+        }
+    });
+
+
+    document.addEventListener('keydown', function (event) {
+
+        if (event.key !== 'Escape') {
+            return;
+        }
+
+        const visibleModal = document.querySelector(
+            '[id$="Modal"]:not(.hidden)'
+        );
+
+        if (visibleModal) {
+            closeModal(visibleModal.id);
+        }
+    });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Load Table
+    |--------------------------------------------------------------------------
+    */
+
     function loadTable() {
+
+        const form = document.getElementById('filterForm');
+
         const params = new URLSearchParams({
-            start_date: $('input[name="start_date"]').val(),
-            end_date: $('input[name="end_date"]').val(),
-            divisi: $('select[name="divisi"]').val(),
-            priority: $('select[name="priority"]').val(),
-            pic: $('select[name="pic"]').val(),
-            status: $('select[name="status"]').val(),
+            start_date: form.querySelector('[name="start_date"]').value,
+            end_date: form.querySelector('[name="end_date"]').value,
+            divisi: form.querySelector('[name="divisi"]').value,
+            priority: form.querySelector('[name="priority"]').value,
+            pic: form.querySelector('[name="pic"]').value,
+            status: form.querySelector('[name="status"]').value,
         });
 
-        const apiUrl = `/api/kpi-data/{{ $client->id }}/{{ Auth::id() }}?${params.toString()}`;
 
-        $.ajax({
-            url: apiUrl,
+        const apiUrl =
+            `/api/kpi-data/{{ $client->id }}/{{ Auth::id() }}?${params.toString()}`;
+
+
+        fetch(apiUrl, {
             method: 'GET',
-            success: function(response) {
-                // 1. Hancurkan DataTable jika sudah ada agar tidak error
-                if ($.fn.DataTable.isDataTable('#dataTable')) {
-                    $('#dataTable').DataTable().destroy();
+            headers: {
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => {
+
+            console.log(response);
+
+            if (!response.ok) {
+                throw new Error('Gagal mengambil data KPI.');
+            }
+
+            return response.json();
+        })
+        .then(response => {
+
+            const tbody = document.querySelector('#dataTable tbody');
+
+            tbody.innerHTML = '';
+
+
+            let pointBelum = 0;
+            let pointSelesai = 0;
+            let totalPoint = 0;
+
+
+            console.log(response.data);
+
+
+            response.data.forEach(function(item, index) {
+
+                const isCompleted = Number(item.status) === 1;
+
+
+                if (isCompleted) {
+
+                    pointSelesai += Number(item.point);
+
+                } else {
+
+                    pointBelum += Number(item.point);
+
                 }
 
-                let tbody = $('#dataTable tbody');
-                tbody.empty();
 
-                let pointBelum = 0;
-                let pointSelesai = 0;
-                let totalPoint = 0;
-                console.log(response.data);
+                totalPoint += Number(item.point);
 
-                $.each(response.data, function(index, item) {
-                    let status = (item.status == 1) ? 
-                        '<span class="badge badge-success">Sudah Selesai</span>' : 
-                        '<span class="badge badge-warning">Belum Selesai</span>';
-                    
-                    // Escaping data yang kompleks agar tidak merusak HTML
-                    let itemEncoded = JSON.stringify(item).replace(/"/g, '&quot;');
 
-                    totalPoint += Number(item.point);
+                /*
+                |--------------------------------------------------------------------------
+                | Encode item
+                |--------------------------------------------------------------------------
+                */
 
-                    if (item.status == 1) {
-                        pointSelesai += Number(item.point);
-                    } else {
-                        pointBelum += Number(item.point);
-                    }
+                const itemEncoded = JSON.stringify(item)
+                    .replace(/"/g, '&quot;');
 
-                    let row = `<tr>
-                        <td>${index + 1}</td>
-                        <td>${item.nama_kpi}</td>
-                        <td>${item.nama_divisi}</td>
-                        <td>${item.pembuat}</td>
-                        <td>${item.vic_email}</td>
-                        <td>${item.point}</td>
-                        <td>${item.tanggal_mulai}</td>
-                        <td>${item.tanggal_deadline}</td>
-                        <td>${status}</td>
-                        <td>${item.note ?? ''}</td>
-                        <td>
-                            ${
-                                item.status == 0
-                                ? `
-                                    <button class="btn btn-sm btn-info" onclick="openEditModal(${itemEncoded})">
-                                        <i class="fas fa-edit"></i> Edit
-                                    </button>
 
-                                    <button class="btn btn-sm btn-success" onclick="selesaikanKPI(${item.id})">
-                                        <i class="fas fa-check"></i> Selesai KPI
-                                    </button>
+                /*
+                |--------------------------------------------------------------------------
+                | Status
+                |--------------------------------------------------------------------------
+                */
 
-                                    <button class="btn btn-sm btn-danger" onclick="openDeleteModal(${item.id})">
-                                        <i class="fas fa-trash"></i> Hapus
-                                    </button>
-                                `
-                                : `
-                                    <span class="badge badge-success p-2">
-                                        <i class="fas fa-check-circle"></i> KPI Selesai
-                                    </span>
-                                `
-                            }
+                const status = isCompleted
+
+                    ? `
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/10">
+                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-600"></span>
+                            Sudah Selesai
+                        </span>
+                    `
+
+                    : `
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-600/10">
+                            <span class="h-1.5 w-1.5 rounded-full bg-amber-600"></span>
+                            Belum Selesai
+                        </span>
+                    `;
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Action
+                |--------------------------------------------------------------------------
+                */
+
+                const action = !isCompleted
+
+                    ? `
+                        <div class="flex flex-wrap items-center justify-center gap-1.5">
+
+                            <button
+                                type="button"
+                                onclick="openEditModal(${itemEncoded})"
+                                class="inline-flex items-center gap-1.5 rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:border-zinc-950 hover:text-zinc-950"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg"
+                                     class="h-3.5 w-3.5"
+                                     viewBox="0 0 24 24"
+                                     fill="none"
+                                     stroke="currentColor"
+                                     stroke-width="2">
+                                    <path d="M12 20h9"/>
+                                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                                </svg>
+
+                                Edit
+                            </button>
+
+
+                            <button
+                                type="button"
+                                onclick="selesaikanKPI(${item.id})"
+                                class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-700"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg"
+                                     class="h-3.5 w-3.5"
+                                     viewBox="0 0 24 24"
+                                     fill="none"
+                                     stroke="currentColor"
+                                     stroke-width="2">
+                                    <path d="M5 12l4 4L19 6"/>
+                                </svg>
+
+                                Selesai
+                            </button>
+
+
+                            <button
+                                type="button"
+                                onclick="openDeleteModal(${item.id})"
+                                class="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-red-700"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg"
+                                     class="h-3.5 w-3.5"
+                                     viewBox="0 0 24 24"
+                                     fill="none"
+                                     stroke="currentColor"
+                                     stroke-width="2">
+                                    <path d="M3 6h18"/>
+                                    <path d="M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+                                    <path d="M10 11v5M14 11v5"/>
+                                </svg>
+
+                                Hapus
+                            </button>
+
+                        </div>
+                    `
+
+                    : `
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-semibold text-zinc-700">
+                            <svg xmlns="http://www.w3.org/2000/svg"
+                                 class="h-3.5 w-3.5"
+                                 viewBox="0 0 24 24"
+                                 fill="none"
+                                 stroke="currentColor"
+                                 stroke-width="2">
+                                <circle cx="12" cy="12" r="9"/>
+                                <path d="M8 12l2.5 2.5L16 9"/>
+                            </svg>
+
+                            KPI Selesai
+                        </span>
+                    `;
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Row
+                |--------------------------------------------------------------------------
+                */
+
+                const row = `
+                    <tr class="transition hover:bg-zinc-50">
+
+                        <td class="whitespace-nowrap px-4 py-4 text-center text-sm text-zinc-500">
+                            ${index + 1}
                         </td>
-                    </tr>`;
-                    tbody.append(row);
-                });
 
-                $('#pointBelum').text(pointBelum);
-                $('#pointSelesai').text(pointSelesai);
-                $('#totalPoint').text(totalPoint);
-                $('#totalKPI').text(response.data.length);
+                        <td class="min-w-[220px] px-4 py-4">
+                            <div class="font-medium text-zinc-950">
+                                ${item.nama_kpi ?? ''}
+                            </div>
+                        </td>
 
-                // 2. Inisialisasi ulang DataTable setelah data masuk
-                $('#dataTable').DataTable({
-                    "responsive": true,
-                    "autoWidth": false
-                });
+                        <td class="whitespace-nowrap px-4 py-4 text-sm text-zinc-600">
+                            ${item.nama_divisi ?? ''}
+                        </td>
+
+                        <td class="whitespace-nowrap px-4 py-4 text-sm text-zinc-600">
+                            ${item.pembuat ?? ''}
+                        </td>
+
+                        <td class="whitespace-nowrap px-4 py-4 text-sm text-zinc-600">
+                            ${item.vic_email ?? ''}
+                        </td>
+
+                        <td class="whitespace-nowrap px-4 py-4 text-center">
+                            <span class="inline-flex min-w-8 items-center justify-center rounded-lg bg-zinc-100 px-2 py-1 text-xs font-semibold text-zinc-800">
+                                ${item.point}
+                            </span>
+                        </td>
+
+                        <td class="whitespace-nowrap px-4 py-4 text-sm text-zinc-600">
+                            ${item.tanggal_mulai ?? ''}
+                        </td>
+
+                        <td class="whitespace-nowrap px-4 py-4 text-sm text-zinc-600">
+                            ${item.tanggal_deadline ?? ''}
+                        </td>
+
+                        <td class="whitespace-nowrap px-4 py-4 text-center">
+                            ${status}
+                        </td>
+
+                        <td class="min-w-[200px] px-4 py-4 text-sm leading-6 text-zinc-500">
+                            ${item.note ?? ''}
+                        </td>
+
+                        <td class="min-w-[260px] px-4 py-4 text-center">
+                            ${action}
+                        </td>
+
+                    </tr>
+                `;
+
+
+                tbody.insertAdjacentHTML('beforeend', row);
+            });
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Update statistics
+            |--------------------------------------------------------------------------
+            */
+
+            document.getElementById('pointBelum').textContent = pointBelum;
+            document.getElementById('pointSelesai').textContent = pointSelesai;
+            document.getElementById('totalPoint').textContent = totalPoint;
+            document.getElementById('totalKPI').textContent = response.data.length;
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Reinitialize DataTable
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                window.jQuery &&
+                $.fn.DataTable &&
+                $.fn.DataTable.isDataTable('#dataTable')
+            ) {
+                $('#dataTable').DataTable().destroy();
             }
+
+
+            if (window.jQuery && $.fn.DataTable) {
+
+                $('#dataTable').DataTable({
+                    responsive: false,
+                    autoWidth: false,
+                    pageLength: 10,
+                    language: {
+                        search: 'Cari:',
+                        lengthMenu: 'Tampilkan _MENU_',
+                        info: 'Menampilkan _START_ - _END_ dari _TOTAL_ data',
+                        emptyTable: 'Belum ada data KPI',
+                        zeroRecords: 'Data tidak ditemukan',
+                        paginate: {
+                            previous: '‹',
+                            next: '›'
+                        }
+                    }
+                });
+
+            }
+
+        })
+        .catch(error => {
+
+            console.error(error);
+
+            document.querySelector('#dataTable tbody').innerHTML = `
+                <tr>
+                    <td
+                        colspan="11"
+                        class="px-4 py-10 text-center"
+                    >
+                        <div class="flex flex-col items-center justify-center">
+                            <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-red-50 text-red-600">
+                                <svg xmlns="http://www.w3.org/2000/svg"
+                                     class="h-5 w-5"
+                                     viewBox="0 0 24 24"
+                                     fill="none"
+                                     stroke="currentColor"
+                                     stroke-width="2">
+                                    <path d="M12 9v4M12 17h.01"/>
+                                    <path d="M10.3 3.7L2.9 16.5A2 2 0 0 0 4.6 19.5h14.8a2 2 0 0 0 1.7-3L13.7 3.7a2 2 0 0 0-3.4 0z"/>
+                                </svg>
+                            </div>
+
+                            <p class="text-sm font-medium text-zinc-700">
+                                Gagal memuat data KPI
+                            </p>
+
+                            <p class="mt-1 text-xs text-zinc-500">
+                                Silakan coba lagi.
+                            </p>
+                        </div>
+                    </td>
+                </tr>
+            `;
         });
     }
-    $(document).ready(function() {
-        $('#filterForm').submit(function(e){
-            e.preventDefault();
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Document Ready
+    |--------------------------------------------------------------------------
+    */
+
+    document.addEventListener('DOMContentLoaded', function () {
+
+        const filterForm = document.getElementById('filterForm');
+        const resetFilter = document.getElementById('resetFilter');
+
+
+        filterForm.addEventListener('submit', function (event) {
+
+            event.preventDefault();
+
             loadTable();
         });
-        $('#resetFilter').click(function(e){
 
-            e.preventDefault();
 
-            $('#filterForm')[0].reset();
+        resetFilter.addEventListener('click', function (event) {
+
+            event.preventDefault();
+
+            filterForm.reset();
 
             loadTable();
-
         });
-        
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Select2 PIC
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            window.jQuery &&
+            $.fn.select2
+        ) {
+
+            $('#pic_select').select2({
+                placeholder: '-- Pilih PIC --',
+                width: '100%',
+                dropdownParent: $('#tambahModal')
+            });
+
+        }
+
+
         loadTable();
     });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Selesaikan KPI
+    |--------------------------------------------------------------------------
+    */
 
     async function selesaikanKPI(id) {
 
@@ -397,95 +1437,255 @@
             return;
         }
 
+
         try {
 
             const response = await fetch(`/kpi/${id}/selesai`, {
                 method: 'PUT',
+
                 headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                    'X-CSRF-TOKEN': getCsrfToken(),
                     'Accept': 'application/json'
                 }
             });
 
+
             const result = await response.json();
 
+
             if (result.success) {
+
                 alert('KPI berhasil diselesaikan.');
+
                 loadTable();
+
             } else {
-                alert(result.message);
+
+                alert(
+                    result.message || 'Gagal menyelesaikan KPI.'
+                );
             }
 
         } catch (error) {
+
             console.error(error);
+
             alert('Terjadi kesalahan.');
+
         }
     }
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Edit Modal
+    |--------------------------------------------------------------------------
+    */
+
     function openEditModal(item) {
-        // 1. Set form action ke route update
-        $('#editForm').attr('action', '/kpi/' + item.id);
-        
-        // 2. Isi modal body dengan semua field
-        $('#editModalBody').html(`
-            <div class="row">
-                <div class="col-md-12 form-group">
-                    <label class="font-weight-bold small">NAMA KPI</label>
-                    <input type="text" name="nama_kpi" class="form-control" value="${item.nama_kpi}" required>
+
+        document.getElementById('editForm').setAttribute(
+            'action',
+            '/kpi/' + item.id
+        );
+
+
+        const selectedPoint = item.point;
+
+
+        document.getElementById('editModalBody').innerHTML = `
+
+            <div class="space-y-5">
+
+                {{-- Nama KPI --}}
+                <div>
+                    <label class="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-700">
+                        Nama KPI
+                    </label>
+
+                    <input
+                        type="text"
+                        name="nama_kpi"
+                        value="${item.nama_kpi ?? ''}"
+                        required
+                        class="block w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950/10"
+                    >
                 </div>
-            </div>
-            <div class="row">
-                <div class="col-md-6 form-group">
-                    <label class="font-weight-bold small">DIVISI</label>
-                    <select name="divisi" onchange="HandleChangeDivsion(this, 'edit_pic_select')" class="form-control" required>
-                        <option value="${item.divisi}" selected>${item.nama_divisi}</option>
-                    </select>
-                </div>
-                <div class="col-md-6 form-group">
-                    <label class="font-weight-bold small">PIC</label>
-                    <select name="pic[]" id="edit_pic_select" class="form-control" multiple required>
+
+
+                {{-- Divisi + PIC --}}
+                <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+
+                    <div>
+                        <label class="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-700">
+                            Divisi
+                        </label>
+
+                        <select
+                            name="divisi"
+                            onchange="HandleChangeDivsion(this, 'edit_pic_select')"
+                            required
+                            class="block w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950/10"
+                        >
+                            <option
+                                value="${item.divisi}"
+                                selected
+                            >
+                                ${item.nama_divisi ?? ''}
+                            </option>
                         </select>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-6 form-group">
-                    <label class="font-weight-bold small">POINT (KESULITAN)</label>
-                    <select name="point" class="form-control" required>
-                        ${generateDifficultyOptions(item.point)}
-                    </select>
-                </div>
-                <div class="col-md-6 form-group">
-                    <label class="font-weight-bold small">STATUS</label>
-                    <select name="status" class="form-control" required>
-                        <option value="0" ${item.status == 0 ? 'selected' : ''}>Belum Selesai</option>
-                        <option value="1" ${item.status == 1 ? 'selected' : ''}>Sudah Selesai</option>
-                    </select>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-6 form-group">
-                    <label class="font-weight-bold small">MULAI</label>
-                    <input type="date" name="tanggal_mulai" class="form-control" value="${item.tanggal_mulai}" required>
-                </div>
-                <div class="col-md-6 form-group">
-                    <label class="font-weight-bold small">DEADLINE</label>
-                    <input type="date" name="tanggal_deadline" class="form-control" value="${item.tanggal_deadline}" required>
-                </div>
-            </div>
-            <div class="form-group">
-                <label class="font-weight-bold small">CATATAN</label>
-                <textarea name="note" class="form-control" rows="2">${item.note ?? ''}</textarea>
-            </div>
-        `);
+                    </div>
 
-        $('#edit_pic_select').select2({
-            width: '100%',
-            placeholder: "Pilih PIC"
-        });
-        
-        $('#editModal').modal('show');
 
-        let selectedPics = item.pics.map(pic => pic.id.toString());
+                    <div>
+                        <label class="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-700">
+                            PIC
+                        </label>
+
+                        <select
+                            name="pic[]"
+                            id="edit_pic_select"
+                            multiple
+                            required
+                            class="block w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950/10"
+                        >
+                        </select>
+                    </div>
+
+                </div>
+
+
+                {{-- Point + Status --}}
+                <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+
+                    <div>
+                        <label class="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-700">
+                            Point (Kesulitan)
+                        </label>
+
+                        <select
+                            name="point"
+                            required
+                            class="block w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950/10"
+                        >
+                            ${generateDifficultyOptions(selectedPoint)}
+                        </select>
+                    </div>
+
+
+                    <div>
+                        <label class="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-700">
+                            Status
+                        </label>
+
+                        <select
+                            name="status"
+                            required
+                            class="block w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950/10"
+                        >
+                            <option
+                                value="0"
+                                ${item.status == 0 ? 'selected' : ''}
+                            >
+                                Belum Selesai
+                            </option>
+
+                            <option
+                                value="1"
+                                ${item.status == 1 ? 'selected' : ''}
+                            >
+                                Sudah Selesai
+                            </option>
+                        </select>
+                    </div>
+
+                </div>
+
+
+                {{-- Dates --}}
+                <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+
+                    <div>
+                        <label class="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-700">
+                            Mulai
+                        </label>
+
+                        <input
+                            type="date"
+                            name="tanggal_mulai"
+                            value="${item.tanggal_mulai ?? ''}"
+                            required
+                            class="block w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950/10"
+                        >
+                    </div>
+
+
+                    <div>
+                        <label class="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-700">
+                            Deadline
+                        </label>
+
+                        <input
+                            type="date"
+                            name="tanggal_deadline"
+                            value="${item.tanggal_deadline ?? ''}"
+                            required
+                            class="block w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950/10"
+                        >
+                    </div>
+
+                </div>
+
+
+                {{-- Note --}}
+                <div>
+                    <label class="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-700">
+                        Catatan
+                    </label>
+
+                    <textarea
+                        name="note"
+                        rows="3"
+                        class="block w-full resize-none rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950/10"
+                    >${item.note ?? ''}</textarea>
+                </div>
+
+            </div>
+        `;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Select2 Edit PIC
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            window.jQuery &&
+            $.fn.select2
+        ) {
+
+            $('#edit_pic_select').select2({
+                width: '100%',
+                placeholder: 'Pilih PIC',
+                dropdownParent: $('#editModal')
+            });
+
+        }
+
+
+        openModal('editModal');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Selected PIC
+        |--------------------------------------------------------------------------
+        */
+
+        const selectedPics = (item.pics || [])
+            .map(pic => pic.id.toString());
+
 
         HandleChangeDivsion(
             { value: item.divisi },
@@ -494,57 +1694,149 @@
         );
     }
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Difficulty Options
+    |--------------------------------------------------------------------------
+    */
+
     function generateDifficultyOptions(selectedPoint) {
+
         let options = '';
+
+
         for (let i = 1; i <= 5; i++) {
-            options += `<option value="${i}" ${i == selectedPoint ? 'selected' : ''}>${i}</option>`;
+
+            options += `
+                <option
+                    value="${i}"
+                    ${i == selectedPoint ? 'selected' : ''}
+                >
+                    ${i}
+                </option>
+            `;
         }
+
+
         return options;
     }
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Delete Modal
+    |--------------------------------------------------------------------------
+    */
+
     function openDeleteModal(id) {
-        $('#hapusForm').attr('action', '/kpi/' + id);
-        $('#hapusModal').modal('show');
+
+        document.getElementById('hapusForm').setAttribute(
+            'action',
+            '/kpi/' + id
+        );
+
+
+        openModal('hapusModal');
     }
 
-    async function HandleChangeDivsion(el, targetId, selectedPic = []) {
-        let $picSelect = $('#' + targetId);
-        let userId = {{ Auth::id() }};
 
-        $picSelect.empty();
+    /*
+    |--------------------------------------------------------------------------
+    | Handle Division Change
+    |--------------------------------------------------------------------------
+    */
+
+    async function HandleChangeDivsion(
+        el,
+        targetId,
+        selectedPic = []
+    ) {
+
+        const picSelect = document.getElementById(targetId);
+
+        const userId = {{ Auth::id() }};
+
+
+        if (!picSelect) {
+            return;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Clear Select2
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            window.jQuery &&
+            $.fn.select2
+        ) {
+
+            $(`#${targetId}`)
+                .empty()
+                .trigger('change');
+
+        } else {
+
+            picSelect.innerHTML = '';
+
+        }
+
 
         try {
-            const response = await fetch(`${baseUrl}/api/get-users/${el.value}/${userId}`);
-            if (!response.ok) throw new Error();
+
+            const response = await fetch(
+                `${baseUrl}/api/get-users/${el.value}/${userId}`
+            );
+
+
+            if (!response.ok) {
+                throw new Error();
+            }
+
 
             const data = await response.json();
 
+
             data.forEach(pic => {
 
-                let selected = selectedPic.includes(pic.id.toString());
+                const selected =
+                    selectedPic.includes(
+                        pic.id.toString()
+                    );
 
-                let option = new Option(
+
+                const option = new Option(
                     pic.email,
                     pic.id,
                     selected,
                     selected
                 );
 
-                $picSelect.append(option);
+
+                picSelect.appendChild(option);
+
             });
 
-            $picSelect.trigger('change');
 
-        } catch(err){
-            console.log(err);
+            if (
+                window.jQuery &&
+                $.fn.select2
+            ) {
+
+                $(`#${targetId}`).trigger('change');
+
+            }
+
+        } catch (error) {
+
+            console.error(error);
+
         }
     }
-    $(document).ready(function() {
-        $('#pic_select').select2({
-            placeholder: "-- Pilih PIC --",
-            width: '100%'
-        });
-    });
 </script>
 @endpush
+
 @endsection

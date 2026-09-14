@@ -178,6 +178,10 @@ class HCOverviewController extends Controller
         if ($user->isAdmin) {
             $query->where('project', $id);
         } else {
+            if (!$division) {
+                return response()->json(['data' => []]);
+            }
+
             $query->where('project', $id)
                 ->where('divisi', $division->division_id);
         }
@@ -250,7 +254,7 @@ class HCOverviewController extends Controller
                 'role_pic'         => $division->role->role_name ?? '-',
                 'divisi'           => $division->division_id ?? null,
                 'pics'             => $kpi->pics,
-                'pembuat'          => $pembuat->email
+                'pembuat'          => $pembuat?->email ?? 'User sudah dihapus'
             ];
         });
 

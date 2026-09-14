@@ -1,394 +1,784 @@
 @extends('layout.app')
+
 @section('content')
-<style>
-    /* Mengatur agar kolom 5 bisa sejajar di layar besar */
-    @media (min-width: 992px) {
-        .col-lg-2-4 { flex: 0 0 20%; max-width: 20%; }
-    }
-    .card-stat {
-        transition: all 0.3s ease;
-        border: 2px solid transparent !important;
-    }
-    
-    .card-stat:hover { transform: translateY(-5px); }
-    .card-stat.active-filter {
-        border: 2px solid var(--bs-primary) !important;
-        background-color: #f0f7ff !important;
-        transform: scale(1.02);
-    }
-
-    .carousel-inner {
-        padding-left: 40px;
-        padding-right: 40px;
-    }
-
-    /* 2. Styling tombol navigasi agar berada di posisi yang pas */
-    .carousel-control-prev, 
-    .carousel-control-next {
-        width: 35px !important;
-        height: 35px !important;
-        background-color: #4e73df !important;
-        border-radius: 50% !important;
-        top: 50% !important;
-        transform: translateY(-50%) !important;
-        opacity: 0.9 !important;
-        box-shadow: 0 3px 6px rgba(0,0,0,0.15) !important;
-        z-index: 10; /* Pastikan tombol di atas */
-    }
-
-    /* Posisikan tombol tepat di pinggir agar tidak menutupi teks */
-    .carousel-control-prev { left: 0px !important; }
-    .carousel-control-next { right: 0px !important; }
-    
-    .carousel-control-prev-icon, 
-    .carousel-control-next-icon {
-        width: 15px !important;
-        height: 15px !important;
-    }
-    .stats-container {
-        display: grid;
-        /* Membuat 5 kolom dengan lebar sama persis */
-        grid-template-columns: repeat(5, 1fr); 
-        gap: 15px; /* Jarak antar kartu */
-        width: 100%;
-    }
-
-    /* Responsif: Jika layar mengecil (tablet/HP), ubah jadi 2 atau 3 kolom */
-    @media (max-width: 992px) {
-        .stats-container {
-            grid-template-columns: repeat(3, 1fr);
-        }
-    }
-
-    @media (max-width: 576px) {
-        .stats-container {
-            grid-template-columns: repeat(1, 1fr);
-        }
-    }
-
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(5, 1fr);
-        gap: 24px;
-    }
-
-     .stat-card {
-        background: #fff;
-        border: none;
-        border-radius: 16px;
-        padding: 24px;
-        box-shadow: 0 4px 15px rgba(0,0,0,.05); /* Bayangan lebih lembut */
-        display: flex;
-        flex-direction: column;
-    }
-    .stat-card.active { border: 2px solid #007bff; }
-    .icon-box {
-        width: 50px;
-        height: 50px;
-        border-radius: 14px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 24px;
-        margin-bottom: 24px; /* Jarak ikon ke judul */
-    }
-
-    /* Warna Ikon (Sama dengan sebelumnya) */
-    .icon-blue { background: #e8f0fe; color: #0d6efd; }
-    .icon-green { background: #e8f5e9; color: #198754; }
-    .icon-yellow { background: #fff3cd; color: #ffc107; }
-    .icon-red { background: #f8d7da; color: #dc3545; }
-    .text-gray { color: #6c757d; }
-
-    .stat-title {
-        color: #6c757d; /* Warna abu-abu judul */
-        font-size: 16px;
-        font-weight: 500;
-        margin-bottom: 8px;
-    }
-
-    .stat-number {
-        font-size: 48px; /* Ukuran font angka sedikit lebih kecil dari gambar asli agar proporsional */
-        font-weight: 700;
-        line-height: 1;
-        margin-bottom: 8px;
-    }
-
-    .stat-desc {
-        color: #adb5bd; /* Warna abu-abu muda deskripsi */
-        font-size: 14px;
-    }
-
-    .stat-card.active {
-        border-color: #4e73df; /* Sesuaikan dengan warna tema Anda */
-        background-color: #f8f9fc;
-        box-shadow: 0 0 10px rgba(78, 115, 223, 0.2);
-    }
-</style>
-
     <input type="hidden" id="divisi" value="{{ $divisiId }}">
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <!-- Header Text -->
-        <div>
-            <h1 class="h3 mb-0 text-gray-800 font-weight-bold">Halo, {{ Auth::user()->name }} 👋</h1>
-            <p class="text-muted small">Selamat bekerja hari ini</p>
-        </div>
 
-        <!-- Filter Section -->
-        <div class="d-flex align-items-center">
-            <!-- Filter Project -->
-            <select id="filter-client" class="form-control form-control-sm mr-2" style="width: auto; min-width: 150px;" onchange="loadTaskStats()">
-                <option value="all">Semua Project</option>
-                @foreach($client as $p)
-                    <option value="{{ $p->id_client }}">{{ $p->nama_client }}</option>
-                @endforeach
-            </select>
+    <div class="min-h-screen bg-[#f7f7f5] px-4 py-6 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-[1600px]">
 
-            <!-- Filter Bawahan -->
-            <select id="filter-pic" class="form-control form-control-sm mr-2" style="width: auto; min-width: 150px;" onchange="loadTaskStats()">
-                <option value="all">Semua Bawahan</option>
-                @foreach($allUser as $u)
-                    <option value="{{ $u->id }}">{{ $u->email }}</option>
-                @endforeach
-            </select>
-
-            <select id="filter-divisi" class="form-control form-control-sm mr-2" style="width: auto; min-width: 150px;" onchange="loadTaskStats()">
-                <option value="all">Semua Divisi</option>
-                @foreach($divisiList as $u)
-                    <option value="{{ $u->id }}">{{ $u->name }}</option>
-                @endforeach
-            </select>
-
-            <!-- Filter Tanggal -->
-            <div class="input-group input-group-sm mr-2" style="width: auto;">
-                <input type="date" id="dateStart" class="form-control" onchange="loadTaskStats()">
-                <div class="input-group-append">
-                    <span class="input-group-text">s/d</span>
-                </div>
-                <input type="date" id="dateEnd" class="form-control" onchange="loadTaskStats()">
-            </div>
-
-            <!-- Tombol Reset -->
-            <button onclick="resetFilters()" class="btn btn-sm btn-light border" title="Reset Filter">
-                <i class="fas fa-sync-alt"></i>
-            </button>
-        </div>
-    </div>
-
-    <div class="stats-grid mb-4">
-        @php
-            $statsData = [
-                ['id' => 'val-total-task', 'label' => 'Total Task', 'sub' => 'Hari Ini', 'icon' => 'fa-list-ul', 'color' => 'blue', 'status' => 'all'],
-                ['id' => 'val-selesai', 'label' => 'Selesai', 'sub' => 'Done', 'icon' => 'fa-check-circle', 'color' => 'green', 'status' => 4],
-                ['id' => 'val-progress', 'label' => 'Running', 'sub' => 'On Track', 'icon' => 'fa-chart-pie', 'color' => 'yellow', 'status' => 1],
-                ['id' => 'val-belum-mulai', 'label' => 'Not Start', 'sub' => 'Pending', 'icon' => 'fa-hourglass-half', 'color' => 'gray', 'status' => 0],
-                ['id' => 'val-overdue', 'label' => 'Overdue', 'sub' => 'Urgent', 'icon' => 'fa-exclamation-triangle', 'color' => 'red', 'status' => 7],
-            ];
-        @endphp
-
-        @foreach($statsData as $item)
-            <div class="stat-card cursor-pointer" onclick="filterByStatus('{{ $item['status'] }}', this)">
-                <!-- Ikon Box Kustom -->
-                <div class="icon-box icon-{{ $item['color'] }}">
-                    <i class="fas {{ $item['icon'] }}"></i>
-                </div>
-                
-                <!-- Teks -->
-                <div class="stat-title">{{ $item['label'] }}</div>
-                <div class="stat-number text-{{ $item['color'] }}" id="{{ $item['id'] }}">0</div>
-                <div class="stat-desc">{{ $item['sub'] }}</div>
-            </div>
-        @endforeach
-    </div>
-    
-    <div class="row mt-4">
-        <!-- AREA KIRI (8 Kolom) -->
-        <div class="col-lg-8">
-            <!-- Progress Bar Card -->
-            <div class="card shadow mb-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between mb-2">
-                        <h6 class="m-0 font-weight-bold text-gray-800">Progress</h6>
-                        <h6 id="progress-text" class="m-0 text-primary font-weight-bold">0%</h6>
+            {{-- =========================
+                HEADER
+            ========================== --}}
+            <div class="mb-8 flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+                <div>
+                    <div class="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
+                        Task Management
                     </div>
-                    <div class="progress mb-2" style="height: 12px;">
-                        <div id="progress-bar-fill" class="progress-bar bg-primary" style="width: 0%"></div>
-                    </div>
-                    <div id="progress-desc" class="text-muted small">0 dari 0 task selesai</div>
-                </div>
-            </div>
 
-            <!-- Tabel Task -->
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Task Hari Ini</h6>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-bordered" width="100%" cellspacing="0">
-                            <thead>
-                                <tr class="text-uppercase text-muted small">
-                                    <th>Task</th><th>PIC</th><th>Client</th><th>Tanggal</th><th>Jam Mulai</th><th>Prioritas</th><th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="task-tbody"></tbody>
-                        </table>
-                    </div>
-                    <nav id="pagination-controls" class="d-flex justify-content-center mt-3"></nav>
-                </div>
-            </div>
-        </div>
+                    <h1 class="text-3xl font-semibold tracking-tight text-zinc-950 sm:text-4xl">
+                        Halo, {{ Auth::user()->name }} 👋
+                    </h1>
 
-        <!-- AREA KANAN (4 Kolom) -->
-        <div class="col-lg-4">
-            <!-- Sedang Dikerjakan -->
-            <div class="card shadow mb-4" id="card-active-task">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold">Sedang Dikerjakan</h6>
+                    <p class="mt-2 text-sm text-zinc-500">
+                        Selamat bekerja hari ini
+                    </p>
                 </div>
-                <div class="card-body">
-                    <div class="d-flex align-items-center mb-3">
-                        <!-- Filter Divisi -->
-                        <div class="me-2" style="flex: 1;">
-                            @if(Auth::user()->isAdmin !== true)
-                                <div class="custom-control custom-switch mt-1">
-                                    <input type="checkbox" class="custom-control-input" id="divisi-filter" value="{{ $divisiId }}" onchange="loadActiveTask()">
-                                    <label class="custom-control-label small" for="divisi-filter">Divisi Saya</label>
-                                </div>
-                            @else
-                                <select id="divisi-filter" class="form-control form-control-sm" onchange="updateUserDropdown()">
-                                    <option value="all">Semua Divisi</option>
-                                    @foreach($divisiList as $d)
-                                        <option value="{{ $d->id }}">{{ $d->name }}</option>
-                                    @endforeach
-                                </select>
-                            @endif
+
+                {{-- FILTER --}}
+                <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center xl:justify-end">
+
+                    {{-- Filter Project --}}
+                    <div class="relative">
+                        <select
+                            id="filter-client"
+                            onchange="loadTaskStats()"
+                            class="h-10 min-w-[170px] appearance-none rounded-xl border border-zinc-200 bg-white pl-4 pr-10 text-sm text-zinc-700 outline-none transition focus:border-zinc-950 focus:ring-0"
+                        >
+                            <option value="all">Semua Project</option>
+
+                            @foreach($client as $p)
+                                <option value="{{ $p->id_client }}">
+                                    {{ $p->nama_client }}
+                                </option>
+                            @endforeach
+                        </select>
+
+                        <svg
+                            class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                        >
+                            <path
+                                fill-rule="evenodd"
+                                d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+                                clip-rule="evenodd"
+                            />
+                        </svg>
+                    </div>
+
+                    {{-- Filter PIC --}}
+                    <div class="relative">
+                        <select
+                            id="filter-pic"
+                            onchange="loadTaskStats()"
+                            class="h-10 min-w-[170px] appearance-none rounded-xl border border-zinc-200 bg-white pl-4 pr-10 text-sm text-zinc-700 outline-none transition focus:border-zinc-950 focus:ring-0"
+                        >
+                            <option value="all">Semua Bawahan</option>
+
+                            @foreach($allUser as $u)
+                                <option value="{{ $u->id }}">
+                                    {{ $u->email }}
+                                </option>
+                            @endforeach
+                        </select>
+
+                        <svg
+                            class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                        >
+                            <path
+                                fill-rule="evenodd"
+                                d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25-4.5a.75.75 0 01.02-1.06l4.25-4.5a.75.75 0 111.08 1.04L10 8.832 6.31 4.894a.75.75 0 01-1.08 1.04l4.25 4.5a.75.75 0 01-.02 1.06z"
+                                clip-rule="evenodd"
+                            />
+                        </svg>
+                    </div>
+
+                    {{-- Filter Divisi --}}
+                    <div class="relative">
+                        <select
+                            id="filter-divisi"
+                            onchange="loadTaskStats()"
+                            class="h-10 min-w-[170px] appearance-none rounded-xl border border-zinc-200 bg-white pl-4 pr-10 text-sm text-zinc-700 outline-none transition focus:border-zinc-950 focus:ring-0"
+                        >
+                            <option value="all">Semua Divisi</option>
+
+                            @foreach($divisiList as $u)
+                                <option value="{{ $u->id }}">
+                                    {{ $u->name }}
+                                </option>
+                            @endforeach
+                        </select>
+
+                        <svg
+                            class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                        >
+                            <path
+                                fill-rule="evenodd"
+                                d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25-4.5a.75.75 0 01-.02-1.06z"
+                                clip-rule="evenodd"
+                            />
+                        </svg>
+                    </div>
+
+                    {{-- Date Range --}}
+                    <div class="flex h-10 overflow-hidden rounded-xl border border-zinc-200 bg-white">
+                        <input
+                            type="date"
+                            id="dateStart"
+                            onchange="loadTaskStats()"
+                            class="w-[145px] border-0 bg-transparent px-3 text-sm text-zinc-700 outline-none focus:ring-0"
+                        >
+
+                        <div class="flex items-center border-x border-zinc-200 px-3 text-xs font-medium text-zinc-400">
+                            s/d
                         </div>
 
-                        <!-- Filter PIC -->
-                        <div style="flex: 1;">
-                            <select id="filter-active-task-pic" class="form-control form-control-sm" onchange="loadActiveTask()">
-                                <option value="all">Semua User</option>
+                        <input
+                            type="date"
+                            id="dateEnd"
+                            onchange="loadTaskStats()"
+                            class="w-[145px] border-0 bg-transparent px-3 text-sm text-zinc-700 outline-none focus:ring-0"
+                        >
+                    </div>
+
+                    {{-- Reset --}}
+                    <button
+                        type="button"
+                        onclick="resetFilters()"
+                        title="Reset Filter"
+                        class="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-500 transition hover:border-zinc-950 hover:bg-zinc-950 hover:text-white"
+                    >
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M20 20v-5h-5"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5.5 15a7 7 0 0011.9 2.1L20 14"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M18.5 9A7 7 0 006.6 6.9L4 10"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            {{-- =========================
+                STAT CARDS
+            ========================== --}}
+            @php
+                $statsData = [
+                    [
+                        'id' => 'val-total-task',
+                        'label' => 'Total Task',
+                        'sub' => 'Hari Ini',
+                        'color' => 'zinc',
+                        'status' => 'all'
+                    ],
+                    [
+                        'id' => 'val-selesai',
+                        'label' => 'Selesai',
+                        'sub' => 'Done',
+                        'color' => 'emerald',
+                        'status' => 4
+                    ],
+                    [
+                        'id' => 'val-progress',
+                        'label' => 'Running',
+                        'sub' => 'On Track',
+                        'color' => 'amber',
+                        'status' => 1
+                    ],
+                    [
+                        'id' => 'val-belum-mulai',
+                        'label' => 'Not Start',
+                        'sub' => 'Pending',
+                        'color' => 'slate',
+                        'status' => 0
+                    ],
+                    [
+                        'id' => 'val-overdue',
+                        'label' => 'Overdue',
+                        'sub' => 'Urgent',
+                        'color' => 'rose',
+                        'status' => 7
+                    ],
+                ];
+            @endphp
+
+            <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                @foreach($statsData as $item)
+                    <div
+                        class="stat-card group cursor-pointer rounded-2xl border-2 border-transparent bg-white p-5 shadow-[0_4px_20px_rgba(0,0,0,0.04)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(0,0,0,0.07)]"
+                        onclick="filterByStatus('{{ $item['status'] }}', this)"
+                    >
+                        <div class="mb-5 flex items-center justify-between">
+                            <div class="
+                                flex h-11 w-11 items-center justify-center rounded-xl
+                                @if($item['color'] === 'emerald') bg-emerald-50 text-emerald-600
+                                @elseif($item['color'] === 'amber') bg-amber-50 text-amber-600
+                                @elseif($item['color'] === 'rose') bg-rose-50 text-rose-600
+                                @elseif($item['color'] === 'slate') bg-slate-100 text-slate-600
+                                @else bg-zinc-100 text-zinc-700
+                                @endif
+                            ">
+                                @if($item['status'] === 'all')
+                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 6h13M8 12h13M8 18h13"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 6h.01M3 12h.01M3 18h.01"/>
+                                    </svg>
+                                @elseif($item['status'] === 4)
+                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                        <circle cx="12" cy="12" r="9"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m8 12 2.5 2.5L16 9"/>
+                                    </svg>
+                                @elseif($item['status'] === 1)
+                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 19V5M4 19h16"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m7 15 4-4 3 2 5-6"/>
+                                    </svg>
+                                @elseif($item['status'] === 0)
+                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                        <circle cx="12" cy="12" r="9"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 7v5l3 2"/>
+                                    </svg>
+                                @else
+                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.3 4.2 2.8 17a2 2 0 001.7 3h15a2 2 0 001.7-3L13.7 4.2a2 2 0 00-3.4 0Z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4M12 16h.01"/>
+                                    </svg>
+                                @endif
+                            </div>
+
+                            <span class="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
+                                {{ $item['sub'] }}
+                            </span>
+                        </div>
+
+                        <div class="stat-title text-sm font-medium text-zinc-500">
+                            {{ $item['label'] }}
+                        </div>
+
+                        <div
+                            id="{{ $item['id'] }}"
+                            class="
+                                stat-number mt-1 text-4xl font-semibold tracking-tight
+                                @if($item['color'] === 'emerald') text-emerald-600
+                                @elseif($item['color'] === 'amber') text-amber-600
+                                @elseif($item['color'] === 'rose') text-rose-600
+                                @elseif($item['color'] === 'slate') text-slate-600
+                                @else text-zinc-950
+                                @endif
+                            "
+                        >
+                            0
+                        </div>
+
+                        <div class="stat-desc mt-2 text-xs text-zinc-400">
+                            {{ $item['label'] }} task
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+
+            {{-- =========================
+                MAIN CONTENT
+            ========================== --}}
+            <div class="grid grid-cols-1 gap-6 xl:grid-cols-12">
+
+                {{-- LEFT --}}
+                <div class="space-y-6 xl:col-span-8">
+
+                    {{-- Progress --}}
+                    <div class="rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
+                        <div class="mb-3 flex items-center justify-between">
+                            <div>
+                                <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
+                                    Overview
+                                </div>
+                                <h2 class="mt-1 text-lg font-semibold text-zinc-950">
+                                    Progress
+                                </h2>
+                            </div>
+
+                            <div
+                                id="progress-text"
+                                class="text-lg font-semibold tracking-tight text-zinc-950"
+                            >
+                                0%
+                            </div>
+                        </div>
+
+                        <div class="h-3 overflow-hidden rounded-full bg-zinc-100">
+                            <div
+                                id="progress-bar-fill"
+                                class="h-full rounded-full bg-zinc-950 transition-all duration-500"
+                                style="width: 0%"
+                            ></div>
+                        </div>
+
+                        <div
+                            id="progress-desc"
+                            class="mt-3 text-xs text-zinc-500"
+                        >
+                            0 dari 0 task selesai
+                        </div>
+                    </div>
+
+                    {{-- Task Table --}}
+                    <div class="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
+                        <div class="border-b border-zinc-100 px-6 py-5">
+                            <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
+                                Task Monitor
+                            </div>
+
+                            <h2 class="mt-1 text-lg font-semibold text-zinc-950">
+                                Task Hari Ini
+                            </h2>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full min-w-[900px] border-collapse text-left">
+                                <thead>
+                                    <tr class="border-b border-zinc-100 bg-zinc-50/70">
+                                        <th class="px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-400">
+                                            Task
+                                        </th>
+                                        <th class="px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-400">
+                                            PIC
+                                        </th>
+                                        <th class="px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-400">
+                                            Client
+                                        </th>
+                                        <th class="px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-400">
+                                            Tanggal
+                                        </th>
+                                        <th class="px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-400">
+                                            Jam Mulai
+                                        </th>
+                                        <th class="px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-400">
+                                            Prioritas
+                                        </th>
+                                        <th class="px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-400">
+                                            Status
+                                        </th>
+                                    </tr>
+                                </thead>
+
+                                <tbody
+                                    id="task-tbody"
+                                    class="divide-y divide-zinc-100"
+                                ></tbody>
+                            </table>
+                        </div>
+
+                        <div
+                            id="pagination-controls"
+                            class="flex justify-center border-t border-zinc-100 px-5 py-4"
+                        ></div>
+                    </div>
+                </div>
+
+                {{-- RIGHT --}}
+                <div class="space-y-6 xl:col-span-4">
+
+                    {{-- Active Tasks --}}
+                    <div
+                        id="card-active-task"
+                        class="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)]"
+                    >
+                        <div class="border-b border-zinc-100 px-5 py-5">
+                            <div class="flex items-center justify-between gap-4">
+                                <div>
+                                    <div class="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
+                                        Live
+                                    </div>
+
+                                    <h2 class="mt-1 text-lg font-semibold text-zinc-950">
+                                        Sedang Dikerjakan
+                                    </h2>
+                                </div>
+
+                                <div
+                                    id="active-task-stats"
+                                    class="text-xs font-medium text-zinc-400"
+                                >
+                                    Total: 0 Task Aktif
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-5">
+                            <div class="mb-5 grid grid-cols-2 gap-3">
+
+                                {{-- Divisi --}}
+                                <div>
+                                    @if(Auth::user()->isAdmin !== true)
+                                        <label class="flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3">
+                                            <input
+                                                type="checkbox"
+                                                class="h-4 w-4 rounded border-zinc-300 text-zinc-950 focus:ring-zinc-950"
+                                                id="divisi-filter"
+                                                value="{{ $divisiId }}"
+                                                onchange="updateUserDropdown()"
+                                            >
+
+                                            <span class="truncate text-xs font-medium text-zinc-600">
+                                                Divisi Saya
+                                            </span>
+                                        </label>
+                                    @else
+                                        <div class="relative">
+                                            <select
+                                                id="divisi-filter"
+                                                class="h-10 w-full appearance-none rounded-xl border border-zinc-200 bg-white px-3 pr-8 text-xs text-zinc-600 outline-none focus:border-zinc-950 focus:ring-0"
+                                                onchange="updateUserDropdown()"
+                                            >
+                                                <option value="all">Semua Divisi</option>
+
+                                                @foreach($divisiList as $d)
+                                                    <option value="{{ $d->id }}">
+                                                        {{ $d->name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+
+                                            <svg
+                                                class="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400"
+                                                viewBox="0 0 20 20"
+                                                fill="currentColor"
+                                            >
+                                                <path
+                                                    fill-rule="evenodd"
+                                                    d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25-4.5a.75.75 0 01-1.08 1.04l4.25 4.5a.75.75 0 01.02-1.06z"
+                                                    clip-rule="evenodd"
+                                                />
+                                            </svg>
+                                        </div>
+                                    @endif
+                                </div>
+
+                                {{-- PIC --}}
+                                <div class="relative">
+                                    <select
+                                        id="filter-active-task-pic"
+                                        class="h-10 w-full appearance-none rounded-xl border border-zinc-200 bg-white px-3 pr-8 text-xs text-zinc-600 outline-none focus:border-zinc-950 focus:ring-0"
+                                        onchange="loadActiveTask()"
+                                    >
+                                        <option value="all">Semua User</option>
+
+                                        @foreach($allUser as $u)
+                                            <option value="{{ $u->id }}">
+                                                {{ $u->email }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+
+                                    <svg
+                                        class="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400"
+                                        viewBox="0 0 20 20"
+                                        fill="currentColor"
+                                    >
+                                        <path
+                                            fill-rule="evenodd"
+                                            d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25-4.5a.75.75 0 01-1.08 1.04l4.25-4.5a.75.75 0 01-1.08 1.04l4.25 4.5a.75.75 0 01-.02-1.06z"
+                                            clip-rule="evenodd"
+                                        />
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <input
+                                type="hidden"
+                                id="current-user-id"
+                                value="{{ auth()->id() }}"
+                            >
+
+                            <input
+                                type="hidden"
+                                id="is-admin"
+                                value="{{ Auth::user()->isAdmin == true ? '1' : '0' }}"
+                            >
+
+                            <div
+                                id="active-task-list"
+                                class="flex flex-col gap-2"
+                            ></div>
+                        </div>
+                    </div>
+
+                    {{-- Queue --}}
+                    <div class="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
+                        <div class="border-b border-zinc-100 px-5 py-5">
+                            <div class="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
+                                Queue
+                            </div>
+
+                            <h2 class="mt-1 text-lg font-semibold text-zinc-950">
+                                Antrian Berikutnya
+                            </h2>
+                        </div>
+
+                        <div
+                            id="antrian-list"
+                            class="p-5"
+                        ></div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- =========================
+                BOTTOM WIDGETS
+            ========================== --}}
+            <div class="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+
+                {{-- Productivity --}}
+                <div class="rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
+                    <div class="mb-6 flex items-center justify-between">
+                        <div>
+                            <div class="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
+                                Performance
+                            </div>
+
+                            <h2 class="mt-1 text-lg font-semibold text-zinc-950">
+                                Produktivitas Hari Ini
+                            </h2>
+                        </div>
+
+                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 text-zinc-700">
+                            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 19V5M4 19h16"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m7 15 4-4 3 2 5-6"/>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 divide-x divide-zinc-100">
+                        <div class="pr-3 text-center">
+                            <div class="text-[10px] font-medium uppercase tracking-wider text-zinc-400">
+                                Jam Kerja
+                            </div>
+
+                            <div
+                                id="prod-jam-kerja"
+                                class="mt-2 text-lg font-semibold tracking-tight text-zinc-950"
+                            >
+                                0j 0m
+                            </div>
+
+                            <div
+                                id="jamkerja"
+                                class="mt-1 text-[10px] leading-4 text-zinc-400"
+                            ></div>
+                        </div>
+
+                        <div class="px-3 text-center">
+                            <div class="text-[10px] font-medium uppercase tracking-wider text-zinc-400">
+                                Task / Jam
+                            </div>
+
+                            <div
+                                id="prod-task-jam"
+                                class="mt-2 text-lg font-semibold tracking-tight text-zinc-950"
+                            >
+                                0
+                            </div>
+
+                            <div class="mt-1 text-[10px] text-zinc-400">
+                                Rata-rata
+                            </div>
+                        </div>
+
+                        <div class="pl-3 text-center">
+                            <div class="text-[10px] font-medium uppercase tracking-wider text-zinc-400">
+                                Estimasi
+                            </div>
+
+                            <div
+                                id="prod-estimasi"
+                                class="mt-2 text-lg font-semibold tracking-tight text-emerald-600"
+                            >
+                                0j
+                            </div>
+
+                            <div class="mt-1 text-[10px] text-zinc-400">
+                                Total estimasi
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Activity --}}
+                <div class="rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
+                    <div class="mb-5 flex items-center justify-between gap-3">
+                        <div>
+                            <div class="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
+                                Timeline
+                            </div>
+
+                            <h2 class="mt-1 text-lg font-semibold text-zinc-950">
+                                Aktivitas Hari Ini
+                            </h2>
+                        </div>
+
+                        <div class="relative">
+                            <select
+                                id="filter-user-activity"
+                                class="h-9 w-[105px] appearance-none rounded-lg border border-zinc-200 bg-white px-3 pr-7 text-xs text-zinc-600 outline-none focus:border-zinc-950 focus:ring-0"
+                                onchange="loadTaskStats()"
+                            >
+                                <option value="all">Semua</option>
+
                                 @foreach($allUser as $u)
-                                    <option value="{{ $u->id }}">{{ $u->email }}</option>
+                                    <option value="{{ $u->id }}">
+                                        {{ $u->email }}
+                                    </option>
                                 @endforeach
                             </select>
+
+                            <svg
+                                class="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                            >
+                                <path
+                                    fill-rule="evenodd"
+                                    d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25-4.5a.75.75 0 01-1.08 1.04l-4.25-4.5a.75.75 0 01.02-1.06z"
+                                    clip-rule="evenodd"
+                                />
+                            </svg>
                         </div>
-
-                        <!-- Hidden Fields (Tepikan agar tidak mengganggu layout) -->
-                        <input type="hidden" id="current-user-id" value="{{ auth()->id() }}">
-                        <input type="hidden" id="is-admin" value="{{ Auth::user()->isAdmin == true ? '1' : '0' }}">
                     </div>
 
-                    <div id="active-task-list" class="d-flex flex-column">
-                        <!-- Item akan di-generate oleh JS -->
+                    <div
+                        id="activity-timeline"
+                        class="min-h-[180px]"
+                    >
+                        <div class="text-xs text-zinc-400">
+                            Memuat aktivitas...
+                        </div>
+                    </div>
+
+                    <div
+                        id="activity-pagination"
+                        class="mt-5 flex items-center justify-center gap-3 border-t border-zinc-100 pt-4"
+                    >
+                        <button
+                            id="prev-activity"
+                            type="button"
+                            class="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-600 transition hover:border-zinc-950 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-40"
+                            onclick="changePageActivity(-1)"
+                            disabled
+                        >
+                            Prev
+                        </button>
+
+                        <span
+                            id="page-info"
+                            class="text-xs font-semibold text-zinc-500"
+                        >
+                            Page 1
+                        </span>
+
+                        <button
+                            id="next-activity"
+                            type="button"
+                            class="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-600 transition hover:border-zinc-950 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-40"
+                            onclick="changePageActivity(1)"
+                        >
+                            Next
+                        </button>
                     </div>
                 </div>
-            </div>
 
-            <!-- Antrian -->
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold">Antrian Berikutnya</h6>
-                </div>
-                <div class="card-body" id="antrian-list">
-                    <!-- Data akan di-inject di sini -->
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row">
-        <!-- Produktivitas -->
-        <div class="col-md-4 mb-4">
-            <div class="card shadow h-100">
-                <div class="card-body">
-                    <div class="d-flex align-items-center mb-3">
-                        <i class="fas fa-chart-line text-success mr-2"></i>
-                        <h6 class="m-0 font-weight-bold text-gray-800">Produktivitas Hari Ini</h6>
-                    </div>
-                    <div class="d-flex justify-content-between text-center">
+                {{-- Focus Timer --}}
+                <div
+                    id="focus-timer-card"
+                    class="rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)]"
+                >
+                    <div class="mb-6 flex items-center justify-between gap-3">
                         <div>
-                            <div class="small text-muted">Jam Kerja</div>
-                            <div class="h5 font-weight-bold text-primary mb-0" id="prod-jam-kerja">0j 0m</div>
-                            <div class="small text-muted" id="jamkerja"></div>
-                        </div>
-                        <div>
-                            <div class="small text-muted">Task / Jam</div>
-                            <div class="h5 font-weight-bold text-primary mb-0" id="prod-task-jam">0</div>
-                            <div class="small text-muted">Rata-rata</div>
-                        </div>
-                        <div>
-                            <div class="small text-muted">Estimasi</div>
-                            <div class="h5 font-weight-bold text-success mb-0" id="prod-estimasi">0j</div>
-                            <div class="small text-muted">Total estimasi</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+                            <div class="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
+                                Deep Work
+                            </div>
 
-        <!-- Aktivitas (Timeline) -->
-        <div class="col-md-4 mb-4">
-            <div class="card shadow h-100">
-                <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-between mb-3">
-                        <div class="d-flex align-items-center">
-                            <i class="fas fa-bolt text-primary mr-2"></i>
-                            <h6 class="m-0 font-weight-bold text-gray-800">Aktivitas Hari Ini</h6>
+                            <h2 class="mt-1 text-lg font-semibold text-zinc-950">
+                                Focus Timer
+                            </h2>
                         </div>
-                        <!-- Filter User -->
-                        <select id="filter-user-activity" class="form-control form-control-sm" style="width: 100px;" onchange="loadTaskStats()">
-                            <option value="all">Semua</option>
-                            @foreach($allUser as $u)
-                                <option value="{{ $u->id }}">{{ $u->email }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="timeline small" id="activity-timeline">
-                        <div class="text-muted">Memuat aktivitas...</div>
-                    </div>
-                    <div id="activity-pagination" class="mt-3 d-flex justify-content-center">
-                        <button id="prev-activity" class="btn btn-sm btn-outline-secondary mr-2" onclick="changePageActivity(-1)" disabled>Prev</button>
-                        <span id="page-info" class="align-self-center small font-weight-bold">Page 1</span>
-                        <button id="next-activity" class="btn btn-sm btn-outline-secondary ml-2" onclick="changePageActivity(1)">Next</button>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Focus Timer -->
-        <div class="col-md-4 mb-4" id="focus-timer-card">
-            <div class="card shadow h-100">
-                <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-between mb-3">
-                        <div class="d-flex align-items-center">
-                            <i class="fas fa-stopwatch text-primary mr-2"></i>
-                            <h6 class="m-0 font-weight-bold text-gray-800">Focus Timer</h6>
+                        <div class="relative">
+                            <select
+                                id="filter-user-timer"
+                                class="h-9 w-[105px] appearance-none rounded-lg border border-zinc-200 bg-white px-3 pr-7 text-xs text-zinc-600 outline-none focus:border-zinc-950 focus:ring-0"
+                                onchange="loadTaskStats()"
+                            >
+                                <option value="all">Semua</option>
+
+                                @foreach($allUser as $u)
+                                    <option value="{{ $u->id }}">
+                                        {{ $u->email }}
+                                    </option>
+                                @endforeach
+                            </select>
+
+                            <svg
+                                class="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                            >
+                                <path
+                                    fill-rule="evenodd"
+                                    d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25-4.5a.75.75 0 01-.02-1.06z"
+                                    clip-rule="evenodd"
+                                />
+                            </svg>
                         </div>
-                        <!-- Filter User -->
-                        <select id="filter-user-timer" class="form-control form-control-sm" style="width: 100px;" onchange="loadTaskStats()">
-                            <option value="all">Semua</option>
-                            @foreach($allUser as $u)
-                                <option value="{{ $u->id }}">{{ $u->email }}</option>
-                            @endforeach
-                        </select>
                     </div>
-                    
-                    <div class="d-flex align-items-center justify-content-between">
+
+                    <div class="flex items-center justify-between gap-6">
                         <div>
-                            <div id="status-timer-text" class="text-muted small">Sedang Tidak Fokus</div>
-                            <div class="h3 font-weight-bold text-primary my-1" id="timer-display">00:00</div>
-                            <div class="small text-muted" id="timer-target">Target 0 menit</div>
+                            <div
+                                id="status-timer-text"
+                                class="text-xs font-medium text-zinc-400"
+                            >
+                                Sedang Tidak Fokus
+                            </div>
+
+                            <div
+                                id="timer-display"
+                                class="my-1 text-4xl font-semibold tracking-tight text-zinc-950"
+                            >
+                                00:00
+                            </div>
+
+                            <div
+                                id="timer-target"
+                                class="text-xs text-zinc-400"
+                            >
+                                Target 0 menit
+                            </div>
                         </div>
-                        
-                        <div class="text-primary">
-                            <svg width="60" height="60" viewBox="0 0 36 36" style="transform: rotate(-90deg);">
-                                <!-- Lingkaran Background (Abu-abu) -->
-                                <circle cx="18" cy="18" r="15.915" fill="none" stroke="#e2e8f0" stroke-width="3" />
-                                <!-- Lingkaran Progress (Warna Utama) -->
-                                <circle id="progress-circle" cx="18" cy="18" r="15.915" fill="none" stroke="currentColor" stroke-width="3" 
-                                        stroke-dasharray="0, 100" stroke-dashoffset="0" />
+
+                        <div class="shrink-0 text-zinc-950">
+                            <svg
+                                width="76"
+                                height="76"
+                                viewBox="0 0 36 36"
+                                class="-rotate-90"
+                            >
+                                <circle
+                                    cx="18"
+                                    cy="18"
+                                    r="15.915"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-opacity="0.08"
+                                    stroke-width="3"
+                                />
+
+                                <circle
+                                    id="progress-circle"
+                                    cx="18"
+                                    cy="18"
+                                    r="15.915"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="3"
+                                    stroke-linecap="round"
+                                    stroke-dasharray="0, 100"
+                                    stroke-dashoffset="0"
+                                    class="transition-all duration-500"
+                                />
                             </svg>
                         </div>
                     </div>
@@ -398,543 +788,1241 @@
     </div>
 
 
-
 <script>
-    window.onload = function() {
+    window.onload = function () {
         const now = new Date();
+
         const year = now.getFullYear();
-        const month = (now.getMonth() + 1).toString().padStart(2, '0');
-        const day = now.getDate().toString().padStart(2, '0');
-        
-        // Format tanggal hari ini: YYYY-MM-DD
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+
         const today = `${year}-${month}-${day}`;
 
-        // Terapkan ke input
         const dateStart = document.getElementById('dateStart');
         const dateEnd = document.getElementById('dateEnd');
 
-        // Hanya isi jika nilainya masih kosong
-        if (!dateStart.value) dateStart.value = today;
-        if (!dateEnd.value) dateEnd.value = today;
+        if (dateStart && !dateStart.value) {
+            dateStart.value = today;
+        }
 
-        // Panggil fungsi untuk load data pertama kali
+        if (dateEnd && !dateEnd.value) {
+            dateEnd.value = today;
+        }
+
         if (typeof loadTaskStats === 'function') {
             loadTaskStats();
         }
     };
-    // Fungsi pembantu untuk menentukan label dan warna status
+
+
+    /* ==========================================
+       GLOBAL STATE
+    ========================================== */
+
     let currentPage = 1;
     const rowsPerPage = 10;
+
     let currentData = [];
     let activityData = [];
     let currentActivityPage = 1;
+    let currentFilter = 'all';
+
+
+    /* ==========================================
+       STATUS BADGE
+    ========================================== */
+
     function getStatusBadge(status) {
         const map = {
-            0: { label: 'Not Start', class: 'bg-secondary-subtle text-secondary' },
-            1: { label: 'Running', class: 'bg-primary-subtle text-primary' },
-            3: { label: 'Wait Approval', class: 'bg-info-subtle text-info' },
-            4: { label: 'Done', class: 'bg-success-subtle text-success' },
-            7: { label: 'Overdue', class: 'bg-danger-subtle text-danger' },
-            8: { label: 'Expired', class: 'bg-warning-subtle text-warning' },
-            9: { label: 'Expired', class: 'bg-warning-subtle text-warning' },
+            0: {
+                label: 'Not Start',
+                class: 'bg-zinc-100 text-zinc-600'
+            },
+            1: {
+                label: 'Running',
+                class: 'bg-amber-50 text-amber-700'
+            },
+            3: {
+                label: 'Wait Approval',
+                class: 'bg-sky-50 text-sky-700'
+            },
+            4: {
+                label: 'Done',
+                class: 'bg-emerald-50 text-emerald-700'
+            },
+            7: {
+                label: 'Overdue',
+                class: 'bg-rose-50 text-rose-700'
+            },
+            8: {
+                label: 'Expired',
+                class: 'bg-orange-50 text-orange-700'
+            },
+            9: {
+                label: 'Expired',
+                class: 'bg-orange-50 text-orange-700'
+            }
         };
-        const s = map[status] || { label: 'Unknown', class: 'bg-dark' };
-        return `<span class="badge ${s.class}">${s.label}</span>`;
+
+        const s = map[status] || {
+            label: 'Unknown',
+            class: 'bg-zinc-900 text-white'
+        };
+
+        return `
+            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold whitespace-nowrap ${s.class}">
+                ${s.label}
+            </span>
+        `;
     }
+
+
+    /* ==========================================
+       PRIORITY BADGE
+    ========================================== */
+
+    function getPriorityBadge(priority) {
+        const map = {
+            1: {
+                label: 'Rendah',
+                class: 'bg-zinc-100 text-zinc-600'
+            },
+            2: {
+                label: 'Sedang',
+                class: 'bg-amber-50 text-amber-700'
+            },
+            3: {
+                label: 'Tinggi',
+                class: 'bg-rose-50 text-rose-700'
+            }
+        };
+
+        const p = map[priority] || {
+            label: '-',
+            class: 'bg-zinc-100 text-zinc-500'
+        };
+
+        return `
+            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold whitespace-nowrap ${p.class}">
+                ${p.label}
+            </span>
+        `;
+    }
+
+
+    /* ==========================================
+       UPDATE ACTIVE TASK USER DROPDOWN
+    ========================================== */
 
     async function updateUserDropdown() {
         const filterEl = document.getElementById('divisi-filter');
         const userSelect = document.getElementById('filter-active-task-pic');
-        
-        // 1. Tentukan divisiId berdasarkan tipe inputnya
+
+        if (!filterEl || !userSelect) return;
+
         let divisiId = 'all';
+
         if (filterEl.type === 'checkbox') {
-            divisiId = filterEl.checked ? filterEl.value : 'all';
+            divisiId = filterEl.checked
+                ? filterEl.value
+                : 'all';
         } else {
             divisiId = filterEl.value;
         }
-        
-        // 2. Fetch user berdasarkan divisiId yang sudah didapat
-        const response = await fetch(`/api/get-user-divisions?divisi_id=${divisiId}`);
-        const users = await response.json();
-        
-        // 3. Reset dan isi ulang dropdown user
-        userSelect.innerHTML = '<option value="all">Semua User</option>';
-        users.forEach(u => {
-            userSelect.innerHTML += `<option value="${u.id}">${u.email || u.name}</option>`;
-        });
-        
-        // 4. Panggil loadActiveTask untuk menyegarkan konten carousel
-        loadActiveTask(); 
+
+        try {
+            const response = await fetch(
+                `/api/get-user-divisions?divisi_id=${encodeURIComponent(divisiId)}`
+            );
+
+            if (!response.ok) {
+                throw new Error('Gagal mengambil user divisi.');
+            }
+
+            const users = await response.json();
+
+            userSelect.innerHTML = `
+                <option value="all">Semua User</option>
+            `;
+
+            users.forEach(u => {
+                const option = document.createElement('option');
+
+                option.value = u.id;
+                option.textContent = u.email || u.name || 'Unknown';
+
+                userSelect.appendChild(option);
+            });
+
+            loadActiveTask();
+
+        } catch (error) {
+            console.error('Error update user dropdown:', error);
+        }
     }
+
+
+    /* ==========================================
+       LOAD TASK STATS
+    ========================================== */
 
     async function loadTaskStats() {
-        const pic = document.getElementById('filter-pic').value;
-        const selectPIC = document.getElementById('filter-pic');
-        const selectDivisi = document.getElementById('filter-divisi').value;
-        const client = document.getElementById('filter-client').value;
-        const dateStart = document.getElementById('dateStart').value;
-        const dateEnd = document.getElementById('dateEnd').value;
-        const filterUserActivity = document.getElementById('filter-user-activity').value;
-        const timerPic = document.getElementById('filter-user-timer').value;
+        const picEl = document.getElementById('filter-pic');
+        const divisiEl = document.getElementById('filter-divisi');
+        const clientEl = document.getElementById('filter-client');
+        const dateStartEl = document.getElementById('dateStart');
+        const dateEndEl = document.getElementById('dateEnd');
+        const activityEl = document.getElementById('filter-user-activity');
+        const timerEl = document.getElementById('filter-user-timer');
 
-        if(client != 'all'){
+        if (!picEl || !divisiEl || !clientEl || !dateStartEl || !dateEndEl) {
+            return;
+        }
+
+        let pic = picEl.value;
+        const selectDivisi = divisiEl.value;
+        const client = clientEl.value;
+        const dateStart = dateStartEl.value;
+        const dateEnd = dateEndEl.value;
+
+        const filterUserActivity = activityEl
+            ? activityEl.value
+            : 'all';
+
+        const timerPic = timerEl
+            ? timerEl.value
+            : 'all';
+
+        /*
+         * Jika memilih client tertentu,
+         * PIC diabaikan sesuai logic lama.
+         */
+        if (client !== 'all') {
             pic = 'all';
-        }
-        
-        const res = await fetch(`/task/stats?pic=${pic}&client=${client}&start=${dateStart}&end=${dateEnd}&activity_pic=${filterUserActivity}&timer_pic=${timerPic}&divisi_id=${selectDivisi}`); 
-        const data = await res.json();
-
-        const total = data.totalHariIni;
-        const selesai = data.stats.done;
-        const percentage = total > 0 ? Math.round((selesai / total) * 100) : 0;
-        
-        document.getElementById('progress-text').innerText = `${percentage}%`;
-        const progressBar = document.getElementById('progress-bar-fill');
-        progressBar.style.width = `${percentage}%`;
-
-        document.getElementById('progress-desc').innerText = `${selesai} dari ${total} task selesai`;
-        
-        // 1. Update Statistik Card Atas
-        document.getElementById('val-total-task').innerText = data.totalHariIni;
-        document.getElementById('val-overdue').innerText = data.stats.overdue;
-        document.getElementById('val-selesai').innerText = data.stats.done;
-        document.getElementById('val-progress').innerText = data.stats.running;
-        document.getElementById('val-belum-mulai').innerText = data.stats.not_start;
-
-        loadActiveTask();
-
-        // 3. Render Antrian
-        const queueList = document.getElementById('antrian-list');
-        queueList.innerHTML = '';
-
-        if (data.queue && data.queue.length > 0) {
-            data.queue.forEach((q, index) => {
-                // Ganti 'q.name' sesuai dengan nama kolom user di database Anda
-                const picName = q.email_pic || 'Unassigned'; 
-                
-                queueList.innerHTML += `
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="flex-grow-1">
-                            <div class="fw-bold">${q.nama_task}</div>
-                            <div class="small text-muted">
-                                ${q.nama_client} 
-                                <span class="text-primary ms-1">(${picName})</span>
-                            </div>
-                        </div>
-
-                        <!-- Jam Mulai -->
-                        <div class="text-end ms-2">
-                            <span class="badge bg-light text-dark border">
-                                <i class="bi bi-clock me-1"></i>${q.jam_mulai ? q.jam_mulai.substring(0, 5) : '-'}
-                            </span>
-                        </div>
-                    </div>`;
-            });
-        } else {
-            queueList.innerHTML = '<p class="small text-muted">Tidak ada antrian.</p>';
-        }
-
-        document.getElementById('prod-jam-kerja').innerText = data.productivity.jam_kerja;
-        document.getElementById('prod-task-jam').innerText = 
-            data.productivity.task_per_jam + '/ Jam';
-
-        let divisi = document.getElementById('divisi').value;
-        let labelJam = ""; 
-
-        // Penentuan dasar durasi jam kerja
-        if (divisi == 5) {
-            document.getElementById('prod-estimasi').innerText = "8 Jam";
-            labelJam = "8 Jam Kerja";
-        } else {
-            const hariIni = new Date();
-            const namaHari = hariIni.toLocaleDateString('id-ID', { weekday: 'long' });
-            
-            if (namaHari === "Sabtu") {
-                document.getElementById('prod-estimasi').innerText = "5 Jam";
-                labelJam = "5 Jam Kerja";
-            } else {
-                document.getElementById('prod-estimasi').innerText = "7 Jam";
-                labelJam = "7 Jam Kerja";
-            }
-        }
-
-        // Logika pembeda teks berdasarkan PIC
-        const jamKerjaEl = document.getElementById('jamkerja');
-
-        if (pic === 'all') {
-            jamKerjaEl.innerHTML = "Rata-rata seluruh bawahan<br>(" + labelJam + ")";
-        } else {
-            jamKerjaEl.innerText = "Dari " + labelJam;
-        }
-
-        activityData = data.activities || [];
-        currentActivityPage = 1; // Reset ke halaman 1 setiap ganti filter
-        renderActivityPage();
-
-        const statusText = document.getElementById('status-timer-text');
-        const timerDisplay = document.getElementById('timer-display');
-        const timerTarget = document.getElementById('timer-target');
-        const progressPath = document.getElementById('progress-circle');
-
-        if (window.timerInterval) {
-            clearInterval(window.timerInterval);
-            window.timerInterval = null;
-        }
-
-        if (data.focus_timer && data.focus_timer.is_active) {
-            statusText.innerText = "Sedang Fokus";
-            timerTarget.innerText = `Target ${data.focus_timer.target_menit} menit`;
-
-            function updateDisplay() {
-                let jamMulai = data.active_task.jam_mulai;
-                let menit = data.active_task.menit;
-                let startTime;
-
-                try {
-                    const p = jamMulai.split(/[^\d]/);
-                    if (p.length >= 5) {
-                        startTime = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]), parseInt(p[3]), parseInt(p[4]), parseInt(p[5]) || 0);
-                    } else {
-                        startTime = new Date();
-                        startTime.setHours(parseInt(p[0]), parseInt(p[1]), parseInt(p[2]) || 0, 0);
-                    }
-                } catch (e) {
-                    timerDisplay.innerHTML = "Err Parse";
-                    return;
-                }
-
-                const now = new Date();
-                const diffMs = now.getTime() - startTime.getTime();
-
-                if (isNaN(diffMs)) {
-                    timerDisplay.innerHTML = "Waktu Invalid";
-                    return;
-                }
-
-                const detikTerpakai = Math.floor(diffMs / 1000);
-                const m = Math.floor(detikTerpakai / 60);
-                const s = detikTerpakai % 60;
-
-                timerDisplay.innerText = `${m}:${s.toString().padStart(2, '0')}`;
-
-                // Update Progres
-                if (progressPath) {
-                    const totalDetikLimit = menit * 60;
-                    const persen = Math.min((detikTerpakai / totalDetikLimit) * 100, 100);
-                    progressPath.setAttribute('stroke-dasharray', `${persen}, 100`);
-                }
-            }
-
-            updateDisplay();
-            // 2. Simpan referensi interval di window
-            window.timerInterval = setInterval(updateDisplay, 1000);
-            if (progressPath) {
-                // Gunakan 'menit' dari data.focus_timer.target_menit (sesuaikan jika logic Anda berbeda)
-                const totalMenit = data.focus_timer.target_menit; 
-                const totalDetikLimit = totalMenit * 60;
-                
-                // Hitung persentase (0 - 100)
-                const persen = Math.min((detikTerpakai / totalDetikLimit) * 100, 100);
-                
-                // Update stroke-dasharray: format "persen, 100"
-                progressPath.setAttribute('stroke-dasharray', `${persen}, 100`);
-            }
-        } else {
-            // 3. Pastikan UI reset saat tidak fokus
-            statusText.innerText = "Sedang Tidak Fokus";
-            timerDisplay.innerText = "00:00";
-            timerTarget.innerText = "Target 0 menit";
-
-            if (progressPath) {
-                progressPath.setAttribute('stroke-dasharray', `0, 100`);
-            }
-        }
-
-        // 4. Update data untuk Paginasi dan Render Tabel
-        currentData = data.tasks; 
-        currentPage = 1;          
-        renderTable(); // Panggil ini sekali saja untuk merender data + paginasi
-    }
-
-    function renderActivityPage() {
-        const timeline = document.getElementById('activity-timeline');
-        timeline.innerHTML = '';
-
-        const start = (currentActivityPage - 1) * rowsPerPage;
-        const end = start + rowsPerPage;
-        const paginatedItems = activityData.slice(start, end);
-
-        if (paginatedItems.length > 0) {
-            paginatedItems.forEach(act => {
-                timeline.innerHTML += `
-                    <div class="d-flex align-items-center mb-2">
-                        <span class="text-muted small" style="min-width: 60px;">${act.time.substring(0, 5)}</span> 
-                        <i class="bi bi-circle-fill text-${act.color} mx-2" style="font-size: 6px;"></i> 
-                        <div class="text-truncate" style="flex: 1;">
-                            <span class="fw-bold text-dark">${act.desc}</span>
-                            <span class="text-muted small italic" style="opacity: 0.7;">&bull; ${act.email}</span>
-                        </div>
-                    </div>`;
-            });
-        } else {
-            timeline.innerHTML = '<div class="text-muted small italic">Tidak ada aktivitas.</div>';
-        }
-
-        // Update tombol navigasi
-        document.getElementById('page-info').innerText = `Page ${currentActivityPage}`;
-        document.getElementById('prev-activity').disabled = (currentActivityPage === 1);
-        document.getElementById('next-activity').disabled = (end >= activityData.length);
-    }
-
-    async function loadActiveTask() {
-        const isAdmin = document.getElementById('is-admin').value === '1';
-        const currentUserId = document.getElementById('current-user-id').value;
-        
-        // Logika pemilihan User ID
-        let userId = document.getElementById('filter-active-task-pic').value;     
-        const userSelect = document.getElementById('filter-active-task-pic');
-        // Logika pemilihan Divisi ID
-        const divisiFilter = document.getElementById('divisi-filter');
-
-        const controls = document.getElementById('carousel-controls');
-
-        let divisiId = 'all';
-        if (divisiFilter.checked == false && isAdmin == false && userId == 'all') {
-            userId = currentUserId;
-        }
-
-        if(divisiFilter.checked && userId != 'all'){
-            userId = 'all';
-            userSelect.value = 'all';
-        }
-        
-        if (divisiFilter) {
-            divisiId = (divisiFilter.type === 'checkbox') ? 
-                    (divisiFilter.checked ? divisiFilter.value : 'all') : 
-                    divisiFilter.value;
         }
 
         try {
-            // Fetch data dengan parameter yang sudah disesuaikan
-            const response = await fetch(`/kpi/get-active-task?user_id=${userId}&divisi_id=${divisiId}`);
-            const data = await response.json();
-            console.log(data);
+            const params = new URLSearchParams({
+                pic: pic,
+                client: client,
+                start: dateStart,
+                end: dateEnd,
+                activity_pic: filterUserActivity,
+                timer_pic: timerPic,
+                divisi_id: selectDivisi
+            });
 
-            if (data.count > 1) {
-                if (controls) controls.style.display = 'block';
-            } else {
-                if (controls) controls.style.display = 'none';
+            const res = await fetch(`/task/stats?${params.toString()}`);
+
+            if (!res.ok) {
+                throw new Error('Gagal mengambil statistik task.');
             }
-            
-            const activeContent = document.getElementById('active-task-list');
-            const activeStats = document.getElementById('active-task-stats');
 
-            if (activeContent) {
-                activeContent.innerHTML = ''; 
-                
-                // Tampilkan jumlah task aktif
-                if(activeStats) activeStats.innerText = `Total: ${data.count || 0} Task Aktif`;
+            const data = await res.json();
 
-                if (data.count > 0 && data.tasks) {
-                    activeContent.innerHTML = ''; // Pastikan container kosong
-                    
-                    data.tasks.forEach((task) => {
-                        const picName = task.pic_name || 'No PIC'; 
-                        
-                        // Menggunakan struktur list (tidak ada carousel-item)
-                        const jamMulai = task.jam_mulai || '-'; 
+            const total = Number(data.totalHariIni || 0);
+            const selesai = Number(data.stats?.done || 0);
 
-                        activeContent.innerHTML += `
-                            <div class="card shadow-sm border-0 mb-2">
-                                <div class="card-body p-2 d-flex align-items-center">
-                                    <div class="bg-success-subtle p-2 rounded-circle me-3">
-                                        <i class="bi bi-briefcase text-success"></i>
+            const percentage = total > 0
+                ? Math.round((selesai / total) * 100)
+                : 0;
+
+            /* Progress */
+            const progressText = document.getElementById('progress-text');
+            const progressBar = document.getElementById('progress-bar-fill');
+            const progressDesc = document.getElementById('progress-desc');
+
+            if (progressText) {
+                progressText.innerText = `${percentage}%`;
+            }
+
+            if (progressBar) {
+                progressBar.style.width = `${percentage}%`;
+            }
+
+            if (progressDesc) {
+                progressDesc.innerText =
+                    `${selesai} dari ${total} task selesai`;
+            }
+
+            /* Statistik */
+            document.getElementById('val-total-task').innerText =
+                data.totalHariIni || 0;
+
+            document.getElementById('val-overdue').innerText =
+                data.stats?.overdue || 0;
+
+            document.getElementById('val-selesai').innerText =
+                data.stats?.done || 0;
+
+            document.getElementById('val-progress').innerText =
+                data.stats?.running || 0;
+
+            document.getElementById('val-belum-mulai').innerText =
+                data.stats?.not_start || 0;
+
+
+            /* Active task */
+            loadActiveTask();
+
+
+            /* ==========================================
+               QUEUE
+            ========================================== */
+
+            const queueList = document.getElementById('antrian-list');
+
+            if (queueList) {
+                queueList.innerHTML = '';
+
+                if (data.queue && data.queue.length > 0) {
+                    data.queue.forEach(q => {
+                        const picName = q.email_pic || 'Unassigned';
+
+                        const jamMulai = q.jam_mulai
+                            ? q.jam_mulai.substring(0, 5)
+                            : '-';
+
+                        queueList.innerHTML += `
+                            <div class="group flex items-center gap-3 border-b border-zinc-100 py-3 last:border-0">
+                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-500">
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                        <circle cx="12" cy="12" r="8"/>
+                                        <path stroke-linecap="round" d="M12 8v4l2.5 2"/>
+                                    </svg>
+                                </div>
+
+                                <div class="min-w-0 flex-1">
+                                    <div class="truncate text-sm font-semibold text-zinc-800">
+                                        ${q.nama_task}
                                     </div>
-                                    <div class="flex-grow-1">
-                                        <div class="fw-bold small text-truncate" style="max-width: 200px;">${task.nama}</div>
-                                        <div class="text-muted" style="font-size: 11px;">${task.project}</div>
-                                        
-                                        <!-- Baris PIC dan Jam Mulai -->
-                                        <div class="d-flex justify-content-between">
-                                            <div class="text-dark fw-bold" style="font-size: 10px;">
-                                                <i class="bi bi-person-fill"></i> ${picName}
-                                            </div>
-                                            <div class="text-primary fw-bold" style="font-size: 10px;">
-                                                <i class="bi bi-clock"></i> ${jamMulai}
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="text-primary" style="font-size: 10px;">Mulai: ${task.mulai}</div>
+
+                                    <div class="mt-0.5 truncate text-[11px] text-zinc-400">
+                                        ${q.nama_client}
                                     </div>
+
+                                    <div class="mt-1 truncate text-[10px] text-zinc-500">
+                                        ${picName}
+                                    </div>
+                                </div>
+
+                                <div class="shrink-0 rounded-lg bg-zinc-50 px-2.5 py-1.5 text-[10px] font-semibold text-zinc-600">
+                                    ${jamMulai}
                                 </div>
                             </div>
                         `;
                     });
                 } else {
-                    activeContent.innerHTML = `
-                        <div class="text-muted small p-3 text-center">Tidak ada task aktif.</div>
+                    queueList.innerHTML = `
+                        <div class="py-6 text-center text-xs text-zinc-400">
+                            Tidak ada antrian.
+                        </div>
                     `;
                 }
-
-                // RE-INITIALIZE CAROUSEL
-                const carouselElement = $('#activeTaskCarousel');
-                carouselElement.carousel('dispose');
-                carouselElement.carousel({ interval: 5000, wrap: true });
             }
+
+
+            /* ==========================================
+               PRODUCTIVITY
+            ========================================== */
+
+            document.getElementById('prod-jam-kerja').innerText =
+                data.productivity?.jam_kerja || '0j 0m';
+
+            document.getElementById('prod-task-jam').innerText =
+                `${data.productivity?.task_per_jam || 0}/ Jam`;
+
+
+            const divisi = document.getElementById('divisi').value;
+
+            let labelJam = '';
+
+            if (divisi == 5) {
+                document.getElementById('prod-estimasi').innerText = '8 Jam';
+                labelJam = '8 Jam Kerja';
+            } else {
+                const hariIni = new Date();
+
+                const namaHari = hariIni.toLocaleDateString(
+                    'id-ID',
+                    {
+                        weekday: 'long'
+                    }
+                );
+
+                if (namaHari === 'Sabtu') {
+                    document.getElementById('prod-estimasi').innerText = '5 Jam';
+                    labelJam = '5 Jam Kerja';
+                } else {
+                    document.getElementById('prod-estimasi').innerText = '7 Jam';
+                    labelJam = '7 Jam Kerja';
+                }
+            }
+
+
+            const jamKerjaEl = document.getElementById('jamkerja');
+
+            if (jamKerjaEl) {
+                if (pic === 'all') {
+                    jamKerjaEl.innerHTML =
+                        `Rata-rata seluruh bawahan<br>(${labelJam})`;
+                } else {
+                    jamKerjaEl.innerText =
+                        `Dari ${labelJam}`;
+                }
+            }
+
+
+            /* ==========================================
+               ACTIVITY
+            ========================================== */
+
+            activityData = data.activities || [];
+            currentActivityPage = 1;
+
+            renderActivityPage();
+
+
+            /* ==========================================
+               FOCUS TIMER
+            ========================================== */
+
+            const statusText =
+                document.getElementById('status-timer-text');
+
+            const timerDisplay =
+                document.getElementById('timer-display');
+
+            const timerTarget =
+                document.getElementById('timer-target');
+
+            const progressPath =
+                document.getElementById('progress-circle');
+
+
+            if (window.timerInterval) {
+                clearInterval(window.timerInterval);
+                window.timerInterval = null;
+            }
+
+
+            if (
+                data.focus_timer &&
+                data.focus_timer.is_active &&
+                data.active_task
+            ) {
+                statusText.innerText = 'Sedang Fokus';
+
+                const targetMenit =
+                    Number(data.focus_timer.target_menit || 0);
+
+                timerTarget.innerText =
+                    `Target ${targetMenit} menit`;
+
+
+                function updateDisplay() {
+                    const jamMulai =
+                        data.active_task.jam_mulai;
+
+                    const menit =
+                        Number(data.active_task.menit || targetMenit || 0);
+
+                    let startTime;
+
+                    try {
+                        const p = String(jamMulai || '').split(/[^\d]/);
+
+                        if (p.length >= 5) {
+                            startTime = new Date(
+                                parseInt(p[0]),
+                                parseInt(p[1]) - 1,
+                                parseInt(p[2]),
+                                parseInt(p[3]),
+                                parseInt(p[4]),
+                                parseInt(p[5]) || 0
+                            );
+                        } else {
+                            startTime = new Date();
+
+                            startTime.setHours(
+                                parseInt(p[0]) || 0,
+                                parseInt(p[1]) || 0,
+                                parseInt(p[2]) || 0,
+                                0
+                            );
+                        }
+
+                    } catch (e) {
+                        timerDisplay.innerText = 'Err Parse';
+                        return;
+                    }
+
+
+                    const now = new Date();
+
+                    const diffMs =
+                        now.getTime() -
+                        startTime.getTime();
+
+
+                    if (isNaN(diffMs)) {
+                        timerDisplay.innerText =
+                            'Waktu Invalid';
+
+                        return;
+                    }
+
+
+                    const detikTerpakai =
+                        Math.max(0, Math.floor(diffMs / 1000));
+
+                    const m =
+                        Math.floor(detikTerpakai / 60);
+
+                    const s =
+                        detikTerpakai % 60;
+
+
+                    timerDisplay.innerText =
+                        `${m}:${s.toString().padStart(2, '0')}`;
+
+
+                    /* Progress circle */
+                    if (progressPath && menit > 0) {
+                        const totalDetikLimit =
+                            menit * 60;
+
+                        const persen =
+                            Math.min(
+                                (detikTerpakai / totalDetikLimit) * 100,
+                                100
+                            );
+
+                        progressPath.setAttribute(
+                            'stroke-dasharray',
+                            `${persen}, 100`
+                        );
+                    }
+                }
+
+
+                updateDisplay();
+
+                window.timerInterval =
+                    setInterval(updateDisplay, 1000);
+
+            } else {
+                statusText.innerText =
+                    'Sedang Tidak Fokus';
+
+                timerDisplay.innerText =
+                    '00:00';
+
+                timerTarget.innerText =
+                    'Target 0 menit';
+
+                if (progressPath) {
+                    progressPath.setAttribute(
+                        'stroke-dasharray',
+                        '0, 100'
+                    );
+                }
+            }
+
+
+            /* ==========================================
+               TABLE
+            ========================================== */
+
+            currentData = data.tasks || [];
+            currentPage = 1;
+
+            renderTable();
+
         } catch (error) {
-            console.error("Error:", error);
+            console.error('Error loadTaskStats:', error);
         }
     }
 
-    function getPriorityBadge(priority) {
-        const map = {
-            1: { label: 'Rendah', class: 'bg-secondary-subtle text-secondary' },
-            2: { label: 'Sedang', class: 'bg-warning-subtle text-warning' },
-            3: { label: 'Tinggi', class: 'bg-danger-subtle text-danger' }
-        };
-        const p = map[priority] || { label: '-', class: 'bg-light' };
-        return `<span class="badge ${p.class}">${p.label}</span>`;
-    }
 
-    document.addEventListener('DOMContentLoaded', loadTaskStats);
-    let currentFilter = 'all';
-    function filterByStatus(status, element) {
-        // 1. Update filter global
-        currentFilter = status;
-        currentPage = 1;
-        renderTable();
+    /* ==========================================
+       ACTIVITY PAGINATION
+    ========================================== */
 
-        // 2. Hapus class 'active-filter' dari semua kartu stat
-        document.querySelectorAll('.card-stat').forEach(card => {
-            card.classList.remove('active-filter');
-        });
+    function renderActivityPage() {
+        const timeline =
+            document.getElementById('activity-timeline');
 
-        // 3. Tambahkan class hanya jika status BUKAN 'all'
-        if (status === 'all') {
-            // Hapus semua class active jika ada
-            document.querySelectorAll('.stat-card').forEach(card => card.classList.remove('active'));
-        } else {
-            // 2. Hapus class 'active' dari semua kartu
-            document.querySelectorAll('.stat-card').forEach(card => card.classList.remove('active'));
-            
-            // 3. Tambahkan class 'active' ke elemen yang diklik
-            element.classList.add('active');
-        }
-    }
-    function renderTable() {
-        const tbody = document.getElementById('task-tbody');
-        tbody.innerHTML = '';
+        if (!timeline) return;
 
-        // Filter data berdasarkan currentFilter
-        let filteredData = currentData;
-        if (currentFilter !== 'all') {
-            filteredData = currentData.filter(t => t.status == currentFilter);
-        }
+        timeline.innerHTML = '';
 
-        // CEK JIKA DATA KOSONG
-        if (filteredData.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="7" class="text-center py-4">
-                        <div class="text-muted">
-                            <i class="bi bi-inbox fs-3 d-block mb-2"></i>
-                            Tidak ada data task yang ditemukan.
-                        </div>
-                    </td>
-                </tr>`;
-            
-            // Tetap panggil renderPagination dengan 0 data agar UI pagination reset/hilang
-            renderPagination(0);
-            return; // Keluar dari fungsi
-        }
+        const start =
+            (currentActivityPage - 1) * rowsPerPage;
 
-        // Gunakan filteredData untuk paginasi jika ada data
-        const start = (currentPage - 1) * rowsPerPage;
-        const end = start + rowsPerPage;
-        const paginatedItems = filteredData.slice(start, end);
+        const end =
+            start + rowsPerPage;
 
-        paginatedItems.forEach(t => {
-            tbody.innerHTML += `<tr>
-                <td>
-                    <div class="d-flex align-items-center">
-                        <i class="bi bi-circle me-3"></i>
-                        <div>
-                            <div class="fw-bold">${t.nama_task}</div>
-                            <div class="small text-muted">${t.id_kpi != null ? t.nama_kpi : 'Tidak Termasuk KPI'}</div>
+        const paginatedItems =
+            activityData.slice(start, end);
+
+
+        if (paginatedItems.length > 0) {
+
+            paginatedItems.forEach(act => {
+
+                const time =
+                    act.time
+                        ? act.time.substring(0, 5)
+                        : '--:--';
+
+                timeline.innerHTML += `
+                    <div class="flex items-start gap-3 border-b border-zinc-100 py-3 last:border-0">
+                        <span class="w-11 shrink-0 pt-0.5 text-[10px] font-medium text-zinc-400">
+                            ${time}
+                        </span>
+
+                        <div class="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-950"></div>
+
+                        <div class="min-w-0 flex-1">
+                            <div class="truncate text-xs font-semibold text-zinc-700">
+                                ${act.desc}
+                            </div>
+
+                            <div class="mt-0.5 truncate text-[10px] text-zinc-400">
+                                ${act.email || ''}
+                            </div>
                         </div>
                     </div>
-                </td>
-                <td><small>${t.email_pic}</small></td> 
-                <td><small>${t.nama_client}</small></td> 
-                <td><small>${t.tanggal_deadline}</small></td> 
-                <td><small>${t.jam_mulai}</small></td> 
-                <td>${getPriorityBadge(t.priority)}</td>
-                <td>${getStatusBadge(t.status)}</td>
-            </tr>`;
+                `;
+            });
+
+        } else {
+
+            timeline.innerHTML = `
+                <div class="py-8 text-center text-xs italic text-zinc-400">
+                    Tidak ada aktivitas.
+                </div>
+            `;
+        }
+
+
+        const pageInfo =
+            document.getElementById('page-info');
+
+        const prev =
+            document.getElementById('prev-activity');
+
+        const next =
+            document.getElementById('next-activity');
+
+
+        if (pageInfo) {
+            pageInfo.innerText =
+                `Page ${currentActivityPage}`;
+        }
+
+        if (prev) {
+            prev.disabled =
+                currentActivityPage === 1;
+        }
+
+        if (next) {
+            next.disabled =
+                end >= activityData.length;
+        }
+    }
+
+
+    /* ==========================================
+       LOAD ACTIVE TASK
+    ========================================== */
+
+    async function loadActiveTask() {
+        const isAdmin =
+            document.getElementById('is-admin')?.value === '1';
+
+        const currentUserId =
+            document.getElementById('current-user-id')?.value;
+
+        const userSelect =
+            document.getElementById('filter-active-task-pic');
+
+        const divisiFilter =
+            document.getElementById('divisi-filter');
+
+        const activeContent =
+            document.getElementById('active-task-list');
+
+        const activeStats =
+            document.getElementById('active-task-stats');
+
+
+        if (!userSelect || !divisiFilter || !activeContent) {
+            return;
+        }
+
+
+        let userId =
+            userSelect.value;
+
+        let divisiId = 'all';
+
+
+        /*
+         * Non-admin:
+         * jika tidak memilih "Divisi Saya"
+         * dan user masih "all", tampilkan task user sendiri.
+         */
+        if (
+            divisiFilter.type === 'checkbox' &&
+            !divisiFilter.checked &&
+            !isAdmin &&
+            userId === 'all'
+        ) {
+            userId = currentUserId;
+        }
+
+
+        /*
+         * Jika filter divisi aktif dan user tertentu dipilih,
+         * reset user menjadi all.
+         */
+        if (
+            divisiFilter.type === 'checkbox' &&
+            divisiFilter.checked &&
+            userId !== 'all'
+        ) {
+            userId = 'all';
+            userSelect.value = 'all';
+        }
+
+
+        if (divisiFilter.type === 'checkbox') {
+            divisiId =
+                divisiFilter.checked
+                    ? divisiFilter.value
+                    : 'all';
+        } else {
+            divisiId =
+                divisiFilter.value;
+        }
+
+
+        try {
+            const params = new URLSearchParams({
+                user_id: userId,
+                divisi_id: divisiId
+            });
+
+            const response = await fetch(
+                `/kpi/get-active-task?${params.toString()}`
+            );
+
+            if (!response.ok) {
+                throw new Error('Gagal mengambil active task.');
+            }
+
+            const data =
+                await response.json();
+
+
+            console.log(data);
+
+
+            if (activeStats) {
+                activeStats.innerText =
+                    `Total: ${data.count || 0} Task Aktif`;
+            }
+
+
+            activeContent.innerHTML = '';
+
+
+            if (
+                data.count > 0 &&
+                data.tasks &&
+                data.tasks.length > 0
+            ) {
+
+                data.tasks.forEach(task => {
+
+                    const picName =
+                        task.pic_name || 'No PIC';
+
+                    const jamMulai =
+                        task.jam_mulai || '-';
+
+
+                    activeContent.innerHTML += `
+                        <div class="rounded-xl border border-zinc-100 bg-zinc-50/60 p-3 transition hover:bg-zinc-50">
+                            <div class="flex items-start gap-3">
+
+                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                        <rect x="4" y="5" width="16" height="14" rx="2"/>
+                                        <path stroke-linecap="round" d="M8 9h8M8 13h5"/>
+                                    </svg>
+                                </div>
+
+                                <div class="min-w-0 flex-1">
+
+                                    <div class="truncate text-xs font-semibold text-zinc-800">
+                                        ${task.nama}
+                                    </div>
+
+                                    <div class="mt-0.5 truncate text-[10px] text-zinc-400">
+                                        ${task.project}
+                                    </div>
+
+                                    <div class="mt-2 flex items-center justify-between gap-2">
+                                        <div class="flex min-w-0 items-center gap-1 text-[10px] font-medium text-zinc-600">
+                                            <svg class="h-3 w-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                                <circle cx="12" cy="8" r="3"/>
+                                                <path stroke-linecap="round" d="M5 19a7 7 0 0114 0"/>
+                                            </svg>
+
+                                            <span class="truncate">
+                                                ${picName}
+                                            </span>
+                                        </div>
+
+                                        <div class="flex shrink-0 items-center gap-1 text-[10px] font-semibold text-zinc-600">
+                                            <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                                <circle cx="12" cy="12" r="8"/>
+                                                <path stroke-linecap="round" d="M12 8v4l2.5 2"/>
+                                            </svg>
+
+                                            ${jamMulai}
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-1 text-[10px] text-zinc-400">
+                                        Mulai: ${task.mulai || '-'}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+            } else {
+
+                activeContent.innerHTML = `
+                    <div class="rounded-xl border border-dashed border-zinc-200 py-8 text-center text-xs text-zinc-400">
+                        Tidak ada task aktif.
+                    </div>
+                `;
+            }
+
+        } catch (error) {
+            console.error('Error loadActiveTask:', error);
+
+            activeContent.innerHTML = `
+                <div class="rounded-xl border border-dashed border-rose-200 bg-rose-50/50 py-6 text-center text-xs text-rose-500">
+                    Gagal memuat task aktif.
+                </div>
+            `;
+        }
+    }
+
+
+    /* ==========================================
+       FILTER BY STATUS
+    ========================================== */
+
+    function filterByStatus(status, element) {
+        currentFilter = status;
+        currentPage = 1;
+
+        document
+            .querySelectorAll('.stat-card')
+            .forEach(card => {
+                card.classList.remove(
+                    'active',
+                    'border-zinc-950',
+                    'bg-zinc-50'
+                );
+            });
+
+
+        if (status !== 'all' && element) {
+
+            element.classList.add(
+                'active',
+                'border-zinc-950',
+                'bg-zinc-50'
+            );
+        }
+
+
+        renderTable();
+    }
+
+
+    /* ==========================================
+       TABLE
+    ========================================== */
+
+    function renderTable() {
+        const tbody =
+            document.getElementById('task-tbody');
+
+        if (!tbody) return;
+
+        tbody.innerHTML = '';
+
+
+        let filteredData =
+            currentData;
+
+
+        if (currentFilter !== 'all') {
+            filteredData =
+                currentData.filter(
+                    t => t.status == currentFilter
+                );
+        }
+
+
+        if (filteredData.length === 0) {
+
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="px-5 py-12 text-center">
+                        <div class="flex flex-col items-center justify-center">
+                            <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100 text-zinc-400">
+                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                    <rect x="4" y="4" width="16" height="16" rx="2"/>
+                                    <path stroke-linecap="round" d="M8 9h8M8 13h5"/>
+                                </svg>
+                            </div>
+
+                            <div class="text-xs text-zinc-400">
+                                Tidak ada data task yang ditemukan.
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+
+            renderPagination(0);
+            return;
+        }
+
+
+        const start =
+            (currentPage - 1) * rowsPerPage;
+
+        const end =
+            start + rowsPerPage;
+
+        const paginatedItems =
+            filteredData.slice(start, end);
+
+
+        paginatedItems.forEach(t => {
+
+            tbody.innerHTML += `
+                <tr class="transition hover:bg-zinc-50/70">
+
+                    <td class="px-5 py-4">
+                        <div class="flex min-w-[220px] items-start gap-3">
+
+                            <div class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-zinc-300"></div>
+
+                            <div class="min-w-0">
+                                <div class="truncate text-xs font-semibold text-zinc-800">
+                                    ${t.nama_task}
+                                </div>
+
+                                <div class="mt-1 truncate text-[10px] text-zinc-400">
+                                    ${t.id_kpi != null
+                                        ? t.nama_kpi
+                                        : 'Tidak Termasuk KPI'}
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+
+                    <td class="px-5 py-4">
+                        <span class="text-xs text-zinc-600">
+                            ${t.email_pic || '-'}
+                        </span>
+                    </td>
+
+                    <td class="px-5 py-4">
+                        <span class="text-xs text-zinc-600">
+                            ${t.nama_client || '-'}
+                        </span>
+                    </td>
+
+                    <td class="px-5 py-4">
+                        <span class="whitespace-nowrap text-xs text-zinc-500">
+                            ${t.tanggal_deadline || '-'}
+                        </span>
+                    </td>
+
+                    <td class="px-5 py-4">
+                        <span class="whitespace-nowrap text-xs font-medium text-zinc-600">
+                            ${t.jam_mulai || '-'}
+                        </span>
+                    </td>
+
+                    <td class="px-5 py-4">
+                        ${getPriorityBadge(t.priority)}
+                    </td>
+
+                    <td class="px-5 py-4">
+                        ${getStatusBadge(t.status)}
+                    </td>
+
+                </tr>
+            `;
         });
+
 
         renderPagination(filteredData.length);
     }
 
-    // Update fungsi renderPagination agar menerima total item
+
+    /* ==========================================
+       TABLE PAGINATION
+    ========================================== */
+
     function renderPagination(totalItems) {
-        const nav = document.getElementById('pagination-controls');
-        const pageCount = Math.ceil(totalItems / rowsPerPage);
+        const nav =
+            document.getElementById('pagination-controls');
+
+        if (!nav) return;
+
+        const pageCount =
+            Math.ceil(totalItems / rowsPerPage);
+
         nav.innerHTML = '';
 
-        if (pageCount <= 1) return;
 
-        nav.innerHTML += `<button class="btn btn-sm btn-outline-primary mx-1" ${currentPage === 1 ? 'disabled' : ''} onclick="changePage(${currentPage - 1})">«</button>`;
-
-        for (let i = 1; i <= pageCount; i++) {
-            nav.innerHTML += `<button class="btn btn-sm ${currentPage === i ? 'btn-primary' : 'btn-outline-primary'} mx-1" onclick="changePage(${i})">${i}</button>`;
+        if (pageCount <= 1) {
+            return;
         }
 
-        nav.innerHTML += `<button class="btn btn-sm btn-outline-primary mx-1" ${currentPage === pageCount ? 'disabled' : ''} onclick="changePage(${currentPage + 1})">»</button>`;
+
+        const createButton = (
+            label,
+            page,
+            active = false,
+            disabled = false
+        ) => {
+
+            return `
+                <button
+                    type="button"
+                    class="mx-0.5 min-w-8 rounded-lg px-2.5 py-1.5 text-xs font-medium transition
+                    ${
+                        active
+                            ? 'bg-zinc-950 text-white'
+                            : 'border border-zinc-200 bg-white text-zinc-600 hover:border-zinc-950 hover:text-zinc-950'
+                    }
+                    ${
+                        disabled
+                            ? 'cursor-not-allowed opacity-40'
+                            : ''
+                    }"
+                    ${disabled ? 'disabled' : ''}
+                    onclick="changePage(${page})"
+                >
+                    ${label}
+                </button>
+            `;
+        };
+
+
+        nav.innerHTML += createButton(
+            '«',
+            currentPage - 1,
+            false,
+            currentPage === 1
+        );
+
+
+        for (let i = 1; i <= pageCount; i++) {
+
+            nav.innerHTML += createButton(
+                i,
+                i,
+                currentPage === i,
+                false
+            );
+        }
+
+
+        nav.innerHTML += createButton(
+            '»',
+            currentPage + 1,
+            false,
+            currentPage === pageCount
+        );
     }
+
 
     function changePage(page) {
         currentPage = page;
         renderTable();
     }
 
+
+    /* ==========================================
+       ACTIVITY PAGE
+    ========================================== */
+
     function changePageActivity(direction) {
+        const maxPage =
+            Math.max(
+                1,
+                Math.ceil(activityData.length / rowsPerPage)
+            );
+
         currentActivityPage += direction;
+
+        currentActivityPage =
+            Math.max(
+                1,
+                Math.min(
+                    currentActivityPage,
+                    maxPage
+                )
+            );
+
         renderActivityPage();
     }
-    function resetFilters() {
-        // 1. Reset nilai Select (kembalikan ke 'all')
-        const filterPic = document.getElementById('filter-pic');
-        const filterClient = document.getElementById('filter-client');
-        
-        if (filterPic) filterPic.value = 'all';
-        if (filterClient) filterClient.value = 'all';
-        
-        // 2. Reset nilai Date Picker ke hari ini
-        const now = new Date();
-        const today = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
-        
-        const dateStart = document.getElementById('dateStart');
-        const dateEnd = document.getElementById('dateEnd');
-        
-        if (dateStart) dateStart.value = today;
-        if (dateEnd) dateEnd.value = today;
 
-        // 3. Reset Filter Kartu (Visual & Data)
-        // Cari kartu "Total Task" (yang mengandung 'all')
-        const totalTaskCard = document.querySelector('[onclick*="all"]');
-        if (totalTaskCard) {
-            filterByStatus('all', null);    
+
+    /* ==========================================
+       RESET FILTER
+    ========================================== */
+
+    function resetFilters() {
+
+        const filterPic =
+            document.getElementById('filter-pic');
+
+        const filterClient =
+            document.getElementById('filter-client');
+
+        const filterDivisi =
+            document.getElementById('filter-divisi');
+
+        const filterActivity =
+            document.getElementById('filter-user-activity');
+
+        const filterTimer =
+            document.getElementById('filter-user-timer');
+
+
+        if (filterPic) {
+            filterPic.value = 'all';
+            filterPic.disabled = false;
         }
 
-        // 4. Pastikan filter PIC aktif kembali
-        if (filterPic) filterPic.disabled = false;
+        if (filterClient) {
+            filterClient.value = 'all';
+        }
 
-        // 5. Panggil kembali fungsi loadTaskStats
+        if (filterDivisi) {
+            filterDivisi.value = 'all';
+        }
+
+        if (filterActivity) {
+            filterActivity.value = 'all';
+        }
+
+        if (filterTimer) {
+            filterTimer.value = 'all';
+        }
+
+
+        const now = new Date();
+
+        const today =
+            `${now.getFullYear()}-${String(
+                now.getMonth() + 1
+            ).padStart(2, '0')}-${String(
+                now.getDate()
+            ).padStart(2, '0')}`;
+
+
+        const dateStart =
+            document.getElementById('dateStart');
+
+        const dateEnd =
+            document.getElementById('dateEnd');
+
+
+        if (dateStart) {
+            dateStart.value = today;
+        }
+
+        if (dateEnd) {
+            dateEnd.value = today;
+        }
+
+
+        /* Reset status card */
+        currentFilter = 'all';
+        currentPage = 1;
+
+        document
+            .querySelectorAll('.stat-card')
+            .forEach(card => {
+                card.classList.remove(
+                    'active',
+                    'border-zinc-950',
+                    'bg-zinc-50'
+                );
+            });
+
+
+        /* Reset active-task filter */
+        const activeDivisi =
+            document.getElementById('divisi-filter');
+
+        const activePic =
+            document.getElementById('filter-active-task-pic');
+
+
+        if (activeDivisi) {
+
+            if (activeDivisi.type === 'checkbox') {
+                activeDivisi.checked = false;
+            } else {
+                activeDivisi.value = 'all';
+            }
+        }
+
+
+        if (activePic) {
+            activePic.value = 'all';
+        }
+
+
         if (typeof loadTaskStats === 'function') {
             loadTaskStats();
         }
     }
+
+
+    /* ==========================================
+       INITIAL LOAD
+    ========================================== */
+
+    document.addEventListener(
+        'DOMContentLoaded',
+        function () {
+            /*
+             * window.onload juga memanggil loadTaskStats.
+             * Tidak perlu memanggilnya dua kali.
+             */
+        }
+    );
 </script>
 @endsection

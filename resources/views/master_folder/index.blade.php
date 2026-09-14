@@ -1,238 +1,43 @@
 @extends('layout.app')
-
 @section('content')
-<style>
-    .folder-card { transition: all .3s cubic-bezier(.25,.8,.25,1); text-decoration: none !important; }
-    .folder-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,.1) !important; }
-    .folder-icon { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 12px; background: #fff4d6; color: #f6c23e; font-size: 1.35rem; }
-    .role-option { border: 1px solid #e3e6f0; border-radius: .4rem; padding: .65rem .75rem; }
-</style>
-
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
-    <div>
-        <h1 class="h4 text-gray-800 font-weight-bold mb-0">{{ $title }}</h1>
-        <p class="text-muted small mb-0 font-italic">Folder hanya tampil untuk jabatan yang diberi akses.</p>
-    </div>
-    <div class="mt-3 mt-md-0 d-flex flex-wrap align-items-center">
-        <form method="GET" action="{{ route('master-folder.index') }}" class="d-flex mr-2">
-            <select name="division_id" class="form-control form-control-sm" onchange="this.form.submit()" aria-label="Filter divisi utama">
-                <option value="">Semua Divisi</option>
-                @foreach($divisions as $division)
-                    <option value="{{ $division->id }}" @selected((int) $selectedDivisionId === (int) $division->id)>{{ $division->name }}</option>
-                @endforeach
-            </select>
-        </form>
-        @if($isSuperAdmin)
-            <button class="btn btn-primary btn-sm shadow-sm px-3 py-2" data-toggle="modal" data-target="#createFolderModal">
-                <i class="fas fa-folder-plus mr-1"></i> Folder Baru
-            </button>
-        @endif
-    </div>
-</div>
-
-<div class="row">
-    @forelse($folders as $folder)
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="folder-card card shadow-sm border-0 border-left-warning h-100">
-                <a href="{{ route('master-folder.show', $folder) }}" class="text-decoration-none">
-                <div class="card-body py-3">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div class="folder-icon"><i class="fas fa-folder-open"></i></div>
-                        <span class="badge badge-light border text-muted">{{ $folder->division->name ?? 'Divisi belum ditentukan' }}</span>
-                    </div>
-                    <h6 class="font-weight-bold text-gray-800 mb-1 text-truncate" title="{{ $folder->name }}">{{ $folder->name }}</h6>
-                    <p class="small text-muted mb-3" style="min-height: 38px;">
-                        {{ \Illuminate\Support\Str::limit($folder->description ?: 'Tanpa deskripsi', 70) }}
-                    </p>
-                    <hr class="my-2" style="border-top: 1px dashed #e3e6f0;">
-                    <div class="d-flex justify-content-between align-items-center mt-2">
-                        <span class="small text-muted"><i class="fas fa-file mr-1"></i>{{ $folder->files_count }} file</span>
-                        <span class="small text-primary">Buka <i class="fas fa-arrow-right ml-1"></i></span>
-                    </div>
-                    @if($isSuperAdmin)
-                    <div class="mt-2">
-                        @foreach($folder->roles->take(3) as $role)
-                            <span class="badge badge-primary mr-1">{{ $role->role_name }} &middot; {{ $role->division->name ?? '-' }}</span>
-                        @endforeach
-                        @if($folder->roles->count() > 3)<span class="small text-muted">+{{ $folder->roles->count() - 3 }}</span>@endif
-                    </div>
-                    @endif
-                </div>
-                </a>
-                @if($isSuperAdmin)
-                <div class="card-footer bg-white border-0 pt-0 d-flex">
-                    <button type="button" class="btn btn-sm btn-outline-primary flex-fill mr-2" data-toggle="modal" data-target="#editFolderModal{{ $folder->id }}">
-                        <i class="fas fa-edit mr-1"></i>Edit
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-danger flex-fill" data-toggle="modal" data-target="#deleteFolderModal{{ $folder->id }}">
-                        <i class="fas fa-trash mr-1"></i>Hapus
-                    </button>
-                </div>
-                @endif
-            </div>
-        </div>
-
-        @if($isSuperAdmin)
-        <div class="modal fade" id="editFolderModal{{ $folder->id }}" tabindex="-1" role="dialog" aria-hidden="true">
-            <div class="modal-dialog modal-lg" role="document">
-                <form method="POST" action="{{ route('master-folder.update', $folder) }}" class="modal-content">
-                    @csrf
-                    @method('PUT')
-                    <input type="hidden" name="edit_folder_id" value="{{ $folder->id }}">
-                    <div class="modal-header">
-                        <h5 class="modal-title font-weight-bold"><i class="fas fa-edit text-primary mr-2"></i>Edit Folder</h5>
-                        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="form-group">
-                            <label for="edit-folder-name-{{ $folder->id }}" class="font-weight-bold">Nama Folder <span class="text-danger">*</span></label>
-                            <input id="edit-folder-name-{{ $folder->id }}" name="name" value="{{ (int) old('edit_folder_id') === $folder->id ? old('name') : $folder->name }}" class="form-control" maxlength="150" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="edit-folder-description-{{ $folder->id }}" class="font-weight-bold">Deskripsi</label>
-                            <textarea id="edit-folder-description-{{ $folder->id }}" name="description" class="form-control" rows="3" maxlength="1000">{{ (int) old('edit_folder_id') === $folder->id ? old('description') : $folder->description }}</textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="edit-folder-division-{{ $folder->id }}" class="font-weight-bold">Divisi Utama <span class="text-danger">*</span></label>
-                            <select id="edit-folder-division-{{ $folder->id }}" name="division_id" class="form-control" required>
-                                <option value="">Pilih divisi utama</option>
-                                @foreach($divisions as $division)
-                                    <option value="{{ $division->id }}" @selected((int) ((int) old('edit_folder_id') === $folder->id ? old('division_id') : $folder->division_id) === (int) $division->id)>{{ $division->name }}</option>
-                                @endforeach
-                            </select>
-                            <small class="form-text text-muted">Hanya digunakan untuk pengelompokan dan filter folder.</small>
-                        </div>
-                        <div class="form-group mb-0">
-                            <label class="font-weight-bold">Role yang Dapat Melihat <span class="text-danger">*</span></label>
-                            <p class="small text-muted">Pilih jabatan dari divisi pemilik maupun divisi lain.</p>
-                            @php
-                                $editRoleIds = (int) old('edit_folder_id') === $folder->id
-                                    ? old('role_ids', [])
-                                    : $folder->roles->pluck('id')->all();
-                            @endphp
-                            @foreach($rolesByDivision as $divisionId => $divisionRoles)
-                                <div class="border rounded p-3 mb-3">
-                                    <div class="small font-weight-bold text-primary text-uppercase mb-2">{{ $divisionRoles->first()->division->name ?? 'Divisi' }}</div>
-                                    <div class="row">
-                                        @foreach($divisionRoles as $role)
-                                            <div class="col-md-6 mb-2">
-                                                <label class="role-option d-flex align-items-center mb-0 w-100">
-                                                    <input type="checkbox" name="role_ids[]" value="{{ $role->id }}" class="mr-2" @checked(in_array($role->id, $editRoleIds))>
-                                                    <span>{{ $role->role_name }}</span>
-                                                </label>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-light border" data-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-1"></i>Simpan Perubahan</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-        @endif
-
-        <div class="modal fade" id="deleteFolderModal{{ $folder->id }}" tabindex="-1" role="dialog" aria-hidden="true">
-            <div class="modal-dialog" role="document">
-                <form method="POST" action="{{ route('master-folder.destroy', $folder) }}" class="modal-content">
-                    @csrf
-                    @method('DELETE')
-                    <div class="modal-header">
-                        <h5 class="modal-title font-weight-bold text-danger"><i class="fas fa-exclamation-triangle mr-2"></i>Hapus Folder</h5>
-                        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
-                    </div>
-                    <div class="modal-body">
-                        <p>Yakin ingin menghapus folder <strong>{{ $folder->name }}</strong>?</p>
-                        <div class="alert alert-warning mb-0 small">Seluruh {{ $folder->files_count }} file di dalam folder ini juga akan dihapus dan tidak dapat dipulihkan.</div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-light border" data-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-danger"><i class="fas fa-trash mr-1"></i>Ya, Hapus Folder</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    @empty
-        <div class="col-12">
-            <div class="card shadow-sm border-0 text-center py-5">
-                <div class="card-body text-muted">
-                    <i class="fas fa-folder-open fa-3x text-warning mb-3"></i>
-                    <h6 class="font-weight-bold text-gray-700">Belum ada folder yang dapat Anda lihat</h6>
-                    <p class="small mb-0">{{ $isSuperAdmin ? 'Buat folder baru untuk memulai.' : 'Admin belum memberikan akses folder kepada jabatan Anda.' }}</p>
-                </div>
-            </div>
-        </div>
-    @endforelse
-</div>
+<main class="min-h-screen bg-[#f5f5f3] px-4 py-5 sm:px-6 lg:px-8">
+ <div class="mx-auto max-w-[1600px] space-y-5">
+  <header class="relative overflow-hidden rounded-[28px] bg-zinc-950 px-6 py-8 text-white shadow-xl shadow-zinc-950/10 sm:px-9">
+   <div class="absolute -right-20 -top-24 h-72 w-72 rounded-full bg-lime-300/10 blur-3xl"></div>
+   <div class="relative flex flex-wrap items-end justify-between gap-5"><div><p class="text-[11px] font-bold uppercase tracking-[.24em] text-lime-300">Lighter Media Group · Shared Library</p><h1 class="mt-3 text-3xl font-semibold tracking-tight">Folder Master</h1><p class="mt-2 text-sm text-zinc-400">Dokumen terpusat dengan akses berdasarkan divisi dan jabatan.</p></div>@if($isSuperAdmin)<button type="button" data-open="create-folder" class="rounded-xl bg-lime-300 px-5 py-2.5 text-sm font-bold text-zinc-950 transition hover:bg-lime-200">＋ Folder Baru</button>@endif</div>
+  </header>
+  @if(session('success'))<div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">{{ session('success') }}</div>@endif
+  @if($errors->any())<div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800"><strong>Data belum dapat disimpan.</strong><ul class="mt-1 list-disc pl-5">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
+  <form method="GET" action="{{ route('master-folder.index') }}" class="flex flex-wrap items-end gap-3 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+   <label class="min-w-64 flex-1"><span class="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-zinc-500">Filter divisi</span><select name="division_id" class="w-full rounded-xl border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm focus:border-zinc-900 focus:ring-zinc-900" onchange="this.form.submit()"><option value="">Semua Divisi</option>@foreach($divisions as $division)<option value="{{ $division->id }}" @selected((int)$selectedDivisionId===(int)$division->id)>{{ $division->name }}</option>@endforeach</select></label>
+   @if($selectedDivisionId)<a href="{{ route('master-folder.index') }}" class="rounded-xl border border-zinc-200 px-4 py-2.5 text-sm font-semibold text-zinc-600">Reset</a>@endif
+  </form>
+  <div><p class="text-xs font-bold uppercase tracking-[.18em] text-zinc-400">Direktori bersama</p><h2 class="mt-1 text-xl font-semibold text-zinc-950">{{ $folders->count() }} folder tersedia</h2></div>
+  <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+   @forelse($folders as $folder)
+   <article class="flex min-h-64 flex-col rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-zinc-950/5">
+    <div class="flex items-start justify-between gap-3"><div class="grid h-12 w-12 place-items-center rounded-2xl bg-lime-100 text-lime-800"><svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg></div><span class="rounded-full bg-zinc-100 px-2.5 py-1 text-[10px] font-bold text-zinc-600">{{ $folder->division->name ?? 'Tanpa divisi' }}</span></div>
+    <a href="{{ route('master-folder.show',$folder) }}" class="mt-5"><h3 class="truncate text-base font-semibold text-zinc-950">{{ $folder->name }}</h3><p class="mt-2 min-h-10 text-sm leading-5 text-zinc-500">{{ Illuminate\Support\Str::limit($folder->description ?: 'Tanpa deskripsi',90) }}</p></a>
+    @if($isSuperAdmin)<div class="mt-3 flex flex-wrap gap-1">@foreach($folder->roles->take(3) as $role)<span class="rounded-full border border-zinc-200 px-2 py-1 text-[9px] font-bold text-zinc-500">{{ $role->role_name }}</span>@endforeach @if($folder->roles->count()>3)<span class="px-1 py-1 text-[10px] text-zinc-400">+{{ $folder->roles->count()-3 }}</span>@endif</div>@endif
+    <div class="mt-auto flex items-center justify-between border-t border-zinc-100 pt-4"><a href="{{ route('master-folder.show',$folder) }}" class="text-xs font-bold text-zinc-500 hover:text-zinc-950">{{ $folder->files_count }} file →</a>@if($isSuperAdmin)<div class="flex gap-1"><button type="button" data-open="edit-folder-{{ $folder->id }}" class="rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs font-bold text-amber-700">Edit</button><form method="POST" action="{{ route('master-folder.destroy',$folder) }}" onsubmit="return confirm('Hapus folder dan seluruh file di dalamnya?')">@csrf @method('DELETE')<button class="rounded-lg bg-rose-50 px-2.5 py-1.5 text-xs font-bold text-rose-700">Hapus</button></form></div>@endif</div>
+   </article>
+   @empty<div class="col-span-full rounded-3xl border border-dashed border-zinc-300 bg-white px-6 py-16 text-center"><div class="mx-auto h-14 w-14 rounded-2xl bg-zinc-100"></div><h3 class="mt-4 font-semibold">Belum ada folder</h3><p class="mt-1 text-sm text-zinc-500">{{ $isSuperAdmin ? 'Buat folder baru untuk memulai.' : 'Belum ada folder yang diberikan untuk jabatan Anda.' }}</p></div>@endforelse
+  </section>
+ </div>
+</main>
 
 @if($isSuperAdmin)
-<div class="modal fade" id="createFolderModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-        <form method="POST" action="{{ route('master-folder.store') }}" class="modal-content">
-            @csrf
-            <div class="modal-header">
-                <h5 class="modal-title font-weight-bold"><i class="fas fa-folder-plus text-warning mr-2"></i>Buat Folder Baru</h5>
-                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="folder-name" class="font-weight-bold">Nama Folder <span class="text-danger">*</span></label>
-                    <input id="folder-name" name="name" value="{{ old('name') }}" class="form-control" maxlength="150" required placeholder="Contoh: SOP Divisi">
-                </div>
-                <div class="form-group">
-                    <label for="folder-description" class="font-weight-bold">Deskripsi</label>
-                    <textarea id="folder-description" name="description" class="form-control" rows="3" maxlength="1000" placeholder="Jelaskan isi folder secara singkat">{{ old('description') }}</textarea>
-                </div>
-                <div class="form-group">
-                    <label for="folder-division" class="font-weight-bold">Divisi Utama <span class="text-danger">*</span></label>
-                    <select id="folder-division" name="division_id" class="form-control" required>
-                        <option value="">Pilih divisi utama</option>
-                        @foreach($divisions as $division)
-                            <option value="{{ $division->id }}" @selected((int) old('division_id') === (int) $division->id)>{{ $division->name }}</option>
-                        @endforeach
-                    </select>
-                    <small class="form-text text-muted">Divisi utama hanya untuk pengelompokan. Role dari divisi lain tetap dapat diberi akses.</small>
-                </div>
-                <div class="form-group mb-0">
-                    <label class="font-weight-bold">Role yang Dapat Melihat <span class="text-danger">*</span></label>
-                    <p class="small text-muted">Pilih jabatan dari divisi mana pun yang dapat melihat folder ini.</p>
-                    @foreach($rolesByDivision as $divisionId => $divisionRoles)
-                        <div class="border rounded p-3 mb-3">
-                            <div class="small font-weight-bold text-primary text-uppercase mb-2">{{ $divisionRoles->first()->division->name ?? 'Divisi' }}</div>
-                            <div class="row">
-                                @foreach($divisionRoles as $role)
-                                    <div class="col-md-6 mb-2">
-                                        <label class="role-option d-flex align-items-center mb-0 w-100">
-                                            <input type="checkbox" name="role_ids[]" value="{{ $role->id }}" class="mr-2" @checked(in_array($role->id, old('role_ids', [])))>
-                                            <span>{{ $role->role_name }}</span>
-                                        </label>
-                                    </div>
-                                @endforeach
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-light border" data-dismiss="modal">Batal</button>
-                <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-1"></i>Simpan Folder</button>
-            </div>
-        </form>
-    </div>
-</div>
+<div id="create-folder" class="lmg-modal fixed inset-0 z-[100] hidden items-center justify-center bg-zinc-950/60 p-4 backdrop-blur-sm"><form method="POST" action="{{ route('master-folder.store') }}" class="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white shadow-2xl">@csrf
+ <div class="sticky top-0 flex items-center justify-between border-b border-zinc-100 bg-white px-6 py-5"><h3 class="text-xl font-semibold">Buat Folder Baru</h3><button type="button" data-close class="rounded-xl bg-zinc-100 px-3 py-2">✕</button></div>
+ <div class="space-y-4 p-6"><label class="block"><span class="lmg-label">Nama folder</span><input name="name" value="{{ old('name') }}" maxlength="150" required class="lmg-input"></label><label class="block"><span class="lmg-label">Deskripsi</span><textarea name="description" rows="3" class="lmg-input">{{ old('description') }}</textarea></label><label class="block"><span class="lmg-label">Divisi utama</span><select name="division_id" required class="lmg-input"><option value="">Pilih divisi</option>@foreach($divisions as $division)<option value="{{ $division->id }}" @selected((int)old('division_id')===(int)$division->id)>{{ $division->name }}</option>@endforeach</select></label><div><span class="lmg-label">Role yang dapat melihat</span><div class="mt-2 grid gap-3 sm:grid-cols-2">@foreach($rolesByDivision as $divisionRoles) @foreach($divisionRoles as $role)<label class="flex items-center gap-2 rounded-xl border border-zinc-200 p-3 text-sm"><input type="checkbox" name="role_ids[]" value="{{ $role->id }}" @checked(in_array($role->id,old('role_ids',[]))) class="rounded border-zinc-300 text-zinc-950 focus:ring-zinc-900"><span>{{ $role->role_name }} <small class="block text-zinc-400">{{ $role->division->name ?? '-' }}</small></span></label>@endforeach @endforeach</div></div></div>
+ <div class="sticky bottom-0 flex justify-end gap-2 border-t bg-zinc-50 px-6 py-4"><button type="button" data-close class="rounded-xl border px-4 py-2.5 text-sm font-semibold">Batal</button><button class="rounded-xl bg-zinc-950 px-5 py-2.5 text-sm font-bold text-white">Simpan Folder</button></div>
+</form></div>
+@foreach($folders as $folder)
+<div id="edit-folder-{{ $folder->id }}" class="lmg-modal fixed inset-0 z-[100] hidden items-center justify-center bg-zinc-950/60 p-4 backdrop-blur-sm"><form method="POST" action="{{ route('master-folder.update',$folder) }}" class="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white shadow-2xl">@csrf @method('PUT')
+ <div class="sticky top-0 flex items-center justify-between border-b bg-white px-6 py-5"><h3 class="text-xl font-semibold">Edit Folder</h3><button type="button" data-close class="rounded-xl bg-zinc-100 px-3 py-2">✕</button></div><div class="space-y-4 p-6"><label class="block"><span class="lmg-label">Nama folder</span><input name="name" value="{{ $folder->name }}" required class="lmg-input"></label><label class="block"><span class="lmg-label">Deskripsi</span><textarea name="description" rows="3" class="lmg-input">{{ $folder->description }}</textarea></label><label class="block"><span class="lmg-label">Divisi utama</span><select name="division_id" required class="lmg-input">@foreach($divisions as $division)<option value="{{ $division->id }}" @selected($folder->division_id===$division->id)>{{ $division->name }}</option>@endforeach</select></label><div><span class="lmg-label">Role yang dapat melihat</span><div class="mt-2 grid gap-3 sm:grid-cols-2">@foreach($rolesByDivision as $divisionRoles) @foreach($divisionRoles as $role)<label class="flex items-center gap-2 rounded-xl border border-zinc-200 p-3 text-sm"><input type="checkbox" name="role_ids[]" value="{{ $role->id }}" @checked($folder->roles->contains('id',$role->id)) class="rounded"><span>{{ $role->role_name }} <small class="block text-zinc-400">{{ $role->division->name ?? '-' }}</small></span></label>@endforeach @endforeach</div></div></div><div class="sticky bottom-0 flex justify-end gap-2 border-t bg-zinc-50 px-6 py-4"><button type="button" data-close class="rounded-xl border px-4 py-2.5 text-sm font-semibold">Batal</button><button class="rounded-xl bg-zinc-950 px-5 py-2.5 text-sm font-bold text-white">Simpan Perubahan</button></div>
+</form></div>
+@endforeach
 @endif
-
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    @if($isSuperAdmin && $errors->any() && old('edit_folder_id'))
-        $('#editFolderModal{{ (int) old('edit_folder_id') }}').modal('show');
-    @elseif($isSuperAdmin && $errors->any())
-        $('#createFolderModal').modal('show');
-    @endif
-});
-</script>
+<style>.lmg-label{margin-bottom:.375rem;display:block;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#71717a}.lmg-input{width:100%;border-radius:.75rem;border:1px solid #e4e4e7;background:#fafafa;padding:.65rem .75rem;font-size:.875rem}.lmg-input:focus{border-color:#18181b;outline:none;box-shadow:0 0 0 1px #18181b}</style>
+<script>document.addEventListener('DOMContentLoaded',()=>{const close=m=>{m.classList.add('hidden');m.classList.remove('flex');document.body.style.overflow=''};document.addEventListener('click',e=>{const opener=e.target.closest('[data-open]');if(opener){const modal=document.getElementById(opener.dataset.open);modal?.classList.remove('hidden');modal?.classList.add('flex');document.body.style.overflow='hidden'}const closer=e.target.closest('[data-close]');if(closer)close(closer.closest('.lmg-modal'));if(e.target.classList.contains('lmg-modal'))close(e.target)})});</script>
 @endsection

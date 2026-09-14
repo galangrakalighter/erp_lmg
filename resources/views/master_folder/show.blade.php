@@ -1,6 +1,8 @@
 @extends('layout.app')
 
 @section('content')
+<div class="lmg-master-page">
+@include('partials.lmg_legacy_workspace')
 <style>
     #masterPdfViewer { position:fixed; inset:0; width:100%; height:100%; background:#f2f3f5; z-index:99999; display:none; }
     .master-pdf-header { height:65px; background:#fff; display:flex; align-items:center; justify-content:space-between; gap:20px; padding:0 25px; border-bottom:1px solid #ddd; }
@@ -2488,4 +2490,5 @@
         }
     );
 </script>
+</div>
 @endsection

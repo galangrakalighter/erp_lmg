@@ -12,11 +12,11 @@ class KPIController extends Controller
 
         // 1. Base Query (Filter User/Project saja, TANPA filter tanggal)
         if ($isAdmin) {
-            if ($request->filled('user_id')) {
+            if ($request->filled('user_id') && $request->user_id !== 'all') {
                 $baseQuery = \App\Models\KPI::whereHas('pics', function($q) use ($request) {
                     $q->where('user_id', $request->user_id);
                 });
-            } else if($request->filled('divisi_id')){
+            } else if ($request->filled('divisi_id') && $request->divisi_id !== 'all') {
                 $baseQuery = \App\Models\KPI::whereHas('pics', function($q) use ($request) {
                     $q->where('divisi', $request->divisi_id);
                 });
@@ -31,7 +31,7 @@ class KPIController extends Controller
 
             $baseQuery = \App\Models\KPI::where(function($q) use ($request, $userDivisions) {
                 // Kondisi A: Jika ada filter user_id dari request, pakai itu
-                if ($request->filled('user_id')) {
+                if ($request->filled('user_id') && $request->user_id !== 'all') {
                     $q->whereHas('pics', function($sub) use ($request) {
                         $sub->where('user_id', $request->user_id);
                     });
@@ -44,14 +44,20 @@ class KPIController extends Controller
                 }
             });
         }
-        if ($request->filled('project_id')) {
+        if ($request->filled('project_id') && $request->project_id !== 'all') {
             $baseQuery->where('project', $request->project_id);
         }
 
         // 2. Query untuk Statistik Berdasarkan Rentang Tanggal (Filter Start & End)
         $filteredQuery = (clone $baseQuery);
-        if ($request->filled('start_date')) $filteredQuery->where('tanggal_mulai', '>=', $request->start_date);
-        if ($request->filled('end_date')) $filteredQuery->where('tanggal_deadline', '<=', $request->end_date);
+        // Ambil KPI yang masa berjalannya beririsan dengan periode filter.
+        if ($request->filled('start_date')) {
+            $filteredQuery->whereDate('tanggal_deadline', '>=', $request->start_date);
+        }
+
+        if ($request->filled('end_date')) {
+            $filteredQuery->whereDate('tanggal_mulai', '<=', $request->end_date);
+        }
 
         $total = (clone $filteredQuery)->count();
         $selesai = (clone $filteredQuery)->where('status', 1)->count(); 

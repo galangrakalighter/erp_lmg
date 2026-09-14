@@ -1,6 +1,8 @@
 @extends('layout.app')
 
 @section('content')
+<div class="lmg-master-page">
+@include('partials.lmg_legacy_workspace')
 <style>
     .personal-folder-card { transition:all .25s ease; text-decoration:none!important; }
     .personal-folder-card:hover { transform:translateY(-4px); box-shadow:0 10px 20px rgba(0,0,0,.1)!important; }
@@ -38,5 +40,6 @@
             <p class="small mb-0">Folder akan muncul otomatis setelah admin memberikan akses.</p>
         </div></div></div>
     @endforelse
+</div>
 </div>
 @endsection

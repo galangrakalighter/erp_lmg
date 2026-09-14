@@ -22,6 +22,8 @@ class HCDailyController extends Controller
      */
     public function index()
     {
+        return view('hc.dailywork', ['title' => 'Daily Work']);
+
         $title = "Daily Schedule";
         $today = Carbon::today();
         $user = Auth::user();
@@ -234,6 +236,182 @@ class HCDailyController extends Controller
         }
 
         return view('hc.dailywork', compact('title', 'unscheduled_tasks', 'scheduled_tasks', 'myRole','priority_colors', 'startHour','totalHours','formatTotalPool', 'subordinateTasks', 'result', 'prioritas', 'produk'));
+    }
+
+    public function dailyWorkData(Request $request)
+    {
+        $currentUser = Auth::user();
+        if (!$currentUser) {
+            return response()->json(['message' => 'Sesi login sudah berakhir. Silakan login kembali.'], 401);
+        }
+
+        $today = Carbon::today();
+        $visibleUserIds = collect([$currentUser->id]);
+
+        if ($currentUser->isAdmin) {
+            $visibleUserIds = User::pluck('id');
+        } else {
+            $visibleUserIds = $visibleUserIds->merge(
+                DB::table('user_division')->where('parent_id', $currentUser->id)->pluck('user_id')
+            );
+        }
+
+        $visibleUserIds = $visibleUserIds->map(fn ($id) => (int) $id)->unique()->values();
+        $selectedUserId = (int) $request->query('user_id', $currentUser->id);
+        if (!$visibleUserIds->contains($selectedUserId)) {
+            $selectedUserId = (int) $currentUser->id;
+        }
+
+        $tasks = Task::query()
+            ->leftJoin('users', 'users.id', '=', 'task.pic')
+            ->leftJoin('produk_client', 'produk_client.id', '=', 'task.project')
+            ->leftJoin('kpi', 'kpi.id', '=', 'task.id_kpi')
+            ->where('task.pic', $selectedUserId)
+            ->where(function ($query) use ($today) {
+                $query->where(function ($scheduled) use ($today) {
+                    $scheduled->whereNotNull('task.jam_mulai')
+                        ->where(function ($scheduledToday) use ($today) {
+                            $scheduledToday->where(function ($activeToday) use ($today) {
+                                $activeToday->whereDate('task.tanggal_mulai', $today)
+                                    ->whereNotIn('task.status', [4, 5]);
+                            })->orWhere(function ($approvedToday) use ($today) {
+                                $approvedToday->where('task.status', 4)
+                                    ->whereDate('task.tanggal_approve', $today);
+                            })->orWhere(function ($splitToday) use ($today) {
+                                $splitToday->where('task.status', 5)
+                                    ->whereDate('task.tanggal_split', $today);
+                            });
+                        });
+                })->orWhere(function ($pool) use ($today) {
+                    $pool->whereNull('task.jam_mulai')
+                        ->whereNotIn('task.status', [4, 5])
+                        ->where(function ($available) use ($today) {
+                            $available->where(function ($range) use ($today) {
+                                $range->whereDate('task.tanggal_mulai', '<=', $today)
+                                    ->whereDate('task.tanggal_deadline', '>=', $today);
+                            })->orWhereDate('task.tanggal_deadline', '<', $today);
+                        });
+                    });
+            })
+            ->select('task.*', 'users.email as pic_email',
+                'produk_client.nama as project_name', 'kpi.nama_kpi as kpi_name')
+            ->orderByRaw('task.jam_mulai IS NULL DESC')
+            ->orderBy('task.jam_mulai')
+            ->orderByDesc('task.priority')
+            ->get()
+            ->map(function ($task) use ($today) {
+                $labels = [0 => 'Belum dimulai', 1 => 'Sedang dikerjakan', 2 => 'Perlu revisi',
+                    3 => 'Menunggu persetujuan', 4 => 'Selesai', 5 => 'Dipecah',
+                    7 => 'Terlambat', 8 => 'Waktu habis', 9 => 'Menunggu persetujuan'];
+
+                return [
+                    'id' => $task->id,
+                    'name' => $task->nama_task,
+                    'project_id' => (int) $task->project,
+                    'division_id' => (int) $task->divisi,
+                    'kpi_id' => $task->id_kpi ? (int) $task->id_kpi : null,
+                    'pic_id' => (int) $task->pic,
+                    'project' => $task->project_name ?: 'Tanpa project',
+                    'pic' => $task->pic_email ?: 'Belum ditentukan',
+                    'priority' => (int) $task->priority,
+                    'minutes' => (int) $task->menit,
+                    'start_time' => $task->jam_mulai ? substr($task->jam_mulai, 0, 5) : null,
+                    'start_date' => $task->tanggal_mulai,
+                    'deadline' => $task->tanggal_deadline,
+                    'status' => (int) $task->status,
+                    'status_label' => $labels[(int) $task->status] ?? 'Tidak diketahui',
+                    'note' => $task->note,
+                    'jira' => $task->jira,
+                    'kpi' => $task->kpi_name,
+                    'is_overdue' => $task->tanggal_deadline
+                        && Carbon::parse($task->tanggal_deadline)->lt($today)
+                        && !in_array((int) $task->status, [4, 5]),
+                ];
+            });
+
+        $people = User::whereIn('id', $visibleUserIds)->select('id', 'email')
+            ->orderBy('email')->get()->map(fn ($user) => [
+                'id' => $user->id,
+                'email' => $user->email,
+            ]);
+
+        return response()->json([
+            'date' => $today->toDateString(),
+            'current_user' => ['id' => $currentUser->id, 'is_admin' => (bool) $currentUser->isAdmin],
+            'selected_user_id' => $selectedUserId,
+            'people' => $people,
+            'projects' => ProdukClient::select('id', 'nama')->orderBy('nama')->get(),
+            'divisions' => Division::select('id', 'name')->orderBy('name')->get(),
+            'kpis' => KPI::select('id', 'nama_kpi')->orderBy('nama_kpi')->get(),
+            'tasks' => $tasks,
+            'summary' => [
+                'scheduled' => $tasks->whereNotNull('start_time')->count(),
+                'pool' => $tasks->whereNull('start_time')->count(),
+                'running' => $tasks->where('status', 1)->count(),
+                'approval' => $tasks->whereIn('status', [3, 9])->count(),
+                'pool_minutes' => $tasks->whereNull('start_time')->sum('minutes'),
+            ],
+        ]);
+    }
+
+    public function storeTaskApi(Request $request)
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:255', 'project_id' => 'required|integer|exists:produk_client,id',
+            'division_id' => 'required|integer|exists:divisions,id', 'pic_id' => 'required|integer|exists:users,id',
+            'priority' => 'required|integer|between:1,3', 'minutes' => 'required|integer|min:1|max:1440',
+            'start_date' => 'required|date', 'deadline' => 'required|date|after_or_equal:start_date',
+            'start_time' => 'nullable|date_format:H:i', 'kpi_id' => 'nullable|integer|exists:kpi,id',
+            'note' => 'nullable|string', 'jira' => 'nullable|string|max:1000',
+        ]);
+
+        $task = Task::create($this->mapApiTask($data));
+        return response()->json(['message' => 'Task berhasil ditambahkan.', 'id' => $task->id], 201);
+    }
+
+    public function updateTaskApi(Request $request, Task $task)
+    {
+        if ((int) $task->status !== 0) {
+            return response()->json([
+                'message' => 'Task yang sudah dimulai atau diproses tidak dapat diedit.',
+            ], 422);
+        }
+
+        $data = $request->validate([
+            'name' => 'required|string|max:255', 'project_id' => 'required|integer|exists:produk_client,id',
+            'division_id' => 'required|integer|exists:divisions,id', 'pic_id' => 'required|integer|exists:users,id',
+            'priority' => 'required|integer|between:1,3', 'minutes' => 'required|integer|min:1|max:1440',
+            'start_date' => 'required|date', 'deadline' => 'required|date|after_or_equal:start_date',
+            'start_time' => 'nullable|date_format:H:i', 'kpi_id' => 'nullable|integer|exists:kpi,id',
+            'note' => 'nullable|string', 'jira' => 'nullable|string|max:1000',
+        ]);
+        $task->update($this->mapApiTask($data, false));
+        return response()->json(['message' => 'Task berhasil diperbarui.']);
+    }
+
+    public function deleteTaskApi(Task $task)
+    {
+        if ((int) $task->status !== 0) {
+            return response()->json([
+                'message' => 'Task yang sudah dimulai atau diproses tidak dapat dihapus.',
+            ], 422);
+        }
+
+        $task->delete();
+        return response()->json(['message' => 'Task berhasil dihapus.']);
+    }
+
+    private function mapApiTask(array $data, bool $includeStatus = true): array
+    {
+        $mapped = [
+            'nama_task' => $data['name'], 'project' => $data['project_id'], 'divisi' => $data['division_id'],
+            'pic' => $data['pic_id'], 'priority' => $data['priority'], 'menit' => $data['minutes'],
+            'tanggal_mulai' => $data['start_date'], 'tanggal_deadline' => $data['deadline'],
+            'jam_mulai' => $data['start_time'] ?? null, 'id_kpi' => $data['kpi_id'] ?? null,
+            'note' => $data['note'] ?? null, 'jira' => $data['jira'] ?? null,
+        ];
+        if ($includeStatus) $mapped['status'] = 0;
+        return $mapped;
     }
 
     public function updateSchedule(Request $request)

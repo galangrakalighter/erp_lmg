@@ -13,8 +13,16 @@ class FilePdf extends Model
         'client',
         'location',
         'editor_content',
-        'is_generated_document'
+        'is_generated_document',
+        'is_system_template',
+        'is_pinned',
+        'pin_order',
     ];
 
-    protected $casts = ['is_generated_document' => 'boolean'];
+    protected $casts = [
+        'is_generated_document' => 'boolean',
+        'is_system_template' => 'boolean',
+        'is_pinned' => 'boolean',
+        'pin_order' => 'integer',
+    ];
 }

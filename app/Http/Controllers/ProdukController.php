@@ -11,7 +11,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Models\Task;
+use App\Models\FilePdf;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Storage;
 
 class ProdukController extends Controller
 {
@@ -240,6 +243,8 @@ class ProdukController extends Controller
                 'created_at'   => now(),
                 'updated_at'   => now(),
             ]);
+
+            $this->ensureDefaultClientDocuments($produk);
 
             DB::commit();
 
@@ -655,6 +660,8 @@ class ProdukController extends Controller
                 'updated_at' => now(),
             ]);
 
+            $this->ensureDefaultClientDocuments($produk);
+
             return response()->json([
                 'success' => $isExistingClient
                     ? 'Client sudah tersedia. Divisi dan tim berhasil ditambahkan.'
@@ -663,6 +670,53 @@ class ProdukController extends Controller
                 'existing_client' => $isExistingClient,
             ]);
         });
+    }
+
+    private function ensureDefaultClientDocuments(ProdukClient $client): void
+    {
+        $documents = [
+            'Contract Status.pdf',
+            'Core SOW.pdf',
+            'Contract Operational Notes.pdf',
+            'Project Handover.pdf',
+        ];
+
+        foreach ($documents as $index => $fileName) {
+            $exists = FilePdf::query()
+                ->where('client', $client->id)
+                ->whereRaw('LOWER(nama_file) = ?', [mb_strtolower($fileName)])
+                ->exists();
+
+            if ($exists) {
+                continue;
+            }
+
+            $documentName = pathinfo($fileName, PATHINFO_FILENAME);
+            $content = '<p><br></p>';
+            $storedName = (string) str()->uuid().'.pdf';
+            $path = 'pdf/'.$client->id.'/'.$storedName;
+            $pdfContent = Pdf::loadView(
+                'pdf.client_document',
+                compact('client', 'documentName', 'content')
+            )->setPaper('a4', 'portrait')->output();
+
+            abort_unless(
+                Storage::disk('public')->put($path, $pdfContent),
+                500,
+                'Dokumen bawaan client gagal dibuat.'
+            );
+
+            FilePdf::create([
+                'nama_file' => $fileName,
+                'client' => $client->id,
+                'location' => $path,
+                'editor_content' => $content,
+                'is_generated_document' => true,
+                'is_system_template' => true,
+                'is_pinned' => true,
+                'pin_order' => $index + 1,
+            ]);
+        }
     }
 
     public function updateDataClient(Request $request, $id)

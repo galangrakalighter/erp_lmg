@@ -253,6 +253,7 @@
             <button
                 type="button"
                 data-sidebar-collapse="collapseDivisi"
+                data-sidebar-group="primary"
                 class="group flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition
                 {{ $divisiActive
                     ? 'bg-zinc-900 text-white'
@@ -416,6 +417,7 @@
             <button
                 type="button"
                 data-sidebar-collapse="collapseBD"
+                data-sidebar-group="primary"
                 class="group flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition
                 {{ $isBDOpen
                     ? 'bg-zinc-900 text-white'
@@ -538,254 +540,45 @@
                     @endphp
 
 
-                    {{-- Internal Jasa / Barang --}}
-                    @foreach([2 => 'Jasa', 3 => 'Barang'] as $catId => $catLabel)
+                    @php
+                        $businessDevClients = $groupedProduk->flatten(1)->unique('client_id')->values();
+                    @endphp
 
-                        <button
-                            type="button"
-                            data-sidebar-collapse="cat_bd_{{ strtolower($catLabel) }}"
-                            class="mb-2 flex w-full items-center justify-between rounded-lg bg-zinc-800/70 px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wide text-zinc-300 transition hover:bg-zinc-800 hover:text-white"
-                            aria-expanded="{{ $isMarketingPage ? 'true' : 'false' }}"
-                        >
-                            <span>
-                                {{ $catLabel }}
-                            </span>
-
-                            <svg
-                                class="sidebar-chevron h-3.5 w-3.5 text-zinc-600 transition-transform duration-200 {{ $isMarketingPage ? 'rotate-180' : '' }}"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="1.8"
-                                    d="M6 9l6 6 6-6"
-                                />
-                            </svg>
-                        </button>
-
-
-                        <div
-                            id="cat_bd_{{ strtolower($catLabel) }}"
-                            class="{{ $isMarketingPage ? '' : 'hidden' }} mb-3 ml-2 space-y-1 border-l border-zinc-700 pl-2"
-                        >
-
+                    <div class="ml-1 space-y-1 border-l border-zinc-800 pl-2">
+                        @forelse ($businessDevClients as $client)
                             @php
-                                $filteredClients =
-                                    $groupedProduk
-                                        ->get($catId, collect())
-                                        ->filter(function($client) use (
-                                            $isDigitalMarketing,
-                                            $isSuperAdmin
-                                        ) {
-                                            return
-                                                $isDigitalMarketing ||
-                                                $isSuperAdmin;
-                                        });
+                                $canOpen = $checkAccess($client);
+                                $isActiveClient = $currentProduct == $client->client_id;
                             @endphp
 
-
-                            @forelse ($filteredClients as $client)
-
-                                @php
-                                    $canOpen = $checkAccess($client);
-                                    $isActiveClient =
-                                        $currentProduct == $client->client_id;
-                                @endphp
-
-
-                                <div class="mb-1">
-
-                                    @if($canOpen)
-
-                                        <button
-                                            type="button"
-                                            data-sidebar-collapse="client_bd_{{ $catLabel }}_{{ $client->client_id }}"
-                                            class="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-xs transition
-                                            {{ $isActiveClient
-                                                ? 'bg-white font-semibold text-zinc-950'
-                                                : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
-                                            }}"
-                                            aria-expanded="{{ $isActiveClient ? 'true' : 'false' }}"
-                                        >
-
-                                            <span class="flex min-w-0 items-center gap-2">
-
-                                                <svg
-                                                    class="h-4 w-4 shrink-0"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    viewBox="0 0 24 24"
-                                                >
-                                                    <path
-                                                        stroke-linecap="round"
-                                                        stroke-linejoin="round"
-                                                        stroke-width="1.7"
-                                                        d="M15 19a4 4 0 00-8 0M11 11a3 3 0 100-6 3 3 0 000 6zM19 19a4 4 0 00-3-3.87M16 5a3 3 0 012 5.24"
-                                                    />
-                                                </svg>
-
-                                                <span class="truncate">
-                                                    {{ $client->nama }}
-                                                </span>
-
-                                            </span>
-
-                                            <svg
-                                                class="sidebar-chevron h-3.5 w-3.5 shrink-0 transition-transform duration-200 {{ $isActiveClient ? 'rotate-90' : '' }}"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                viewBox="0 0 24 24"
-                                            >
-                                                <path
-                                                    stroke-linecap="round"
-                                                    stroke-linejoin="round"
-                                                    stroke-width="1.8"
-                                                    d="M9 6l6 6-6 6"
-                                                />
-                                            </svg>
-
-                                        </button>
-
-
-                                        <div
-                                            id="client_bd_{{ $catLabel }}_{{ $client->client_id }}"
-                                            class="{{ $isActiveClient ? '' : 'hidden' }} ml-2 mt-1 space-y-1 border-l border-zinc-700 pl-2"
-                                        >
-
-                                            @php
-                                                $platforms = collect(
-                                                    json_decode(
-                                                        $client->access_token,
-                                                        true
-                                                    )['platform'] ?? []
-                                                )->filter();
-                                            @endphp
-
-
-                                            @forelse ($platforms as $plt)
-
-                                                @php
-                                                    $isPlatform =
-                                                        $currentPlatform == $plt;
-                                                @endphp
-
-
-                                                <div class="mb-2 rounded-lg bg-zinc-950/80 p-1.5">
-
-                                                    <div class="mb-1 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.12em] text-zinc-500">
-                                                        {{ $plt }}
-                                                    </div>
-
-
-                                                    <a
-                                                        href="{{ route('market_research', ['id_produk' => $client->id, 'platform' => $plt]) }}"
-                                                        class="block rounded-md px-2 py-1.5 text-[11px] transition
-                                                        {{ Route::is('market_research') && $isPlatform && $isActiveClient
-                                                            ? 'bg-white font-semibold text-zinc-950'
-                                                            : 'text-zinc-500 hover:bg-zinc-800 hover:text-white'
-                                                        }}"
-                                                    >
-                                                        Market Research
-                                                    </a>
-
-
-                                                    <a
-                                                        href="{{ route('branding', ['id_produk' => $client->id, 'platform' => $plt]) }}"
-                                                        class="block rounded-md px-2 py-1.5 text-[11px] transition
-                                                        {{ Route::is('branding') && $isPlatform && $isActiveClient
-                                                            ? 'bg-white font-semibold text-zinc-950'
-                                                            : 'text-zinc-500 hover:bg-zinc-800 hover:text-white'
-                                                        }}"
-                                                    >
-                                                        Branding
-                                                    </a>
-
-
-                                                    <a
-                                                        href="{{ route('analisis', ['id_produk' => $client->id, 'platform' => $plt]) }}"
-                                                        class="block rounded-md px-2 py-1.5 text-[11px] transition
-                                                        {{ Route::is('analisis') && $isPlatform && $isActiveClient
-                                                            ? 'bg-white font-semibold text-zinc-950'
-                                                            : 'text-zinc-500 hover:bg-zinc-800 hover:text-white'
-                                                        }}"
-                                                    >
-                                                        Analisis
-                                                    </a>
-
-
-                                                    <a
-                                                        href="{{ route('manajemen', ['id_produk' => $client->id, 'platform' => $plt]) }}"
-                                                        class="block rounded-md px-2 py-1.5 text-[11px] transition
-                                                        {{ Route::is('manajemen') && $isPlatform && $isActiveClient
-                                                            ? 'bg-white font-semibold text-zinc-950'
-                                                            : 'text-zinc-500 hover:bg-zinc-800 hover:text-white'
-                                                        }}"
-                                                    >
-                                                        Content Plan
-                                                    </a>
-
-
-                                                    <a
-                                                        href="{{ route('PDF', ['id_produk' => $client->id]) }}"
-                                                        class="block rounded-md px-2 py-1.5 text-[11px] transition
-                                                        {{ Route::is('PDF') && $isActiveClient
-                                                            ? 'bg-white font-semibold text-zinc-950'
-                                                            : 'text-zinc-500 hover:bg-zinc-800 hover:text-white'
-                                                        }}"
-                                                    >
-                                                        File
-                                                    </a>
-
-                                                </div>
-
-                                            @empty
-
-                                                <div class="rounded-lg px-2 py-2 text-[10px] italic text-zinc-600">
-                                                    Platform belum diset
-                                                </div>
-
-                                            @endforelse
-
-                                        </div>
-
-                                    @else
-
-                                        <div class="flex cursor-not-allowed items-center gap-2 rounded-lg px-2.5 py-2 text-xs text-zinc-700">
-                                            <svg
-                                                class="h-4 w-4"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                viewBox="0 0 24 24"
-                                            >
-                                                <path
-                                                    stroke-linecap="round"
-                                                    stroke-linejoin="round"
-                                                    stroke-width="1.7"
-                                                    d="M15 19a4 4 0 00-8 0M11 11a3 3 0 100-6 3 3 0 000 6z"
-                                                />
-                                            </svg>
-
-                                            {{ $client->nama }}
-                                        </div>
-
-                                    @endif
-
+                            @if($canOpen)
+                                <a
+                                    href="{{ route('digital-marketing.workspace', ['id_produk' => $client->client_id]) }}"
+                                    class="group flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs transition
+                                    {{ $isActiveClient
+                                        ? 'bg-white font-semibold text-zinc-950'
+                                        : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                                    }}"
+                                >
+                                    <svg class="h-4 w-4 shrink-0 {{ $isActiveClient ? 'text-zinc-950' : 'text-zinc-600 group-hover:text-zinc-300' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M15 19a4 4 0 00-8 0M11 11a3 3 0 100-6 3 3 0 000 6zM19 19a4 4 0 00-3-3.87M16 5a3 3 0 012 5.24" />
+                                    </svg>
+                                    <span class="truncate">{{ $client->nama }}</span>
+                                </a>
+                            @else
+                                <div class="flex cursor-not-allowed items-center gap-2 rounded-lg px-2.5 py-2 text-xs text-zinc-700">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M15 19a4 4 0 00-8 0M11 11a3 3 0 100-6 3 3 0 000 6z" />
+                                    </svg>
+                                    <span class="truncate">{{ $client->nama }}</span>
                                 </div>
-
-                            @empty
-
-                                <div class="rounded-lg px-2 py-2 text-[10px] italic text-zinc-600">
-                                    Tidak ada data client tersedia.
-                                </div>
-
-                            @endforelse
-
-                        </div>
-
-                    @endforeach
+                            @endif
+                        @empty
+                            <div class="rounded-lg px-2 py-2 text-[10px] italic text-zinc-600">
+                                Tidak ada data client tersedia.
+                            </div>
+                        @endforelse
+                    </div>
 
                 </div>
 
@@ -822,6 +615,7 @@
             <button
                 type="button"
                 data-sidebar-collapse="collapseHC"
+                data-sidebar-group="primary"
                 class="group flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition
                 {{ $isHCPage
                     ? 'bg-zinc-900 text-white'
@@ -1024,6 +818,7 @@
                 <button
                     type="button"
                     data-sidebar-collapse="collapseFinance"
+                    data-sidebar-group="primary"
                     class="group flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition
                     {{ $isFinancePage
                         ? 'bg-zinc-900 text-white'
@@ -1488,6 +1283,32 @@ document.addEventListener('DOMContentLoaded', function () {
         button.addEventListener('click', function () {
 
             const willOpen = this.getAttribute('aria-expanded') !== 'true';
+            const group = this.getAttribute('data-sidebar-group');
+
+            if (willOpen && group) {
+                document.querySelectorAll(`[data-sidebar-group="${CSS.escape(group)}"]`).forEach(function (otherButton) {
+                    if (otherButton === button || otherButton.getAttribute('aria-expanded') !== 'true') {
+                        return;
+                    }
+
+                    const otherTarget = document.getElementById(otherButton.getAttribute('data-sidebar-collapse'));
+                    otherButton.setAttribute('aria-expanded', 'false');
+
+                    if (otherTarget) {
+                        otherTarget.classList.remove('hidden');
+                        otherTarget.style.height = otherTarget.scrollHeight + 'px';
+
+                        requestAnimationFrame(function () {
+                            otherTarget.style.height = '0px';
+                            otherTarget.style.opacity = '0';
+                            otherTarget.style.transform = 'translateY(-6px)';
+                        });
+                    }
+
+                    const otherChevron = otherButton.querySelector('.sidebar-chevron');
+                    otherChevron?.classList.remove('rotate-180', 'rotate-90');
+                });
+            }
 
             this.setAttribute(
                 'aria-expanded',

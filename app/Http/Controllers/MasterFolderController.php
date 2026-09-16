@@ -99,7 +99,7 @@ class MasterFolderController extends Controller
             ]);
         }
 
-        DB::transaction(function () use ($validated, $user, $primaryRole) {
+        DB::transaction(function () use ($validated, $user) {
             $folder = MasterFolder::create([
                 'division_id' => $validated['division_id'],
                 'created_by' => $user->id,
@@ -108,8 +108,6 @@ class MasterFolderController extends Controller
                 'is_personal' => false,
             ]);
             $folder->roles()->sync($validated['role_ids']);
-
-            $this->createDefaultDocuments($folder, $user->id, $primaryRole->id, $validated['role_ids']);
         });
 
         return redirect()->route('master-folder.index')
@@ -494,47 +492,6 @@ class MasterFolderController extends Controller
         Storage::disk('local')->delete($path);
 
         return back()->with('success', 'File berhasil dihapus.');
-    }
-
-    private function createDefaultDocuments(MasterFolder $folder, int $userId, int $primaryRoleId, array $roleIds): void
-    {
-        $documents = [
-            'Contract Status.pdf',
-            'Core SOW.pdf',
-            'Contract Operational Notes.pdf',
-            'Project Handover.pdf',
-        ];
-
-        foreach ($documents as $index => $originalName) {
-            $storedName = (string) str()->uuid().'.pdf';
-            $path = 'master-folders/'.$folder->id.'/'.$storedName;
-            $documentName = pathinfo($originalName, PATHINFO_FILENAME);
-            $content = '<p><br></p>';
-            $pdfContent = Pdf::loadView(
-                'master_folder.document_pdf',
-                compact('folder', 'documentName', 'content')
-            )->setPaper('a4', 'portrait')->output();
-
-            abort_unless(Storage::disk('local')->put($path, $pdfContent), 500, 'Dokumen bawaan gagal dibuat.');
-
-            $file = MasterFolderFile::create([
-                'master_folder_id' => $folder->id,
-                'uploaded_by' => $userId,
-                'primary_role_id' => $primaryRoleId,
-                'original_name' => $originalName,
-                'stored_name' => $storedName,
-                'path' => $path,
-                'mime_type' => 'application/pdf',
-                'size' => strlen($pdfContent),
-                'editor_content' => $content,
-                'is_generated_document' => true,
-                'is_system_template' => true,
-                'is_pinned' => true,
-                'pin_order' => $index + 1,
-            ]);
-
-            $file->roles()->sync($roleIds);
-        }
     }
 
     private function authorizeFolder(Request $request, MasterFolder $folder): void

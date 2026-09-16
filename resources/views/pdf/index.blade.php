@@ -130,12 +130,14 @@
                             <td>{{ $item->nama_file }}</td>
 
                             <td>
+                                @unless($item->is_system_template)
                                 <button
                                     class="btn btn-info btn-sm btn-preview"
                                     data-pdf="{{ route('PDF.files.preview', $item) }}"
                                     data-title="{{ $item->nama_file }}">
                                     <i class="fa fa-eye"></i> Lihat
                                 </button>
+                                @endunless
                             </td>
 
                             <td>
@@ -146,11 +148,13 @@
                                     Edit
                                 </button>
 
+                                @unless($item->is_system_template)
                                 <button class="btn btn-danger btn-sm"
                                         data-toggle="modal"
                                         data-target="#hapusModal_{{ $item->id }}">
                                     Hapus
                                 </button>
+                                @endunless
 
                             </td>
 
@@ -414,6 +418,7 @@
 
 {{-- ==================== MODAL HAPUS ==================== --}}
 
+@unless($item->is_system_template)
 <div class="modal fade" id="hapusModal_{{ $item->id }}">
 
     <div class="modal-dialog">
@@ -465,6 +470,7 @@
     </div>
 
 </div>
+@endunless
 
 @endforeach
 </div>

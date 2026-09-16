@@ -180,7 +180,11 @@ class PDFController extends Controller
 
     public function index($id){
         $title = "File";
-        $clients = FilePDF::where('client', $id)->get();
+        $clients = FilePDF::where('client', $id)
+            ->orderByDesc('is_pinned')
+            ->orderByRaw('CASE WHEN is_pinned = 1 THEN pin_order ELSE NULL END ASC')
+            ->orderByDesc('created_at')
+            ->get();
 
         return view('pdf.index', compact('clients', 'title', 'id'));
     }
@@ -357,6 +361,7 @@ class PDFController extends Controller
     public function destroy($id)
     {
         $file = FilePDF::findOrFail($id);
+        abort_if($file->is_system_template, 403, 'Dokumen bawaan client tidak dapat dihapus.');
 
         // Hapus file fisik
         if (Storage::disk('public')->exists($file->location)) {

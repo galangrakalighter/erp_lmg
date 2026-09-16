@@ -398,7 +398,10 @@
         margin: 0 !important;
     }
     .division-cms-page .modal .row > [class*="col-"] { width: 100%; max-width: none; padding: 0 !important; }
+    .division-cms-page .modal .col-12,
     .division-cms-page .modal .col-md-12 { grid-column: 1 / -1; }
+    .division-cms-page .modal .col-md-8 { grid-column: span 1; }
+    .division-cms-page .modal .col-md-4 { grid-column: span 1; }
     .division-cms-page .modal .form-group {
         margin: 0 0 16px;
         border: 1px solid #e8e8eb;
@@ -465,6 +468,17 @@
     .division-cms-page .modal .input-group-append { display: flex; margin-left: 8px; }
     .division-cms-page .modal .select2-container { width: 100% !important; }
     .division-cms-page .modal .select2-selection { padding: 5px 8px !important; }
+    .division-cms-page #produkModal .modal-body > hr {
+        margin: 4px 0 20px !important;
+        border: 0;
+        border-top: 1px solid #e4e4e7;
+    }
+    .division-cms-page #produkModal .select2-container .select2-selection--multiple {
+        display: flex;
+        min-height: 46px !important;
+        align-items: center;
+        padding: 5px 9px !important;
+    }
     .select2-container--open { z-index: 100100 !important; }
     .division-cms-page .modal-footer .btn { min-height: 40px; border-radius: 11px !important; padding: 8px 16px; font-size: 13px; font-weight: 700; }
     .division-cms-page .modal-footer .btn-primary { border-color: #161616 !important; background: #161616 !important; color: #fff !important; }

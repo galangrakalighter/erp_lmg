@@ -239,6 +239,7 @@
             $divisiActive =
                 $divisiOpen ||
                 ($isMarketingPage && $isDMProduct) ||
+                Route::is('idme.workspace') ||
                 ($isMCNProduct && $isPdf) ||
                 ($techProdukList && $isPdf) ||
                 ($isEcommerceList && $isPdf);
@@ -312,6 +313,8 @@
                     @include('partials.sidebar_tech')
 
                     @include('partials.sidebar_commerce')
+
+                    @include('partials.sidebar_idme')
 
                 </div>
 

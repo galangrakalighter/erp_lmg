@@ -78,6 +78,10 @@ class MenuServiceProvider extends ServiceProvider
             $mcnProduk = $sidebarProducts->get(3, collect());
             $techProduk = $sidebarProducts->get(5, collect());
             $ecommerceProduk = $sidebarProducts->get(7, collect());
+            $idmeClients = DB::table('produk_client')
+                ->where('status', 1)
+                ->orderBy('nama')
+                ->get();
 
             $perusahaanFinance = DB::table('perusahaan')->where('status', true)->get();
 
@@ -93,6 +97,7 @@ class MenuServiceProvider extends ServiceProvider
                 'mcnProduk' => $mcnProduk,
                 'techProduk' => $techProduk,
                 'ecommerceProduk' => $ecommerceProduk,
+                'idmeClients' => $idmeClients,
                 'perusahaan' => $perusahaanFinance,
                 'auth' => $user
             ]);

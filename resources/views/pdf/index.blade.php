@@ -78,6 +78,37 @@
 
 }
 
+/* File Dokumen dibuka di dalam iframe workspace. Berikan area scroll
+   tersendiri agar baris yang melebihi tinggi tab tidak terpotong. */
+.lmg-pdf-table-scroll {
+    width: 100%;
+    max-height: calc(100vh - 230px);
+    min-height: 220px;
+    overflow-x: auto !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+.lmg-pdf-table-scroll table {
+    min-width: 680px;
+}
+
+.lmg-pdf-table-scroll thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+body.lmg-embedded #pageContent {
+    min-height: 100%;
+    padding-bottom: 24px;
+}
+
+body.lmg-embedded .lmg-pdf-table-scroll {
+    max-height: calc(100dvh - 190px);
+}
+
 </style>
 <div id="pageContent">
     <div class="card shadow">
@@ -106,7 +137,7 @@
                 <div class="alert alert-danger"><ul class="mb-0 pl-3">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
             @endif
 
-            <div class="table-responsive">
+            <div class="table-responsive lmg-pdf-table-scroll">
 
                 <table class="table table-bordered table-hover" id="dataTable">
 

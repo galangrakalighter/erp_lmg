@@ -10,12 +10,9 @@ class IdmeClientWorkspaceController extends Controller
     public function show(int $id_produk)
     {
         $user = Auth::user();
-        $user->loadMissing('userDivisions.division');
-        abort_unless(
-            (bool) $user->isAdmin
-            || $user->userDivisions->contains(fn ($row) => strcasecmp((string) $row->division?->name, 'IDME') === 0),
-            403
-        );
+        // Jabatan bukan syarat akses. Admin dengan jabatan terisi maupun null
+        // tetap dapat membuka IDME, sedangkan seluruh non-admin ditolak.
+        abort_unless((bool) $user->isAdmin, 403);
 
         $client = ProdukClient::query()
             ->with(['divisions' => fn ($query) => $query->orderBy('name')])

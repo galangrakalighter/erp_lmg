@@ -306,6 +306,8 @@
 
                 <div class="rounded-xl border border-zinc-800 bg-zinc-900/50 p-2">
 
+                    @include('partials.sidebar_idme')
+
                     @include('partials.sidebar_digital_marketing')
 
                     @include('partials.sidebar_mcn')
@@ -313,8 +315,6 @@
                     @include('partials.sidebar_tech')
 
                     @include('partials.sidebar_commerce')
-
-                    @include('partials.sidebar_idme')
 
                 </div>
 

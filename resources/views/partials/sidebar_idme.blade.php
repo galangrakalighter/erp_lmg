@@ -1,6 +1,8 @@
 @php
     $isIdmeWorkspace = Route::is('idme.workspace');
-    $isIdmeUser = $isSuperAdmin || (($myDivision->name ?? '') === 'IDME');
+    // IDME adalah workspace lintas divisi khusus admin. Jabatan admin boleh
+    // terisi maupun null; satu-satunya syarat akses adalah isAdmin = true.
+    $isIdmeUser = (bool) ($auth?->isAdmin ?? false);
     $idmeOpen = $isIdmeWorkspace;
 @endphp
 

@@ -182,7 +182,7 @@ class PDFController extends Controller
         $title = "File";
         $clients = FilePDF::where('client', $id)
             ->orderByDesc('is_pinned')
-            ->orderByRaw('CASE WHEN is_pinned = 1 THEN pin_order ELSE NULL END ASC')
+            ->orderBy('pin_order')
             ->orderByDesc('created_at')
             ->get();
 

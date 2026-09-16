@@ -31,7 +31,7 @@ class ActivityPageDescriptionTest extends TestCase
         );
 
         $this->assertSame(
-            'Masuk ke detail folder Dokumen Legal',
+            'Masuk ke folder Dokumen Legal',
             (new ActivityPageDescription)->describe($request),
         );
     }

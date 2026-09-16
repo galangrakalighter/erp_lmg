@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -23,6 +24,10 @@ class ActivityLogService
 
     private bool $flushRegistered = false;
 
+    private bool $crudRecorded = false;
+
+    private bool $activityRecorded = false;
+
     public function __construct(
         private readonly FirestoreService $firestore,
         private readonly Request $request,
@@ -34,6 +39,11 @@ class ActivityLogService
 
         if (! $user) {
             return;
+        }
+        $this->activityRecorded = true;
+
+        if (in_array(strtoupper((string) ($activity['action'] ?? '')), ['CREATE', 'UPDATE', 'DELETE'], true)) {
+            $this->crudRecorded = true;
         }
 
         $this->pending[] = array_merge($this->userContext($user), [
@@ -54,6 +64,16 @@ class ActivityLogService
         $this->registerFlush();
     }
 
+    public function hasRecordedCrud(): bool
+    {
+        return $this->crudRecorded;
+    }
+
+    public function hasRecordedActivity(): bool
+    {
+        return $this->activityRecorded;
+    }
+
     public function recordModelEvent(string $eventName, Model $model): void
     {
         if (! Auth::check()) {
@@ -69,7 +89,16 @@ class ActivityLogService
         };
         $targetType = Str::snake(class_basename($model));
         $targetName = $this->targetName($model);
-        $context = $this->modelContext($model);
+        try {
+            $context = $this->modelContext($model);
+        } catch (Throwable $exception) {
+            $context = [];
+            Log::debug('Konteks activity log tidak dapat dilengkapi.', [
+                'model' => $model::class,
+                'id' => $model->getKey(),
+                'error' => $exception->getMessage(),
+            ]);
+        }
         $oldData = $event === 'updated'
             ? Arr::only($model->getRawOriginal(), array_keys($model->getChanges()))
             : ($event === 'deleted' ? $model->getRawOriginal() : []);
@@ -80,7 +109,7 @@ class ActivityLogService
         $this->record([
             'action' => $action,
             'module' => $model->getTable(),
-            'description' => $this->description($action, $targetType, $targetName),
+            'description' => $this->modelDescription($action, $targetType, $targetName, $context),
             'target_id' => $model->getKey(),
             'target_name' => $targetName,
             'target_type' => $targetType,
@@ -162,7 +191,7 @@ class ActivityLogService
 
     private function targetName(Model $model): ?string
     {
-        foreach (['name', 'nama', 'nama_task', 'nama_kpi', 'title', 'judul', 'original_name', 'filename', 'client_name', 'email'] as $field) {
+        foreach (['name', 'nama', 'nama_file', 'nama_task', 'nama_kpi', 'nama_akun', 'nama_perusahaan', 'category', 'title', 'judul', 'original_name', 'filename', 'client_name', 'email'] as $field) {
             $value = $model->getAttribute($field);
 
             if (is_scalar($value) && (string) $value !== '') {
@@ -210,7 +239,100 @@ class ActivityLogService
             ];
         }
 
-        return [];
+        if ($model instanceof \App\Models\FilePdf) {
+            $client = \App\Models\ProdukClient::query()->find($model->client);
+
+            return [
+                'kind' => 'client_file',
+                'client_id' => $model->client,
+                'client_name' => $client?->nama ?? 'Client #'.$model->client,
+                'file_name' => $model->nama_file,
+                'client_link' => url('/digital-marketing/client/'.$model->client.'?tab=dokumen'),
+                'division_names' => $this->clientDivisionNames((int) $model->client),
+            ];
+        }
+
+        $context = ['kind' => 'model'];
+        $clientId = $this->numericAttribute($model, ['client_id', 'produk_client_id', 'id_produk', 'project']);
+
+        if ($model instanceof \App\Models\ProdukClient) {
+            $clientId = (int) $model->getKey();
+        }
+
+        if ($clientId) {
+            $clientName = $model instanceof \App\Models\ProdukClient
+                ? $model->nama
+                : DB::table('produk_client')->where('id', $clientId)->value('nama');
+            $context['client_id'] = $clientId;
+            $context['client_name'] = $clientName ?: 'Client #'.$clientId;
+            $context['client_link'] = url('/digital-marketing/client/'.$clientId);
+            $context['division_names'] = $this->clientDivisionNames($clientId);
+        }
+
+        $divisionId = $this->numericAttribute($model, ['division_id', 'divisi']);
+        if ($divisionId) {
+            $context['division_id'] = $divisionId;
+            $context['division_name'] = DB::table('divisions')->where('id', $divisionId)->value('name')
+                ?: 'Divisi #'.$divisionId;
+        }
+
+        return count($context) > 1 ? $context : [];
+    }
+
+    private function numericAttribute(Model $model, array $fields): ?int
+    {
+        foreach ($fields as $field) {
+            $value = $model->getAttribute($field);
+            if (is_numeric($value) && (int) $value > 0) {
+                return (int) $value;
+            }
+        }
+
+        return null;
+    }
+
+    private function clientDivisionNames(int $clientId): array
+    {
+        try {
+            return DB::table('client_division')
+                ->join('divisions', 'divisions.id', '=', 'client_division.division_id')
+                ->where('client_division.client_id', $clientId)
+                ->orderBy('divisions.name')
+                ->pluck('divisions.name')
+                ->all();
+        } catch (Throwable) {
+            return [];
+        }
+    }
+
+    private function modelDescription(string $action, string $type, ?string $name, array $context): string
+    {
+        $verb = match ($action) {
+            'CREATE' => 'Membuat',
+            'UPDATE' => 'Mengubah',
+            'DELETE' => 'Menghapus',
+            default => 'Memproses',
+        };
+
+        if (($context['kind'] ?? null) === 'master_folder_file') {
+            return "{$verb} file ".($context['file_name'] ?? $name).' di folder '.($context['folder_name'] ?? 'Master Folder');
+        }
+
+        if (($context['kind'] ?? null) === 'client_file') {
+            return "{$verb} file ".($context['file_name'] ?? $name).' di client '.($context['client_name'] ?? 'Client');
+        }
+
+        $description = trim($verb.' '.Str::headline($type).($name ? ' '.$name : ''));
+        if (! empty($context['client_name'])) {
+            $description .= ' pada client '.$context['client_name'];
+        }
+        if (! empty($context['division_name'])) {
+            $description .= ' di divisi '.$context['division_name'];
+        } elseif (! empty($context['division_names'])) {
+            $description .= ' di divisi '.implode(', ', $context['division_names']);
+        }
+
+        return $description;
     }
 
     private function description(string $action, string $type, ?string $name): string

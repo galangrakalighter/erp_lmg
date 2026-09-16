@@ -51,20 +51,72 @@ class ActivityLogFormatter
             return $this->formatAccountMasterFile($action, $context, $oldData, $newData);
         }
 
+        if (($context['kind'] ?? null) === 'client_file') {
+            return $this->formatClientFile($action, $context, $oldData, $newData);
+        }
+
+        $location = $this->contextLocation($context);
+
         return match ($action) {
             'CREATE' => [
-                'summary' => "Menambahkan data {$target} beserta atributnya:",
-                'items' => $this->attributeItems($newData),
+                'summary' => "Membuat {$target}{$location}:",
+                'items' => $this->prependContextItems($this->attributeItems($newData), $context),
             ],
             'UPDATE' => [
-                'summary' => "Mengubah data {$target}:",
-                'items' => $this->changeItems($oldData, $newData),
+                'summary' => "Mengubah {$target}{$location}:",
+                'items' => $this->prependContextItems($this->changeItems($oldData, $newData), $context),
             ],
             'DELETE' => [
-                'summary' => "Menghapus data {$target} beserta atribut sebelumnya:",
-                'items' => $this->attributeItems($oldData),
+                'summary' => "Menghapus {$target}{$location}:",
+                'items' => $this->prependContextItems($this->attributeItems($oldData), $context),
             ],
         };
+    }
+
+    private function formatClientFile(string $action, array $context, array $oldData, array $newData): array
+    {
+        $verb = ['CREATE' => 'Membuat', 'UPDATE' => 'Mengubah', 'DELETE' => 'Menghapus'][$action];
+        $items = $action === 'UPDATE'
+            ? $this->changeItems($oldData, $newData)
+            : $this->attributeItems($action === 'DELETE' ? $oldData : $newData);
+
+        return [
+            'summary' => sprintf('%s file %s di client %s:', $verb, $context['file_name'] ?? 'file', $context['client_name'] ?? 'Client'),
+            'items' => $this->prependContextItems($items, $context),
+        ];
+    }
+
+    private function contextLocation(array $context): string
+    {
+        $parts = [];
+        if (! empty($context['client_name'])) $parts[] = 'pada client '.$context['client_name'];
+        if (! empty($context['division_name'])) {
+            $parts[] = 'di divisi '.$context['division_name'];
+        } elseif (! empty($context['division_names'])) {
+            $parts[] = 'di divisi '.implode(', ', (array) $context['division_names']);
+        }
+
+        return $parts ? ' '.implode(' ', $parts) : '';
+    }
+
+    private function prependContextItems(array $items, array $context): array
+    {
+        if (! empty($context['division_name']) || ! empty($context['division_names'])) {
+            array_unshift($items, [
+                'label' => 'Divisi',
+                'value' => $context['division_name'] ?? implode(', ', (array) $context['division_names']),
+                'url' => null,
+            ]);
+        }
+        if (! empty($context['client_name'])) {
+            array_unshift($items, [
+                'label' => 'Client',
+                'value' => $context['client_name'],
+                'url' => $context['client_link'] ?? null,
+            ]);
+        }
+
+        return $items;
     }
 
     private function formatMasterFolderFile(string $action, array $context, array $oldData, array $newData): array

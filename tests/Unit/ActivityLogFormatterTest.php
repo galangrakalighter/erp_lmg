@@ -27,7 +27,7 @@ class ActivityLogFormatterTest extends TestCase
             'new_data' => ['status' => 'Aktif', 'website' => 'https://new.example.com'],
         ]);
 
-        $this->assertSame('Mengubah data Client Contoh:', $detail['summary']);
+        $this->assertSame('Mengubah Client Contoh:', $detail['summary']);
         $this->assertSame('Prospek', $detail['items'][0]['old']);
         $this->assertSame('Aktif', $detail['items'][0]['new']);
         $this->assertSame('https://new.example.com', $detail['items'][1]['new_url']);
@@ -46,7 +46,7 @@ class ActivityLogFormatterTest extends TestCase
             ],
         ]);
 
-        $this->assertSame('Menambahkan data Dokumen Baru beserta atributnya:', $detail['summary']);
+        $this->assertSame('Membuat Dokumen Baru:', $detail['summary']);
         $this->assertCount(2, $detail['items']);
         $this->assertSame('https://example.com/proposal', $detail['items'][1]['url']);
     }
@@ -94,10 +94,33 @@ class ActivityLogFormatterTest extends TestCase
         ]);
 
         $this->assertSame(
-            'Menambahkan data Pikirkan strategi beserta atributnya:',
+            'Membuat Pikirkan strategi:',
             $detail['summary'],
         );
         $this->assertSame('Sedang', $detail['items'][1]['value']);
         $this->assertSame('Tunggu Approval', $detail['items'][2]['value']);
+    }
+
+    public function test_crud_detail_mentions_client_and_division_context(): void
+    {
+        $detail = (new ActivityLogFormatter)->format([
+            'action' => 'UPDATE',
+            'target_name' => 'Content Plan September',
+            'context' => [
+                'kind' => 'model',
+                'client_name' => 'Client Contoh',
+                'client_link' => 'https://erp.example.com/digital-marketing/client/10',
+                'division_names' => ['Digital Marketing'],
+            ],
+            'old_data' => ['status' => 'Draft'],
+            'new_data' => ['status' => 'Publish'],
+        ]);
+
+        $this->assertSame(
+            'Mengubah Content Plan September pada client Client Contoh di divisi Digital Marketing:',
+            $detail['summary'],
+        );
+        $this->assertSame('Client', $detail['items'][0]['label']);
+        $this->assertSame('Divisi', $detail['items'][1]['label']);
     }
 }

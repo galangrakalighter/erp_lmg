@@ -36,9 +36,36 @@ class LogPageVisit
                     'status_code' => $response->getStatusCode(),
                 ],
             ]);
+        } elseif ($this->shouldLogMutation($request, $response) && ! $this->activityLog->hasRecordedActivity()) {
+            $mutation = $this->pageDescription->describeMutation($request);
+            $input = $request->except([
+                '_token', '_method', 'password', 'password_confirmation', 'remember_token',
+                'token', 'access_token', 'refresh_token', 'api_key', 'secret',
+            ]);
+
+            $this->activityLog->record([
+                'action' => $mutation['action'],
+                'module' => $this->moduleFromRequest($request),
+                'description' => $mutation['description'],
+                'target_name' => $mutation['target_name'],
+                'target_type' => 'request',
+                'context' => [
+                    'route_name' => $request->route()?->getName(),
+                    'path' => '/'.ltrim($request->path(), '/'),
+                ],
+                'old_data' => [],
+                'new_data' => $input,
+            ]);
         }
 
         return $response;
+    }
+
+    private function shouldLogMutation(Request $request, Response $response): bool
+    {
+        return $request->user() !== null
+            && in_array(strtoupper($request->method()), ['POST', 'PUT', 'PATCH', 'DELETE'], true)
+            && $response->getStatusCode() < 400;
     }
 
     private function shouldLog(Request $request, Response $response): bool

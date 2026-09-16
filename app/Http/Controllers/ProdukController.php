@@ -23,10 +23,10 @@ class ProdukController extends Controller
         $RoleSekarang = Auth::user()->isAdmin == false ? DB::table('roles')->where('id', $divisi[0]->role_id)->value('role_name') : "Super Admin";
         if ($request->ajax()) {
             $data = ProdukClient::with(['teams.userDivisions.role'])
-                ->join('kategori_jasa', 'kategori_jasa.id', '=', 'produk_client.kategori_jasa_id')
+                ->join('client_division', 'client_division.client_id', '=', 'produk_client.id')
+                ->leftJoin('kategori_jasa', 'kategori_jasa.id', '=', 'produk_client.kategori_jasa_id')
                 ->select('produk_client.*', 'kategori_jasa.category')
-                ->when($divisiId == 1, function($q) { $q->where('produk_client.kategori_jasa_id', 1); })
-                ->when($divisiId == 2, function($q) { $q->whereIn('produk_client.kategori_jasa_id', [2, 3]); })
+                ->where('client_division.division_id', $divisiId)
                 ->get()
                 ->map(function($client) {
                     $teams = $client->teams;
@@ -135,6 +135,12 @@ class ProdukController extends Controller
 
     public function store(Request $request)
     {
+        $request->validate([
+            'client' => ['required', 'string', 'max:255'],
+            'divisi' => ['required', 'integer', 'exists:divisions,id'],
+            'status' => ['required', 'integer'],
+        ]);
+
         $accessTokenArray = [
             'platform' => $request->platform,
             'access'   => $request->access,
@@ -143,13 +149,30 @@ class ProdukController extends Controller
         try {
             DB::beginTransaction();
 
-            // 1. Simpan produk
-            $produk = ProdukClient::create([
-                'kategori_jasa_id' => (int) $request->kategori_jasa_id,
-                'nama'              => $request->client,
-                'status'            => (int) $request->status,
-                'access_token'      => $accessTokenArray,
-            ]);
+            // Nama client bersifat unik. Jika sudah ada, pakai produk yang sama
+            // dan tambahkan divisi serta tim baru ke relasinya.
+            $produk = $this->findClientByName($request->client);
+            $isExistingClient = $produk !== null;
+
+            if (!$produk) {
+                $produk = ProdukClient::create([
+                    'kategori_jasa_id' => $request->filled('kategori_jasa_id') ? (int) $request->kategori_jasa_id : null,
+                    'nama'              => trim($request->client),
+                    'status'            => (int) $request->status,
+                    'access_token'      => $accessTokenArray,
+                ]);
+            } else {
+                $mergedTokens = $this->mergeAccessTokens(
+                    $produk->access_token,
+                    (array) $request->input('platform', []),
+                    (array) $request->input('access', [])
+                );
+
+                $produk->update([
+                    'status' => (int) $request->status,
+                    'access_token' => $mergedTokens,
+                ]);
+            }
 
             // 2. Kumpulkan semua ID user dari form
             $allUserIds = collect()
@@ -222,7 +245,9 @@ class ProdukController extends Controller
 
             return redirect()
                 ->back()
-                ->with('success', 'Produk dan Tim berhasil disimpan!');
+                ->with('success', $isExistingClient
+                    ? 'Client sudah tersedia. Divisi dan tim berhasil ditambahkan ke client tersebut.'
+                    : 'Produk dan Tim berhasil disimpan!');
         } catch (\Throwable $e) {
             DB::rollBack();
 
@@ -304,9 +329,14 @@ class ProdukController extends Controller
             * 7. Ambil ID user yang sudah tersimpan.
             * Dipakai untuk membandingkan data lama dengan data baru.
             */
+            $divisionId = (int) $request->divisi;
             $existingUserIds = UserClient::query()
-                ->where('client_id', $produk->id)
-                ->pluck('user_id')
+                ->join('user_division', 'user_division.user_id', '=', 'user_client.user_id')
+                ->join('roles', 'roles.id', '=', 'user_division.role_id')
+                ->where('user_client.client_id', $produk->id)
+                ->where('roles.division_id', $divisionId)
+                ->distinct()
+                ->pluck('user_client.user_id')
                 ->map(function ($userId) {
                     return (int) $userId;
                 });
@@ -350,6 +380,13 @@ class ProdukController extends Controller
                     ]
                 );
             }
+
+            DB::table('client_division')->insertOrIgnore([
+                'client_id' => (int) $produk->id,
+                'division_id' => $divisionId,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
 
             DB::commit();
 
@@ -417,6 +454,20 @@ class ProdukController extends Controller
             'platform' => $mergedPlatforms,
             'access' => $mergedAccessTokens,
         ];
+    }
+
+    private function findClientByName(?string $name): ?ProdukClient
+    {
+        $normalizedName = mb_strtolower(trim((string) $name));
+
+        if ($normalizedName === '') {
+            return null;
+        }
+
+        return ProdukClient::query()
+            ->whereRaw('LOWER(TRIM(nama)) = ?', [$normalizedName])
+            ->lockForUpdate()
+            ->first();
     }
 
     public function destroy($id)
@@ -557,45 +608,74 @@ class ProdukController extends Controller
 
 
 
-    public function tambahDataClient(Request $request, $divisi){
-        $produk = ProdukClient::create([
-            'kategori_jasa_id' => null,
-            'nama' => $request->client,
-            'status' => $request->status,
-            'access_token' => null
+    public function tambahDataClient(Request $request, $divisi)
+    {
+        $validated = $request->validate([
+            'client' => ['required', 'string', 'max:255'],
+            'status' => ['required', 'integer'],
+            'buh' => ['nullable', 'array'],
+            'mcn' => ['nullable', 'array'],
+            'ms' => ['nullable', 'array'],
         ]);
 
-        $allId = [];
+        return DB::transaction(function () use ($request, $validated, $divisi) {
+            $produk = $this->findClientByName($validated['client']);
+            $isExistingClient = $produk !== null;
 
-        foreach($request->buh as $buh){
-            array_push($allId, $buh);
-        }
+            if (!$produk) {
+                $produk = ProdukClient::create([
+                    'kategori_jasa_id' => null,
+                    'nama' => trim($validated['client']),
+                    'status' => (int) $validated['status'],
+                    'access_token' => null,
+                ]);
+            } else {
+                $produk->update(['status' => (int) $validated['status']]);
+            }
 
-        foreach($request->mcn as $mcn){
-            array_push($allId, $mcn);
-        }
-        foreach($request->ms as $ms){
-            array_push($allId, $ms);
-        }
+            $allUserIds = collect($request->input('buh', []))
+                ->merge($request->input('mcn', []))
+                ->merge($request->input('ms', []))
+                ->filter()
+                ->map(fn ($userId) => (int) $userId)
+                ->filter(fn ($userId) => $userId > 0)
+                ->unique();
 
-        foreach($allId as $id){
-            UserClient::insert([
-                'user_id' => $id,
+            foreach ($allUserIds as $userId) {
+                UserClient::firstOrCreate(
+                    ['user_id' => $userId, 'client_id' => $produk->id],
+                    ['assigned_at' => now()]
+                );
+            }
+
+            DB::table('client_division')->insertOrIgnore([
                 'client_id' => $produk->id,
-                'assigned_at' => now()
+                'division_id' => (int) $divisi,
+                'created_at' => now(),
+                'updated_at' => now(),
             ]);
-        }
 
-        DB::table('client_division')->insert([
-            'client_id' => $produk->id,
-            'division_id' => $divisi
-        ]);
-
-        return response()->json(['success' => 'Berhasil Dibuat']);
+            return response()->json([
+                'success' => $isExistingClient
+                    ? 'Client sudah tersedia. Divisi dan tim berhasil ditambahkan.'
+                    : 'Client berhasil dibuat.',
+                'client_id' => $produk->id,
+                'existing_client' => $isExistingClient,
+            ]);
+        });
     }
 
     public function updateDataClient(Request $request, $id)
     {
+        $validated = $request->validate([
+            'client' => ['required', 'string', 'max:255'],
+            'status' => ['required', 'integer'],
+            'division_id' => ['required', 'integer', 'exists:divisions,id'],
+            'buh' => ['nullable', 'array'],
+            'mcn' => ['nullable', 'array'],
+            'ms' => ['nullable', 'array'],
+        ]);
+
         DB::beginTransaction();
 
         try {
@@ -607,9 +687,6 @@ class ProdukController extends Controller
                 'status' => $request->status,
             ]);
 
-            // Hapus relasi user lama
-            UserClient::where('client_id', $produk->id)->delete();
-
             // Gabungkan seluruh user yang dipilih
             $allId = array_merge(
                 $request->buh ?? [],
@@ -620,15 +697,37 @@ class ProdukController extends Controller
             // Hilangkan ID yang sama jika ada
             $allId = array_unique($allId);
 
-            // Insert relasi baru
-            foreach ($allId as $userId) {
+            // Hapus hanya penugasan user dari divisi yang sedang diedit.
+            // Penugasan divisi lain pada client yang sama harus tetap dipertahankan.
+            $divisionUserIds = DB::table('user_client')
+                ->join('user_division', 'user_division.user_id', '=', 'user_client.user_id')
+                ->join('roles', 'roles.id', '=', 'user_division.role_id')
+                ->where('user_client.client_id', $produk->id)
+                ->where('roles.division_id', (int) $validated['division_id'])
+                ->whereNotIn('user_client.user_id', $allId ?: [0])
+                ->distinct()
+                ->pluck('user_client.user_id');
 
-                UserClient::create([
-                    'user_id'     => $userId,
-                    'client_id'   => $produk->id,
-                    'assigned_at' => now(),
-                ]);
+            if ($divisionUserIds->isNotEmpty()) {
+                UserClient::where('client_id', $produk->id)
+                    ->whereIn('user_id', $divisionUserIds)
+                    ->delete();
             }
+
+            // Insert relasi baru tanpa menggandakan pasangan user dan client.
+            foreach ($allId as $userId) {
+                UserClient::firstOrCreate(
+                    ['user_id' => (int) $userId, 'client_id' => $produk->id],
+                    ['assigned_at' => now()]
+                );
+            }
+
+            DB::table('client_division')->insertOrIgnore([
+                'client_id' => $produk->id,
+                'division_id' => (int) $validated['division_id'],
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
 
             DB::commit();
 
@@ -647,12 +746,17 @@ class ProdukController extends Controller
         }
     }
 
-    public function getProduk($id)
+    public function getProduk(Request $request, $id)
     {
         $produk = ProdukClient::with(['teams.userDivisions.role'])
             ->findOrFail($id);
 
         $teams = $produk->teams;
+        if ($request->filled('division_id')) {
+            $divisionId = (int) $request->integer('division_id');
+            $teams = $teams->filter(fn ($user) => $user->userDivisions
+                ->contains(fn ($membership) => (int) optional($membership->role)->division_id === $divisionId));
+        }
 
         return response()->json([
             'id'        => $produk->id,

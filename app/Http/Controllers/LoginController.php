@@ -21,6 +21,18 @@ class LoginController extends Controller
         ]);
 
         if (Auth::attempt(['email' => $credentials['email'], 'password' => $credentials['password']])) {
+            if (Auth::user()->is_locked) {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return back()->withErrors([
+                    'email' => 'Akun Anda sedang dikunci. Hubungi administrator.',
+                ])->onlyInput('email');
+            }
+
+            $request->session()->regenerate();
+
             app(ActivityLogService::class)->record([
                 'action' => 'LOGIN',
                 'module' => 'authentication',
@@ -36,7 +48,7 @@ class LoginController extends Controller
         }
     }
 
-    public function logout()
+    public function logout(Request $request)
     {
         app(ActivityLogService::class)->record([
             'action' => 'LOGOUT',
@@ -46,6 +58,9 @@ class LoginController extends Controller
         ]);
 
         Auth::logout();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
         return redirect('/');
     }

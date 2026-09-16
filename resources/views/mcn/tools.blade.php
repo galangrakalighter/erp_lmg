@@ -1,7 +1,6 @@
 @extends('layout.app')
 @section('content')
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     .automation-body { background-color: #f4f7fa; font-family: 'Inter', sans-serif; }
     .card-premium { border: none; border-radius: 24px; background: #ffffff; box-shadow: 0 15px 35px rgba(0,0,0,0.05); overflow: hidden; }
     .icon-box { width: 60px; height: 60px; background: #eef2ff; color: #4f46e5; border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; }

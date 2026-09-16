@@ -11,14 +11,6 @@
         <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
 
             <div>
-                <div class="mb-3 flex items-center gap-3">
-                    <span class="h-px w-8 bg-zinc-950"></span>
-
-                    <span class="text-[10px] font-semibold uppercase tracking-[0.3em] text-zinc-500">
-                        Lighter Media Group
-                    </span>
-                </div>
-
                 <h1 class="text-2xl font-semibold tracking-[-0.04em] text-zinc-950 sm:text-3xl">
                     Manajemen Hierarki User
                 </h1>
@@ -82,11 +74,6 @@
                         </h2>
                     </div>
 
-                    <div class="hidden items-center gap-2 text-[10px] font-medium uppercase tracking-[0.12em] text-zinc-400 sm:flex">
-                        <span class="h-1.5 w-1.5 rounded-full bg-zinc-950"></span>
-                        <span id="activeDivisionLabel">-</span>
-                    </div>
-
                 </div>
 
 
@@ -98,27 +85,36 @@
                         role="tablist"
                     >
 
+                        <button
+                            type="button"
+                            class="division-tab group relative flex min-w-[190px] items-center gap-3 border-b-2 border-zinc-950 px-4 py-4 text-left text-zinc-950 transition"
+                            data-divisi="lmg"
+                            data-name="Lighter Media Group"
+                            role="tab"
+                            aria-selected="true"
+                        >
+                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-zinc-950 text-[10px] font-bold text-white transition">LMG</span>
+                            <span class="flex min-w-0 flex-1 flex-col">
+                                <span class="truncate text-xs font-semibold uppercase tracking-[0.08em]">Lighter Media Group</span>
+                                <span class="division-count mt-1 text-[10px] font-medium text-zinc-400" data-count-division="lmg">-</span>
+                            </span>
+                        </button>
+
                         @foreach($divisions as $index => $div)
 
                             <button
                                 type="button"
                                 class="division-tab group relative flex min-w-[145px] items-center gap-3 border-b-2 px-4 py-4 text-left transition
-                                    {{ $index === 0
-                                        ? 'border-zinc-950 text-zinc-950'
-                                        : 'border-transparent text-zinc-400 hover:border-zinc-300 hover:text-zinc-800'
-                                    }}"
+                                    border-transparent text-zinc-400 hover:border-zinc-300 hover:text-zinc-800"
                                 data-divisi="{{ $div->id }}"
                                 data-name="{{ $div->name }}"
                                 role="tab"
-                                aria-selected="{{ $index === 0 ? 'true' : 'false' }}"
+                                aria-selected="false"
                             >
 
                                 <span
                                     class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[10px] font-bold transition
-                                        {{ $index === 0
-                                            ? 'bg-zinc-950 text-white'
-                                            : 'bg-zinc-100 text-zinc-400 group-hover:bg-zinc-200 group-hover:text-zinc-700'
-                                        }}"
+                                        bg-zinc-100 text-zinc-400 group-hover:bg-zinc-200 group-hover:text-zinc-700"
                                 >
                                     {{ str_pad($index + 1, 2, '0', STR_PAD_LEFT) }}
                                 </span>
@@ -418,6 +414,8 @@
                                     >
                                         <option value="">-- Pilih Divisi --</option>
 
+                                        <option value="lmg">Lighter Media Group</option>
+
                                         @foreach($divisions as $div)
                                             <option value="{{ $div->id }}">
                                                 {{ $div->name }}
@@ -426,7 +424,18 @@
                                     </select>
                                 </div>
 
-                                <div>
+                                <div id="modal_jabatan_group" class="hidden">
+                                    <label class="mb-1.5 block text-xs font-medium text-zinc-600">Jabatan Lighter Media Group</label>
+                                    <select name="jabatan" id="modal_jabatan" disabled class="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-700 outline-none focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950">
+                                        <option value="">-- Pilih Jabatan --</option>
+                                        <option value="ceo">CEO</option>
+                                        <option value="coo">COO</option>
+                                        <option value="cmo">CMO</option>
+                                        <option value="cfo">CFO</option>
+                                    </select>
+                                </div>
+
+                                <div id="modal_role_group">
                                     <label class="mb-1.5 block text-xs font-medium text-zinc-600">
                                         Role Jabatan
                                     </label>
@@ -677,6 +686,8 @@
                                     >
                                         <option value="">-- Pilih Divisi --</option>
 
+                                        <option value="lmg">Lighter Media Group</option>
+
                                         @foreach($divisions as $div)
                                             <option value="{{ $div->id }}">
                                                 {{ $div->name }}
@@ -685,7 +696,18 @@
                                     </select>
                                 </div>
 
-                                <div>
+                                <div id="edit_jabatan_group" class="hidden">
+                                    <label class="mb-1.5 block text-xs font-medium text-zinc-600">Jabatan Lighter Media Group</label>
+                                    <select name="jabatan" id="edit_jabatan" disabled class="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-700 outline-none focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950">
+                                        <option value="">-- Pilih Jabatan --</option>
+                                        <option value="ceo">CEO</option>
+                                        <option value="coo">COO</option>
+                                        <option value="cmo">CMO</option>
+                                        <option value="cfo">CFO</option>
+                                    </select>
+                                </div>
+
+                                <div id="edit_role_group">
                                     <label class="mb-1.5 block text-xs font-medium text-zinc-600">
                                         Role Jabatan
                                     </label>
@@ -873,7 +895,7 @@
                             </p>
 
                             <h2 class="mt-1 text-lg font-semibold tracking-tight text-zinc-950">
-                                Konfirmasi Hapus
+                                Hapus Akun
                             </h2>
                         </div>
 
@@ -928,8 +950,8 @@
                     ></p>
 
                     <p class="mx-auto mt-4 max-w-sm text-xs leading-5 text-zinc-400">
-                        Tindakan ini tidak dapat dibatalkan. Semua data terkait
-                        user ini di divisi dan hierarki akan dihapus.
+                        Akun akan dihilangkan dari daftar dan tidak dapat login,
+                        tetapi seluruh datanya tetap tersimpan di database.
                     </p>
 
                 </div>
@@ -957,7 +979,7 @@
                             type="submit"
                             class="rounded-lg bg-red-600 px-6 py-2.5 text-xs font-semibold uppercase tracking-[0.08em] text-white transition hover:bg-red-700"
                         >
-                            Ya, Hapus User
+                            Hapus Akun
                         </button>
 
                     </form>
@@ -984,6 +1006,13 @@
     */
 
     const divisionHierarchy = {
+        "Lighter Media Group": [
+            { role: "CEO", label: "CEO" },
+            { role: "COO", label: "COO" },
+            { role: "CMO", label: "CMO" },
+            { role: "CFO", label: "CFO" }
+        ],
+
         "Digital Marketing": [
             { role: "Busines Unit Head", label: "Business Unit Head" },
             { role: "Digital Marketer", label: "Digital Marketer" },
@@ -1728,7 +1757,7 @@
 
                             ${hierarchyHeaders}
 
-                            <th class="w-24 px-4 py-3 text-center">
+                            <th class="w-32 px-4 py-3 text-center">
                                 Aksi
                             </th>
 
@@ -1916,8 +1945,10 @@
 
                     <div class="flex items-center gap-3">
 
-                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-950 text-[10px] font-bold uppercase text-white">
-                            ${getInitials(user.name)}
+                        <div class="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-zinc-950 text-[10px] font-bold uppercase text-white">
+                            ${user.photo_profile_url
+                                ? `<img src="${escapeHtml(user.photo_profile_url)}" alt="Foto ${escapedName}" class="h-full w-full object-cover">`
+                                : getInitials(user.name)}
                         </div>
 
                         <div class="min-w-0">
@@ -1925,6 +1956,8 @@
                             <div class="truncate font-semibold text-zinc-900">
                                 ${escapedName}
                             </div>
+
+                            ${user.is_locked ? '<span class="mt-1 inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-700">Terkunci</span>' : ''}
 
                             <div class="mt-0.5 truncate text-[11px] text-zinc-400">
                                 ${escapedEmail}
@@ -1952,6 +1985,18 @@
                 <td class="px-4 py-4">
 
                     <div class="flex items-center justify-center gap-1">
+
+                        <button
+                            type="button"
+                            onclick="toggleLockUser(${user.id}, '${escapeJs(user.name ?? '-')}', ${user.is_locked ? 'true' : 'false'})"
+                            title="${user.is_locked ? 'Buka kunci akun' : 'Kunci akun'}"
+                            class="inline-flex h-8 w-8 items-center justify-center rounded-md border transition ${user.is_locked ? 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100' : 'border-zinc-200 text-zinc-500 hover:border-zinc-950 hover:bg-zinc-950 hover:text-white'}"
+                        >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-3.5 w-3.5">
+                                <rect x="5" y="10" width="14" height="11" rx="2"></rect>
+                                <path stroke-linecap="round" d="M8 10V7a4 4 0 0 1 8 0v3"></path>
+                            </svg>
+                        </button>
 
                         <button
                             type="button"
@@ -1987,7 +2032,7 @@
                         <button
                             type="button"
                             onclick="deleteUser(${user.id}, '${escapeJs(user.name ?? '-')}')"
-                            title="Hapus"
+                            title="Hapus akun"
                             class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-zinc-200 text-zinc-500 transition hover:border-red-600 hover:bg-red-600 hover:text-white"
                         >
 
@@ -2240,13 +2285,31 @@
         const $roleSelect =
             $('#modal_role');
 
+        const isLmg = String(divisiId) === 'lmg';
+
+        $('#modal_jabatan_group').toggleClass('hidden', !isLmg);
+        $('#modal_role_group').toggleClass('hidden', isLmg);
+        $('#modal_jabatan')
+            .prop('disabled', !isLmg)
+            .prop('required', isLmg);
+
+        if (!isLmg) {
+            $('#modal_jabatan').val('');
+        }
+
 
         $roleSelect
             .val('')
             .prop(
                 'disabled',
-                !divisiId
-            );
+                !divisiId || isLmg
+            )
+            .prop('required', !!divisiId && !isLmg);
+
+        if (isLmg) {
+            $('#hierarchy_panel').addClass('hidden');
+            return;
+        }
 
 
         $roleSelect.find('option').each(function () {
@@ -2527,16 +2590,20 @@
                 .trigger('change');
 
 
-            setTimeout(function () {
-
-                $('#edit_role')
-                    .val(
-                        currentPlacement.role_id
-                    )
-                    .trigger('change');
-
-
+            if (String(currentPlacement.division_id) === 'lmg') {
+                $('#edit_jabatan').val(user.jabatan ?? '');
+                $('#hierarchy_panel_edit').addClass('hidden');
+            } else {
                 setTimeout(function () {
+
+                    $('#edit_role')
+                        .val(
+                            currentPlacement.role_id
+                        )
+                        .trigger('change');
+
+
+                    setTimeout(function () {
 
                     $('#edit_parent')
                         .val(
@@ -2576,9 +2643,10 @@
                         .val(currentSubordinateIds)
                         .trigger('change');
 
-                }, 200);
+                    }, 200);
 
-            }, 100);
+                }, 100);
+            }
 
         } else {
 
@@ -2593,6 +2661,45 @@
             'editModal'
         );
 
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | LOCK / UNLOCK USER
+    |--------------------------------------------------------------------------
+    */
+
+    function toggleLockUser(id, name, isLocked) {
+        const actionLabel = isLocked ? 'membuka kunci' : 'mengunci';
+        const submit = function () {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/manajemen_user/${id}/lock`;
+            form.innerHTML = `
+                <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]')?.content ?? ''}">
+                <input type="hidden" name="_method" value="PATCH">
+            `;
+            document.body.appendChild(form);
+            form.submit();
+        };
+
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: isLocked ? 'Buka kunci akun?' : 'Kunci akun?',
+                text: `${name} ${isLocked ? 'akan dapat login kembali.' : 'tidak akan dapat login sampai kuncinya dibuka.'}`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: isLocked ? 'Buka Kunci' : 'Kunci Akun',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#161616'
+            }).then(function (result) {
+                if (result.isConfirmed) submit();
+            });
+            return;
+        }
+
+        if (window.confirm(`Yakin ingin ${actionLabel} akun ${name}?`)) submit();
     }
 
 
@@ -2641,18 +2748,35 @@
         const $panel =
             $('#hierarchy_panel_edit');
 
+        const isLmg = String(divisiId) === 'lmg';
+
+        $('#edit_jabatan_group').toggleClass('hidden', !isLmg);
+        $('#edit_role_group').toggleClass('hidden', isLmg);
+        $('#edit_jabatan')
+            .prop('disabled', !isLmg)
+            .prop('required', isLmg);
+
+        if (!isLmg) {
+            $('#edit_jabatan').val('');
+        }
+
 
         $roleSelect
             .val('')
             .prop(
                 'disabled',
-                !divisiId
-            );
+                !divisiId || isLmg
+            )
+            .prop('required', !!divisiId && !isLmg);
 
 
         $panel.addClass(
             'hidden'
         );
+
+        if (isLmg) {
+            return;
+        }
 
 
         $roleSelect.find('option').each(function () {

@@ -266,7 +266,7 @@
 .lmg-finance .modal-header{background:#18181b!important;color:#fff!important}.lmg-finance .modal-title{font-size:16px;font-weight:700}
 .lmg-finance .modal-footer{background:#fafafa}.lmg-finance .modal-body textarea{resize:vertical}
 </style>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="{{ asset('vendor/jquery/jquery.min.js') }}"></script>
 <script>
     function loadPayrollData(period = '', page = 1) {
         if (!period) {

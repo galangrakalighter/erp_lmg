@@ -3,6 +3,49 @@
     Tailwind CSS version
 ========================================================= --}}
 
+<style>
+    /* Keep the sidebar surface dark while making navigation labels readable. */
+    #accordionSidebar a:not(.bg-white):not([data-sidebar-brand]),
+    #accordionSidebar button[data-sidebar-collapse] {
+        color: #e4e4e7 !important;
+    }
+
+    #accordionSidebar a:not(.bg-white):not([data-sidebar-brand]):hover,
+    #accordionSidebar button[data-sidebar-collapse]:hover {
+        background-color: #fff !important;
+        color: #161616 !important;
+    }
+
+    #accordionSidebar a.bg-white,
+    #accordionSidebar a[data-sidebar-active="true"] {
+        background-color: #fff !important;
+        color: #161616 !important;
+        box-shadow: none;
+        font-weight: 700;
+    }
+
+    #accordionSidebar a:hover svg,
+    #accordionSidebar button[data-sidebar-collapse]:hover svg,
+    #accordionSidebar a.bg-white svg,
+    #accordionSidebar a[data-sidebar-active="true"] svg {
+        color: #161616 !important;
+    }
+
+    #accordionSidebar button[data-sidebar-parent-active="true"] {
+        background-color: transparent !important;
+        color: #fff !important;
+    }
+</style>
+
+@if(request()->routeIs('cms.*'))
+<style>
+    /* Mode CMS: tampilkan hanya navigasi CMS di area menu sidebar. */
+    #sidebarNavigationContent > :not([data-cms-management-nav]) {
+        display: none !important;
+    }
+</style>
+@endif
+
 <aside
     id="accordionSidebar"
     class="fixed inset-y-0 left-0 z-[1100] flex w-[280px] -translate-x-full flex-col border-r border-zinc-800 bg-zinc-950 text-white transition-transform duration-300 ease-out lg:translate-x-0"
@@ -14,6 +57,7 @@
     <div class="flex h-[76px] shrink-0 items-center border-b border-zinc-800 px-5">
         <a
             href="{{ route('home') }}"
+            data-sidebar-brand
             class="group flex min-w-0 items-center gap-3"
         >
             <div class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white">
@@ -57,7 +101,7 @@
     {{-- =====================================================
         SIDEBAR CONTENT
     ====================================================== --}}
-    <div class="min-h-0 flex-1 overflow-y-auto px-3 py-4 scrollbar-thin">
+    <div id="sidebarNavigationContent" class="min-h-0 flex-1 overflow-y-auto px-3 py-4 scrollbar-thin">
 
         {{-- =================================================
             PRIMARY NAVIGATION
@@ -176,7 +220,8 @@
                 'branding',
                 'analisis',
                 'manajemen',
-                'PDF'
+                'PDF',
+                'digital-marketing.workspace'
             ]);
 
             $divisiOpen = Route::is([
@@ -276,9 +321,17 @@
         {{-- =================================================
             CMS MANAGEMENT
         ================================================== --}}
-        @if(request()->routeIs('cms*'))
+        @if(request()->routeIs('cms.*'))
 
-            <div class="my-5 border-t border-zinc-800"></div>
+            @php
+                // Ambil kode langsung dari route agar submenu tidak bergantung
+                // pada view composer atau urutan render layout.
+                $cmsProductCode = request()->route('nama') ?: ($activeProductCode ?? null);
+            @endphp
+
+            <div data-cms-management-nav>
+
+            <div class="mb-4 border-t border-zinc-800"></div>
 
             <div class="mb-2 px-3 text-[9px] font-bold uppercase tracking-[0.18em] text-zinc-600">
                 CMS Management
@@ -286,7 +339,7 @@
 
             @php
                 $cmsMenus = [
-                    ['route' => 'cms.produk', 'label' => 'Produk'],
+                    ['route' => 'cms.produk', 'label' => 'Client'],
                     ['route' => 'cms.hook', 'label' => 'Hook'],
                     ['route' => 'cms.strategy', 'label' => 'Strategy'],
                     ['route' => 'cms.status', 'label' => 'Status'],
@@ -297,20 +350,26 @@
                 ];
             @endphp
 
-            <div class="space-y-1">
+            <nav class="space-y-1" aria-label="CMS Management">
 
                 @foreach($cmsMenus as $item)
 
+                    @php
+                        $cmsItemActive = request()->routeIs($item['route']);
+                    @endphp
+
                     <a
-                        href="{{ route($item['route'], $activeProductCode) }}"
+                        href="{{ route($item['route'], ['nama' => $cmsProductCode]) }}"
+                        data-sidebar-active="{{ $cmsItemActive ? 'true' : 'false' }}"
                         class="flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition
-                        {{ request()->routeIs($item['route'])
+                        {{ $cmsItemActive
                             ? 'bg-white font-semibold text-zinc-950'
                             : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
                         }}"
+                        style="display:flex !important; visibility:visible !important; opacity:1 !important; min-height:38px; align-items:center; {{ $cmsItemActive ? 'background:#fff; color:#161616;' : 'color:#e4e4e7;' }}"
                     >
                         <span class="h-1.5 w-1.5 rounded-full
-                            {{ request()->routeIs($item['route'])
+                            {{ $cmsItemActive
                                 ? 'bg-zinc-950'
                                 : 'bg-zinc-600'
                             }}">
@@ -321,7 +380,7 @@
 
                 @endforeach
 
-            </div>
+            </nav>
 
 
             <a
@@ -339,6 +398,8 @@
 
                 <span>Kembali</span>
             </a>
+
+            </div>
 
         @endif
 
@@ -508,7 +569,7 @@
 
                         <div
                             id="cat_bd_{{ strtolower($catLabel) }}"
-                            class="{{ $isMarketingPage ? '' : 'hidden' }} mb-3 ml-2 border-l border-zinc-700 pl-2"
+                            class="{{ $isMarketingPage ? '' : 'hidden' }} mb-3 ml-2 space-y-1 border-l border-zinc-700 pl-2"
                         >
 
                             @php
@@ -591,7 +652,7 @@
 
                                         <div
                                             id="client_bd_{{ $catLabel }}_{{ $client->client_id }}"
-                                            class="{{ $isActiveClient ? '' : 'hidden' }} ml-2 mt-1 border-l border-zinc-700 pl-2"
+                                            class="{{ $isActiveClient ? '' : 'hidden' }} ml-2 mt-1 space-y-1 border-l border-zinc-700 pl-2"
                                         >
 
                                             @php
@@ -842,7 +903,7 @@
 
                     <div
                         id="collapseSubKPI"
-                        class="{{ $isKPIActive ? '' : 'hidden' }} ml-2 mt-1 border-l border-zinc-800 pl-2"
+                        class="{{ $isKPIActive ? '' : 'hidden' }} ml-2 mt-1 space-y-1 border-l border-zinc-800 pl-2"
                     >
 
                         <a
@@ -901,7 +962,7 @@
 
                     <div
                         id="collapseSubHarian"
-                        class="{{ $isHarianActive ? '' : 'hidden' }} ml-2 mt-1 border-l border-zinc-800 pl-2"
+                        class="{{ $isHarianActive ? '' : 'hidden' }} ml-2 mt-1 space-y-1 border-l border-zinc-800 pl-2"
                     >
 
                         <a
@@ -1374,30 +1435,6 @@
 
     </div>
 
-
-    {{-- =====================================================
-        SIDEBAR FOOTER
-    ====================================================== --}}
-    <div class="shrink-0 border-t border-zinc-800 p-4">
-
-        <div class="flex items-center justify-between">
-
-            <div>
-                <div class="text-[9px] font-bold uppercase tracking-[0.16em] text-zinc-600">
-                    Lighter ERP
-                </div>
-
-                <div class="mt-0.5 text-[10px] text-zinc-700">
-                    Integrated Digital Ecosystem
-                </div>
-            </div>
-
-            <div class="h-2 w-2 rounded-full bg-emerald-500/70"></div>
-
-        </div>
-
-    </div>
-
 </aside>
 
 
@@ -1536,6 +1573,64 @@ document.addEventListener('DOMContentLoaded', function () {
         return desktopQuery.matches;
     }
 
+    function activateCurrentSidebarMenu() {
+        if (!sidebar) return;
+
+        const currentUrl = new URL(window.location.href);
+        const links = Array.from(sidebar.querySelectorAll('a[href]:not([data-sidebar-brand])'));
+        const activeLink = links.find(function (link) {
+            const href = link.getAttribute('href');
+            if (!href || href === '#') return false;
+
+            try {
+                const linkUrl = new URL(href, window.location.origin);
+                return linkUrl.pathname.replace(/\/$/, '') === currentUrl.pathname.replace(/\/$/, '')
+                    && (!linkUrl.search || linkUrl.search === currentUrl.search);
+            } catch (error) {
+                return false;
+            }
+        });
+
+        if (!activeLink) return;
+
+        activeLink.dataset.sidebarActive = 'true';
+        activeLink.setAttribute('aria-current', 'page');
+
+        let ancestor = activeLink.parentElement;
+        while (ancestor && ancestor !== sidebar) {
+            if (ancestor.id) {
+                const controller = sidebar.querySelector(
+                    `[data-sidebar-collapse="${CSS.escape(ancestor.id)}"]`
+                );
+
+                if (controller) {
+                    ancestor.classList.remove('hidden');
+                    ancestor.style.height = 'auto';
+                    ancestor.style.opacity = '1';
+                    ancestor.style.transform = 'translateY(0)';
+                    controller.setAttribute('aria-expanded', 'true');
+                    controller.dataset.sidebarParentActive = 'true';
+
+                    const chevron = controller.querySelector('.sidebar-chevron');
+                    if (chevron) {
+                        if (ancestor.id.startsWith('client_bd_')) {
+                            chevron.classList.add('rotate-90');
+                            chevron.classList.remove('rotate-180');
+                        } else {
+                            chevron.classList.add('rotate-180');
+                        }
+                    }
+                }
+            }
+
+            ancestor = ancestor.parentElement;
+        }
+
+        window.requestAnimationFrame(function () {
+            activeLink.scrollIntoView({ block: 'nearest' });
+        });
+    }
+
     function setToggleState(isOpen) {
         sidebarToggle?.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
         sidebarToggle?.setAttribute('aria-label', isOpen ? 'Tutup sidebar' : 'Buka sidebar');
@@ -1579,9 +1674,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (isDesktopSidebar()) {
             sidebar.classList.remove('-translate-x-full', 'translate-x-0');
-            const collapsed = localStorage.getItem('lmg-sidebar-collapsed') === 'true';
-            document.body.classList.toggle('sidebar-collapsed', collapsed);
-            setToggleState(!collapsed);
+            document.body.classList.remove('sidebar-collapsed');
+            localStorage.setItem('lmg-sidebar-collapsed', 'false');
+            setToggleState(true);
         } else {
             document.body.classList.remove('sidebar-collapsed');
             sidebar.classList.add('-translate-x-full');
@@ -1615,6 +1710,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     desktopQuery.addEventListener('change', syncSidebarToViewport);
+    activateCurrentSidebarMenu();
     syncSidebarToViewport();
 
 });

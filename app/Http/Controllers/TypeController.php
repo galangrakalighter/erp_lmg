@@ -19,7 +19,8 @@ class TypeController extends Controller
         }
         $data = $datatable->get();
         $title = 'Type';
-        return view('cms.type.index', compact('data', 'title', 'role'));
+        $activeProductCode = $name;
+        return view('cms.type.index', compact('data', 'title', 'role', 'activeProductCode'));
     }
 
     public function store(Request $request, $name){

@@ -49,16 +49,26 @@
     <script src="{{ asset('vendor/jquery/jquery.min.js')}}"></script>
     <script src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js')}}"></script>
 
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="{{ asset('vendor-local/select2/select2.min.js') }}"></script>
 
     <script src="{{ asset('vendor/jquery-easing/jquery.easing.min.js')}}"></script>
     <script src="{{ asset('js/sb-admin-2.min.js')}}"></script>
     <script src="{{ asset('vendor/chart.js/Chart.min.js')}}"></script>
     <script src="{{ asset('vendor/datatables/jquery.dataTables.min.js')}}"></script>
     <script src="{{ asset('vendor/datatables/dataTables.bootstrap4.min.js')}}"></script>
-    <script src="https://cdn.rawgit.com/ashl1/datatables-rowsgroup/v1.0.0/dataTables.rowsGroup.js"></script>
-    <script src="{{ asset('js/demo/datatables-demo.js')}}"></script>
-    <script src="https://cdn.jsdelivr.net/npm/split.js/dist/split.min.js"></script>
+    <script src="{{ asset('js/native-client-table.js') }}"></script>
+    @unless(request()->routeIs(
+        'cms.hook',
+        'cms.strategy',
+        'cms.status',
+        'cms.type',
+        'cms.pilar',
+        'cms.body',
+        'cms.cta'
+    ))
+        <script src="{{ asset('js/demo/datatables-demo.js')}}"></script>
+    @endunless
+    <script src="{{ asset('vendor-local/split/split.min.js') }}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const loader = document.getElementById('loadingOverlay');
@@ -251,7 +261,13 @@
                     }
                 ],
                 language: {
-                    url: '//cdn.datatables.net/plug-ins/1.10.21/i18n/Indonesian.json'
+                    emptyTable: 'Belum ada data',
+                    info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ data',
+                    infoEmpty: 'Menampilkan 0 data',
+                    lengthMenu: 'Tampilkan _MENU_ data',
+                    search: 'Cari:',
+                    zeroRecords: 'Data tidak ditemukan',
+                    paginate: { previous: 'Sebelumnya', next: 'Berikutnya' }
                 }
             });
         });

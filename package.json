@@ -15,6 +15,16 @@
         "vite": "^7.0.7"
     },
     "dependencies": {
-        "sortablejs": "^1.15.7"
+        "chart.js": "^4.5.1",
+        "choices.js": "^11.2.4",
+        "flatpickr": "^4.6.13",
+        "jquery": "^3.7.1",
+        "lucide": "^1.46.0",
+        "moment": "^2.31.0",
+        "pdfjs-dist": "^3.11.174",
+        "select2": "^4.1.0",
+        "sortablejs": "^1.15.7",
+        "split.js": "^1.6.5",
+        "sweetalert2": "^11.26.25"
     }
 }

@@ -4,6 +4,56 @@
 <div class="lmg-master-page">
 @include('partials.lmg_legacy_workspace')
 <style>
+    .lmg-master-page .btn-success {
+        border-color: #161616 !important;
+        background: #161616 !important;
+        color: #fff !important;
+    }
+    .lmg-master-page .btn-success:hover,
+    .lmg-master-page .btn-success:focus {
+        border-color: #2b2b2b !important;
+        background: #2b2b2b !important;
+        color: #fff !important;
+    }
+    .lmg-master-page .lmg-filter-select {
+        min-width: 190px;
+        height: 40px;
+        appearance: none;
+        cursor: pointer;
+        border: 1px solid #d4d4d8;
+        border-radius: 11px;
+        background-color: #fafafa;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2352525b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        padding: 0 40px 0 48px;
+        color: #27272a;
+        font-size: 13px;
+        font-weight: 600;
+        transition: border-color .2s, box-shadow .2s, background-color .2s;
+    }
+    .lmg-master-page .lmg-filter-select:hover { border-color: #a1a1aa; background-color: #fff; }
+    .lmg-master-page .lmg-filter-select:focus { border-color: #18181b; background-color: #fff; box-shadow: 0 0 0 3px rgba(24,24,27,.08); outline: none; }
+    .lmg-master-page .lmg-filter-shell { position: relative; display: inline-block; }
+    .lmg-master-page .lmg-filter-icon { pointer-events: none; position: absolute; top: 4px; bottom: 4px; left: 4px; z-index: 2; display: flex; width: 34px; align-items: center; justify-content: center; border-radius: 8px; background: #161616; color: #fff; }
+    .lmg-master-page .lmg-filter-icon svg { width: 15px; height: 15px; }
+    .lmg-master-page .master-file-toolbar { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:16px 20px; border-bottom:1px solid #e4e4e7; background:#fff; }
+    .lmg-master-page .master-file-heading { margin:0; color:#18181b; font-size:16px; font-weight:700; }
+    .lmg-master-page .master-file-tools { display:flex; align-items:flex-end; justify-content:flex-end; gap:10px; }
+    .lmg-master-page .master-file-filter { display:flex; align-items:flex-end; gap:8px; margin:0; }
+    .lmg-master-page .master-file-filter-field { display:flex; flex-direction:column; gap:6px; }
+    .lmg-master-page .master-file-filter-label { margin:0; color:#71717a; font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; }
+    .lmg-master-page .master-file-count { display:inline-flex; min-height:40px; align-items:center; white-space:nowrap; border:1px solid #e4e4e7; border-radius:11px; background:#fafafa; padding:0 13px; color:#52525b; font-size:12px; font-weight:700; }
+    .lmg-master-page .master-filter-reset { display:inline-flex; width:40px; height:40px; align-items:center; justify-content:center; margin:0; border:1px solid #e4e4e7; border-radius:11px; background:#fff; color:#52525b; text-decoration:none; }
+    .lmg-master-page .master-filter-reset:hover { background:#f4f4f5; color:#18181b; }
+    @media (max-width:767px) {
+        .lmg-master-page .master-file-toolbar { align-items:stretch; flex-direction:column; gap:12px; }
+        .lmg-master-page .master-file-tools, .lmg-master-page .master-file-filter { width:100%; align-items:stretch; }
+        .lmg-master-page .master-file-filter { flex:1; }
+        .lmg-master-page .master-file-filter-field, .lmg-master-page .lmg-filter-shell { display:block; width:100%; }
+        .lmg-master-page .lmg-filter-select { width:100%; min-width:0; }
+        .lmg-master-page .master-file-count { align-self:flex-end; }
+    }
     #masterPdfViewer { position:fixed; inset:0; width:100%; height:100%; background:#f2f3f5; z-index:99999; display:none; }
     .master-pdf-header { height:65px; background:#fff; display:flex; align-items:center; justify-content:space-between; gap:20px; padding:0 25px; border-bottom:1px solid #ddd; }
     .master-pdf-header-left, .master-pdf-header-right { display:flex; align-items:center; gap:12px; }
@@ -232,6 +282,21 @@
     body.document-editor-fullscreen-open {
         overflow: hidden !important;
     }
+
+    .master-file-filter-field {
+        width: 100%;
+    }
+
+    .lmg-filter-shell {
+        display: flex;
+        align-items: center;
+        width: 100%;
+    }
+
+    .lmg-filter-select {
+        width: 100%;
+        box-sizing: border-box; /* Agar padding tidak merusak lebar 100% */
+    }
 </style>
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
     <div>
@@ -259,23 +324,27 @@
     $primaryRoles = $folder->roles->where('division_id', $folder->division_id)->values();
 @endphp
 
-<div class="card shadow-sm border-0">
-    <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between align-items-center">
-        <h6 class="m-0 font-weight-bold text-primary">Daftar File</h6>
-        <div class="d-flex flex-wrap align-items-center mt-2 mt-md-0">
-            <form method="GET" action="{{ route('master-folder.show', $folder) }}" class="form-inline mr-2 mb-1 mb-md-0">
-                <label for="primary-role-filter" class="small text-muted mr-2 mb-0">Jabatan Utama</label>
-                <select id="primary-role-filter" name="primary_role_id" class="form-control form-control-sm" onchange="this.form.submit()">
-                    <option value="">Semua Jabatan</option>
-                    @foreach($primaryRoles as $role)
-                        <option value="{{ $role->id }}" @selected((int) $selectedPrimaryRoleId === (int) $role->id)>{{ $role->role_name }}</option>
-                    @endforeach
-                </select>
+<div class="card shadow-sm border-0 overflow-hidden">
+    <div class="master-file-toolbar">
+        <div class="master-file-tools">
+            <form method="GET" action="{{ route('master-folder.show', $folder) }}" class="master-file-filter">
+                <div class="master-file-filter-field" style="width: 100%;">
+                    <label for="primary-role-filter" class="master-file-filter-label">Jabatan Utama</label>
+                    <span class="lmg-filter-shell" style="display: flex; width: 100%;">
+                        <span class="lmg-filter-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 6h16M7 12h10M10 18h4"/></svg></span>
+                        <select id="primary-role-filter" name="primary_role_id" class="lmg-filter-select" onchange="this.form.submit()" style="width: 100%;">
+                            <option value="">Semua Jabatan</option>
+                            @foreach($primaryRoles as $role)
+                                <option value="{{ $role->id }}" @selected((int) $selectedPrimaryRoleId === (int) $role->id)>{{ $role->role_name }}</option>
+                            @endforeach
+                        </select>
+                    </span>
+                </div>
                 @if($selectedPrimaryRoleId)
-                    <a href="{{ route('master-folder.show', $folder) }}" class="btn btn-sm btn-light border ml-2" title="Hapus filter"><i class="fas fa-times"></i></a>
+                    <a href="{{ route('master-folder.show', $folder) }}" class="master-filter-reset" title="Hapus filter" aria-label="Hapus filter"><i class="fas fa-times"></i></a>
                 @endif
             </form>
-            <span class="badge badge-light border">{{ $folder->files->count() }} file</span>
+            <span class="master-file-count">{{ $folder->files->count() }} file</span>
         </div>
     </div>
     <div class="card-body p-0">
@@ -283,11 +352,14 @@
             <table class="table table-hover mb-0">
                 <thead class="bg-light"><tr><th class="pl-4">Nama File</th><th>Jabatan Utama</th><th>Akses Role</th><th>Ukuran</th><th>Pengunggah</th><th>Tanggal</th><th class="text-center">Aksi</th></tr></thead>
                 <tbody>
-                @forelse($folder->files->sortByDesc('created_at') as $file)
+                @forelse($folder->files as $file)
                     <tr>
                         <td class="pl-4 align-middle">
                             <i class="fas fa-file-{{ strtolower(pathinfo($file->original_name, PATHINFO_EXTENSION)) === 'pdf' || $file->mime_type === 'application/pdf' ? 'pdf text-danger' : 'alt text-primary' }} mr-2"></i>
-                            @if(strtolower(pathinfo($file->original_name, PATHINFO_EXTENSION)) === 'pdf' || $file->mime_type === 'application/pdf')
+                            @if($file->is_system_template)
+                                <span class="font-weight-bold text-gray-800">{{ $file->original_name }}</span>
+                                <span class="badge badge-dark ml-2"><i class="fas fa-thumbtack mr-1"></i>Disematkan</span>
+                            @elseif(strtolower(pathinfo($file->original_name, PATHINFO_EXTENSION)) === 'pdf' || $file->mime_type === 'application/pdf')
                                 <a href="{{ route('master-folder.files.view', ['folder' => $folder, 'file' => $file->original_name]) }}" class="font-weight-bold pdf-file-link">{{ $file->original_name }}</a>
                             @else
                                 <span class="font-weight-bold text-gray-800">{{ $file->original_name }}</span>
@@ -311,10 +383,14 @@
                         <td class="align-middle text-muted small">{{ $file->uploader->name ?? '-' }}</td>
                         <td class="align-middle text-muted small">{{ $file->created_at->format('d M Y, H:i') }}</td>
                         <td class="align-middle text-center">
-                            <a href="{{ route('master-folder.files.download', [$folder, $file]) }}" class="btn btn-sm btn-outline-primary" title="Download"><i class="fas fa-download"></i></a>
+                            @unless($file->is_system_template)
+                                <a href="{{ route('master-folder.files.download', [$folder, $file]) }}" class="btn btn-sm btn-outline-primary" title="Download"><i class="fas fa-download"></i></a>
+                            @endunless
                             @if($canManage)
                             <button type="button" class="btn btn-sm btn-outline-warning" data-toggle="modal" data-target="#editFileModal{{ $file->id }}" title="Edit"><i class="fas fa-edit"></i></button>
-                            <button type="button" class="btn btn-sm btn-outline-danger" data-toggle="modal" data-target="#deleteFileModal{{ $file->id }}" title="Hapus"><i class="fas fa-trash"></i></button>
+                            @unless($file->is_system_template)
+                                <button type="button" class="btn btn-sm btn-outline-danger" data-toggle="modal" data-target="#deleteFileModal{{ $file->id }}" title="Hapus"><i class="fas fa-trash"></i></button>
+                            @endunless
                             @endif
                         </td>
                     </tr>
@@ -836,6 +912,7 @@
 
     </div>
 
+    @unless($file->is_system_template)
     <div class="modal fade" id="deleteFileModal{{ $file->id }}" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog" role="document">
             <form method="POST" action="{{ route('master-folder.files.destroy', [$folder, $file]) }}" class="modal-content">
@@ -856,6 +933,7 @@
             </form>
         </div>
     </div>
+    @endunless
 @endforeach
 @endif
 

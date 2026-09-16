@@ -16,6 +16,7 @@ function initSelect2(){
 
 }
 
+
 function initHierarchy(){
 
     $('#select-buh').change(function(){
@@ -49,6 +50,7 @@ function initHierarchy(){
 
     });
 
+
     $('#select-ccm').change(function(){
 
         let ids=$(this).val();
@@ -68,6 +70,7 @@ function initHierarchy(){
     });
 
 }
+
 
 function initPlatform(){
 
@@ -115,6 +118,7 @@ function initPlatform(){
 
     });
 
+
     $(document)
 
     .off('click','.remove-platform')
@@ -128,6 +132,7 @@ function initPlatform(){
     });
 
 }
+
 
 function filterOptions(childId,parentIds){
 
@@ -160,6 +165,7 @@ function filterOptions(childId,parentIds){
     });
 
 }
+
 
 function resetSelect(ids){
 

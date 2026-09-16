@@ -405,21 +405,6 @@
                                         ></textarea>
                                     </div>
 
-                                    <div>
-                                        <label
-                                            for="leadMeeting"
-                                            class="mb-2 block text-xs font-semibold text-zinc-700"
-                                        >
-                                            Waktu Meeting
-                                        </label>
-
-                                        <input
-                                            type="datetime-local"
-                                            id="leadMeeting"
-                                            class="block w-full rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950"
-                                        >
-                                    </div>
-
                                 </div>
                             </div>
                         </div>

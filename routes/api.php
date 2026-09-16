@@ -22,6 +22,21 @@ Route::middleware(['web', 'auth'])->prefix('hc')->group(function () {
     Route::post('/cancel-remaining', [App\Http\Controllers\HCDailyController::class, 'cancelRemaining'])->name('hc.cancelRemaining');
     Route::delete('/delete-task/{id}', [App\Http\Controllers\HCDailyController::class, 'destroy']);
 });
+
+Route::middleware(['web', 'auth'])
+    ->prefix('digital-marketing/workspace')
+    ->name('api.digital-marketing.')
+    ->group(function () {
+        Route::get('/market-research/{id}/{platform}', [App\Http\Controllers\marketResearchController::class, 'index'])
+            ->name('market-research');
+        Route::get('/branding/{id}/{platform}', [App\Http\Controllers\brandingController::class, 'index'])
+            ->name('branding');
+        Route::get('/analisis/{produk}/{platform}', [App\Http\Controllers\AnalisisController::class, 'index'])
+            ->name('analisis');
+        Route::get('/content-plan/{produk_id}/{platform}', [App\Http\Controllers\ManajemenKontenController::class, 'index'])
+            ->name('content-plan');
+    });
+
 Route::post('/updateStatusChecked', [App\Http\Controllers\selectionController::class, 'updateStatus'])->name('selection.updateStatus');
 Route::get('/client-pics/{id}/{userId}', [App\Http\Controllers\HCDailyController::class, 'getPic']);
 Route::get('/hc-daily/get-data/{id}', [App\Http\Controllers\HCDailyController::class, 'getTasksById']);

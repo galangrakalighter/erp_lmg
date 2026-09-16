@@ -25,7 +25,14 @@ class UserController extends Controller
             'userDivisions.role',    
             'userDivisions.parent'
         ])
-        ->where('isAdmin', 'f') // Tetap sembunyikan Super Admin utama jika perlu
+        ->where(function ($query) {
+            $query->where('isAdmin', false)
+                ->orWhere(function ($adminQuery) {
+                    $adminQuery->where('isAdmin', true)
+                        ->whereNotNull('jabatan')
+                        ->where('jabatan', '!=', '');
+                });
+        })
         ->orderBy('name', 'ASC')
         ->get();
 
@@ -38,7 +45,15 @@ class UserController extends Controller
     public function getUsersJson() 
     {
         $users = User::with(['userDivisions.division', 'userDivisions.role', 'userDivisions.parent', 'userClients.client'])
-            ->where('isAdmin', 'f')
+            ->where(function ($query) {
+                $query->where('isAdmin', false)
+                    ->orWhere(function ($adminQuery) {
+                        $adminQuery->where('isAdmin', true)
+                            ->whereNotNull('jabatan')
+                            ->where('jabatan', '!=', '');
+                    });
+            })
+            ->orderBy('name')
             ->get();
 
         $result = $users->map(function($user) {
@@ -46,7 +61,22 @@ class UserController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'user_divisions' => $user->userDivisions->map(function($ud) {
+                'is_admin' => (bool) $user->isAdmin,
+                'jabatan' => $user->jabatan,
+                'photo_profile_url' => $user->photo_profile ? asset('storage/' . $user->photo_profile) : null,
+                'is_locked' => (bool) $user->is_locked,
+                'is_current_user' => Auth::id() === $user->id,
+                'user_divisions' => $user->isAdmin && filled($user->jabatan)
+                    ? [[
+                        'division_id' => 'lmg',
+                        'division' => ['name' => 'Lighter Media Group'],
+                        'role_id' => null,
+                        'role' => strtoupper($user->jabatan),
+                        'level' => $this->lmgPositionLevel($user->jabatan),
+                        'parent_id' => null,
+                        'parent' => null,
+                    ]]
+                    : $user->userDivisions->map(function($ud) {
                     $role = $this->getRole(User::find($ud->user_id), $ud->division_id);
                     return [
                         'division_id' => $ud->division_id,
@@ -63,7 +93,7 @@ class UserController extends Controller
                             'role_level' => $role->level
                         ] : null
                     ];
-                }),
+                })->values(),
                 'user_clients' => $user->userClients->map(function($uc) {
                     $client = $uc->client;
                     $name = $client?->nama ?? 'Nama tidak ditemukan';
@@ -73,6 +103,15 @@ class UserController extends Controller
         });
 
         return response()->json($result);
+    }
+
+    private function lmgPositionLevel(?string $position): int
+    {
+        return match (strtolower((string) $position)) {
+            'ceo' => 1,
+            'coo', 'cmo', 'cfo' => 2,
+            default => 3,
+        };
     }
 
     private function getRole($user, $divisionId)
@@ -88,6 +127,15 @@ class UserController extends Controller
     }
 
     public function store(Request $request){
+        $isLmg = $request->input('divisi_id') === 'lmg';
+        $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255'],
+            'password' => ['required', 'string', 'min:6'],
+            'divisi_id' => ['required'],
+            'jabatan' => [$isLmg ? 'required' : 'nullable', 'in:ceo,coo,cmo,cfo'],
+            'role_id' => [$isLmg ? 'nullable' : 'required', 'nullable', 'integer'],
+        ]);
         $exists = User::where('email', $request->email)->exists();
         if ($exists) {
             return redirect()->back()->with('error', 'Email Sudah Terdaftar Di Sistem');
@@ -100,18 +148,21 @@ class UserController extends Controller
                 'name' => $request->name,
                 'email' => $request->email,
                 'password' => bcrypt($request->password),
-                'isAdmin' => 'f'
+                'isAdmin' => $isLmg,
+                'jabatan' => $isLmg ? strtolower($request->jabatan) : null,
             ]);
 
             // Tambah Ke Table User Division
-            UserDivision::insert([
-                'user_id' => $newUser->id,
-                'division_id' => (int)$request->divisi_id,
-                'role_id' => (int)$request->role_id,
-                'parent_id' => $request->filled('parent_id') ? $request->parent_id : null
-            ]);
+            if (!$isLmg) {
+                UserDivision::insert([
+                    'user_id' => $newUser->id,
+                    'division_id' => (int)$request->divisi_id,
+                    'role_id' => (int)$request->role_id,
+                    'parent_id' => $request->filled('parent_id') ? $request->parent_id : null
+                ]);
+            }
 
-            if ($request->has('subordinate_ids') && is_array($request->subordinate_ids)) {
+            if (!$isLmg && $request->has('subordinate_ids') && is_array($request->subordinate_ids)) {
                 foreach ($request->subordinate_ids as $subordinateId) {
                     $subordinate = User::find($subordinateId);
                     if ($subordinate) {
@@ -132,6 +183,15 @@ class UserController extends Controller
 
     public function update($id, Request $request){
         $user = User::findOrFail($id);
+        $isLmg = $request->input('divisi_id') === 'lmg';
+        $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255'],
+            'password' => ['nullable', 'string', 'min:6'],
+            'divisi_id' => ['required'],
+            'jabatan' => [$isLmg ? 'required' : 'nullable', 'in:ceo,coo,cmo,cfo'],
+            'role_id' => [$isLmg ? 'nullable' : 'required', 'nullable', 'integer'],
+        ]);
         $level = Role::find((int)$request->role_id);
 
         // 1. Cek duplikasi email (kecuali email milik user ini sendiri)
@@ -147,6 +207,8 @@ class UserController extends Controller
             $userData = [
                 'name'  => $request->name,
                 'email' => $request->email,
+                'isAdmin' => $isLmg,
+                'jabatan' => $isLmg ? strtolower($request->jabatan) : null,
             ];
             
             // Hanya update password jika diisi
@@ -157,20 +219,22 @@ class UserController extends Controller
             $user->update($userData);
 
             // 3. Update User Division (Atasan)
-            UserDivision::where('user_id', $id)->update([
-                'division_id' => (int)$request->divisi_id,
-                'role_id'     => (int)$request->role_id,
-                'parent_id'   => ($level && $level->level == 1) ? null : ($request->parent_id ?: null)
-            ]);
+            UserDivision::where('parent_id', $id)->update(['parent_id' => null]);
+            UserDivision::where('user_id', $id)->delete();
+
+            if (!$isLmg) {
+                UserDivision::create([
+                    'user_id' => $id,
+                    'division_id' => (int)$request->divisi_id,
+                    'role_id' => (int)$request->role_id,
+                    'parent_id' => ($level && $level->level == 1) ? null : ($request->parent_id ?: null),
+                ]);
+            }
 
             // 4. Update Hierarki Bawahan
             // Langkah A: Lepas semua bawahan lama yang sebelumnya melapor ke user ini
-            UserDivision::where('parent_id', $id)
-                ->where('division_id', (int)$request->divisi_id)
-                ->update(['parent_id' => null]);
-
             // Langkah B: Set bawahan baru berdasarkan pilihan di modal
-            if ($request->has('subordinate_ids') && is_array($request->subordinate_ids)) {
+            if (!$isLmg && $request->has('subordinate_ids') && is_array($request->subordinate_ids)) {
                 UserDivision::whereIn('user_id', $request->subordinate_ids)
                     ->where('division_id', (int)$request->divisi_id)
                     ->update(['parent_id' => $id]);
@@ -186,31 +250,34 @@ class UserController extends Controller
     }
 
     public function destroy($id){
-        DB::beginTransaction();
-
         try {
-            // 1. Ambil data user
             $user = User::findOrFail($id);
 
-            // 2. Bersihkan Hierarki: Jika user ini adalah atasan, 
-            // lepaskan bawahannya (set parent_id jadi null)
-            UserDivision::where('parent_id', $id)->update([
-                'parent_id' => null
-            ]);
+            if (Auth::id() === $user->id) {
+                return redirect()->back()->with('error', 'Akun yang sedang digunakan tidak dapat dihapus.');
+            }
 
-            // 3. Hapus data di tabel relasi (UserDivision)
-            UserDivision::where('user_id', $id)->delete();
-            
-            // 4. Hapus data di tabel User Utama
             $user->delete();
 
-            DB::commit();
-            return redirect()->back()->with('success', 'User dan hubungan hierarki berhasil dihapus');
+            return redirect()->back()->with('success', 'Akun disembunyikan. Data akun tetap tersimpan di database.');
 
         } catch (\Throwable $th) {
-            DB::rollback();
             return redirect()->back()->with('error', 'Gagal menghapus user: ' . $th->getMessage());
         }
+    }
+
+    public function toggleLock(User $user)
+    {
+        if (Auth::id() === $user->id) {
+            return redirect()->back()->with('error', 'Akun yang sedang digunakan tidak dapat dikunci.');
+        }
+
+        $user->update(['is_locked' => !$user->is_locked]);
+
+        return redirect()->back()->with(
+            'success',
+            $user->is_locked ? 'Akun berhasil dikunci.' : 'Kunci akun berhasil dibuka.'
+        );
     }
 
     public function getUserDivision(Request $request){

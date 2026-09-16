@@ -19,7 +19,8 @@ class JenisCTAController extends Controller
         }
         $data = $datatable->get();
         $title = "Jenis CTA";
-        return view('cms.cta.index', compact('data', 'title', 'role'));
+        $activeProductCode = $name;
+        return view('cms.cta.index', compact('data', 'title', 'role', 'activeProductCode'));
     }
 
     public function store(Request $request, $name){

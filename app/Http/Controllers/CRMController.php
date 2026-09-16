@@ -71,17 +71,24 @@ class CRMController extends Controller
                     ->toDateString()
             );
 
+            $dateField = $request->input('date_field') === 'first_chat'
+                ? 'first_chat'
+                : 'chat';
+            $dateColumn = $dateField === 'first_chat'
+                ? 'created_at'
+                : 'chat_terbaru';
+
             // Pada tabel crm_baru, waktu chat tersimpan di kolom
             // chat_terbaru (padanan tanggal_chat pada CRM Human).
             $query = CRM::query()
-                ->whereNotNull('chat_terbaru')
+                ->whereNotNull($dateColumn)
                 ->whereDate(
-                    'chat_terbaru',
+                    $dateColumn,
                     '>=',
                     $startDate
                 )
                 ->whereDate(
-                    'chat_terbaru',
+                    $dateColumn,
                     '<=',
                     $endDate
                 );
@@ -103,7 +110,7 @@ class CRMController extends Controller
             }
 
             $leads = $query
-                ->orderByDesc('chat_terbaru')
+                ->orderByDesc($dateColumn)
                 ->get()
                 ->map(function ($lead) {
                     return [
@@ -164,6 +171,7 @@ class CRMController extends Controller
                 'filters' => [
                     'start_date' => $startDate,
                     'end_date' => $endDate,
+                    'date_field' => $dateField,
                     'services' => $services,
                     'statuses' => [
                         [
@@ -222,17 +230,24 @@ class CRMController extends Controller
                     ->toDateString()
             );
 
+            $dateField = $request->input('date_field') === 'first_chat'
+                ? 'first_chat'
+                : 'chat';
+            $dateColumn = $dateField === 'first_chat'
+                ? 'created_at'
+                : 'tanggal_chat';
+
             $query = CRM_HUMAN::query()
                 ->whereNotNull(
-                    'tanggal_chat'
+                    $dateColumn
                 )
                 ->whereDate(
-                    'tanggal_chat',
+                    $dateColumn,
                     '>=',
                     $startDate
                 )
                 ->whereDate(
-                    'tanggal_chat',
+                    $dateColumn,
                     '<=',
                     $endDate
                 );
@@ -262,7 +277,7 @@ class CRMController extends Controller
             */
             $humanLeads = $query
                 ->orderByDesc(
-                    'tanggal_chat'
+                    $dateColumn
                 )
                 ->get();
 
@@ -506,6 +521,9 @@ class CRMController extends Controller
 
                     'end_date' =>
                         $endDate,
+
+                    'date_field' =>
+                        $dateField,
 
                     'services' =>
                         $services,
@@ -1950,10 +1968,6 @@ class CRMController extends Controller
                         'nullable',
                         'string',
                     ],
-                    'meeting' => [
-                        'nullable',
-                        'date',
-                    ],
                 ])
             );
         }
@@ -2022,9 +2036,6 @@ class CRMController extends Controller
 
                 'status' =>
                     $data['status'] ?? null,
-
-                'meeting' =>
-                    $data['meeting'] ?? null,
 
                 'link_meet' =>
                     $data['link_meet']

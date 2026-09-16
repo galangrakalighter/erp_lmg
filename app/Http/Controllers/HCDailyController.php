@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Carbon\CarbonPeriod;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 class HCDailyController extends Controller
 {
     /**
@@ -262,6 +263,14 @@ class HCDailyController extends Controller
             $selectedUserId = (int) $currentUser->id;
         }
 
+        $selectedDivisionName = DB::table('user_division')
+            ->join('roles', 'roles.id', '=', 'user_division.role_id')
+            ->join('divisions', 'divisions.id', '=', 'roles.division_id')
+            ->where('user_division.user_id', $selectedUserId)
+            ->orderBy('roles.level')
+            ->value('divisions.name');
+        $workdayStart = strcasecmp((string) $selectedDivisionName, 'Tech') === 0 ? 8 : 9;
+
         $tasks = Task::query()
             ->leftJoin('users', 'users.id', '=', 'task.pic')
             ->leftJoin('produk_client', 'produk_client.id', '=', 'task.project')
@@ -299,34 +308,30 @@ class HCDailyController extends Controller
             ->orderBy('task.jam_mulai')
             ->orderByDesc('task.priority')
             ->get()
-            ->map(function ($task) use ($today) {
-                $labels = [0 => 'Belum dimulai', 1 => 'Sedang dikerjakan', 2 => 'Perlu revisi',
-                    3 => 'Menunggu persetujuan', 4 => 'Selesai', 5 => 'Dipecah',
-                    7 => 'Terlambat', 8 => 'Waktu habis', 9 => 'Menunggu persetujuan'];
+            ->map(fn ($task) => $this->formatDailyTask($task, $today));
 
-                return [
-                    'id' => $task->id,
-                    'name' => $task->nama_task,
-                    'project_id' => (int) $task->project,
-                    'division_id' => (int) $task->divisi,
-                    'kpi_id' => $task->id_kpi ? (int) $task->id_kpi : null,
-                    'pic_id' => (int) $task->pic,
-                    'project' => $task->project_name ?: 'Tanpa project',
-                    'pic' => $task->pic_email ?: 'Belum ditentukan',
-                    'priority' => (int) $task->priority,
-                    'minutes' => (int) $task->menit,
-                    'start_time' => $task->jam_mulai ? substr($task->jam_mulai, 0, 5) : null,
-                    'start_date' => $task->tanggal_mulai,
-                    'deadline' => $task->tanggal_deadline,
-                    'status' => (int) $task->status,
-                    'status_label' => $labels[(int) $task->status] ?? 'Tidak diketahui',
-                    'note' => $task->note,
-                    'jira' => $task->jira,
-                    'kpi' => $task->kpi_name,
-                    'is_overdue' => $task->tanggal_deadline
-                        && Carbon::parse($task->tanggal_deadline)->lt($today)
-                        && !in_array((int) $task->status, [4, 5]),
-                ];
+        $approvalUserIds = $currentUser->isAdmin
+            ? User::pluck('id')
+            : DB::table('user_division')
+                ->where('parent_id', $currentUser->id)
+                ->pluck('user_id');
+
+        $approvalTasks = Task::query()
+            ->leftJoin('users', 'users.id', '=', 'task.pic')
+            ->leftJoin('produk_client', 'produk_client.id', '=', 'task.project')
+            ->leftJoin('kpi', 'kpi.id', '=', 'task.id_kpi')
+            ->whereIn('task.pic', $approvalUserIds)
+            ->where('task.status', '!=', 4)
+            ->whereDate('task.tanggal_mulai', '!=', $today)
+            ->select('task.*', 'users.email as pic_email',
+                'produk_client.nama as project_name', 'kpi.nama_kpi as kpi_name')
+            ->orderBy('task.tanggal_mulai')
+            ->orderByDesc('task.priority')
+            ->get()
+            ->map(function ($task) use ($today) {
+                $formatted = $this->formatDailyTask($task, $today);
+                $formatted['can_review'] = true;
+                return $formatted;
             });
 
         $people = User::whereIn('id', $visibleUserIds)->select('id', 'email')
@@ -339,19 +344,54 @@ class HCDailyController extends Controller
             'date' => $today->toDateString(),
             'current_user' => ['id' => $currentUser->id, 'is_admin' => (bool) $currentUser->isAdmin],
             'selected_user_id' => $selectedUserId,
+            'workday_start' => $workdayStart,
+            'workday_end' => 17,
             'people' => $people,
             'projects' => ProdukClient::select('id', 'nama')->orderBy('nama')->get(),
             'divisions' => Division::select('id', 'name')->orderBy('name')->get(),
             'kpis' => KPI::select('id', 'nama_kpi')->orderBy('nama_kpi')->get(),
             'tasks' => $tasks,
+            'approval_tasks' => $approvalTasks,
             'summary' => [
                 'scheduled' => $tasks->whereNotNull('start_time')->count(),
                 'pool' => $tasks->whereNull('start_time')->count(),
                 'running' => $tasks->where('status', 1)->count(),
-                'approval' => $tasks->whereIn('status', [3, 9])->count(),
+                'approval' => $approvalTasks->count(),
                 'pool_minutes' => $tasks->whereNull('start_time')->sum('minutes'),
             ],
         ]);
+    }
+
+    private function formatDailyTask(object $task, Carbon $today): array
+    {
+        $labels = [
+            0 => 'Belum dimulai', 1 => 'Sedang dikerjakan', 2 => 'Perlu revisi',
+            3 => 'Menunggu persetujuan', 4 => 'Selesai', 5 => 'Dipecah',
+            7 => 'Terlambat', 8 => 'Waktu habis', 9 => 'Menunggu persetujuan',
+        ];
+
+        return [
+            'id' => $task->id,
+            'name' => $task->nama_task,
+            'project_id' => (int) $task->project,
+            'division_id' => (int) $task->divisi,
+            'kpi_id' => $task->id_kpi ? (int) $task->id_kpi : null,
+            'pic_id' => (int) $task->pic,
+            'project' => $task->project_name ?: 'Tanpa project',
+            'pic' => $task->pic_email ?: 'Belum ditentukan',
+            'priority' => (int) $task->priority,
+            'minutes' => (int) $task->menit,
+            'start_time' => $task->jam_mulai ? substr($task->jam_mulai, 0, 5) : null,
+            'start_date' => $task->tanggal_mulai,
+            'deadline' => $task->tanggal_deadline,
+            'status' => (int) $task->status,
+            'status_label' => $labels[(int) $task->status] ?? 'Tidak diketahui',
+            'note' => $task->note,
+            'kpi' => $task->kpi_name,
+            'is_overdue' => $task->tanggal_deadline
+                && Carbon::parse($task->tanggal_deadline)->lt($today)
+                && !in_array((int) $task->status, [4, 5]),
+        ];
     }
 
     public function storeTaskApi(Request $request)
@@ -362,8 +402,10 @@ class HCDailyController extends Controller
             'priority' => 'required|integer|between:1,3', 'minutes' => 'required|integer|min:1|max:1440',
             'start_date' => 'required|date', 'deadline' => 'required|date|after_or_equal:start_date',
             'start_time' => 'required|date_format:H:i', 'kpi_id' => 'nullable|integer|exists:kpi,id',
-            'note' => 'nullable|string', 'jira' => 'nullable|string|max:1000',
+            'note' => 'nullable|string',
         ]);
+
+        $this->validateWorkingHours($data);
 
         $task = Task::create($this->mapApiTask($data));
         return response()->json(['message' => 'Task berhasil ditambahkan.', 'id' => $task->id], 201);
@@ -383,8 +425,9 @@ class HCDailyController extends Controller
             'priority' => 'required|integer|between:1,3', 'minutes' => 'required|integer|min:1|max:1440',
             'start_date' => 'required|date', 'deadline' => 'required|date|after_or_equal:start_date',
             'start_time' => 'required|date_format:H:i', 'kpi_id' => 'nullable|integer|exists:kpi,id',
-            'note' => 'nullable|string', 'jira' => 'nullable|string|max:1000',
+            'note' => 'nullable|string',
         ]);
+        $this->validateWorkingHours($data);
         $task->update($this->mapApiTask($data, false));
         return response()->json(['message' => 'Task berhasil diperbarui.']);
     }
@@ -408,10 +451,26 @@ class HCDailyController extends Controller
             'pic' => $data['pic_id'], 'priority' => $data['priority'], 'menit' => $data['minutes'],
             'tanggal_mulai' => $data['start_date'], 'tanggal_deadline' => $data['deadline'],
             'jam_mulai' => $data['start_time'], 'id_kpi' => $data['kpi_id'] ?? null,
-            'note' => $data['note'] ?? null, 'jira' => $data['jira'] ?? null,
+            'note' => $data['note'] ?? null,
         ];
         if ($includeStatus) $mapped['status'] = 0;
         return $mapped;
+    }
+
+    private function validateWorkingHours(array $data): void
+    {
+        $divisionName = Division::whereKey($data['division_id'])->value('name');
+        $startHour = strcasecmp((string) $divisionName, 'Tech') === 0 ? 8 : 9;
+        [$hour, $minute] = array_map('intval', explode(':', $data['start_time']));
+        $startMinutes = ($hour * 60) + $minute;
+        $endMinutes = $startMinutes + (int) $data['minutes'];
+
+        if ($startMinutes < ($startHour * 60) || $startMinutes >= (17 * 60) || $endMinutes > (17 * 60)) {
+            $schedule = sprintf('%02d.00–17.00 WIB', $startHour);
+            throw ValidationException::withMessages([
+                'start_time' => "Jam kerja divisi {$divisionName} adalah {$schedule}. Task harus selesai paling lambat pukul 17.00 WIB.",
+            ]);
+        }
     }
 
     public function updateSchedule(Request $request)
@@ -429,7 +488,18 @@ class HCDailyController extends Controller
         }
 
         if ($request->has('top')) {
-            $newTime = Carbon::createFromTime(8, 0, 0)->addMinutes($request->top);
+            $divisionName = Division::whereKey($task->divisi)->value('name');
+            $startHour = strcasecmp((string) $divisionName, 'Tech') === 0 ? 8 : 9;
+            $top = max(0, (int) $request->top);
+            $newTime = Carbon::createFromTime($startHour, 0, 0)->addMinutes($top);
+            $endTime = $newTime->copy()->addMinutes((int) $task->menit);
+
+            if ($newTime->hour >= 17 || $endTime->gt(Carbon::createFromTime(17, 0, 0))) {
+                return response()->json([
+                    'message' => 'Task tidak dapat dijadwalkan karena akan selesai melewati pukul 17.00 WIB.',
+                ], 422);
+            }
+
             $task->update([
                 'jam_mulai' => $newTime->format('H:i:s'),
                 'tanggal_mulai' => Carbon::today(),
@@ -445,6 +515,15 @@ class HCDailyController extends Controller
         if (!$task) return response()->json(['success' => false], 404);
 
         $action = $request->action;
+        if (in_array($action, ['approve', 'revisi'], true) && ! Auth::user()->isAdmin) {
+            $isDirectSubordinate = DB::table('user_division')
+                ->where('user_id', $task->pic)
+                ->where('parent_id', Auth::id())
+                ->exists();
+
+            abort_unless($isDirectSubordinate, 403, 'Task ini bukan milik bawahan Anda.');
+        }
+
         if ($request->action == 'play') {
             $updateData = ['status' => 1];
             if ($task->jam_mulai) {

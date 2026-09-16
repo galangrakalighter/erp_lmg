@@ -77,6 +77,22 @@
         box-shadow: -8px 0 16px -16px rgba(0, 0, 0, .45);
     }
 
+    /*
+     * Kolom Action harus opaque karena berada di atas kolom lain
+     * ketika tabel digulir secara horizontal.
+     */
+    #crmApp .crm-table-shell tbody tr td:last-child {
+        background-color: #fff;
+    }
+
+    #crmApp .crm-table-shell tbody tr:nth-child(even) td:last-child {
+        background-color: #fafafa;
+    }
+
+    #crmApp .crm-table-shell tbody tr:hover td:last-child {
+        background-color: #f4f4f5;
+    }
+
     #crmApp .crm-table-shell thead th:last-child {
         z-index: 20;
     }
@@ -228,13 +244,6 @@
         <div class="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
 
             <div>
-                <div class="mb-3 flex items-center gap-2">
-                    <span class="h-2 w-2 rounded-full bg-black"></span>
-
-                    <span class="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
-                        Lighter Media Group
-                    </span>
-                </div>
 
                 <h1 class="text-3xl font-semibold tracking-tight text-zinc-950 sm:text-4xl">
                     CRM Leads Ekosistem
@@ -387,7 +396,19 @@
                     </div>
 
 
-                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-6">
+
+                        {{-- Jenis Tanggal --}}
+                        <div id="dateTypeField">
+                            <label for="dateFieldFilter" class="mb-2 block text-xs font-semibold text-zinc-700">
+                                Filter Tanggal
+                            </label>
+
+                            <select id="dateFieldFilter" class="block w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950">
+                                <option value="chat">Chat Terbaru</option>
+                                <option value="first_chat">Pertama Kali Chat</option>
+                            </select>
+                        </div>
 
                         {{-- Dari Tanggal --}}
                         <div>
@@ -396,12 +417,6 @@
                                 class="mb-2 block text-xs font-semibold text-zinc-700"
                             >
                                 Dari Tanggal
-                                <span
-                                    id="startDateContext"
-                                    class="font-normal text-zinc-400"
-                                >
-                                    Chat
-                                </span>
                             </label>
 
                             <input
@@ -419,12 +434,6 @@
                                 class="mb-2 block text-xs font-semibold text-zinc-700"
                             >
                                 Sampai Tanggal
-                                <span
-                                    id="endDateContext"
-                                    class="font-normal text-zinc-400"
-                                >
-                                    Chat
-                                </span>
                             </label>
 
                             <input

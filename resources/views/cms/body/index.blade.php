@@ -1,22 +1,22 @@
 @extends('layout.app')
 @section('content')
+    <div class="division-cms-page">
+    @include('cms.produk.partials.division_theme')
     <div class="card shadow">
         {{-- CARD HEADER --}}
         <div class="card-header d-flex justify-content-between align-items-center">
             <h6 class="m-0 font-weight-bold text-primary">Jenis Body</h6>
-            {{-- <a href="{{ route('create_status_jasa') }}" class="btn btn-sm btn-primary">
-                Tambah
-            </a> --}}
             @if($role == 'Digital Marketer' || $role == 'Busines Unit Head' || $role == 'Super Admin')
-            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#tambahModal">
-                Tambah
-            </button>
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#tambahModal"><i class="fas fa-plus mr-1"></i> Tambah Body</button>
             @endif
+            {{-- <a href="{{ route('create_status_jasa') }}" class="btn btn-sm btn-primary">
+                <i class="fas fa-plus mr-1"></i> Tambah Data
+            </a> --}}
         </div>
 
 
         {{-- CARD BODY --}}
-    <div class="card-body">
+        <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-bordered table-hover" id="dataTable">
                     <thead class="thead-light">
@@ -25,7 +25,7 @@
                             <th>Nama</th>
                             <th>Status</th>
                             @if($role == 'Digital Marketer' || $role == 'Busines Unit Head' || $role == 'Super Admin')
-                            <th>Action</th>
+                            <th>Aksi</th>
                             @endif
                         </tr>
                     </thead>
@@ -66,20 +66,49 @@
                     </div>
 
                     {{-- MODAL BODY --}}
-                    <div class="modal-body">
+                    <div class="space-y-6 px-6 py-6 sm:px-7">
 
-                        <div class="form-group">
-                            <label>Nama</label>
-                            <input type="text" name="nama" class="form-control" required>
+                        <div>
+                            <label
+                                for="nama"
+                                class="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-900"
+                            >
+                                Nama
+                            </label>
+
+                            <input
+                                type="text"
+                                name="nama"
+                                id="nama"
+                                class="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-[#161616] focus:ring-4 focus:ring-zinc-900/5"
+                                required
+                            >
                         </div>
 
-                        <div class="form-group">
-                            <label>Status</label>
-                            <select name="status" class="form-control" required>
-                                <option value="1">Ditampilkan</option>
-                                <option value="2">Disembunyikan</option>
+                        <div>
+                            <label
+                                for="status"
+                                class="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-900"
+                            >
+                                Status
+                            </label>
+
+                            <select
+                                name="status"
+                                id="status"
+                                class="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-[#161616] focus:ring-4 focus:ring-zinc-900/5"
+                                required
+                            >
+                                <option value="1">
+                                    Ditampilkan
+                                </option>
+
+                                <option value="2">
+                                    Disembunyikan
+                                </option>
                             </select>
                         </div>
+
                     </div>
 
                     {{-- MODAL FOOTER --}}
@@ -112,20 +141,48 @@
                         <button type="button" class="close" data-dismiss="modal">&times;</button>
                     </div>
 
-                    <div class="modal-body">
-                        <div class="form-group">
-                            <label>Nama Jenis Body</label>
-                            <input type="text" name="nama" class="form-control"
-                                value="{{ $item->nama_body }}">
+                    <div class="space-y-6 px-6 py-6 sm:px-7">
+
+                        <div>
+                            <label
+                                for="nama_{{ $item->id }}"
+                                class="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-900"
+                            >
+                                Nama Jenis Body
+                            </label>
+
+                            <input
+                                type="text"
+                                name="nama"
+                                id="nama_{{ $item->id }}"
+                                value="{{ $item->nama_body }}"
+                                class="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-[#161616] focus:ring-4 focus:ring-zinc-900/5"
+                            >
                         </div>
 
-                        <div class="form-group">
-                            <label>Status</label>
-                            <select name="status" class="form-control">
-                                <option value="1" {{ $item->status ? 'selected' : '' }}>Ditampilkan</option>
-                                <option value="2" {{ !$item->status ? 'selected' : '' }}>Disembunyikan</option>
+                        <div>
+                            <label
+                                for="status_{{ $item->id }}"
+                                class="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-900"
+                            >
+                                Status
+                            </label>
+
+                            <select
+                                name="status"
+                                id="status_{{ $item->id }}"
+                                class="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-[#161616] focus:ring-4 focus:ring-zinc-900/5"
+                            >
+                                <option value="1" {{ $item->status ? 'selected' : '' }}>
+                                    Ditampilkan
+                                </option>
+
+                                <option value="2" {{ !$item->status ? 'selected' : '' }}>
+                                    Disembunyikan
+                                </option>
                             </select>
                         </div>
+
                     </div>
 
                     <div class="modal-footer">
@@ -180,5 +237,6 @@
         </div>
     </div>
     @endforeach
+    </div>
 
 @endsection

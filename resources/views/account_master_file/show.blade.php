@@ -13,8 +13,11 @@
 </style>
 <div class="d-flex justify-content-between align-items-start mb-4">
     <div><a href="{{ route('file-master.index') }}" class="btn btn-sm btn-light border mb-3"><i class="fas fa-arrow-left mr-1"></i>Kembali</a>
-        <h1 class="h4 font-weight-bold text-gray-800 mb-1">File Master · {{ $owner->name }}</h1>
-        <div>@foreach($owner->userDivisions as $assignment)<span class="badge badge-light border mr-1">{{ $assignment->division->name ?? '-' }} · {{ $assignment->role->role_name ?? '-' }}</span>@endforeach</div>
+        <div class="d-flex align-items-center">
+            <div class="mr-3 d-flex align-items-center justify-content-center overflow-hidden rounded-circle bg-dark text-white font-weight-bold" style="width:48px;height:48px;flex:0 0 48px">@if($owner->photo_profile)<img src="{{ asset('storage/' . $owner->photo_profile) }}" alt="Foto {{ $owner->name }}" style="width:100%;height:100%;object-fit:cover">@else{{ strtoupper(substr($owner->name, 0, 1)) }}@endif</div>
+            <div><h1 class="h4 font-weight-bold text-gray-800 mb-1">File Master · {{ $owner->name }}</h1>
+            <div>@foreach($owner->userDivisions as $assignment)<span class="badge badge-light border mr-1">{{ $assignment->division->name ?? '-' }} · {{ $assignment->role->role_name ?? '-' }}</span>@endforeach</div></div>
+        </div>
     </div>
     @if($canManage)<div><button class="btn btn-success btn-sm" data-toggle="modal" data-target="#createAccountDocument"><i class="fas fa-file-pdf mr-1"></i>Buat Dokumen</button> <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#uploadAccountFile"><i class="fas fa-upload mr-1"></i>Upload</button></div>@endif
 </div>

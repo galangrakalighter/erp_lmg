@@ -256,15 +256,13 @@
                             {{-- =================================
                                 CLIENT BUTTON
                             ================================== --}}
-                            <button
-                                type="button"
-                                data-sidebar-collapse="client_lgtr_{{ $client->client_id }}"
+                            <a
+                                href="{{ route('digital-marketing.workspace', ['id_produk' => $client->client_id]) }}"
                                 class="group flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-xs transition
                                 {{ $isActiveClient
                                     ? 'bg-white font-semibold text-zinc-950'
                                     : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
                                 }}"
-                                aria-expanded="{{ $isActiveClient ? 'true' : 'false' }}"
                             >
 
                                 <span class="flex min-w-0 items-center gap-2">
@@ -305,7 +303,7 @@
                                     />
                                 </svg>
 
-                            </button>
+                            </a>
 
 
                             {{-- =================================
@@ -313,7 +311,7 @@
                             ================================== --}}
                             <div
                                 id="client_lgtr_{{ $client->client_id }}"
-                                class="{{ $isActiveClient ? '' : 'hidden' }} ml-2 mt-1 border-l border-zinc-800 pl-2"
+                                class="hidden"
                             >
 
                                 @php

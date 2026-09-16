@@ -1,11 +1,13 @@
 @extends('layout.app')
 @section('content')
+<div class="division-cms-page">
+@include('cms.produk.partials.division_theme')
 <div class="card shadow">
     {{-- CARD HEADER --}}
     <div class="card-header d-flex justify-content-between align-items-center">
-        <h6 class="m-0 font-weight-bold text-primary">Produk Jasa</h6>
+        <h6 class="m-0 font-weight-bold text-primary">Manajemen Client Tech</h6>
         {{-- <a href="{{ route('create_produk_jasa') }}" class="btn btn-sm btn-primary">
-            Tambah
+            <i class="fas fa-plus mr-1"></i> Tambah Client
         </a> --}}
         @if(Auth::user()->role != "digital_marketing")
         <button class="btn btn-primary" onclick="addProduk()">
@@ -29,7 +31,7 @@
                         <th>Developer</th>
 
                         @if($role != "MCN Specialis")
-                            <th>Action</th>
+                            <th>Aksi</th>
                         @endif
                     </tr>
                 </thead>
@@ -159,6 +161,7 @@
     </div>
 
 </div>
+</div>
 @push('script')
 <script>
     let isEditing = false;
@@ -186,8 +189,7 @@
             const response = await fetch(url);
             const result = await response.json();
 
-            $('#produkTable').DataTable({
-                destroy: true,
+            renderNativeClientTable({
                 data: result.data,
 
                 columns: [
@@ -310,7 +312,7 @@
 
             isEditing = true;
 
-            const response = await fetch(`{{ url('api/produk-get') }}/${id}`);
+            const response = await fetch(`{{ url('api/produk-get') }}/${id}?division_id=${encodeURIComponent($('#divisi_id').val())}`);
             const data = await response.json();
 
             console.log(data);
@@ -392,6 +394,7 @@
 
                 client: $('#client').val(),
                 status: $('#status').val(),
+                division_id: divisi,
                 buh: $('#buh').val(),
                 mcn: $('#bawahan2').val(),
                 ms: $('#bawahan3').val()

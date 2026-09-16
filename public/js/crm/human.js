@@ -408,7 +408,7 @@ window.CRMRenderers =
                 body.innerHTML = `
                     <tr>
                         <td
-                            colspan="10"
+                            colspan="14"
                             class="
                                 text-center
                                 text-muted
@@ -828,22 +828,26 @@ window.CRMRenderers =
 
                 const value = index => cells[index].innerHTML;
                 const progress = [
-                    ['Can Push', 15], ['Service Plan', 16],
+                    ['Today', 22], ['Service Plan', 16],
                     ['Need Analysis', 17], ['Meeting', 18],
                     ['Mini Audit', 19], ['Insight', 20],
-                    ['Study Kasus', 21], ['Today', 22],
+                    ['Study Kasus', 21], ['Can Push', 15],
                 ].map(function ([label, index]) {
                     return `<div class="crm-progress-item"><span>${label}</span>${value(index)}</div>`;
                 }).join('');
 
                 row.innerHTML = `
                     <td>${value(0)}</td>
-                    <td><div class="crm-stack"><span class="crm-field-label">Terakhir chat</span>${value(1)}<span class="crm-field-label crm-field-gap">Pertama chat</span>${value(2)}</div></td>
-                    <td><div class="crm-stack"><strong class="crm-lead-name">${value(3)}</strong><span>${value(4)}</span><span class="crm-muted">${value(5)}</span></div></td>
-                    <td><div class="crm-stack">${value(7)}<span class="crm-field-label crm-field-gap">Rate balasan</span>${value(8)}${value(11)}</div></td>
-                    <td><div class="crm-stack">${value(6)}<span class="crm-field-label crm-field-gap">Layanan</span>${value(9)}<span class="crm-muted">${value(10)}</span></div></td>
+                    <td><div class="crm-stack"><span class="crm-field-label">Tanggal chat</span>${value(1)}<span class="crm-field-label crm-field-gap">Pertama chat</span>${value(2)}</div></td>
+                    <td><div class="crm-stack"><span class="crm-field-label">Nama</span><strong class="crm-lead-name">${value(3)}</strong><span class="crm-field-label crm-field-gap">Nama usaha</span>${value(4)}</div></td>
+                    <td>${value(11)}</td>
+                    <td>${value(5)}</td>
+                    <td><div class="crm-stack"><span class="crm-field-label">Telepon</span>${value(7)}<span class="crm-field-label crm-field-gap">Rate balasan</span>${value(8)}</div></td>
+                    <td><div class="crm-stack"><span class="crm-field-label">Sumber</span>${value(6)}<span class="crm-field-label crm-field-gap">Chanelling</span><span class="crm-muted">${value(10)}</span></div></td>
+                    <td>${value(9)}</td>
                     <td>${value(12)}</td>
-                    <td class="human-lead-status"><div class="crm-stack">${value(13)}${value(14)}</div></td>
+                    <td>${value(13)}</td>
+                    <td class="human-lead-status">${value(14)}</td>
                     <td><div class="crm-progress-grid">${progress}</div><div class="crm-follow-up-detail">${value(23)}</div></td>
                     <td>${value(24)}</td>
                     <td><div class="crm-actions">${value(25)}</div></td>

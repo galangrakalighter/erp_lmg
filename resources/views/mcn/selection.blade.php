@@ -286,8 +286,9 @@
 </div>
 @endforeach
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> <script>
+<script src="{{ asset('vendor/jquery/jquery.min.js') }}"></script>
+<link rel="stylesheet" href="{{ asset('vendor-local/sweetalert2/sweetalert2.min.css') }}">
+<script src="{{ asset('vendor-local/sweetalert2/sweetalert2.all.min.js') }}"></script> <script>
 $(document).ready(function() {
     // Tangkap event klik pada checkbox status
     $('.custom-control-input').on('change', function() {

@@ -1,5 +1,7 @@
 @extends('layout.app')
 @section('content')
+    @include('partials.client_data_theme')
+    @include('partials.client_native_tables')
 
     <div class="row g-4 mb-4">
         <div class="col-lg-6">

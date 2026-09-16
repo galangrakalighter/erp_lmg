@@ -1,5 +1,7 @@
 @extends('layout.app')
 @section('content')
+    @include('partials.client_data_theme')
+    @include('partials.client_native_tables')
 
     <div class="card shadow">
         {{-- CARD HEADER --}}
@@ -16,7 +18,7 @@
 
         {{-- FILTER TANGGAL --}}
         <div class="card-body border-bottom">
-            <form action="{{ url()->current() }}" method="GET">
+            <form id="filterForm" action="{{ url()->current() }}" method="GET">
                 <div class="row align-items-end">
                     <div class="col-md-3">
                         <label class="small font-weight-bold text-uppercase">Dari Tanggal</label>
@@ -67,10 +69,18 @@
                             @endif
                         </tr>
                     </thead>
-                    <tbody class="small">
-                        {{-- Data diisi oleh DataTables --}}
+                    <tbody id="contentPlanRows" class="small">
+                        <tr><td colspan="17" class="py-4 text-center text-muted">Memuat data...</td></tr>
                     </tbody>
                 </table>
+            </div>
+            <div class="d-flex flex-wrap align-items-center justify-content-between py-3" id="contentPlanPagination">
+                <small class="text-muted" id="contentPlanInfo">Memuat data...</small>
+                <div class="d-flex align-items-center" style="gap:8px">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="contentPlanPrev">Sebelumnya</button>
+                    <span class="small font-weight-bold" id="contentPlanPage">1 / 1</span>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="contentPlanNext">Berikutnya</button>
+                </div>
             </div>
         </div>
     </div>
@@ -671,93 +681,83 @@
     const platform = "{{ $platform }}";
     const isContentCreator = {{ $RoleSekarang == 'Content Creator' ? 'true' : 'false' }};
 
-    $(document).ready(function() {
-        // Handle Filter Form
-        const kategoriId = "{{ $kategory->id }}";
-        const isContentCreator = {{ (Auth::user()->isAdmin || $divisi[0]->division_id == 1) ? 'false' : 'true' }};
+    let contentPlanData = [];
+    let contentPlanCurrentPage = 1;
+    const contentPlanPageSize = 10;
 
-        const table = $('#tableManajemenKonten').DataTable({
-            processing: true,
-            ajax: {
-                url: `/api/manajemen-konten/${produkId}/${platform}`,
-                type: 'GET',
-                data: function (d) {
-                    d.start_date = $('input[name="start_date"]').val();
-                    d.end_date = $('input[name="end_date"]').val();
-                },
-                dataSrc: 'data'
-            },
-            columns: [
-                { data: null, render: (data, type, row, meta) => meta.row + 1 }, // No
-                { data: 'judul', render: (data) => `<b>${data}</b>` }, // Judul
-                { 
-                    data: 'inspirasi', 
-                    render: (data) => data ? `<a href="${data}" target="_blank">Link</a>` : '-' 
-                }, // Inspirasi
-                { data: 'type' }, // Type
-                { data: 'strategy' }, // Strategi
-                { data: 'funneling' }, // Funneling
-                { data: 'pilar' }, // Pilar
-                { data: 'hooks' }, // Hook
-                { data: 'nama_body' }, // Body
-                { data: 'nama_cta' }, // CTA
-                
-                ...(kategoriId == 2 ? [{ data: 'background' }] : []),
-                
-                { data: 'komposisi' }, // Komposisi
-                { data: 'note', render: (data) => `<small class="text-muted">${data ?? '-'}</small>` }, // Note
-                { 
-                    data: 'tanggal_posting', 
-                    render: (data) => data ? new Date(data).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'}) : '-' 
-                }, // Tgl Posting
-                { 
-                    data: 'link', 
-                    render: (data) => data ? `<a href="${data}" target="_blank"><i class="fas fa-link"></i></a>` : '-' 
-                }, // Link
-                { 
-                    data: 'nama_status', 
-                    render: (data) => {
-                        let color = data === 'Selesai' ? 'success' : 'warning';
-                        return `<span class="badge badge-${color}">${data}</span>`;
-                    }
-                }, // Status
+    const escapeContentPlan = (value) => String(value ?? '-')
+        .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 
+    function renderContentPlan() {
+        const tbody = document.getElementById('contentPlanRows');
+        const totalPages = Math.max(1, Math.ceil(contentPlanData.length / contentPlanPageSize));
+        contentPlanCurrentPage = Math.min(contentPlanCurrentPage, totalPages);
+        const start = (contentPlanCurrentPage - 1) * contentPlanPageSize;
+        const rows = contentPlanData.slice(start, start + contentPlanPageSize);
+
+        tbody.innerHTML = rows.length ? rows.map((row, index) => `
+            <tr>
+                <td>${start + index + 1}</td>
+                <td><strong>${escapeContentPlan(row.judul)}</strong></td>
+                <td>${row.inspirasi ? `<a href="${escapeContentPlan(row.inspirasi)}" target="_blank" rel="noopener">Link</a>` : '-'}</td>
+                <td>${escapeContentPlan(row.type)}</td>
+                <td>${escapeContentPlan(row.strategy)}</td>
+                <td>${escapeContentPlan(row.funneling)}</td>
+                <td>${escapeContentPlan(row.pilar)}</td>
+                <td>${escapeContentPlan(row.hooks)}</td>
+                <td>${escapeContentPlan(row.nama_body)}</td>
+                <td>${escapeContentPlan(row.nama_cta)}</td>
+                @if($kategory->id == 2)<td>${escapeContentPlan(row.background)}</td>@endif
+                <td>${escapeContentPlan(row.komposisi)}</td>
+                <td>${escapeContentPlan(row.note)}</td>
+                <td>${row.tanggal_posting ? new Date(row.tanggal_posting).toLocaleDateString('id-ID') : '-'}</td>
+                <td>${row.link ? `<a href="${escapeContentPlan(row.link)}" target="_blank" rel="noopener"><i class="fas fa-link"></i></a>` : '-'}</td>
+                <td><span class="badge ${row.nama_status === 'Selesai' ? 'badge-dark' : 'badge-light'}">${escapeContentPlan(row.nama_status)}</span></td>
                 @if(Auth::user()->isAdmin || $divisi[0]->division_id == 1)
-                {
-                    data: 'id',
-                    render: (data, type, row) => {
-                        const safeTitle = row.judul.replace(/'/g, "\\'");
-                        return `
-                            <div class="btn-group">
-                                <button class="btn btn-sm btn-warning" onclick="getDataEdit(${data})"><i class="fas fa-edit"></i></button>
-                                <button class="btn btn-sm btn-danger" onclick="confirmDelete(${data})" title="Hapus Konten">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        `;
-                    }
-                }
+                <td class="text-nowrap"><button class="btn btn-sm btn-warning" onclick="getDataEdit(${Number(row.id)})"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-danger" onclick="confirmDelete(${Number(row.id)})"><i class="fas fa-trash"></i></button></td>
                 @endif
-            ],
-            // Opsi tambahan agar tabel enak dilihat jika kolomnya banyak
-            columnDefs: [
-                { targets: '_all', className: 'text-nowrap' } 
-            ]
-        });
+            </tr>`).join('') : '<tr><td colspan="17" class="py-4 text-center text-muted">Tidak ada data.</td></tr>';
 
-        // Re-load tabel saat filter tanggal berubah
-        $('#filterForm').on('submit', function(e) {
-            e.preventDefault();
-            table.ajax.reload();
+        document.getElementById('contentPlanInfo').textContent = contentPlanData.length
+            ? `Menampilkan ${start + 1}–${Math.min(start + contentPlanPageSize, contentPlanData.length)} dari ${contentPlanData.length} data`
+            : 'Tidak ada data';
+        document.getElementById('contentPlanPage').textContent = `${contentPlanCurrentPage} / ${totalPages}`;
+        document.getElementById('contentPlanPrev').disabled = contentPlanCurrentPage <= 1;
+        document.getElementById('contentPlanNext').disabled = contentPlanCurrentPage >= totalPages;
+    }
+
+    async function loadContentPlan() {
+        const params = new URLSearchParams();
+        const startDate = document.querySelector('[name="start_date"]')?.value;
+        const endDate = document.querySelector('[name="end_date"]')?.value;
+        if (startDate) params.set('start_date', startDate);
+        if (endDate) params.set('end_date', endDate);
+
+        const response = await fetch(`/api/manajemen-konten/${produkId}/${encodeURIComponent(platform)}?${params}`, {
+            headers: { 'Accept': 'application/json' }
         });
+        if (!response.ok) throw new Error('Gagal mengambil data Content Plan');
+        const payload = await response.json();
+        contentPlanData = Array.isArray(payload.data) ? payload.data : [];
+        contentPlanCurrentPage = 1;
+        renderContentPlan();
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        loadContentPlan().catch(() => {
+            document.getElementById('contentPlanRows').innerHTML = '<tr><td colspan="17" class="py-4 text-center text-danger">Data gagal dimuat.</td></tr>';
+        });
+        document.getElementById('filterForm')?.addEventListener('submit', event => {
+            event.preventDefault();
+            loadContentPlan();
+        });
+        document.getElementById('contentPlanPrev')?.addEventListener('click', () => { contentPlanCurrentPage--; renderContentPlan(); });
+        document.getElementById('contentPlanNext')?.addEventListener('click', () => { contentPlanCurrentPage++; renderContentPlan(); });
     });
 
     function confirmDelete(id) {
-        // 1. Ambil instance DataTables
-        var table = $('#tableManajemenKonten').DataTable();
-        
-        // 2. Cari data baris berdasarkan ID
-        var rowData = table.rows().data().toArray().find(x => x.id == id);
+        var rowData = contentPlanData.find(x => Number(x.id) === Number(id));
 
         if (rowData) {
             // 3. Masukkan judul ke dalam kotak peringatan di modal
@@ -775,9 +775,7 @@
     }
     
     function getDataEdit(id) {
-        // 1. Ambil data baris dari DataTables
-        var table = $('#tableManajemenKonten').DataTable();
-        var rowData = table.rows().data().toArray().find(x => x.id == id);
+        var rowData = contentPlanData.find(x => Number(x.id) === Number(id));
 
         if (rowData) {
             // 2. Isi nilai ke dalam input modal

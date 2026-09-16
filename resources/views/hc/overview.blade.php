@@ -402,6 +402,25 @@
             ====================================================== --}}
             <div class="p-5 sm:p-6">
 
+                <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <label class="relative block w-full sm:max-w-sm">
+                        <span class="sr-only">Cari data KPI</span>
+                        <svg class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                        <input id="kpiTableSearch" type="search" placeholder="Cari KPI, divisi, pembuat, atau penerima..." class="w-full rounded-xl border border-zinc-200 bg-white py-2.5 pl-10 pr-4 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950/10">
+                    </label>
+
+                    <label class="flex items-center gap-2 text-xs font-semibold text-zinc-500">
+                        Tampilkan
+                        <select id="kpiTablePageSize" class="rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm font-semibold text-zinc-800 outline-none focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950/10">
+                            <option value="5">5</option>
+                            <option value="10" selected>10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                        </select>
+                        data
+                    </label>
+                </div>
+
                 <div class="overflow-x-auto rounded-xl border border-zinc-200">
                     <table
                         id="dataTable"
@@ -458,6 +477,11 @@
                         <tbody class="divide-y divide-zinc-100">
                         </tbody>
                     </table>
+                </div>
+
+                <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <p id="kpiTableInfo" class="text-xs font-medium text-zinc-500">Menampilkan 0 data</p>
+                    <div id="kpiTablePagination" class="flex flex-wrap items-center gap-1" aria-label="Paginasi data KPI"></div>
                 </div>
 
             </div>
@@ -1031,7 +1055,99 @@
     |--------------------------------------------------------------------------
     */
 
+    let kpiTableRows = [];
+    let kpiTablePage = 1;
+
+    function renderKpiTable() {
+        const search = (document.getElementById('kpiTableSearch')?.value || '').trim().toLowerCase();
+        const pageSize = Number(document.getElementById('kpiTablePageSize')?.value || 10);
+        const filteredRows = kpiTableRows.filter(row => !search || row.textContent.toLowerCase().includes(search));
+        const tbody = document.querySelector('#dataTable tbody');
+        document.getElementById('kpiNoResultsRow')?.remove();
+
+        if (!kpiTableRows.length) {
+            tbody.innerHTML = '<tr><td colspan="11" class="px-6 py-14 text-center text-sm text-zinc-500">Belum ada data KPI.</td></tr>';
+            document.getElementById('kpiTableInfo').textContent = 'Menampilkan 0 data';
+            document.getElementById('kpiTablePagination').innerHTML = '';
+            return;
+        }
+
+        if (!filteredRows.length) {
+            kpiTableRows.forEach(row => row.classList.add('hidden'));
+            tbody.insertAdjacentHTML('beforeend', '<tr id="kpiNoResultsRow"><td colspan="11" class="px-6 py-14 text-center text-sm text-zinc-500">Data yang dicari tidak ditemukan.</td></tr>');
+            document.getElementById('kpiTableInfo').textContent = 'Menampilkan 0 data';
+            document.getElementById('kpiTablePagination').innerHTML = '';
+            return;
+        }
+
+        const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+        kpiTablePage = Math.min(Math.max(1, kpiTablePage), totalPages);
+
+        const start = (kpiTablePage - 1) * pageSize;
+        const visibleRows = new Set(filteredRows.slice(start, start + pageSize));
+
+        kpiTableRows.forEach(row => row.classList.toggle('hidden', !visibleRows.has(row)));
+        filteredRows.slice(start, start + pageSize).forEach((row, index) => {
+            if (row.cells[0]) row.cells[0].textContent = start + index + 1;
+        });
+
+        const info = document.getElementById('kpiTableInfo');
+        if (info) {
+            const from = filteredRows.length ? start + 1 : 0;
+            const to = Math.min(start + pageSize, filteredRows.length);
+            info.textContent = `Menampilkan ${from}–${to} dari ${filteredRows.length} data`;
+        }
+
+        const pagination = document.getElementById('kpiTablePagination');
+        if (!pagination) return;
+
+        const button = (label, page, active = false, disabled = false) => `
+            <button type="button" data-kpi-page="${page}" ${disabled ? 'disabled' : ''}
+                class="inline-flex h-9 min-w-9 items-center justify-center rounded-lg border px-2.5 text-xs font-bold transition ${active ? 'border-zinc-950 bg-zinc-950 text-white' : 'border-zinc-200 bg-white text-zinc-600 hover:border-zinc-400 hover:text-zinc-950'} disabled:cursor-not-allowed disabled:opacity-35">
+                ${label}
+            </button>`;
+
+        const pages = [];
+        for (let page = 1; page <= totalPages; page++) {
+            if (page === 1 || page === totalPages || Math.abs(page - kpiTablePage) <= 1) pages.push(page);
+        }
+
+        let previous = 0;
+        const pageButtons = pages.map(page => {
+            const separator = previous && page - previous > 1
+                ? '<span class="px-1 text-xs text-zinc-400">…</span>'
+                : '';
+            previous = page;
+            return separator + button(page, page, page === kpiTablePage);
+        }).join('');
+
+        pagination.innerHTML = button('‹', kpiTablePage - 1, false, kpiTablePage === 1)
+            + pageButtons
+            + button('›', kpiTablePage + 1, false, kpiTablePage === totalPages);
+    }
+
+    document.getElementById('kpiTableSearch')?.addEventListener('input', () => {
+        kpiTablePage = 1;
+        renderKpiTable();
+    });
+
+    document.getElementById('kpiTablePageSize')?.addEventListener('change', () => {
+        kpiTablePage = 1;
+        renderKpiTable();
+    });
+
+    document.getElementById('kpiTablePagination')?.addEventListener('click', event => {
+        const target = event.target.closest('[data-kpi-page]');
+        if (!target || target.disabled) return;
+        kpiTablePage = Number(target.dataset.kpiPage);
+        renderKpiTable();
+    });
+
     function loadTable() {
+
+        if (window.jQuery && $.fn.DataTable && $.fn.DataTable.isDataTable('#dataTable')) {
+            $('#dataTable').DataTable().destroy();
+        }
 
         const form = document.getElementById('filterForm');
 
@@ -1296,46 +1412,18 @@
             document.getElementById('totalKPI').textContent = response.data.length;
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | Reinitialize DataTable
-            |--------------------------------------------------------------------------
-            */
-
-            if (
-                window.jQuery &&
-                $.fn.DataTable &&
-                $.fn.DataTable.isDataTable('#dataTable')
-            ) {
-                $('#dataTable').DataTable().destroy();
-            }
-
-
-            if (window.jQuery && $.fn.DataTable) {
-
-                $('#dataTable').DataTable({
-                    responsive: false,
-                    autoWidth: false,
-                    pageLength: 10,
-                    language: {
-                        search: 'Cari:',
-                        lengthMenu: 'Tampilkan _MENU_',
-                        info: 'Menampilkan _START_ - _END_ dari _TOTAL_ data',
-                        emptyTable: 'Belum ada data KPI',
-                        zeroRecords: 'Data tidak ditemukan',
-                        paginate: {
-                            previous: '‹',
-                            next: '›'
-                        }
-                    }
-                });
-
-            }
+            kpiTableRows = Array.from(tbody.querySelectorAll('tr'));
+            kpiTablePage = 1;
+            renderKpiTable();
 
         })
         .catch(error => {
 
             console.error(error);
+
+            kpiTableRows = [];
+            document.getElementById('kpiTableInfo').textContent = 'Data gagal dimuat';
+            document.getElementById('kpiTablePagination').innerHTML = '';
 
             document.querySelector('#dataTable tbody').innerHTML = `
                 <tr>

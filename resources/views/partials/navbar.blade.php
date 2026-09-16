@@ -29,20 +29,6 @@
             </svg>
         </button>
 
-
-        {{-- =====================================================
-            BRAND / PAGE CONTEXT
-        ====================================================== --}}
-        <div class="min-w-0">
-
-            <p
-                class="hidden text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400 sm:block"
-            >
-                Lighter Media Group
-            </p>
-
-        </div>
-
     </div>
 
 
@@ -184,9 +170,13 @@
 
                 {{-- User Avatar --}}
                 <div
-                    class="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-950 text-xs font-bold text-white"
+                    class="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-950 text-xs font-bold text-white"
                 >
-                    {{ strtoupper(substr(Auth::user()->email, 0, 1)) }}
+                    @if(Auth::user()->photo_profile)
+                        <img src="{{ asset('storage/' . Auth::user()->photo_profile) }}" alt="Foto {{ Auth::user()->name }}" class="h-full w-full object-cover">
+                    @else
+                        {{ strtoupper(substr(Auth::user()->email, 0, 1)) }}
+                    @endif
                 </div>
 
 
@@ -255,6 +245,19 @@
 
                 {{-- Logout --}}
                 <div class="p-2">
+
+                    <a
+                        href="{{ route('profile.show') }}"
+                        class="mb-1 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-950"
+                    >
+                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <circle cx="12" cy="8" r="4" stroke-width="1.8"></circle>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 21a8 8 0 0 1 16 0"></path>
+                            </svg>
+                        </span>
+                        <span>Profil Saya</span>
+                    </a>
 
                     <button
                         type="button"

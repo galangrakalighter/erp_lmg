@@ -13,10 +13,5 @@ function deleteProduk(id,nama){
 
 
 function reloadTable(){
-
-    $('#produkTable')
-        .DataTable()
-        .ajax
-        .reload(null,false);
-
+    initClientTable();
 }

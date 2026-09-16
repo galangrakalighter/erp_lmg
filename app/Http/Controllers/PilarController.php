@@ -20,7 +20,8 @@ class PilarController extends Controller
         }
         $data = $datatable->get();
         $title = "Pilar";
-        return view('cms.pilar.index', compact('data', 'title', 'role'));
+        $activeProductCode = $name;
+        return view('cms.pilar.index', compact('data', 'title', 'role', 'activeProductCode'));
     }
 
     public function store(Request $request, $name){

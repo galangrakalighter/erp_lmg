@@ -1,7 +1,7 @@
 @include('partials.header')
 
-<script src="https://unpkg.com/lucide@latest"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ asset('vendor-local/lucide/lucide.min.js') }}"></script>
+<script src="{{ asset('vendor-local/chartjs/chart.umd.js') }}"></script>
 
 <style>
     :root {
@@ -369,7 +369,7 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="{{ asset('vendor-local/axios/axios.min.js') }}"></script>
 
 <script>
     let barChart = null;

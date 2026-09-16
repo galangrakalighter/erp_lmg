@@ -1,7 +1,7 @@
 @include('partials.header')
 
 <script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ env('MIDTRANS_CLIENT_KEY') }}"></script>
-<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="{{ asset('vendor-local/axios/axios.min.js') }}"></script>
 
 <div class="container-fluid min-vh-100 d-flex align-items-center bg-light py-5">
     <div class="container">

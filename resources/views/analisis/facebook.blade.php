@@ -1,7 +1,24 @@
 @extends('layout.app')
 @section('content')
-<!-- Memastikan Library Chart.js dimuat dari CDN -->
-
+@include('partials.client_data_theme')
+@include('partials.client_native_tables')
+@include('partials.analysis_workspace_theme')
+<style>
+    body.lmg-analysis-page .row:has(#dataTable tbody:empty) > .col-lg-6:first-child,
+    body.lmg-analysis-page .row:has(#dataTable tbody:empty) > .col-lg-3 { display: none; }
+    body.lmg-analysis-page .row:has(#dataTable tbody:empty) > .col-lg-6:last-child,
+    body.lmg-analysis-page .row:has(#dataTable tbody:empty) > .col-lg-9 { flex: 0 0 100%; max-width: 100%; }
+    .stat-card { border-left: 4px solid #161616 !important; }
+    .stat-card:hover { transform: translateY(-2px) !important; }
+    .stat-card .text-primary, .stat-card .text-success,
+    .stat-card .text-info, .stat-card .text-warning { color: #161616 !important; }
+    .chart-container { min-height: 320px; }
+    .card-body canvas { max-width: 100%; }
+    @media (max-width: 767px) {
+        .filter-group { align-items: stretch !important; }
+        .filter-group > * { width: 100%; }
+    }
+</style>
 <style>
     /* Styling khusus untuk card dan tabel agar lebih modern (Tanpa styling body) */
     .card { 
@@ -159,7 +176,7 @@
             <div class="card stat-card border-0 shadow-sm p-3">
                 <div class="d-flex align-items-center">
                     <div>
-                        <p class="text-secondary mb-0 small fw-bold text-uppercase">ENGANGEMENT</p>
+                        <p class="text-secondary mb-0 small fw-bold text-uppercase">ENGAGEMENT</p>
                         <h4 class="mb-0 fw-bold">{{ number_format($totalEngagement, 0, ',', '.') }}</h4>
                     </div>
                 </div>
@@ -426,32 +443,7 @@
             }, 150);
         }
 
-        // 1. Inisialisasi DataTable
-        const table = $('#insight_1').DataTable({
-            "pageLength": 10, // Menampilkan 10 data per halaman
-            "language": {
-                "emptyTable" : "Tidak Ada dalam Table Ini"
-            },
-            "columnDefs": [
-                { "orderable": false, "targets": [1] } // Nonaktifkan sorting untuk kolom URL
-            ],
-            "order": [[0, "asc"]], // Urutkan berdasarkan tanggal terbaru secara default
-            "dom": '<"d-flex justify-content-between align-items-center mb-3"lf>rt<"d-flex justify-content-between align-items-center mt-3"ip>'
-        });
-
-        const table2 = $('#insight_2').DataTable({
-            "pageLength": 10, // Menampilkan 10 data per halaman
-            "language": {
-                "emptyTable" : "Tidak Ada dalam Table Ini"
-            },
-            "columnDefs": [
-                { "orderable": false, "targets": [1] } // Nonaktifkan sorting untuk kolom URL
-            ],
-            "order": [[0, "asc"]], // Urutkan berdasarkan tanggal terbaru secara default
-            "dom": '<"d-flex justify-content-between align-items-center mb-3"lf>rt<"d-flex justify-content-between align-items-center mt-3"ip>'
-        });
-
-        // 2. Render Chart
+        // Render Chart
         function renderChart(data) {
             console.log(data);
             if (myChart) myChart.destroy();

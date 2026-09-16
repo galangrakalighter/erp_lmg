@@ -19,7 +19,8 @@ class JenisBodyController extends Controller
         }
         $data = $datatable->get();
         $title = "Jenis Body";
-        return view('cms.body.index', compact('data', 'title', 'role'));
+        $activeProductCode = $name;
+        return view('cms.body.index', compact('data', 'title', 'role', 'activeProductCode'));
     }
 
     public function store(Request $request, $name){

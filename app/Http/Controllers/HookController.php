@@ -19,7 +19,8 @@ class HookController extends Controller
         }
         $data = $datatable->get();
         $title = "Hooks";
-        return view('cms.hook.index', compact('data', 'title', 'role'));
+        $activeProductCode = $name;
+        return view('cms.hook.index', compact('data', 'title', 'role', 'activeProductCode'));
     }
 
     public function store(Request $request, $name){

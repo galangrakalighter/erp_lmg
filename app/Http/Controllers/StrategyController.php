@@ -19,7 +19,8 @@ class StrategyController extends Controller
         }
         $data = $datatable->get();
         $title = "Strategy";
-        return view('cms.strategy.index', compact('data', 'title', 'role'));
+        $activeProductCode = $name;
+        return view('cms.strategy.index', compact('data', 'title', 'role', 'activeProductCode'));
     }
 
     public function store(Request $request, $name){

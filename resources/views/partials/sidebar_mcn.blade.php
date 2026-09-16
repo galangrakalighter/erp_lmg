@@ -23,9 +23,12 @@
     );
 
     $isPdf = Route::is('PDF');
+    $isMCNWorkspace = Route::is('division-client.workspace')
+        && request()->route('division') === 'mcn';
 
     $mcnOpen =
         $isMCNPage ||
+        $isMCNWorkspace ||
         ($isMCNProduct && $isPdf) ||
         $isMCNCMS;
 
@@ -256,7 +259,7 @@
                 class="{{ $isPdf ? '' : 'hidden' }}"
             >
 
-                <div class="ml-2 pl-2 border-l border-zinc-800 space-y-0.5">
+                <div class="ml-2 space-y-1 border-l border-zinc-800 pl-2">
 
                     @foreach ($mcnProduk as $client)
 
@@ -301,9 +304,8 @@
                                         CLIENT HEADER
                                     ================================================== --}}
 
-                                    <button
-                                        type="button"
-                                        data-sidebar-collapse="client_mcn_{{ $client->client_id }}"
+                                    <a
+                                        href="{{ route('division-client.workspace', ['division' => 'mcn', 'id_produk' => $client->id]) }}"
                                         class="w-full group flex items-center justify-between
                                                px-3 py-2 rounded-md
                                                text-left text-sm
@@ -363,7 +365,7 @@
                                             />
                                         </svg>
 
-                                    </button>
+                                    </a>
 
 
                                     {{-- =================================================
@@ -372,7 +374,7 @@
 
                                     <div
                                         id="client_mcn_{{ $client->client_id }}"
-                                        class="{{ $isActiveClient ? '' : 'hidden' }}"
+                                        class="hidden"
                                     >
 
                                         <div class="ml-4 pl-3 py-1 border-l border-zinc-800">

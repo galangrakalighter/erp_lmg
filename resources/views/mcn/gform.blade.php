@@ -350,7 +350,7 @@
     .text-orange { color: #ee4d2d; }
     .border-right { border-right: 1px solid #e3e6f0; }
 </style>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="{{ asset('vendor/jquery/jquery.min.js') }}"></script>
 <script>
     $(document).ready(function() {
         // 1. Inisialisasi DataTable

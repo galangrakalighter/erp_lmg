@@ -87,7 +87,19 @@ class MasterFolderController extends Controller
             'role_ids.required' => 'Pilih minimal satu role yang dapat melihat folder.',
         ]);
 
-        DB::transaction(function () use ($validated, $user) {
+        $primaryRole = Role::query()
+            ->whereIn('id', $validated['role_ids'])
+            ->where('division_id', $validated['division_id'])
+            ->orderBy('level')
+            ->first();
+
+        if (! $primaryRole) {
+            throw ValidationException::withMessages([
+                'role_ids' => 'Pilih minimal satu role dari divisi utama folder.',
+            ]);
+        }
+
+        DB::transaction(function () use ($validated, $user, $primaryRole) {
             $folder = MasterFolder::create([
                 'division_id' => $validated['division_id'],
                 'created_by' => $user->id,
@@ -96,6 +108,8 @@ class MasterFolderController extends Controller
                 'is_personal' => false,
             ]);
             $folder->roles()->sync($validated['role_ids']);
+
+            $this->createDefaultDocuments($folder, $user->id, $primaryRole->id, $validated['role_ids']);
         });
 
         return redirect()->route('master-folder.index')
@@ -130,6 +144,8 @@ class MasterFolderController extends Controller
                 $query->whereHas('roles', fn ($roles) => $roles->whereIn('roles.id', $roleIds));
                 }
             )
+            ->orderByDesc('is_pinned')
+            ->orderBy('pin_order')
             ->latest()
             ->get();
 
@@ -471,12 +487,54 @@ class MasterFolderController extends Controller
         $this->authorizeManageFolder($request, $folder);
         abort_unless($file->master_folder_id === $folder->id, 404);
         $this->authorizeFile($request, $folder, $file);
+        abort_if($file->is_system_template, 403, 'Dokumen bawaan tidak dapat dihapus.');
 
         $path = $file->path;
         DB::transaction(fn () => $file->delete());
         Storage::disk('local')->delete($path);
 
         return back()->with('success', 'File berhasil dihapus.');
+    }
+
+    private function createDefaultDocuments(MasterFolder $folder, int $userId, int $primaryRoleId, array $roleIds): void
+    {
+        $documents = [
+            'Contract Status.pdf',
+            'Core SOW.pdf',
+            'Contract Operational Notes.pdf',
+            'Project Handover.pdf',
+        ];
+
+        foreach ($documents as $index => $originalName) {
+            $storedName = (string) str()->uuid().'.pdf';
+            $path = 'master-folders/'.$folder->id.'/'.$storedName;
+            $documentName = pathinfo($originalName, PATHINFO_FILENAME);
+            $content = '<p><br></p>';
+            $pdfContent = Pdf::loadView(
+                'master_folder.document_pdf',
+                compact('folder', 'documentName', 'content')
+            )->setPaper('a4', 'portrait')->output();
+
+            abort_unless(Storage::disk('local')->put($path, $pdfContent), 500, 'Dokumen bawaan gagal dibuat.');
+
+            $file = MasterFolderFile::create([
+                'master_folder_id' => $folder->id,
+                'uploaded_by' => $userId,
+                'primary_role_id' => $primaryRoleId,
+                'original_name' => $originalName,
+                'stored_name' => $storedName,
+                'path' => $path,
+                'mime_type' => 'application/pdf',
+                'size' => strlen($pdfContent),
+                'editor_content' => $content,
+                'is_generated_document' => true,
+                'is_system_template' => true,
+                'is_pinned' => true,
+                'pin_order' => $index + 1,
+            ]);
+
+            $file->roles()->sync($roleIds);
+        }
     }
 
     private function authorizeFolder(Request $request, MasterFolder $folder): void

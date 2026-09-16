@@ -1,18 +1,18 @@
 @extends('layout.app')
 @section('content')
+    <div class="division-cms-page">
+    @include('cms.produk.partials.division_theme')
 
     <div class="card shadow">
         {{-- CARD HEADER --}}
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h6 class="m-0 font-weight-bold text-primary">Produk Jasa</h6>
-            {{-- <a href="{{ route('create_produk_jasa') }}" class="btn btn-sm btn-primary">
-                Tambah
-            </a> --}}
+            <h6 class="m-0 font-weight-bold text-primary">Manajemen Client</h6>
             @if($role == 'Digital Marketer' || $role == 'Busines Unit Head' || $role == 'Super Admin')
-            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#tambahModal">
-                Tambah
-            </button>
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#tambahModal"><i class="fas fa-plus mr-1"></i> Tambah Client</button>
             @endif
+            {{-- <a href="{{ route('create_produk_jasa') }}" class="btn btn-sm btn-primary">
+                <i class="fas fa-plus mr-1"></i> Tambah Client
+            </a> --}}
         </div>
 
 
@@ -33,7 +33,7 @@
                             <th scope="col">Content Creator</th>
 
                             @if ($role == 'Digital Marketer' || $role == 'Busines Unit Head' || $role == 'Super Admin')
-                                <th scope="col">Action</th>
+                                <th scope="col">Aksi</th>
                             @endif
                         </tr>
                     </thead>
@@ -63,16 +63,41 @@
                     </div>
 
                     <div class="modal-body p-4" style="background-color: #f8f9fc;">
-                        <div class="alert alert-light border d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4" role="alert">
-                            <div class="text-dark mb-2 mb-md-0">
-                                <i class="fas fa-info-circle text-primary mr-2"></i>
-                                Lihat dokumentasi jika membutuhkan panduan sebelum menambahkan produk jasa.
+                        <div class="mb-6 flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-zinc-50 px-5 py-4 sm:px-6 md:flex-row md:items-center md:justify-between" role="alert">
+                            <div class="flex items-start gap-3">
+                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-zinc-900 ring-1 ring-zinc-200">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-5 w-5">
+                                        <circle cx="12" cy="12" r="9"></circle>
+                                        <path stroke-linecap="round" d="M12 10v6"></path>
+                                        <path stroke-linecap="round" d="M12 7.5h.01"></path>
+                                    </svg>
+                                </div>
+
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold leading-5 text-zinc-900">
+                                        Butuh panduan?
+                                    </p>
+
+                                    <p class="mt-0.5 text-sm leading-6 text-zinc-500">
+                                        Lihat dokumentasi terlebih dahulu jika membutuhkan panduan
+                                        sebelum menambahkan produk jasa.
+                                    </p>
+                                </div>
                             </div>
-                            <a href="{{ route('docs') }}"
-                               class="btn btn-sm btn-outline-primary font-weight-bold"
-                               target="_blank"
-                               rel="noopener noreferrer">
-                                <i class="fas fa-book-open mr-1"></i>Buka Dokumentasi
+
+                            <a href="{{ route('docs') }}" target="_blank" rel="noopener noreferrer" class="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#161616] px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"></path>
+                                    <path stroke-linecap="round" d="M8 6h8M8 10h8"></path>
+                                </svg>
+
+                                <span>Buka Dokumentasi</span>
+
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-3.5 w-3.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 17 17 7"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 7h8v8"></path>
+                                </svg>
                             </a>
                         </div>
 
@@ -81,33 +106,89 @@
                             <h6 class="text-primary font-weight-bold mb-0">Informasi Dasar</h6>
                         </div>
                         
-                        <div class="row mb-4">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label class="text-dark font-weight-bold small">Kategori Jasa <span class="text-danger">*</span></label>
-                                    <select name="kategori_jasa_id" class="form-control custom-select" required>
-                                        <option value="">-- Pilih Kategori --</option>
-                                        @foreach ($kategori as $k)
-                                            <option value="{{ $k->id }}">{{ $k->category }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
+                        <div class="mb-6 grid grid-cols-1 gap-5 md:grid-cols-2">
+
+                            {{-- Kategori Jasa --}}
+                            <div>
+                                <label
+                                    for="kategori-jasa"
+                                    class="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-900"
+                                >
+                                    Kategori Jasa
+                                    <span class="text-red-500">*</span>
+                                </label>
+
+                                <select
+                                    id="kategori-jasa"
+                                    name="kategori_jasa_id"
+                                    class="form-control custom-select"
+                                    required
+                                >
+                                    <option value="">Pilih kategori jasa</option>
+
+                                    @foreach ($kategori as $k)
+                                        <option value="{{ $k->id }}">
+                                            {{ $k->category }}
+                                        </option>
+                                    @endforeach
+                                </select>
+
+                                <p class="mt-2 text-[11px] leading-5 text-zinc-400">
+                                    Tentukan kategori yang sesuai dengan produk jasa.
+                                </p>
                             </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label class="text-dark font-weight-bold small">Nama Produk <span class="text-danger">*</span></label>
-                                    <input type="text" name="client" class="form-control" placeholder="Contoh: Social Media Management" required>
-                                </div>
+
+
+                            {{-- Nama Produk --}}
+                            <div>
+                                <label
+                                    for="nama-produk"
+                                    class="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-900"
+                                >
+                                    Nama Produk
+                                    <span class="text-red-500">*</span>
+                                </label>
+
+                                <input
+                                    type="text"
+                                    id="nama-produk"
+                                    name="client"
+                                    class="form-control"
+                                    placeholder="Contoh: Social Media Management"
+                                    required
+                                >
+
+                                <p class="mt-2 text-[11px] leading-5 text-zinc-400">
+                                    Gunakan nama produk jasa yang mudah dikenali oleh client.
+                                </p>
                             </div>
-                            <div class="col-md-12">
-                                <div class="form-group">
-                                    <label class="text-dark font-weight-bold small">Status <span class="text-danger">*</span></label>
-                                    <select name="status" class="form-control custom-select" required>
-                                        <option value="1">Ditampilkan</option>
-                                        <option value="2">Disembunyikan</option>
-                                    </select>
-                                </div>
+
+
+                            {{-- Status --}}
+                            <div class="md:col-span-2">
+                                <label
+                                    for="status-produk"
+                                    class="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-900"
+                                >
+                                    Status
+                                    <span class="text-red-500">*</span>
+                                </label>
+
+                                <select
+                                    id="status-produk"
+                                    name="status"
+                                    class="form-control custom-select"
+                                    required
+                                >
+                                    <option value="1">Ditampilkan</option>
+                                    <option value="2">Disembunyikan</option>
+                                </select>
+
+                                <p class="mt-2 text-[11px] leading-5 text-zinc-400">
+                                    Tentukan apakah produk jasa akan ditampilkan pada sistem.
+                                </p>
                             </div>
+
                         </div>
 
                         <div class="section-title mb-3 d-flex align-items-center mt-4">
@@ -139,58 +220,195 @@
                             <h6 class="text-primary font-weight-bold mb-0">Assign Team Management</h6>
                         </div>
 
-                        <div class="row">
+                        <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+
+                            {{-- Busines Unit Head --}}
                             @if(Auth::user()->isAdmin == true)
-                            <div class="col-md-6 form-group">
-                                <label class="font-weight-bold small text-danger">Busines Unit Head (BUH)</label>
-                                <select name="buh_ids[]" id="select-buh" class="form-control select2-multiple" multiple data-placeholder="Pilih BUH">
-                                    @foreach ($buh as $m)
-                                        <option value="{{ $m->id }}">{{ $m->email }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
+                                <div>
+                                    <label
+                                        for="select-buh"
+                                        class="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-900"
+                                    >
+                                        <span class="h-1.5 w-1.5 rounded-full bg-zinc-900"></span>
+                                        Busines Unit Head (BUH)
+                                    </label>
+
+                                    <select
+                                        name="buh_ids[]"
+                                        id="select-buh"
+                                        class="form-control select2-multiple"
+                                        multiple
+                                        data-placeholder="Pilih BUH"
+                                    >
+                                        @foreach ($buh as $m)
+                                            <option value="{{ $m->id }}">
+                                                {{ $m->email }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+
+                                    <p class="mt-2 text-[11px] leading-5 text-zinc-400">
+                                        Pilih BUH yang bertanggung jawab atas produk jasa.
+                                    </p>
+                                </div>
                             @else
-                                <input type="hidden" name="buh_ids[]" id="select-buh-hidden" value="{{ Auth::user()->id }}">
+                                <input
+                                    type="hidden"
+                                    name="buh_ids[]"
+                                    id="select-buh-hidden"
+                                    value="{{ Auth::user()->id }}"
+                                >
                             @endif
 
-                            <div class="col-md-6 form-group">
-                                <label class="font-weight-bold small text-primary">Digital Marketer (DM)</label>
-                                <select name="dm_ids[]" id="select-dm" class="form-control select2-multiple" multiple data-placeholder="Pilih DM" {{ $role == 'Busines Unit Head' ? '' : 'disabled' }}>
+
+                            {{-- Digital Marketer --}}
+                            <div>
+                                <label
+                                    for="select-dm"
+                                    class="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-900"
+                                >
+                                    <span class="h-1.5 w-1.5 rounded-full bg-zinc-500"></span>
+                                    Digital Marketer (DM)
+                                </label>
+
+                                <select
+                                    name="dm_ids[]"
+                                    id="select-dm"
+                                    class="form-control select2-multiple"
+                                    multiple
+                                    data-placeholder="Pilih DM"
+                                    {{ $role == 'Busines Unit Head' ? '' : 'disabled' }}
+                                >
                                     @foreach ($dm as $d)
-                                        @php $parentIdDm = $d->userDivisions->first()->parent_id ?? 0; @endphp
-                                        <option value="{{ $d->id }}" data-parent="{{ $parentIdDm }}">{{ $d->email }}</option>
+                                        @php
+                                            $parentIdDm = $d->userDivisions->first()->parent_id ?? 0;
+                                        @endphp
+
+                                        <option
+                                            value="{{ $d->id }}"
+                                            data-parent="{{ $parentIdDm }}"
+                                        >
+                                            {{ $d->email }}
+                                        </option>
                                     @endforeach
                                 </select>
+
+                                <p class="mt-2 text-[11px] leading-5 text-zinc-400">
+                                    Pilih digital marketer yang menangani produk jasa.
+                                </p>
                             </div>
 
-                            <div class="col-md-6 form-group">
-                                <label class="font-weight-bold small text-dark">Advertising (ADS)</label>
-                                <select name="ads_ids[]" id="select-ads" class="form-control select2-multiple" multiple data-placeholder="Pilih ADS">
+
+                            {{-- Advertising --}}
+                            <div>
+                                <label
+                                    for="select-ads"
+                                    class="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-900"
+                                >
+                                    <span class="h-1.5 w-1.5 rounded-full bg-zinc-400"></span>
+                                    Advertising (ADS)
+                                </label>
+
+                                <select
+                                    name="ads_ids[]"
+                                    id="select-ads"
+                                    class="form-control select2-multiple"
+                                    multiple
+                                    data-placeholder="Pilih ADS"
+                                >
                                     @foreach ($ads as $s)
-                                        @php $parentIScc = $s->userDivisions->first()->parent_id ?? 0; @endphp
-                                        <option value="{{ $s->id }}" data-parent="{{ $parentIScc }}">{{ $s->email }}</option>
+                                        @php
+                                            $parentIScc = $s->userDivisions->first()->parent_id ?? 0;
+                                        @endphp
+
+                                        <option
+                                            value="{{ $s->id }}"
+                                            data-parent="{{ $parentIScc }}"
+                                        >
+                                            {{ $s->email }}
+                                        </option>
                                     @endforeach
                                 </select>
+
+                                <p class="mt-2 text-[11px] leading-5 text-zinc-400">
+                                    Pilih tim advertising yang terlibat dalam produk jasa.
+                                </p>
                             </div>
 
-                            <div class="col-md-6 form-group">
-                                <label class="font-weight-bold small text-warning">Conten Creator Manage (CCM)</label>
-                                <select name="ccm_ids[]" id="select-ccm" class="form-control select2-multiple" multiple data-placeholder="Pilih CCM">
+
+                            {{-- Content Creator Manager --}}
+                            <div>
+                                <label
+                                    for="select-ccm"
+                                    class="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-900"
+                                >
+                                    <span class="h-1.5 w-1.5 rounded-full bg-zinc-700"></span>
+                                    Content Creator Manager (CCM)
+                                </label>
+
+                                <select
+                                    name="ccm_ids[]"
+                                    id="select-ccm"
+                                    class="form-control select2-multiple"
+                                    multiple
+                                    data-placeholder="Pilih CCM"
+                                >
                                     @foreach ($ccm as $c)
-                                        @php $parentICc = $c->userDivisions->first()->parent_id ?? 0; @endphp
-                                        <option value="{{ $c->id }}" data-parent="{{ $parentICc }}">{{ $c->email }}</option>
+                                        @php
+                                            $parentICc = $c->userDivisions->first()->parent_id ?? 0;
+                                        @endphp
+
+                                        <option
+                                            value="{{ $c->id }}"
+                                            data-parent="{{ $parentICc }}"
+                                        >
+                                            {{ $c->email }}
+                                        </option>
                                     @endforeach
                                 </select>
+
+                                <p class="mt-2 text-[11px] leading-5 text-zinc-400">
+                                    CCM mengelola dan mengatur content creator terkait.
+                                </p>
                             </div>
-                            <div class="col-md-6 form-group">
-                                <label class="font-weight-bold small text-warning">Content Creator (CC)</label>
-                                <select name="cc_ids[]" id="select-cc" class="form-control select2-multiple" multiple data-placeholder="Pilih CC">
+
+
+                            {{-- Content Creator --}}
+                            <div>
+                                <label
+                                    for="select-cc"
+                                    class="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-900"
+                                >
+                                    <span class="h-1.5 w-1.5 rounded-full bg-zinc-500"></span>
+                                    Content Creator (CC)
+                                </label>
+
+                                <select
+                                    name="cc_ids[]"
+                                    id="select-cc"
+                                    class="form-control select2-multiple"
+                                    multiple
+                                    data-placeholder="Pilih CC"
+                                >
                                     @foreach ($cc as $c)
-                                        @php $parentICc = $c->userDivisions->first()->parent_id ?? 0; @endphp
-                                        <option value="{{ $c->id }}" data-parent="{{ $parentICc }}">{{ $c->email }}</option>
+                                        @php
+                                            $parentICc = $c->userDivisions->first()->parent_id ?? 0;
+                                        @endphp
+
+                                        <option
+                                            value="{{ $c->id }}"
+                                            data-parent="{{ $parentICc }}"
+                                        >
+                                            {{ $c->email }}
+                                        </option>
                                     @endforeach
                                 </select>
+
+                                <p class="mt-2 text-[11px] leading-5 text-zinc-400">
+                                    Pilih content creator yang berada di bawah CCM.
+                                </p>
                             </div>
+
                         </div>
                     </div>
 
@@ -243,6 +461,7 @@
         </div>
     </div>
 
+    </div>
 <script>
     window.produkConfig = {
         userId: "{{ Auth::id() }}",

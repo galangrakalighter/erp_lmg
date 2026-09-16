@@ -14,7 +14,6 @@ use App\Services\TrialBalanceService;
 class DashboardController extends Controller
 {
     public function index(){
-        $data = DB::table('kategori_jasa')->get();
         $title = "Dashbard";
         return view('index', compact('title'));
     }

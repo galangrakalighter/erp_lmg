@@ -301,13 +301,16 @@ window.CRMRenderers =
             const value = index => cells[index].innerHTML;
             row.innerHTML = `
                 <td>${value(0)}</td>
-                <td><div class="crm-stack"><span class="crm-field-label">Terakhir chat</span>${value(1)}<span class="crm-field-label crm-field-gap">Pertama chat</span>${value(2)}</div></td>
-                <td><div class="crm-stack"><strong class="crm-lead-name">${value(3)}</strong><span>${value(6)}</span><span class="crm-muted">${value(4)}</span></div></td>
-                <td><div class="crm-stack">${value(7)}<span class="crm-muted">${value(5)}</span>${value(11)}</div></td>
+                <td><div class="crm-stack"><span class="crm-field-label">Tanggal chat</span>${value(1)}<span class="crm-field-label crm-field-gap">Pertama chat</span>${value(2)}</div></td>
+                <td><div class="crm-stack"><span class="crm-field-label">Nama</span><strong class="crm-lead-name">${value(3)}</strong><span class="crm-field-label crm-field-gap">Nama usaha</span>${value(6)}</div></td>
+                <td>${value(11)}</td>
+                <td>${value(4)}</td>
+                <td><div class="crm-stack"><span class="crm-field-label">Telepon</span>${value(7)}<span class="crm-field-label crm-field-gap">Email</span><span class="crm-muted">${value(5)}</span></div></td>
                 <td>${value(8)}</td>
-                <td><div class="crm-stack"><span class="crm-field-label">Kendala</span>${value(9)}<span class="crm-field-label crm-field-gap">Kebutuhan</span>${value(10)}</div></td>
+                <td><div class="crm-stack"><span class="crm-field-label">Kebutuhan</span>${value(10)}<span class="crm-field-label crm-field-gap">Kendala</span>${value(9)}</div></td>
                 <td>${value(12)}</td>
-                <td><div class="crm-stack">${value(13)}${value(14)}<span class="crm-field-label crm-field-gap">Meeting</span>${value(15)}</div></td>
+                <td>${value(13)}</td>
+                <td>${value(14)}</td>
                 <td><div class="crm-actions">${value(16)}</div></td>
             `;
         });
@@ -336,7 +339,7 @@ window.CRMRenderers =
             body.innerHTML = `
                 <tr>
                     <td
-                        colspan="9"
+                        colspan="12"
                         class="
                             text-center
                             text-muted

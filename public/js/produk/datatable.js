@@ -1,4 +1,4 @@
-function initDataTable() {
+function initClientTable() {
 
     const columns = [
         {
@@ -58,9 +58,7 @@ function initDataTable() {
         });
     }
 
-    $('#produkTable').DataTable({
-        processing: true,
-        destroy: true,
+    renderNativeClientTable({
         ajax: {
             url: window.location.href,
             dataSrc: function(json){

@@ -19,7 +19,8 @@ class StatusController extends Controller
         }
         $data = $datatable->get();
         $title = "Status";
-        return view('cms.status.index', compact('data', 'title', 'role'));
+        $activeProductCode = $name;
+        return view('cms.status.index', compact('data', 'title', 'role', 'activeProductCode'));
     }
 
     public function store(Request $request, $name){

@@ -10,14 +10,6 @@
             <div class="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
 
                 <div>
-                    <div class="mb-3 flex items-center gap-3">
-                        <span class="h-px w-8 bg-zinc-900"></span>
-
-                        <span class="text-[10px] font-semibold uppercase tracking-[0.3em] text-zinc-500">
-                            Lighter Media Group
-                        </span>
-                    </div>
-
                     <h1 class="text-3xl font-semibold tracking-[-0.03em] text-zinc-950 sm:text-4xl">
                         Dashboard
                     </h1>
@@ -26,18 +18,6 @@
                         Ekosistem media digital terintegrasi untuk mendorong pertumbuhan
                         bisnis secara terukur dan berkelanjutan.
                     </p>
-                </div>
-
-                {{-- Ecosystem Badge --}}
-                <div class="shrink-0">
-                    <div class="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2">
-
-                        <span class="h-1.5 w-1.5 rounded-full bg-zinc-900"></span>
-
-                        <span class="text-[10px] font-medium uppercase tracking-[0.15em] text-zinc-500">
-                            Integrated Digital Ecosystem
-                        </span>
-                    </div>
                 </div>
 
             </div>
@@ -356,22 +336,6 @@
 
                 </div>
             </section>
-
-        </div>
-
-
-        {{-- =========================================================
-            SMALL BRAND FOOTER
-        ========================================================== --}}
-        <div class="mt-5 flex items-center justify-between border-t border-zinc-200 pt-5">
-
-            <span class="text-[9px] font-medium uppercase tracking-[0.25em] text-zinc-400">
-                Lighter Media Group
-            </span>
-
-            <span class="text-[9px] uppercase tracking-[0.2em] text-zinc-400">
-                Digital · Media · Technology
-            </span>
 
         </div>
 

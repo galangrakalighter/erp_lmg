@@ -60,6 +60,12 @@
         endDate:
             document.getElementById('endDate'),
 
+        dateField:
+            document.getElementById('dateFieldFilter'),
+
+        dateTypeField:
+            document.getElementById('dateTypeField'),
+
         service:
             document.getElementById(
                 'layananFilter'
@@ -367,9 +373,14 @@
             )
             ?.classList.remove('hidden');
 
-        const dateContext = state.activeTab === 'meeting'
+        const isMeeting = state.activeTab === 'meeting';
+        const dateContext = isMeeting
             ? 'Meeting'
-            : 'Chat';
+            : elements.dateField?.value === 'first_chat'
+                ? 'Pertama Kali Chat'
+                : 'Chat';
+
+        elements.dateTypeField?.classList.toggle('hidden', isMeeting);
 
         if (elements.startDateContext) {
             elements.startDateContext.textContent = dateContext;
@@ -394,6 +405,11 @@
 
             end_date:
                 elements.endDate?.value,
+
+            date_field:
+                state.activeTab === 'meeting'
+                    ? ''
+                    : elements.dateField?.value,
 
             layanan:
                 elements.service?.value,
@@ -424,6 +440,10 @@
 
         const selectedStatus =
             elements.status.value;
+
+        if (filters.date_field && elements.dateField) {
+            elements.dateField.value = filters.date_field;
+        }
 
         if (
             !elements.startDate.value &&
@@ -808,14 +828,6 @@
             lead.note
         );
 
-        setFormValue(
-            'leadMeeting',
-            normalizeDateTimeLocal(
-                lead.meeting_form ??
-                lead.meeting
-            )
-        );
-
         const social =
             normalizeSocialMedia(
                 lead.sosial_media
@@ -882,15 +894,11 @@
         }
 
         /*
-         * Daftarkan event sebelum modal dibuka.
+         * Modal CRM dibuka oleh helper Tailwind, bukan Bootstrap.
+         * Isi nilai lama secara langsung agar tidak bergantung pada
+         * event shown.bs.modal yang tidak dipicu oleh helper ini.
          */
-        $('#leadFormModal').one(
-            'shown.bs.modal',
-            function () {
-                populateEditForm(lead);
-            }
-        );
-
+        populateEditForm(lead);
         crmModal.open('leadFormModal');
     }
 
@@ -920,9 +928,6 @@
 
             note:
                 formValue('leadNote'),
-
-            meeting:
-                formValue('leadMeeting'),
 
             can_push:
                 document.getElementById(
@@ -1161,6 +1166,10 @@
                 elements.endDate.value =
                     '';
 
+                if (elements.dateField) {
+                    elements.dateField.value = 'chat';
+                }
+
                 elements.service.value =
                     '';
 
@@ -1175,6 +1184,24 @@
         ?.addEventListener(
             'click',
             loadData
+        );
+
+    elements.dateField
+        ?.addEventListener(
+            'change',
+            function () {
+                const context = this.value === 'first_chat'
+                    ? 'Pertama Kali Chat'
+                    : 'Chat';
+
+                if (elements.startDateContext) {
+                    elements.startDateContext.textContent = context;
+                }
+
+                if (elements.endDateContext) {
+                    elements.endDateContext.textContent = context;
+                }
+            }
         );
 
     elements.addButton

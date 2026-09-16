@@ -17,6 +17,15 @@ Route::middleware('auth')->group(function () {
     // Dashboard
     Route::get('/home', [App\Http\Controllers\DashboardController::class, 'index'])->name('home');
 
+    Route::get('/profile', [App\Http\Controllers\ProfileController::class, 'show'])->name('profile.show');
+    Route::put('/profile', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
+
+    Route::get('/digital-marketing/client/{id_produk}', [App\Http\Controllers\DigitalMarketingWorkspaceController::class, 'show'])
+        ->name('digital-marketing.workspace');
+    Route::get('/division/{division}/client/{id_produk}', [App\Http\Controllers\DivisionClientWorkspaceController::class, 'show'])
+        ->whereIn('division', ['mcn', 'tech', 'ecommerce'])
+        ->name('division-client.workspace');
+
     Route::get('file-master', [App\Http\Controllers\AccountMasterFileController::class, 'index'])->name('file-master.index');
     Route::get('file-master/{owner}', [App\Http\Controllers\AccountMasterFileController::class, 'show'])->name('file-master.show');
     Route::post('file-master/{owner}/upload', [App\Http\Controllers\AccountMasterFileController::class, 'upload'])->name('file-master.upload');
@@ -42,6 +51,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/exportPDF/{id}/{halaman}', [App\Http\Controllers\PDFController::class, 'exportPDF'])->name('invoice.download');
 
     // MANAJEMEN USER
+    Route::patch('manajemen_user/{user}/lock', [App\Http\Controllers\UserController::class, 'toggleLock'])
+        ->name('manajemen_user.lock');
     Route::resource('manajemen_user', App\Http\Controllers\UserController::class);
 
     Route::resource('crm', App\Http\Controllers\CRMController::class);

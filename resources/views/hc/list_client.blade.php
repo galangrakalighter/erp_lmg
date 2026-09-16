@@ -12,14 +12,6 @@
 
             {{-- Title + Filter --}}
             <div>
-                <div class="mb-2 flex items-center gap-2">
-                    <span class="h-px w-6 bg-zinc-950"></span>
-
-                    <span class="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
-                        Project Management
-                    </span>
-                </div>
-
                 <h1 class="text-3xl font-semibold tracking-[-0.03em] text-zinc-950 sm:text-4xl">
                     {{ $title }}
                 </h1>

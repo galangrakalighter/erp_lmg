@@ -11,12 +11,6 @@
     <title>ERP - Login</title>
 
     {{-- Google Font --}}
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-        rel="stylesheet"
-    >
 
     {{-- Tailwind --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -26,12 +20,12 @@
 
     <main class="min-h-screen flex items-center justify-center px-6 py-12">
 
-        <div class="w-full max-w-6xl">
+        <div class="w-full max-w-lg">
 
-            <div class="grid overflow-hidden rounded-[2rem] bg-white shadow-[0_25px_80px_rgba(0,0,0,0.08)] lg:grid-cols-2">
+            <div class="overflow-hidden rounded-[2rem] border border-zinc-200 bg-white shadow-[0_25px_80px_rgba(0,0,0,0.08)]">
 
                 {{-- Left Side --}}
-                <div class="relative hidden min-h-[680px] overflow-hidden bg-black lg:block">
+                <div class="hidden">
 
                     {{-- Decorative gradient --}}
                     <div class="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.15),transparent_35%),radial-gradient(circle_at_80%_80%,rgba(255,255,255,0.08),transparent_35%)]"></div>
@@ -120,12 +114,12 @@
                 </div>
 
                 {{-- Right Side --}}
-                <div class="flex min-h-[680px] items-center justify-center p-8 sm:p-12 lg:p-16">
+                <div class="flex min-h-[640px] items-center justify-center p-8 sm:p-12">
 
                     <div class="w-full max-w-md">
 
                         {{-- Mobile Logo --}}
-                        <div class="mb-10 lg:hidden">
+                        <div class="mb-10">
                             <div class="flex items-center gap-3">
                                 <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-black text-white">
                                     <span class="text-lg font-extrabold">L</span>
@@ -159,6 +153,7 @@
 
                         {{-- Form --}}
                         <form
+                            id="loginForm"
                             method="POST"
                             action="{{ route('post-login') }}"
                             class="space-y-6"
@@ -218,10 +213,11 @@
 
                             {{-- Submit --}}
                             <button
+                                id="loginButton"
                                 type="submit"
                                 class="group flex w-full items-center justify-center gap-3 rounded-xl bg-black px-5 py-3.5 text-sm font-semibold text-white transition duration-200 hover:-translate-y-0.5 hover:bg-zinc-800 hover:shadow-xl active:translate-y-0"
                             >
-                                <span>Sign In</span>
+                                <span id="loginButtonLabel">Sign In</span>
 
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -273,6 +269,24 @@
                 eyeIcon.innerHTML = ` <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.644C3.423 7.51 7.36 5 12 5c4.64 0 8.577 2.51 9.964 6.678.041.123.041.255 0 .378C20.577 16.49 16.64 19 12 19c-4.64 0-8.577-2.51-9.964-6.678Z" /> <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /> `; 
             } 
         }); 
+
+        const loginForm = document.getElementById('loginForm');
+        const loginButton = document.getElementById('loginButton');
+        const loginButtonLabel = document.getElementById('loginButtonLabel');
+
+        function resetLoginButton() {
+            loginButton.disabled = false;
+            loginButton.classList.remove('cursor-wait', 'opacity-80');
+            loginButtonLabel.textContent = 'Sign In';
+        }
+
+        loginForm.addEventListener('submit', function () {
+            loginButton.disabled = true;
+            loginButton.classList.add('cursor-wait', 'opacity-80');
+            loginButtonLabel.textContent = 'Signing in…';
+        });
+
+        window.addEventListener('pageshow', resetLoginButton);
     </script>
 
 </body>

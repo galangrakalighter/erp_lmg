@@ -20,33 +20,30 @@
     ========================================================== --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
+    {{-- Legacy pages still use the existing Font Awesome icon classes. --}}
+    <link rel="stylesheet" href="{{ asset('vendor/fontawesome-free/css/all.min.css') }}">
+
+    @if(request()->routeIs('market_research', 'branding', 'analisis', 'manajemen', 'PDF', 'api.digital-marketing.*'))
+        {{-- Keep the original Bootstrap/SB Admin component placement inside client tabs. --}}
+        <link rel="stylesheet" href="{{ asset('css/sb-admin-2.min.css') }}">
+    @endif
+
     {{-- =========================================================
         THIRD PARTY CSS
         Bootstrap/SB Admin CSS SUDAH DIHAPUS
     ========================================================== --}}
 
     {{-- Select2 --}}
-    <link
-        href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"
-        rel="stylesheet"
-    />
+    <link href="{{ asset('vendor-local/select2/select2.min.css') }}" rel="stylesheet">
 
     {{-- Flatpickr --}}
-    <link
-        rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"
-    >
+    <link rel="stylesheet" href="{{ asset('vendor-local/flatpickr/flatpickr.min.css') }}">
 
-    <link
-        rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/confirmDate/confirmDate.css"
-    >
+    <link rel="stylesheet" href="{{ asset('vendor-local/flatpickr/plugins/confirmDate/confirmDate.css') }}">
 
     {{-- Choices --}}
-    <link
-        rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css"
-    />
+    <link rel="stylesheet" href="{{ asset('vendor-local/choices/choices.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('vendor-local/sweetalert2/sweetalert2.min.css') }}">
 
     {{-- =========================================================
         CUSTOM GLOBAL STYLE
@@ -482,80 +479,45 @@
         #loadingOverlay {
             position: fixed;
             inset: 0;
-
             z-index: 9999;
-
             display: none;
-
             align-items: center;
             justify-content: center;
-            flex-direction: column;
-
-            background: rgba(250, 250, 250, 0.82);
-
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            background: rgba(245, 245, 243, 0.38);
         }
 
         .loading-box {
-            width: min(420px, calc(100vw - 40px));
-
-            padding: 30px;
-
-            background: rgba(255, 255, 255, 0.95);
-
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: #fff;
             border: 1px solid #e4e4e7;
-            border-radius: 18px;
-
-            text-align: center;
-
-            box-shadow:
-                0 25px 70px rgba(0, 0, 0, 0.10);
+            border-radius: 14px;
+            box-shadow: 0 16px 45px rgba(0, 0, 0, 0.12);
         }
 
-        .spinner-modern {
-            width: 42px;
-            height: 42px;
+        .loading-mark {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            min-width: 42px;
+        }
 
-            margin: 0 auto 18px;
-
-            border: 3px solid #e4e4e7;
-            border-top-color: #09090b;
-
+        .loading-mark span {
+            width: 8px;
+            height: 8px;
             border-radius: 999px;
-
-            animation: spin 0.8s linear infinite;
+            background: #161616;
+            animation: loadingPulse .9s ease-in-out infinite;
         }
 
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
+        .loading-mark span:nth-child(2) { animation-delay: .12s; }
+        .loading-mark span:nth-child(3) { animation-delay: .24s; }
 
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        .progress-estimation {
-            width: 100%;
-            height: 5px;
-
-            margin-top: 20px;
-
-            overflow: hidden;
-
-            background: #e4e4e7;
-            border-radius: 999px;
-        }
-
-        .progress-bar-fill {
-            width: 0%;
-            height: 100%;
-
-            background: #09090b;
-
-            transition: width 0.4s ease;
+        @keyframes loadingPulse {
+            0%, 70%, 100% { transform: translateY(0); opacity: .28; }
+            35% { transform: translateY(-5px); opacity: 1; }
         }
 
         /* =====================================================
@@ -992,49 +954,473 @@
                 padding: 24px;
             }
         }
+
+        /* Client workspace modules: shared visual language for Market Research,
+           Branding, Analysis, Content Plan, and client documents. */
+        body.lmg-client-module {
+            background: #f5f5f3 !important;
+        }
+
+        body.lmg-client-module .lmg-content {
+            color: #27272a;
+        }
+
+        /* Legacy Bootstrap CSS is no longer loaded. Keep its modal contract:
+           hidden by default, visible only after the JS adds .show. */
+        .modal {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            overflow-x: hidden;
+            overflow-y: auto;
+            background: rgba(9, 9, 11, .55);
+        }
+
+        .modal:not(.show) {
+            display: none !important;
+        }
+
+        .modal.show {
+            display: block;
+        }
+
+        .modal-dialog {
+            position: relative;
+            width: calc(100% - 2rem);
+            max-width: 520px;
+            margin: 2rem auto !important;
+            pointer-events: none;
+        }
+
+        .modal-dialog.modal-lg {
+            max-width: 800px;
+        }
+
+        .modal-dialog.modal-xl {
+            max-width: 1140px;
+        }
+
+        .modal-dialog-centered {
+            display: flex;
+            min-height: calc(100% - 4rem);
+            align-items: center;
+        }
+
+        .modal-content {
+            position: relative;
+            width: 100%;
+            border: 1px solid #e4e4e7;
+            border-radius: 16px;
+            background: #fff;
+            color: #27272a;
+            pointer-events: auto;
+            box-shadow: 0 24px 70px rgba(0, 0, 0, .24);
+        }
+
+        .modal-header,
+        .modal-footer {
+            display: flex;
+            flex-shrink: 0;
+            align-items: center;
+            padding: 1rem 1.25rem;
+        }
+
+        .modal-header {
+            justify-content: space-between;
+            border-bottom: 1px solid #e4e4e7;
+            background: #161616 !important;
+            color: #fff !important;
+        }
+
+        .modal-header .modal-title,
+        .modal-header .close {
+            color: #fff !important;
+        }
+
+        .modal-footer {
+            justify-content: flex-end;
+            gap: .65rem;
+            border-top: 1px solid #e4e4e7;
+        }
+
+        .modal-open {
+            overflow: hidden !important;
+        }
+
+        body.lmg-client-module .lmg-content > .container,
+        body.lmg-client-module .lmg-content > .container-fluid {
+            max-width: none !important;
+            padding-right: 0 !important;
+            padding-left: 0 !important;
+        }
+
+        body.lmg-client-module .row {
+            margin-right: -8px;
+            margin-left: -8px;
+        }
+
+        body.lmg-client-module .row > [class*="col-"] {
+            padding-right: 8px;
+            padding-left: 8px;
+        }
+
+        /* Research and branding contain wide data sets. Stacking their old
+           half-width columns prevents tables and actions from colliding. */
+        body.lmg-module-catalog .lmg-content > .row > .col-lg-6 {
+            flex: 0 0 100% !important;
+            max-width: 100% !important;
+        }
+
+        body.lmg-client-module .card,
+        body.lmg-client-module .card.card-body {
+            overflow: hidden;
+            margin-bottom: 18px;
+            border: 1px solid #e4e4e7 !important;
+            border-radius: 16px !important;
+            background: #fff !important;
+            box-shadow: 0 8px 24px rgba(24, 24, 27, .055) !important;
+        }
+
+        body.lmg-client-module .card-header {
+            min-height: 64px;
+            padding: 14px 18px !important;
+            border: 1px solid #e4e4e7 !important;
+            border-bottom: 0 !important;
+            border-radius: 16px 16px 0 0 !important;
+            background: #fff !important;
+        }
+
+        body.lmg-client-module .card-header + .card,
+        body.lmg-client-module .card-header + .card-body {
+            border-top-left-radius: 0 !important;
+            border-top-right-radius: 0 !important;
+        }
+
+        body.lmg-client-module .card-header h6,
+        body.lmg-client-module .card-header h5,
+        body.lmg-client-module .card-header .text-primary,
+        body.lmg-client-module .card-header .text-dark {
+            color: #18181b !important;
+            font-size: .88rem;
+            font-weight: 750 !important;
+            letter-spacing: .01em;
+        }
+
+        body.lmg-client-module .card-header h6 i,
+        body.lmg-client-module .card-header h5 i {
+            display: inline-grid;
+            width: 30px;
+            height: 30px;
+            margin-right: 9px !important;
+            place-items: center;
+            border-radius: 9px;
+            background: #f4f4f5;
+            color: #52525b;
+        }
+
+        body.lmg-client-module .card-body {
+            padding: 18px !important;
+        }
+
+        body.lmg-client-module .table-container {
+            padding: 0 18px 18px !important;
+        }
+
+        body.lmg-client-module .table-responsive {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: auto !important;
+            overflow-y: visible !important;
+            border: 1px solid #e4e4e7;
+            border-radius: 12px;
+            background: #fff;
+            scrollbar-width: thin;
+            scrollbar-color: #a1a1aa #f4f4f5;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        body.lmg-client-module .table-responsive::-webkit-scrollbar {
+            height: 10px;
+        }
+
+        body.lmg-client-module .table-responsive::-webkit-scrollbar-track {
+            background: #f4f4f5;
+        }
+
+        body.lmg-client-module .table-responsive::-webkit-scrollbar-thumb {
+            border: 2px solid #f4f4f5;
+            border-radius: 999px;
+            background: #a1a1aa;
+        }
+
+        body.lmg-client-module table.table {
+            width: 100% !important;
+            min-width: 900px;
+            margin: 0 !important;
+            border-collapse: separate !important;
+            border-spacing: 0 !important;
+            color: #3f3f46;
+        }
+
+        body.lmg-client-module table.table th,
+        body.lmg-client-module table.table th.bg-dark,
+        body.lmg-client-module table.table thead.thead-light th,
+        body.lmg-client-module table.table thead.bg-light th {
+            padding: 13px 14px !important;
+            border: 0 !important;
+            border-bottom: 1px solid #27272a !important;
+            background: #161616 !important;
+            color: #fff !important;
+            font-size: .68rem !important;
+            font-weight: 750 !important;
+            letter-spacing: .065em;
+            line-height: 1.3;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        body.lmg-client-module table.table td,
+        body.lmg-client-module table.table tbody th {
+            padding: 14px !important;
+            border: 0 !important;
+            border-bottom: 1px solid #ededee !important;
+            background: #fff;
+            color: #3f3f46;
+            font-size: .8rem;
+            line-height: 1.55;
+            vertical-align: middle !important;
+        }
+
+        body.lmg-client-module table.table tbody tr:last-child td,
+        body.lmg-client-module table.table tbody tr:last-child th {
+            border-bottom: 0 !important;
+        }
+
+        body.lmg-client-module table.table tbody tr:hover td,
+        body.lmg-client-module table.table tbody tr:hover th {
+            background: #fafafa !important;
+        }
+
+        body.lmg-client-module label {
+            margin-bottom: 6px;
+            color: #52525b !important;
+            font-size: .72rem !important;
+            font-weight: 700 !important;
+            letter-spacing: .035em;
+        }
+
+        body.lmg-client-module .form-control,
+        body.lmg-client-module .custom-select,
+        body.lmg-client-module select.form-control {
+            min-height: 42px;
+            border: 1px solid #d4d4d8 !important;
+            border-radius: 10px !important;
+            background-color: #fff !important;
+            color: #27272a !important;
+            box-shadow: none !important;
+        }
+
+        body.lmg-client-module textarea.form-control {
+            min-height: 104px;
+        }
+
+        body.lmg-client-module .form-control:focus,
+        body.lmg-client-module .custom-select:focus {
+            border-color: #71717a !important;
+            box-shadow: 0 0 0 3px rgba(24, 24, 27, .08) !important;
+        }
+
+        body.lmg-client-module .btn {
+            min-height: 36px;
+            padding: 8px 13px;
+            border-radius: 9px !important;
+            font-size: .75rem;
+            font-weight: 700;
+            box-shadow: none !important;
+        }
+
+        body.lmg-client-module .btn-primary,
+        body.lmg-client-module .btn-success,
+        body.lmg-client-module .btn-info,
+        body.lmg-client-module .modal .btn-warning {
+            border-color: #161616 !important;
+            background: #161616 !important;
+            color: #fff !important;
+        }
+
+        body.lmg-client-module .btn-primary:hover,
+        body.lmg-client-module .btn-success:hover,
+        body.lmg-client-module .btn-info:hover,
+        body.lmg-client-module .modal .btn-warning:hover {
+            border-color: #3f3f46 !important;
+            background: #3f3f46 !important;
+        }
+
+        body.lmg-client-module .btn-warning {
+            border-color: #e4e4e7 !important;
+            background: #f4f4f5 !important;
+            color: #3f3f46 !important;
+        }
+
+        body.lmg-client-module .btn-danger {
+            border-color: #fee2e2 !important;
+            background: #fff1f2 !important;
+            color: #dc2626 !important;
+        }
+
+        body.lmg-client-module .btn-secondary,
+        body.lmg-client-module .btn-light,
+        body.lmg-client-module .btn-outline-secondary {
+            border: 1px solid #d4d4d8 !important;
+            background: #fff !important;
+            color: #52525b !important;
+        }
+
+        body.lmg-client-module .dataTables_wrapper .dataTables_length,
+        body.lmg-client-module .dataTables_wrapper .dataTables_filter,
+        body.lmg-client-module .dataTables_wrapper .dataTables_info,
+        body.lmg-client-module .dataTables_wrapper .dataTables_paginate {
+            padding: 12px 0 !important;
+            color: #71717a !important;
+            font-size: .75rem;
+        }
+
+        body.lmg-client-module .dataTables_wrapper .dataTables_filter input,
+        body.lmg-client-module .dataTables_wrapper .dataTables_length select {
+            min-height: 36px;
+            margin-left: 7px;
+            border: 1px solid #d4d4d8 !important;
+            border-radius: 9px !important;
+            background: #fff !important;
+        }
+
+        body.lmg-client-module .dataTables_wrapper .paginate_button {
+            min-width: 34px;
+            margin: 0 2px !important;
+            padding: 7px 10px !important;
+            border: 1px solid #e4e4e7 !important;
+            border-radius: 8px !important;
+            background: #fff !important;
+            color: #52525b !important;
+        }
+
+        body.lmg-client-module .dataTables_wrapper .paginate_button.current,
+        body.lmg-client-module .dataTables_wrapper .paginate_button.current:hover {
+            border-color: #161616 !important;
+            background: #161616 !important;
+            color: #fff !important;
+        }
+
+        body.lmg-client-module .alert {
+            border: 1px solid #e4e4e7;
+            border-radius: 11px;
+        }
+
+        body.lmg-client-module img.img-fluid {
+            border-radius: 12px !important;
+        }
+
+        body.lmg-client-module .stat-card:hover {
+            transform: translateY(-2px) !important;
+        }
+
+        body.lmg-embedded.lmg-client-module .lmg-content {
+            padding: 18px !important;
+        }
+
+        html:has(body.lmg-embedded) {
+            width: 100%;
+            height: 100% !important;
+            overflow-x: hidden !important;
+            overflow-y: scroll !important;
+            scrollbar-gutter: stable;
+        }
+
+        body.lmg-embedded {
+            width: 100%;
+            min-height: 100% !important;
+            overflow: visible !important;
+        }
+
+        body.lmg-embedded #content,
+        body.lmg-embedded #content-wrapper,
+        body.lmg-embedded .lmg-content {
+            height: auto !important;
+            min-height: 100% !important;
+            overflow: visible !important;
+        }
+
+        body.lmg-client-module table#tableManajemenKonten {
+            min-width: 1800px;
+        }
+
+        body.lmg-client-module table#target_audience,
+        body.lmg-client-module table#segmentasi,
+        body.lmg-client-module table#insight_1,
+        body.lmg-client-module table#insight_2,
+        body.lmg-client-module table#dataTableAnalisisBaru {
+            min-width: 1200px;
+        }
+
+        @media (max-width: 767px) {
+            body.lmg-client-module .card-header {
+                align-items: flex-start !important;
+                gap: 10px;
+            }
+
+            body.lmg-client-module .card-header > div:last-child,
+            body.lmg-client-module .card-header > .btn {
+                flex-shrink: 0;
+            }
+
+            body.lmg-client-module .dataTables_wrapper .dataTables_filter,
+            body.lmg-client-module .dataTables_wrapper .dataTables_length {
+                float: none !important;
+                text-align: left !important;
+            }
+        }
+
+        body.lmg-embedded #accordionSidebar,
+        body.lmg-embedded .lmg-navbar,
+        body.lmg-embedded .lmg-footer,
+        body.lmg-embedded #floatingAiButton,
+        body.lmg-embedded .ai-assistant-panel {
+            display: none !important;
+        }
+
+        body.lmg-embedded #content-wrapper {
+            width: 100% !important;
+            min-height: 100vh;
+            margin-left: 0 !important;
+        }
+
+        body.lmg-embedded .lmg-content {
+            padding: 0 !important;
+        }
     </style>
 
     @stack('styles')
 </head>
 
 
-<body id="page-top" class="min-h-screen bg-[#f5f5f3] text-zinc-900">
+<body id="page-top" class="min-h-screen bg-[#f5f5f3] text-zinc-900 {{ request()->boolean('embed') ? 'lmg-embedded' : '' }} {{ request()->routeIs('market_research', 'branding', 'analisis', 'manajemen', 'PDF', 'api.digital-marketing.*') ? 'lmg-client-tabs' : '' }} {{ request()->routeIs('analisis', 'api.digital-marketing.analisis') ? 'lmg-analysis-page' : '' }}">
 
     {{-- =========================================================
         LOADING OVERLAY
     ========================================================== --}}
-    <div id="loadingOverlay">
+    <div id="loadingOverlay" aria-hidden="true">
 
         <div class="loading-box">
-
-            <div class="spinner-modern"></div>
-
-            <h6
-                id="loadingStatus"
-                class="mb-1 text-sm font-semibold tracking-tight text-zinc-900"
-            >
-                Menyiapkan Data...
-            </h6>
-
-            <p
-                id="loadingSubtext"
-                class="mb-0 text-xs text-zinc-500"
-            ></p>
-
-            <div class="progress-estimation">
-                <div
-                    class="progress-bar-fill"
-                    id="progressBar"
-                ></div>
+            <div class="loading-mark" aria-hidden="true">
+                <span></span><span></span><span></span>
             </div>
-
-            <div
-                id="progressPercentage"
-                class="mt-2 text-xs font-semibold text-zinc-900"
-            >
-                0%
+            <div>
+                <h6 id="loadingStatus" class="mb-0 text-sm font-semibold tracking-tight text-zinc-900">
+                    Membuka halaman
+                </h6>
+                <p id="loadingSubtext" class="mb-0 mt-0.5 text-[11px] text-zinc-500">Mohon tunggu sebentar</p>
             </div>
-
         </div>
 
     </div>
@@ -1305,44 +1691,43 @@
     ========================================================== --}}
 
     {{-- Axios --}}
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="{{ asset('vendor-local/axios/axios.min.js') }}"></script>
 
     {{-- jQuery
          Tetap dipertahankan karena DataTables / Select2
          dan beberapa halaman ERP Anda masih menggunakannya. --}}
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ asset('vendor/jquery/jquery.min.js') }}"></script>
 
     {{-- Chart.js --}}
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ asset('vendor-local/chartjs/chart.umd.js') }}"></script>
 
     {{-- Moment --}}
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <script src="{{ asset('vendor-local/moment/moment.min.js') }}"></script>
 
     {{-- Flatpickr --}}
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="{{ asset('vendor-local/flatpickr/flatpickr.min.js') }}"></script>
 
     {{-- DataTables Core --}}
     <script src="{{ asset('vendor/datatables/jquery.dataTables.min.js') }}"></script>
 
     {{-- RowsGroup --}}
-    <script src="https://cdn.rawgit.com/ashl1/datatables-rowsgroup/v1.0.0/dataTables.rowsGroup.js"></script>
-
     {{-- Choices --}}
-    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+    <script src="{{ asset('vendor-local/choices/choices.min.js') }}"></script>
 
     {{-- Select2 --}}
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="{{ asset('vendor-local/select2/select2.min.js') }}"></script>
 
     {{-- Split.js --}}
-    <script src="https://cdn.jsdelivr.net/npm/split.js/dist/split.min.js"></script>
+    <script src="{{ asset('vendor-local/split/split.min.js') }}"></script>
 
     {{-- PDF.js --}}
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="{{ asset('vendor-local/pdfjs/pdf.min.js') }}"></script>
+    <script src="{{ asset('vendor-local/sweetalert2/sweetalert2.all.min.js') }}"></script>
 
     <script>
         if (typeof pdfjsLib !== 'undefined') {
             pdfjsLib.GlobalWorkerOptions.workerSrc =
-                'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                "{{ asset('vendor-local/pdfjs/pdf.worker.min.js') }}";
         }
     </script>
 
@@ -1350,11 +1735,108 @@
     {{-- =========================================================
         PRODUCT SCRIPTS
     ========================================================== --}}
+    <script src="{{ asset('js/native-client-table.js') }}?v={{ filemtime(public_path('js/native-client-table.js')) }}"></script>
     <script src="{{ asset('js/produk/datatable.js') }}"></script>
     <script src="{{ asset('js/produk/create.js') }}"></script>
     <script src="{{ asset('js/produk/edit.js') }}"></script>
     <script src="{{ asset('js/produk/delete.js') }}"></script>
     <script src="{{ asset('js/produk/produk.js') }}"></script>
+
+
+    {{-- =========================================================
+        LEGACY MODAL COMPATIBILITY
+        Keeps Bootstrap-style data-toggle/data-dismiss markup working
+        without loading the removed Bootstrap stylesheet/plugin.
+    ========================================================== --}}
+    <script>
+        (function () {
+            function modalTarget(value) {
+                if (!value || value.charAt(0) !== '#') return null;
+
+                try {
+                    return document.querySelector(value);
+                } catch (error) {
+                    return null;
+                }
+            }
+
+            function openModal(modal) {
+                if (!modal) return;
+
+                if (window.jQuery) window.jQuery(modal).trigger('show.bs.modal');
+                modal.classList.add('show');
+                modal.style.display = 'block';
+                modal.removeAttribute('aria-hidden');
+                modal.setAttribute('aria-modal', 'true');
+                document.body.classList.add('modal-open');
+                if (window.jQuery) window.jQuery(modal).trigger('shown.bs.modal');
+            }
+
+            function closeModal(modal) {
+                if (!modal) return;
+
+                if (window.jQuery) window.jQuery(modal).trigger('hide.bs.modal');
+                modal.classList.remove('show');
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
+                modal.removeAttribute('aria-modal');
+
+                if (!document.querySelector('.modal.show')) {
+                    document.body.classList.remove('modal-open');
+                }
+
+                if (window.jQuery) window.jQuery(modal).trigger('hidden.bs.modal');
+            }
+
+            window.lmgOpenModal = openModal;
+            window.lmgCloseModal = closeModal;
+
+            document.addEventListener('click', function (event) {
+                const opener = event.target.closest('[data-toggle="modal"][data-target]');
+
+                if (opener) {
+                    const modal = modalTarget(opener.getAttribute('data-target'));
+                    if (!modal) return;
+
+                    event.preventDefault();
+                    openModal(modal);
+                    return;
+                }
+
+                const closer = event.target.closest('[data-dismiss="modal"]');
+
+                if (closer) {
+                    event.preventDefault();
+                    closeModal(closer.closest('.modal'));
+                    return;
+                }
+
+                if (event.target.classList.contains('modal') && event.target.classList.contains('show')) {
+                    closeModal(event.target);
+                }
+            });
+
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') {
+                    closeModal(document.querySelector('.modal.show'));
+                }
+            });
+
+            if (window.jQuery && !window.jQuery.fn.modal) {
+                window.jQuery.fn.modal = function (action) {
+                    return this.each(function () {
+                        if (action === 'hide') {
+                            closeModal(this);
+                        } else if (action === 'toggle') {
+                            this.classList.contains('show') ? closeModal(this) : openModal(this);
+                        } else {
+                            openModal(this);
+                        }
+                    });
+                };
+            }
+        })();
+    </script>
 
 
     {{-- =========================================================
@@ -1369,103 +1851,65 @@
             ====================================================== */
 
             const loader = document.getElementById('loadingOverlay');
-            const barFill = document.getElementById('progressBar');
-            const barPercent = document.getElementById('progressPercentage');
             const statusText = document.getElementById('loadingStatus');
+            let loadingTimer = null;
 
-            function startEnhancedLoading() {
-
+            function showLoadingNow(message = 'Membuka halaman') {
                 if (!loader) return;
-
+                if (statusText) statusText.textContent = message;
                 loader.style.display = 'flex';
-
+                loader.setAttribute('aria-hidden', 'false');
                 document.body.classList.add('loading-active');
-
-                let progress = 0;
-
-                const phases = [
-                    {
-                        limit: 30,
-                        text: "Menghubungkan ke API Meta..."
-                    },
-                    {
-                        limit: 60,
-                        text: "Mengunduh Data Konten..."
-                    },
-                    {
-                        limit: 98,
-                        text: "Finalisasi Tampilan..."
-                    }
-                ];
-
-                let currentPhase = 0;
-
-                const interval = setInterval(() => {
-
-                    if (progress < phases[currentPhase].limit) {
-
-                        progress += Math.random() * 1.5;
-
-                    } else if (currentPhase < phases.length - 1) {
-
-                        currentPhase++;
-
-                        if (statusText) {
-                            statusText.innerText =
-                                phases[currentPhase].text;
-                        }
-
-                    }
-
-                    const rounded = Math.min(
-                        Math.floor(progress),
-                        99
-                    );
-
-                    if (barFill) {
-                        barFill.style.width = rounded + '%';
-                    }
-
-                    if (barPercent) {
-                        barPercent.innerText = rounded + '%';
-                    }
-
-                    if (progress >= 99) {
-                        clearInterval(interval);
-                    }
-
-                }, 150);
             }
 
+            function startEnhancedLoading(message = 'Membuka halaman') {
+                clearTimeout(loadingTimer);
+                // Navigasi cepat tidak perlu menampilkan kilatan loader.
+                loadingTimer = setTimeout(() => showLoadingNow(message), 120);
+            }
+
+            function stopEnhancedLoading() {
+                clearTimeout(loadingTimer);
+                loadingTimer = null;
+                if (!loader) return;
+                loader.style.display = 'none';
+                loader.setAttribute('aria-hidden', 'true');
+                document.body.classList.remove('loading-active');
+            }
+
+            window.startEnhancedLoading = startEnhancedLoading;
+            window.stopEnhancedLoading = stopEnhancedLoading;
+
+            // pageshow dijalankan kembali ketika halaman berasal dari BFCache.
+            window.addEventListener('pageshow', stopEnhancedLoading);
+            window.addEventListener('load', stopEnhancedLoading);
+            stopEnhancedLoading();
 
             /* =====================================================
-               SIDEBAR LINK LOADING
+               INTERNAL LINK LOADING
             ====================================================== */
 
-            const sidebarLinks =
-                document.querySelectorAll(
-                    '#accordionSidebar a'
-                );
+            document.addEventListener('click', function (event) {
+                const link = event.target.closest('a[href]');
+                if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                if (link.hasAttribute('download') || link.target === '_blank' || link.hasAttribute('data-toggle')) return;
 
-            sidebarLinks.forEach(link => {
+                const rawHref = link.getAttribute('href');
+                if (!rawHref || rawHref === '#' || rawHref.startsWith('javascript:')) return;
 
-                link.addEventListener('click', function (e) {
+                const destination = new URL(link.href, window.location.href);
+                if (destination.origin !== window.location.origin) return;
+                if (destination.pathname === window.location.pathname && destination.search === window.location.search && destination.hash) return;
 
-                    const href =
-                        this.getAttribute('href');
+                startEnhancedLoading();
+            });
 
-                    if (
-                        href &&
-                        href !== '#' &&
-                        !this.hasAttribute('data-toggle')
-                    ) {
-
-                        startEnhancedLoading();
-
-                    }
-
+            document.addEventListener('submit', function (event) {
+                const form = event.target;
+                if (!(form instanceof HTMLFormElement) || form.target === '_blank') return;
+                queueMicrotask(() => {
+                    if (!event.defaultPrevented) startEnhancedLoading('Memproses data');
                 });
-
             });
 
 
@@ -1671,6 +2115,10 @@
         ========================================================== */
 
         $(document).ready(function () {
+
+            if (document.body.classList.contains('lmg-client-tabs')) {
+                return;
+            }
 
             const tableId =
                 '#target_audience';

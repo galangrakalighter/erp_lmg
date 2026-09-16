@@ -21,49 +21,8 @@ class ManajemenKontenController extends Controller
         if (!$produk) return redirect()->back()->with('error', 'Produk tidak ditemukan');
 
         $kategory = DB::table("kategori_jasa")->where('id', $produk->kategori_jasa_id)->first();
-        $query = DB::table("data_jasa")
-        ->leftjoin('type_produk', 'type_produk.id', '=', 'data_jasa.type_produk_id')
-        ->leftjoin('strategy', 'strategy.id', '=', 'data_jasa.strategy_id')
-        ->leftjoin('status', 'status.id', '=', 'data_jasa.status_id')
-        ->leftjoin('pilar', 'pilar.id', '=', 'data_jasa.pilar_id')
-        ->leftjoin('hooks', 'hooks.id', '=', 'data_jasa.hooks_id')
-        ->leftjoin('jenis_body', 'jenis_body.id', '=', 'data_jasa.body_id')
-        ->leftjoin('jenis_cta', 'jenis_cta.id', '=', 'data_jasa.cta_id')
-        ->leftjoin('users', 'users.id', '=', 'data_jasa.pic')
-        ->leftJoin('task', function($join) {
-            $join->on('task.id_manajement_konten', '=', 'data_jasa.id')
-                ->whereRaw('task.id IN (select MAX(a.id) from task as a group by a.id_manajement_konten)');
-        })
-        ->where('data_jasa.produk_client_id', $produk->id)
-        ->where('data_jasa.platform', $platform)
-        ->select(
-            'data_jasa.*', 
-            'type_produk.type', 
-            'strategy.strategy', 
-            'status.nama_status', 
-            'pilar.pilar', 
-            'hooks.hooks', 
-            'jenis_body.nama_body', 
-            'jenis_cta.nama_cta', 
-            'users.id as users_id', 
-            'users.email as vic_email', 
-            'task.jam_mulai'
-        );
-
-    // --- PERBAIKAN DI SINI ---
-    if ($request->filled('start_date') && $request->filled('end_date')) {
-        // Jika user mencari berdasarkan range tanggal tertentu
-        $query->whereDate('data_jasa.tanggal_posting', '>=', $request->start_date)
-            ->whereDate('data_jasa.tanggal_posting', '<=', $request->end_date);
-    } else {
-        // Jika tidak ada input tanggal, tampilkan data bulan ini saja secara default
-        $query->whereMonth('data_jasa.tanggal_posting', date('m'))
-            ->whereYear('data_jasa.tanggal_posting', date('Y'));
-    }
-    // -------------------------
-
-    $data = $query->orderBy('data_jasa.tanggal_posting', 'ASC')->get();
-    // dd($data);
+        // Data tabel tidak diambil di sini. DataTable memuatnya secara asinkron
+        // melalui getApiData(), sehingga kerangka halaman bisa tampil lebih cepat.
 
         $divisi = User::find(Auth::user()->id)->userDivisions;
         $RoleSekarang = Auth::user()->isAdmin == false ? DB::table('roles')->where('id', $divisi[0]->role_id)->value('role_name') : "Super Admin";

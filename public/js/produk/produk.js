@@ -1,6 +1,6 @@
 $(function () {
 
-    initDataTable();
+    initClientTable();
     initSelect2();
     initHierarchy();
     initPlatform();

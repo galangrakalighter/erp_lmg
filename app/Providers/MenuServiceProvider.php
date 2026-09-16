@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
-use App\Models\KategoriJasa;
 use Illuminate\Support\Facades\Request;
 
 class MenuServiceProvider extends ServiceProvider
@@ -24,7 +23,9 @@ class MenuServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        View::composer('*', function ($view) {
+        // Data menu hanya dibutuhkan layout aplikasi. Halaman login dan view
+        // mandiri tidak perlu membayar biaya seluruh query sidebar.
+        View::composer('layout.app', function ($view) {
             $segment = Request::segment(1); 
             $currentProductCode = str_contains($segment, 'cms_') 
                                     ? str_replace('cms_', '', $segment) 
@@ -62,52 +63,27 @@ class MenuServiceProvider extends ServiceProvider
             // Data umum
             $mcnClient = DB::table('barang_client')->get();
             
-            $digitalMarketingProduk =  DB::table('client_division')
-            ->join('divisions', 'divisions.id', '=', 'client_division.division_id')
-            ->join('produk_client', 'produk_client.id', '=', 'client_division.client_id')
-            ->where('client_division.division_id', 1)
-            ->where('produk_client.status', 1)
-            ->where('produk_client.kategori_jasa_id', 1)
-            ->get();
-            
-            $menus = KategoriJasa::with('clients')->get();
+            // Satu query untuk seluruh client sidebar, lalu kelompokkan di memori.
+            $sidebarProducts = DB::table('client_division')
+                ->join('produk_client', 'produk_client.id', '=', 'client_division.client_id')
+                ->whereIn('client_division.division_id', [1, 2, 3, 5, 7])
+                ->where('produk_client.status', 1)
+                ->select('client_division.division_id', 'client_division.client_id', 'produk_client.*')
+                ->orderBy('produk_client.nama')
+                ->get()
+                ->groupBy('division_id');
 
-
-            $businessDevProduk =  DB::table('client_division')
-            ->join('divisions', 'divisions.id', '=', 'client_division.division_id')
-            ->join('produk_client', 'produk_client.id', '=', 'client_division.client_id')
-            ->where('client_division.division_id', 2)
-            ->where('produk_client.status', 1)
-            ->whereIn('produk_client.kategori_jasa_id', [2,3])
-            ->get();
-
-            $mcnProduk = DB::table('client_division')
-            ->join('divisions', 'divisions.id', '=', 'client_division.division_id')
-            ->join('produk_client', 'produk_client.id', '=', 'client_division.client_id')
-            ->where('client_division.division_id', 3)
-            ->where('produk_client.status', 1)
-            ->get();
-
-            $techProduk = DB::table('client_division')
-            ->join('divisions', 'divisions.id', '=', 'client_division.division_id')
-            ->join('produk_client', 'produk_client.id', '=', 'client_division.client_id')
-            ->where('client_division.division_id', 5)
-            ->where('produk_client.status', 1)
-            ->get();
-
-            $ecommerceProduk = DB::table('client_division')
-            ->join('divisions', 'divisions.id', '=', 'client_division.division_id')
-            ->join('produk_client', 'produk_client.id', '=', 'client_division.client_id')
-            ->where('client_division.division_id', 7)
-            ->where('produk_client.status', 1)
-            ->get();
+            $digitalMarketingProduk = $sidebarProducts->get(1, collect());
+            $businessDevProduk = $sidebarProducts->get(2, collect());
+            $mcnProduk = $sidebarProducts->get(3, collect());
+            $techProduk = $sidebarProducts->get(5, collect());
+            $ecommerceProduk = $sidebarProducts->get(7, collect());
 
             $perusahaanFinance = DB::table('perusahaan')->where('status', true)->get();
 
             $view->with([
                 'businessDevProduk' => $businessDevProduk,
                 'digitalMarketingProduk' => $digitalMarketingProduk,
-                'menus' => $menus,
                 'activeProductCode' => $currentProductCode,
                 'mcnClient' => $mcnClient,
                 'isSuperAdmin' => $isSuperAdmin,

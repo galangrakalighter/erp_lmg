@@ -109,6 +109,46 @@ body.lmg-embedded .lmg-pdf-table-scroll {
     max-height: calc(100dvh - 190px);
 }
 
+/* Pastikan modal editor tetap berada di dalam viewport iframe. Header dan
+   footer tidak ikut terpotong; hanya isi modal yang digulir. */
+#pageContent .modal-dialog {
+    margin-top: 16px !important;
+    margin-bottom: 16px !important;
+}
+
+#pageContent .modal-content {
+    max-height: calc(100dvh - 32px) !important;
+}
+
+#pageContent .modal-content > form,
+#pageContent form.modal-content {
+    display: flex;
+    min-height: 0;
+    max-height: calc(100dvh - 32px);
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#pageContent .modal-body {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+}
+
+#pageContent .modal-header,
+#pageContent .modal-footer {
+    position: relative;
+    z-index: 4;
+    flex: 0 0 auto;
+    background: #fff;
+}
+
+#pageContent .lmg-editor-workspace:not(.lmg-fullscreen) .lmg-document-stage {
+    height: clamp(300px, 44dvh, 480px);
+}
+
 </style>
 <div id="pageContent">
     <div class="card shadow">
@@ -556,6 +596,18 @@ body.lmg-embedded .lmg-pdf-table-scroll {
 
 @push('script')
 <script>
+
+document.querySelectorAll('[data-target^="#editModal_"], [data-target="#buatDokumenModal"], [data-target="#tambahModal"]').forEach(function (trigger) {
+    trigger.addEventListener('click', function () {
+        const modal = document.querySelector(trigger.getAttribute('data-target'));
+        window.setTimeout(function () {
+            if (!modal) return;
+            modal.scrollTop = 0;
+            const modalBody = modal.querySelector('.modal-body');
+            if (modalBody) modalBody.scrollTop = 0;
+        }, 0);
+    });
+});
 
 function clientEditorCommand(editorId, command, value) {
     const editor = document.getElementById(editorId);

@@ -79,8 +79,12 @@ class MenuServiceProvider extends ServiceProvider
             $techProduk = $sidebarProducts->get(5, collect());
             $ecommerceProduk = $sidebarProducts->get(7, collect());
             $idmeClients = DB::table('produk_client')
-                ->where('status', 1)
-                ->orderBy('nama')
+                ->join('client_division', 'client_division.client_id', '=', 'produk_client.id')
+                ->where('produk_client.status', 1)
+                ->select('produk_client.*')
+                ->groupBy('produk_client.id')
+                ->havingRaw('COUNT(DISTINCT client_division.division_id) > 1')
+                ->orderBy('produk_client.nama')
                 ->get();
 
             $perusahaanFinance = DB::table('perusahaan')->where('status', true)->get();

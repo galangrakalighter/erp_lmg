@@ -21,9 +21,14 @@ class HCDailyController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return view('hc.dailywork', ['title' => 'Daily Work']);
+        $selfOnly = $request->routeIs('daily-work.self');
+
+        return view('hc.dailywork', [
+            'title' => $selfOnly ? 'Daily Work Saya' : 'Daily Work Tim',
+            'selfOnly' => $selfOnly,
+        ]);
 
         $title = "Daily Schedule";
         $today = Carbon::today();
@@ -247,11 +252,12 @@ class HCDailyController extends Controller
         }
 
         $today = Carbon::today();
+        $selfOnly = str_starts_with((string) $request->query('scope'), 'self');
         $visibleUserIds = collect([$currentUser->id]);
 
-        if ($currentUser->isAdmin) {
+        if (! $selfOnly && $currentUser->isAdmin) {
             $visibleUserIds = User::pluck('id');
-        } else {
+        } elseif (! $selfOnly) {
             $visibleUserIds = $visibleUserIds->merge(
                 DB::table('user_division')->where('parent_id', $currentUser->id)->pluck('user_id')
             );
@@ -310,11 +316,13 @@ class HCDailyController extends Controller
             ->get()
             ->map(fn ($task) => $this->formatDailyTask($task, $today));
 
-        $approvalUserIds = $currentUser->isAdmin
-            ? User::pluck('id')
-            : DB::table('user_division')
-                ->where('parent_id', $currentUser->id)
-                ->pluck('user_id');
+        $approvalUserIds = $selfOnly
+            ? collect()
+            : ($currentUser->isAdmin
+                ? User::pluck('id')
+                : DB::table('user_division')
+                    ->where('parent_id', $currentUser->id)
+                    ->pluck('user_id'));
 
         $approvalTasks = Task::query()
             ->leftJoin('users', 'users.id', '=', 'task.pic')

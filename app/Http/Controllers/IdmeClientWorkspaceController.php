@@ -18,6 +18,7 @@ class IdmeClientWorkspaceController extends Controller
             ->with(['divisions' => fn ($query) => $query->orderBy('name')])
             ->where('status', 1)
             ->findOrFail($id_produk);
+        abort_unless($client->divisions->unique('id')->count() > 1, 404);
 
         $accessToken = is_array($client->access_token)
             ? $client->access_token

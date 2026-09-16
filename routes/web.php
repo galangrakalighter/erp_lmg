@@ -16,6 +16,7 @@ Route::middleware('auth')->group(function () {
 
     // Dashboard
     Route::get('/home', [App\Http\Controllers\DashboardController::class, 'index'])->name('home');
+    Route::get('/daily-work', [App\Http\Controllers\HCDailyController::class, 'index'])->name('daily-work.self');
 
     Route::get('/profile', [App\Http\Controllers\ProfileController::class, 'show'])->name('profile.show');
     Route::put('/profile', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');

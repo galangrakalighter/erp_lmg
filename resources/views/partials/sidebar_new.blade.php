@@ -139,6 +139,21 @@
                 </span>
             </a>
 
+            {{-- Daily Work pribadi --}}
+            <a
+                href="{{ route('daily-work.self') }}"
+                class="group mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition
+                {{ request()->routeIs('daily-work.self')
+                    ? 'bg-white text-zinc-950'
+                    : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
+                }}"
+            >
+                <svg class="h-[18px] w-[18px] shrink-0 {{ request()->routeIs('daily-work.self') ? 'text-zinc-950' : 'text-zinc-500 group-hover:text-white' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 4h8M9 3h6a1 1 0 011 1v2H8V4a1 1 0 011-1zM6 5h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2zM9 11h6M9 15h4"/>
+                </svg>
+                <span class="font-medium">Daily Work</span>
+            </a>
+
 
             {{-- Folder Master --}}
             <a

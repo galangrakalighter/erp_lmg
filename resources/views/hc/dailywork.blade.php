@@ -5,21 +5,21 @@
   <header class="relative overflow-hidden rounded-[28px] bg-zinc-950 px-6 py-8 text-white shadow-xl sm:px-9">
    <div class="absolute -right-16 -top-24 h-64 w-64 rounded-full bg-lime-300/10 blur-3xl"></div>
    <div class="relative flex flex-wrap items-end justify-between gap-5">
-    <div><p class="mb-3 text-[11px] font-bold uppercase tracking-[.24em] text-lime-300">● Lighter Media Group · Workspace</p><h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">Daily Work</h1><p id="current-date" class="mt-2 text-sm text-zinc-400">Memuat tanggal kerja...</p></div>
+    <div><p class="mb-3 text-[11px] font-bold uppercase tracking-[.24em] text-lime-300">● Lighter Media Group · Workspace</p><h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">{{ $selfOnly ? 'Daily Work Saya' : 'Daily Work Tim' }}</h1><p id="current-date" class="mt-2 text-sm text-zinc-400">Memuat tanggal kerja...</p></div>
     <div class="flex gap-2"><button id="add-task" class="rounded-xl bg-lime-300 px-4 py-2.5 text-sm font-bold text-zinc-950 transition hover:bg-lime-200">＋ Tambah Task</button><button id="refresh" class="flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-semibold transition hover:bg-white/20"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M5 9a8 8 0 0113-3M19 15a8 8 0 01-13 3"/></svg>Perbarui</button></div>
    </div>
   </header>
   <section id="summary" class="grid grid-cols-2 gap-3 lg:grid-cols-4"></section>
   <section class="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
    <div class="grid gap-3 lg:grid-cols-3">
-    <label><span class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-zinc-500">Anggota tim</span><select id="user-filter" class="w-full rounded-xl border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm focus:border-zinc-900 focus:ring-zinc-900"></select></label>
+    <label class="{{ $selfOnly ? 'hidden' : '' }}"><span class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-zinc-500">Anggota tim</span><select id="user-filter" class="w-full rounded-xl border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm focus:border-zinc-900 focus:ring-zinc-900"></select></label>
     <label><span class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-zinc-500">Status</span><select id="status-filter" class="w-full rounded-xl border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm focus:border-zinc-900 focus:ring-zinc-900"><option value="all">Semua status</option><option value="0">Belum dimulai</option><option value="1">Sedang dikerjakan</option><option value="2">Perlu revisi</option><option value="3">Menunggu persetujuan</option><option value="4">Selesai</option><option value="7">Terlambat</option><option value="8">Waktu habis</option></select></label>
     <label><span class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-zinc-500">Cari task</span><input id="search-filter" type="search" placeholder="Nama task, project, KPI..." class="w-full rounded-xl border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm focus:border-zinc-900 focus:ring-zinc-900"></label>
    </div>
   </section>
   <nav class="flex w-fit gap-1 rounded-2xl border border-zinc-200 bg-white p-1.5 shadow-sm" aria-label="Tampilan Daily Work">
    <button type="button" data-daily-tab="workspace" class="daily-tab rounded-xl bg-zinc-950 px-4 py-2.5 text-xs font-bold text-white">Workspace Hari Ini</button>
-   <button type="button" data-daily-tab="approval" class="daily-tab flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-950">Approval Task <span id="approval-tab-count" class="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] text-zinc-600">0</span></button>
+   <button type="button" data-daily-tab="approval" class="daily-tab {{ $selfOnly ? 'hidden' : 'flex' }} items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-950">Approval Task <span id="approval-tab-count" class="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] text-zinc-600">0</span></button>
   </nav>
   <section id="workspace-panel" data-daily-panel="workspace" class="grid items-start gap-5 xl:grid-cols-[380px_minmax(0,1fr)]">
    <aside class="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm xl:sticky xl:top-5">
@@ -65,7 +65,7 @@
 @push('script')
 <script>
 document.addEventListener('DOMContentLoaded',()=>{
- const API='/api/hc/daily-work',state={tasks:[],approvalTasks:[],user:'',people:[],projects:[],divisions:[],kpis:[],timelineScale:2,workdayStart:9,workdayEnd:17},byId=id=>document.getElementById(id),csrf=document.querySelector('meta[name="csrf-token"]')?.content||'';
+ const SELF_ONLY=@json($selfOnly),API=SELF_ONLY?'/api/hc/daily-work?scope=self':'/api/hc/daily-work',state={tasks:[],approvalTasks:[],user:'',people:[],projects:[],divisions:[],kpis:[],timelineScale:2,workdayStart:9,workdayEnd:17},byId=id=>document.getElementById(id),csrf=document.querySelector('meta[name="csrf-token"]')?.content||'';
  const esc=value=>String(value??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
  const time=value=>{let n=Number(value||0),h=Math.floor(n/60),m=n%60;return h?`${h}j ${m?`${m}m`:''}`.trim():`${m}m`};
  const priorities={1:['Rendah','bg-sky-50 text-sky-700'],2:['Sedang','bg-amber-50 text-amber-700'],3:['Tinggi','bg-rose-50 text-rose-700']};

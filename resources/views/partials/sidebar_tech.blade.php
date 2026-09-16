@@ -37,6 +37,7 @@
     <button
         type="button"
         data-sidebar-collapse="collapseTech"
+        data-sidebar-group="division"
         class="w-full group flex items-center justify-between
                px-3 py-2.5 rounded-lg
                text-left text-sm font-semibold

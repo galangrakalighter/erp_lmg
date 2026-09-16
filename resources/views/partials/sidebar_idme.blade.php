@@ -8,7 +8,7 @@
 
 @if($isIdmeUser)
 <div class="px-1">
-    <button type="button" data-sidebar-collapse="collapseIDME"
+    <button type="button" data-sidebar-collapse="collapseIDME" data-sidebar-group="division"
         class="group flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-xs font-semibold transition {{ $idmeOpen ? 'bg-white text-zinc-950' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white' }}"
         aria-expanded="{{ $idmeOpen ? 'true' : 'false' }}">
         <span class="flex items-center gap-2.5">

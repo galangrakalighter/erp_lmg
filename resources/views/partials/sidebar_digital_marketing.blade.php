@@ -15,6 +15,7 @@
     <button
         type="button"
         data-sidebar-collapse="collapseDM"
+        data-sidebar-group="division"
         class="group flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-xs font-semibold transition
         {{ $dmOpen
             ? 'bg-white text-zinc-950'

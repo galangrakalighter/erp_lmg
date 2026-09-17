@@ -44,7 +44,13 @@ class AccountMasterFileController extends Controller
         return view('account_master_file.show', [
             'title' => 'File Master '.$owner->name,
             'owner' => $owner,
-            'files' => $owner->accountMasterFiles()->latest()->get(),
+            'files' => $owner->accountMasterFiles()->with('uploader')
+                ->when($request->filled('uploaded_by'), fn ($query) => $query->where('uploaded_by', $request->integer('uploaded_by')))
+                ->latest()->get(),
+            'uploaders' => User::query()
+                ->whereIn('id', $owner->accountMasterFiles()->whereNotNull('uploaded_by')->select('uploaded_by'))
+                ->orderBy('name')->get(['id', 'name', 'email']),
+            'selectedUploaderId' => $request->integer('uploaded_by') ?: null,
             'canManage' => (int) $request->user()->id === (int) $owner->id,
         ]);
     }

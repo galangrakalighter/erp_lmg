@@ -24,7 +24,11 @@ class MasterFolderController extends Controller
             ? (int) $request->input('division_id')
             : null;
 
-        $folders = MasterFolder::with(['division', 'roles.division'])
+        $selectedCreatorId = $request->filled('created_by')
+            ? (int) $request->input('created_by')
+            : null;
+
+        $folderQuery = MasterFolder::with(['division', 'roles.division', 'creator'])
             ->where('is_personal', false)
             ->when($selectedDivisionId, fn ($query) => $query->where('division_id', $selectedDivisionId))
             ->when(
@@ -40,7 +44,19 @@ class MasterFolderController extends Controller
             ->when(! $user->isAdmin, fn ($query) => $query->whereHas(
                 'roles',
                 fn ($roles) => $roles->whereIn('roles.id', $roleIds)
-            ))
+            ));
+
+        $creators = \App\Models\User::query()
+            ->whereIn('id', MasterFolder::query()
+                ->where('is_personal', false)
+                ->when($selectedDivisionId, fn ($query) => $query->where('division_id', $selectedDivisionId))
+                ->whereNotNull('created_by')
+                ->select('created_by'))
+            ->orderBy('name')
+            ->get(['id', 'name', 'email']);
+
+        $folders = $folderQuery
+            ->when($selectedCreatorId, fn ($query) => $query->where('created_by', $selectedCreatorId))
             ->latest()
             ->get();
 
@@ -58,6 +74,8 @@ class MasterFolderController extends Controller
             'rolesByDivision' => $roles,
             'divisions' => $divisions,
             'selectedDivisionId' => $selectedDivisionId,
+            'selectedCreatorId' => $selectedCreatorId,
+            'creators' => $creators,
             'isSuperAdmin' => (bool) $user->isAdmin,
         ]);
     }
@@ -121,6 +139,7 @@ class MasterFolderController extends Controller
 
         $files = $folder->files()
             ->with(['uploader', 'roles.division', 'primaryRole.division'])
+            ->when($request->filled('uploaded_by'), fn ($query) => $query->where('uploaded_by', $request->integer('uploaded_by')))
             ->when($request->filled('primary_role_id'), function ($query) use ($request, $folder) {
                 $roleId = $request->integer('primary_role_id');
                 $isFolderPrimaryRole = $folder->roles()
@@ -148,6 +167,10 @@ class MasterFolderController extends Controller
             ->get();
 
         $folder->setRelation('files', $files);
+        $uploaders = \App\Models\User::query()
+            ->whereIn('id', $folder->files()->whereNotNull('uploaded_by')->select('uploaded_by'))
+            ->orderBy('name')
+            ->get(['id', 'name', 'email']);
 
         $canManage = $this->canManageFolder($request, $folder);
         $backToMine = $folder->is_personal || $request->query('from') === 'mine' || ! $canManage;
@@ -158,6 +181,8 @@ class MasterFolderController extends Controller
             'canManage' => $canManage,
             'backToMine' => $backToMine,
             'selectedPrimaryRoleId' => $request->integer('primary_role_id') ?: null,
+            'selectedUploaderId' => $request->integer('uploaded_by') ?: null,
+            'uploaders' => $uploaders,
         ]);
     }
 

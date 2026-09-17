@@ -41,7 +41,19 @@
             </select>
         </span>
     </label>
-   @if($selectedDivisionId)
+    <label class="min-w-64 flex-1">
+        <span class="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-zinc-500">Dibuat oleh</span>
+        <span class="lmg-select-shell">
+            <span class="lmg-select-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M20 21a8 8 0 0 0-16 0M12 13a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/></svg></span>
+            <select name="created_by" class="lmg-filter-select" onchange="this.form.submit()">
+                <option value="">Semua Pembuat</option>
+                @foreach($creators as $creator)
+                <option value="{{ $creator->id }}" @selected((int)$selectedCreatorId===(int)$creator->id)>{{ $creator->name ?: $creator->email }}</option>
+                @endforeach
+            </select>
+        </span>
+    </label>
+   @if($selectedDivisionId || $selectedCreatorId)
     <a href="{{ route('master-folder.index') }}" class="rounded-xl border border-zinc-200 px-4 py-2.5 text-sm font-semibold text-zinc-600">Reset</a>
    @endif
   </form>
@@ -62,6 +74,7 @@
                 <h3 class="truncate text-base font-semibold text-zinc-950">{{ $folder->name }}</h3>
                 <p class="mt-2 min-h-10 text-sm leading-5 text-zinc-500">{{ Illuminate\Support\Str::limit($folder->description ?: 'Tanpa deskripsi',90) }}</p>
             </a>
+            <p class="mt-3 text-xs text-zinc-400">Dibuat oleh <span class="font-semibold text-zinc-600">{{ $folder->creator->name ?? $folder->creator->email ?? '-' }}</span></p>
             @if($isSuperAdmin)
             <div class="mt-3 flex flex-wrap gap-1">
                 @foreach($folder->roles->take(3) as $role)

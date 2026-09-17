@@ -177,6 +177,11 @@ body.lmg-embedded .lmg-pdf-table-scroll {
                 <div class="alert alert-danger"><ul class="mb-0 pl-3">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
             @endif
 
+            <form method="GET" action="{{ route('PDF', $id) }}" class="d-flex flex-wrap align-items-end mb-3" style="gap:10px">
+                <label class="mb-0 flex-grow-1" style="min-width:220px;max-width:380px"><span class="d-block small font-weight-bold text-uppercase text-muted mb-1">Pengunggah</span><select name="uploaded_by" class="form-control" onchange="this.form.submit()"><option value="">Semua Pengunggah</option>@foreach($uploaders as $uploader)<option value="{{ $uploader->id }}" @selected((int)$selectedUploaderId === (int)$uploader->id)>{{ $uploader->name ?: $uploader->email }}</option>@endforeach</select></label>
+                @if($selectedUploaderId)<a href="{{ route('PDF', $id) }}" class="btn btn-light border">Reset</a>@endif
+            </form>
+
             <div class="table-responsive lmg-pdf-table-scroll">
 
                 <table class="table table-bordered table-hover" id="dataTable">
@@ -185,6 +190,7 @@ body.lmg-embedded .lmg-pdf-table-scroll {
                         <tr>
                             <th width="60">No</th>
                             <th>Nama File</th>
+                            <th>Pengunggah</th>
                             <th>PDF</th>
                             <th width="180">Action</th>
                         </tr>
@@ -199,6 +205,8 @@ body.lmg-embedded .lmg-pdf-table-scroll {
                             <td>{{ $loop->iteration }}</td>
 
                             <td>{{ $item->nama_file }}</td>
+
+                            <td>{{ $item->uploader->name ?? $item->uploader->email ?? ($item->is_system_template ? 'Sistem' : '-') }}</td>
 
                             <td>
                                 @unless($item->is_system_template)
@@ -234,7 +242,7 @@ body.lmg-embedded .lmg-pdf-table-scroll {
                     @empty
 
                         <tr>
-                            <td colspan="4" class="text-center">
+                            <td colspan="5" class="text-center">
                                 Belum ada file.
                             </td>
                         </tr>

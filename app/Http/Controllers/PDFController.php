@@ -13,6 +13,8 @@ use App\Models\ChartOfAccount;
 use App\Models\ProdukClient;
 use Carbon\Carbon;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Auth;
+use App\Models\User;
 class PDFController extends Controller
 {
     protected $pdf;
@@ -178,15 +180,22 @@ class PDFController extends Controller
         return $pdf->stream($fileName);
     }
 
-    public function index($id){
+    public function index(Request $request, $id){
         $title = "File";
         $clients = FilePDF::where('client', $id)
+            ->with('uploader')
+            ->when($request->filled('uploaded_by'), fn ($query) => $query->where('uploaded_by', $request->integer('uploaded_by')))
             ->orderByDesc('is_pinned')
             ->orderBy('pin_order')
             ->orderByDesc('created_at')
             ->get();
 
-        return view('pdf.index', compact('clients', 'title', 'id'));
+        $uploaders = User::query()
+            ->whereIn('id', FilePdf::where('client', $id)->whereNotNull('uploaded_by')->select('uploaded_by'))
+            ->orderBy('name')->get(['id', 'name', 'email']);
+        $selectedUploaderId = $request->integer('uploaded_by') ?: null;
+
+        return view('pdf.index', compact('clients', 'title', 'id', 'uploaders', 'selectedUploaderId'));
     }
 
     public function store(Request $request)
@@ -214,6 +223,7 @@ class PDFController extends Controller
         FilePDF::create([
             'nama_file' => $request->nama_file,
             'client'    => $request->client,
+            'uploaded_by' => Auth::id(),
             'location'  => $path,
         ]);
 
@@ -260,6 +270,7 @@ class PDFController extends Controller
         FilePdf::create([
             'nama_file' => $documentName,
             'client' => $client->id,
+            'uploaded_by' => Auth::id(),
             'location' => $path,
             'editor_content' => $content,
             'is_generated_document' => true,

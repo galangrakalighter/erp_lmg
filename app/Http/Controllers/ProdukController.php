@@ -709,6 +709,7 @@ class ProdukController extends Controller
             FilePdf::create([
                 'nama_file' => $fileName,
                 'client' => $client->id,
+                'uploaded_by' => Auth::id(),
                 'location' => $path,
                 'editor_content' => $content,
                 'is_generated_document' => true,

@@ -13,8 +13,67 @@ class SosialCreatorController extends Controller
     public function index(Request $request)
     {
         $title = "Creator";
-        $data = Social_Creator::all();
-        return view('mcn.creator', compact('title', 'data'));
+        $data = collect();
+        $categories = Social_Creator::whereNotNull('category')->pluck('category')
+            ->flatMap(fn ($item) => explode(',', $item))->map(fn ($item) => trim($item))
+            ->filter()->unique()->sort()->values();
+        return view('mcn.creator', compact('title', 'data', 'categories'));
+    }
+
+    public function dataApi(Request $request)
+    {
+        $query = Social_Creator::query();
+        if ($request->filled('filterKategori')) {
+            $query->whereRaw('LOWER(category) LIKE ?', ['%' . strtolower($request->filterKategori) . '%']);
+        }
+        if ($request->filled('filterLokasi')) {
+            $location = strtolower($request->filterLokasi);
+            $query->where(fn ($builder) => $builder
+                ->whereRaw('LOWER(provinsi) LIKE ?', ['%' . $location . '%'])
+                ->orWhereRaw('LOWER(domisili) LIKE ?', ['%' . $location . '%']));
+        }
+        if ($request->filled('filterGender')) {
+            $query->whereRaw('LOWER(gender) = ?', [strtolower($request->filterGender)]);
+        }
+        if ($request->integer('filterFollowers') > 0) {
+            $minimum = $request->integer('filterFollowers');
+            $columns = match ($request->filterPlatform) {
+                'tiktok' => ['fol_tt'],
+                'instagram' => ['fol_ig'],
+                'shopee' => ['fol_shopee'],
+                default => ['fol_tt', 'fol_ig', 'fol_shopee'],
+            };
+            $query->where(function ($builder) use ($columns, $minimum) {
+                foreach ($columns as $column) {
+                    $builder->orWhere($column, '>=', $minimum);
+                }
+            });
+        }
+        if ($request->integer('filterGMV') > 0) {
+            $minimum = $request->integer('filterGMV');
+            $columns = $request->filterPlatformGMV === 'shopee' ? ['gmv_shopee']
+                : ($request->filterPlatformGMV === 'tiktok' ? ['gmv_tt'] : ['gmv_tt', 'gmv_shopee']);
+            $query->where(function ($builder) use ($columns, $minimum) {
+                foreach ($columns as $column) {
+                    $builder->orWhere($column, '>=', $minimum);
+                }
+            });
+        }
+        $paginator = $query->orderByDesc('id')->paginate(10)->withQueryString();
+        $data = $paginator->getCollection();
+        $title = 'Creator';
+        $categories = Social_Creator::whereNotNull('category')->pluck('category')
+            ->flatMap(fn ($item) => explode(',', $item))->map(fn ($item) => trim($item))
+            ->filter()->unique()->sort()->values();
+        $html = view('mcn.creator', compact('title', 'data', 'categories'))->render();
+        return response()->json([
+            'html' => $html,
+            'current_page' => $paginator->currentPage(),
+            'last_page' => $paginator->lastPage(),
+            'from' => $paginator->firstItem(),
+            'to' => $paginator->lastItem(),
+            'total' => $paginator->total(),
+        ]);
     }
 
     /**

@@ -11,6 +11,7 @@ class FilePdf extends Model
     protected $fillable = [
         'nama_file',
         'client',
+        'uploaded_by',
         'location',
         'editor_content',
         'is_generated_document',
@@ -25,4 +26,9 @@ class FilePdf extends Model
         'is_pinned' => 'boolean',
         'pin_order' => 'integer',
     ];
+
+    public function uploader()
+    {
+        return $this->belongsTo(User::class, 'uploaded_by');
+    }
 }

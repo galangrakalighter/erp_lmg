@@ -14,6 +14,7 @@ Route::get('/dashboard-bawahan/{id}', [App\Http\Controllers\HCOverviewController
 Route::get('/get-tasks-by-date', [App\Http\Controllers\HCOverviewController::class, 'getTasksByDate'])->name('getTaskByDate');
 Route::middleware(['web', 'auth'])->prefix('hc')->group(function () {
     Route::get('/daily-work', [App\Http\Controllers\HCDailyController::class, 'dailyWorkData'])->name('hc_daily.data');
+    Route::get('/daily-work/schedule-preview', [App\Http\Controllers\HCDailyController::class, 'schedulePreview']);
     Route::post('/daily-work/tasks', [App\Http\Controllers\HCDailyController::class, 'storeTaskApi']);
     Route::put('/daily-work/tasks/{task}', [App\Http\Controllers\HCDailyController::class, 'updateTaskApi']);
     Route::delete('/daily-work/tasks/{task}', [App\Http\Controllers\HCDailyController::class, 'deleteTaskApi']);
@@ -22,6 +23,12 @@ Route::middleware(['web', 'auth'])->prefix('hc')->group(function () {
     Route::post('/update-status', [App\Http\Controllers\HCDailyController::class, 'updateStatus'])->name('hc.updateStatus');
     Route::post('/cancel-remaining', [App\Http\Controllers\HCDailyController::class, 'cancelRemaining'])->name('hc.cancelRemaining');
     Route::delete('/delete-task/{id}', [App\Http\Controllers\HCDailyController::class, 'destroy']);
+});
+
+Route::middleware(['web', 'auth'])->prefix('mcn')->name('api.mcn.')->group(function () {
+    Route::get('/projects', [App\Http\Controllers\BarangClientController::class, 'dataApi'])->name('projects');
+    Route::get('/affiliators', [App\Http\Controllers\SosialCreatorController::class, 'dataApi'])->name('affiliators');
+    Route::get('/blacklist', [App\Http\Controllers\BlacklistController::class, 'dataApi'])->name('blacklist');
 });
 
 Route::middleware(['web', 'auth'])

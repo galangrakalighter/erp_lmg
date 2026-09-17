@@ -22,16 +22,18 @@
     @if($canManage)<div><button class="btn btn-success btn-sm" data-toggle="modal" data-target="#createAccountDocument"><i class="fas fa-file-pdf mr-1"></i>Buat Dokumen</button> <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#uploadAccountFile"><i class="fas fa-upload mr-1"></i>Upload</button></div>@endif
 </div>
 
+<form method="GET" action="{{ route('file-master.show', $owner) }}" class="card border-0 shadow-sm mb-3"><div class="card-body d-flex flex-wrap align-items-end" style="gap:12px"><label class="mb-0 flex-grow-1" style="min-width:220px"><span class="d-block small font-weight-bold text-uppercase text-muted mb-1">Pengunggah</span><select name="uploaded_by" class="form-control" onchange="this.form.submit()"><option value="">Semua Pengunggah</option>@foreach($uploaders as $uploader)<option value="{{ $uploader->id }}" @selected((int)$selectedUploaderId === (int)$uploader->id)>{{ $uploader->name ?: $uploader->email }}</option>@endforeach</select></label>@if($selectedUploaderId)<a href="{{ route('file-master.show', $owner) }}" class="btn btn-light border">Reset</a>@endif</div></form>
+
 <div class="card shadow-sm border-0"><div class="table-responsive"><table class="table table-hover mb-0">
-    <thead class="thead-light"><tr><th>Nama File</th><th>Tipe</th><th>Ukuran</th><th>Dibuat</th><th class="text-right">Aksi</th></tr></thead><tbody>
+    <thead class="thead-light"><tr><th>Nama File</th><th>Tipe</th><th>Ukuran</th><th>Pengunggah</th><th>Dibuat</th><th class="text-right">Aksi</th></tr></thead><tbody>
     @forelse($files as $file)
         @php($pdf = strtolower(pathinfo($file->original_name, PATHINFO_EXTENSION)) === 'pdf' || $file->mime_type === 'application/pdf')
         <tr><td class="font-weight-bold">@if($pdf)<a href="{{ route('file-master.files.view', ['owner'=>$owner,'fileName'=>$file->original_name]) }}">{{ $file->original_name }}</a>@else{{ $file->original_name }}@endif</td>
             <td><span class="badge badge-{{ $pdf ? 'danger' : 'secondary' }}">{{ strtoupper(pathinfo($file->original_name, PATHINFO_EXTENSION) ?: 'FILE') }}</span></td>
-            <td>{{ number_format($file->size / 1024, 1) }} KB</td><td>{{ $file->created_at->format('d M Y H:i') }}</td>
+            <td>{{ number_format($file->size / 1024, 1) }} KB</td><td>{{ $file->uploader->name ?? $file->uploader->email ?? '-' }}</td><td>{{ $file->created_at->format('d M Y H:i') }}</td>
             <td class="text-right"><a class="btn btn-sm btn-light border" href="{{ route('file-master.files.download', ['owner'=>$owner,'fileName'=>$file->original_name]) }}"><i class="fas fa-download"></i></a>
             @if($canManage)<form class="d-inline" method="POST" action="{{ route('file-master.files.destroy', [$owner,$file]) }}" onsubmit="return confirm('Hapus file ini?')">@csrf @method('DELETE')<button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button></form>@endif</td></tr>
-    @empty<tr><td colspan="5" class="text-center text-muted py-5">Belum ada file.</td></tr>@endforelse
+    @empty<tr><td colspan="6" class="text-center text-muted py-5">Belum ada file.</td></tr>@endforelse
     </tbody></table></div></div>
 
 @if($canManage)

@@ -1,49 +1,15 @@
 @extends('layout.app')
 @section('content')
-<div class="container-fluid">
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800 font-weight-bold">Data Affiliator</h1>
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb bg-transparent p-0 m-0">
-                <li class="breadcrumb-item"><a href="#">Dashboard</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Affiliator</li>
-            </ol>
-        </nav>
-    </div>
+@include('mcn.partials.theme')
+<div class="mcn-workspace"><div class="mx-auto max-w-[1600px]">
+    @include('mcn.partials.header', ['heading' => 'Blacklist Affiliator', 'description' => 'Pantau affiliator bermasalah, riwayat campaign, laporan, dan tindak lanjut tim.'])
 
     <style>
-        .dataTables_wrapper .row:first-child {
-            padding: 15px;
-            background: #fff;
-            border-radius: 8px 8px 0 0;
-            margin: 0;
-        }
-
-        .dataTables_length label {
-            font-weight: 600;
-            color: #858796;
-            font-size: 0.8rem;
-            margin-bottom: 0;
-        }
-
-        .dataTables_filter label {
-            font-weight: 600;
-            color: #858796;
-            font-size: 0.8rem;
-            margin-bottom: 0;
-        }
-
-        .dataTables_filter input {
-            border-radius: 20px;
-            padding: 5px 15px;
-            border: 1px solid #d1d3e2;
-            margin-left: 10px;
-        }
         /* Card & Filter Styling */
         .filter-section {
-            background: #f8f9fc;
-            border-left: 4px solid #D8A7B1;
-            border-radius: 8px;
+            background: #ffffff;
+            border: 1px solid #e4e4e7;
+            border-radius: 16px;
             transition: all 0.3s ease;
         }
         .filter-section:hover {
@@ -59,7 +25,7 @@
             overflow: hidden;
         }
         .table-custom thead th {
-            background-color: #D8A7B1 !important;
+            background-color: #161616 !important;
             color: #ffffff;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -75,19 +41,19 @@
             vertical-align: middle;
             padding: 10px 12px;
             font-size: 0.8rem;
-            color: #4e73df;
+            color: #27272a;
             font-weight: 500;
         }
         
         /* Table Row Hover */
         .table-custom tbody tr:hover {
-            background-color: rgba(216, 167, 177, 0.05) !important;
+            background-color: #fafafa !important;
         }
 
         /* Status Colors */
         .bg-bulan {
-            background-color: #FADADD !important;
-            color: #b36b79 !important;
+            background-color: #f4f4f5 !important;
+            color: #27272a !important;
             font-weight: 800 !important;
             text-align: center;
         }
@@ -144,30 +110,33 @@
         }
     </style>
 
-    <div class="card shadow-sm mb-4 filter-section">
-        <div class="card-body">
-            <div class="row align-items-end">
-                <div class="col-md-3">
-                    <label class="small font-weight-bold text-uppercase text-muted">Bulan</label>
-                    <select id="filterBulan" class="form-control form-control-sm select2 shadow-none">
+    <section class="mcn-filter-panel relative z-20 mb-6 overflow-visible rounded-2xl border border-zinc-200 bg-white shadow-sm">
+        <div class="flex items-center gap-3 border-b border-zinc-200 bg-zinc-50/70 px-5 py-4 sm:px-6">
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#161616] text-white"><i class="fas fa-filter text-xs"></i></div>
+            <div><p class="mb-0 text-xs font-bold uppercase tracking-wider text-zinc-950">Filter Data</p><p class="mb-0 text-xs text-zinc-500">Saring blacklist berdasarkan bulan, campaign, dan status.</p></div>
+        </div>
+        <form id="blacklistFilterForm" class="mcn-filter-grid grid grid-cols-1 gap-5 p-5 sm:grid-cols-2 sm:p-6 lg:grid-cols-4">
+                <div>
+                    <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-700">Bulan</label>
+                    <select id="filterBulan" class="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-[#161616] focus:ring-4 focus:ring-zinc-900/5">
                         <option value="">Semua Bulan</option>
-                        @foreach($data->pluck('bulan')->unique() as $bulan)
+                        @foreach($months as $bulan)
                             <option value="{{ $bulan }}">{{ $bulan }}</option>
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-3">
-                    <label class="small font-weight-bold text-uppercase text-muted">Job Campaign</label>
-                    <select id="filterJob" class="form-control form-control-sm select2">
+                <div>
+                    <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-700">Job Campaign</label>
+                    <select id="filterJob" class="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-[#161616] focus:ring-4 focus:ring-zinc-900/5">
                         <option value="">Semua Job</option>
-                        @foreach($data->pluck('job')->unique() as $job)
+                        @foreach($jobs as $job)
                             <option value="{{ $job }}">{{ $job }}</option>
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-3">
-                    <label class="small font-weight-bold text-uppercase text-muted">Status Keterangan</label>
-                    <select id="filterKet" class="form-control form-control-sm">
+                <div>
+                    <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-700">Status Keterangan</label>
+                    <select id="filterKet" class="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-[#161616] focus:ring-4 focus:ring-zinc-900/5">
                         <option value="">Semua Status</option>
                         <option value="Tidak Mengerjakan Job">Tidak Mengerjakan Job</option>
                         <option value="Tidak Menyelesaikan Job">Tidak Menyelesaikan Job</option>
@@ -176,29 +145,34 @@
                         <option value="BLACK LIST">BLACK LIST</option>
                     </select>
                 </div>
-                <div class="col-md-3">
-                    <button onclick="window.location.reload()" class="btn btn-sm btn-outline-secondary btn-block shadow-none">
-                        <i class="fas fa-sync-alt fa-sm mr-1"></i> Reset Filter
+                <div class="flex items-end">
+                    <button type="button" onclick="resetBlacklistFilter()" class="inline-flex min-h-[42px] w-full items-center justify-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-700 transition hover:border-zinc-400 hover:bg-zinc-50 hover:text-zinc-950">
+                        <i class="fas fa-rotate-left text-xs"></i> Reset Filter
                     </button>
                 </div>
-            </div>
-        </div>
-    </div>
+        </form>
+    </section>
 
-    <div class="card shadow border-0 mb-4">
-        <div class="card-header py-3 bg-white border-bottom-0 d-flex align-items-center justify-content-center">
-            <div class="px-4 py-1 border-left border-right border-danger">
-                <h5 class="m-0 font-weight-bold text-danger text-uppercase" style="letter-spacing: 3px;">Affiliator Report</h5>
+    <section class="mb-6 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
+        <div class="flex flex-col gap-4 border-b border-zinc-200 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <div class="flex items-center gap-3">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-zinc-700">
+                    <i class="fas fa-user-slash text-sm"></i>
+                </div>
+                <div>
+                    <p class="mb-1 text-[10px] font-bold uppercase tracking-[.18em] text-zinc-400">Database MCN</p>
+                    <h2 class="m-0 text-lg font-bold text-zinc-950">Daftar Blacklist</h2>
+                    <p class="mb-0 mt-1 text-xs text-zinc-500">Kelola affiliator bermasalah dan riwayat tindak lanjutnya.</p>
+                </div>
             </div>
-            <div class="card-header py-3 bg-white border-bottom-0 d-flex align-items-center justify-content-between">
-                <button type="button" class="btn btn-danger btn-sm shadow-sm" data-toggle="modal" data-target="#modalTambah">
-                    <i class="fas fa-plus fa-sm text-white-50 mr-2"></i> Tambah Blacklist
-                </button>
-            </div>
+            <button type="button" class="inline-flex min-h-[42px] w-full items-center justify-center gap-2 rounded-xl bg-[#161616] px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-zinc-800 sm:w-auto" data-toggle="modal" data-target="#modalTambah">
+                <i class="fas fa-plus text-xs"></i>
+                <span>Tambah Blacklist</span>
+            </button>
         </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-custom m-0" id="dataTableAffiliator" width="100%">
+        <div>
+            <div class="overflow-x-auto">
+                <table class="table table-custom m-0" id="blacklistMcnTable" data-native-table="blacklist" data-api="{{ route('api.mcn.blacklist') }}" width="100%">
                     <thead>
                         <tr>
                             <th>Bulan</th>
@@ -291,9 +265,9 @@
                     </tbody>
                 </table>
             </div>
+            <div id="blacklistMcnTablePagination" class="native-table-pagination"></div>
         </div>
-    </div>
-</div>
+    </section>
 
 <div class="modal fade" id="modalTambah" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
@@ -482,62 +456,7 @@
         </div>
     </div>
 @endforeach
+</div></div>
 
-<script>
-$(document).ready(function() {
-    var table = $('#dataTableAffiliator').DataTable({
-        "rowsGroup": [0, 1],
-        "pageLength": 25,
-        "dom": "<'row px-3 py-2'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
-                "<'row'<'col-sm-12'tr>>" +
-                "<'row px-3 py-2'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
-        "ordering": false,
-        "language": {
-            "search": "Cari Cepat:",
-            "lengthMenu": "Tampilkan _MENU_ data",
-            "paginate": {
-                "previous": "<i class='fas fa-angle-left'></i>",
-                "next": "<i class='fas fa-angle-right'></i>"
-            }
-        }
-    });
-
-    $('#filterBulan').on('change', function() { table.column(0).search(this.value).draw(); });
-    $('#filterJob').on('change', function() { table.column(1).search(this.value).draw(); console.log(this.value);
-     });
-    $('#filterKet').on('change', function() { 
-        var val = $.fn.dataTable.util.escapeRegex($(this).val());
-        table.column(11).search(val ? '^' + val + '$' : '', true, false).draw(); 
-    });
-});
-document.addEventListener('DOMContentLoaded', function() {
-    const config = {
-        searchEnabled: true,
-        itemSelectText: '',
-        shouldSort: false,
-        placeholder: true,
-        position: 'bottom',
-        // Hapus bg-white dari sini agar tidak error
-        classNames: {
-            containerInner: 'choices__inner', 
-        }
-    };
-
-    const elementsCreator = document.querySelectorAll('.select-choices-creator');
-    elementsCreator.forEach(el => {
-        new Choices(el, {
-            ...config,
-            searchPlaceholderValue: 'Ketik username...',
-        });
-    });
-
-    const elementsBlacklistEdit = document.querySelectorAll('.select-choices-blacklist-edit');
-    elementsBlacklistEdit.forEach(el => {
-        new Choices(el, {
-            ...config,
-            searchPlaceholderValue: 'Ketik username...',
-        });
-    });
-});
-</script>
+@include('mcn.partials.native-table-script')
 @endsection

@@ -340,7 +340,19 @@
                         </select>
                     </span>
                 </div>
-                @if($selectedPrimaryRoleId)
+                <div class="master-file-filter-field" style="width: 100%;">
+                    <label for="uploader-filter" class="master-file-filter-label">Pengunggah</label>
+                    <span class="lmg-filter-shell" style="display:flex;width:100%;">
+                        <span class="lmg-filter-icon"><i class="fas fa-user"></i></span>
+                        <select id="uploader-filter" name="uploaded_by" class="lmg-filter-select" onchange="this.form.submit()" style="width:100%;">
+                            <option value="">Semua Pengunggah</option>
+                            @foreach($uploaders as $uploader)
+                                <option value="{{ $uploader->id }}" @selected((int)$selectedUploaderId === (int)$uploader->id)>{{ $uploader->name ?: $uploader->email }}</option>
+                            @endforeach
+                        </select>
+                    </span>
+                </div>
+                @if($selectedPrimaryRoleId || $selectedUploaderId)
                     <a href="{{ route('master-folder.show', $folder) }}" class="master-filter-reset" title="Hapus filter" aria-label="Hapus filter"><i class="fas fa-times"></i></a>
                 @endif
             </form>

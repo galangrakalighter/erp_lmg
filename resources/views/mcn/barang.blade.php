@@ -1,433 +1,1139 @@
 @extends('layout.app')
+
 @section('content')
-<style>
-    /* Menghilangkan garis pinggir luar tabel agar terlihat modern */
-    .table-responsive {
-        border: none;
-    }
+@include('mcn.partials.theme')
 
-    /* Styling Header: Dark background dengan teks putih */
-    #dataTable thead th {
-        background-color: #4e73df;
-        color: white;
-        text-transform: uppercase;
-        font-size: 11px;
-        letter-spacing: 1px;
-        vertical-align: middle;
-        border: none;
-    }
+<div class="mcn-workspace">
 
-    /* Row Styling */
-    .table td {
-        vertical-align: middle !important;
-        font-size: 13px;
-        color: #5a5c69;
-    }
+    <div class="mx-auto max-w-[1600px]">
 
-    /* Efek halus saat kursor diarahkan ke baris tabel */
-    .table-hover tbody tr:hover {
-        background-color: rgba(78, 115, 223, 0.05);
-        transition: 0.3s;
-    }
+        @include('mcn.partials.header', ['heading' => 'Project MCN', 'description' => 'Kelola project, daftar barang, shipping, dan seluruh komponen biaya.', 'actionLabel' => 'Tambah Project', 'actionAttributes' => 'onclick="document.getElementById(\'modalTambahToggle\').checked=true"'])
 
-    /* Custom Badge untuk Priority */
-    .badge-priority {
-        width: 80px;
-        padding: 6px;
-        border-radius: 50px;
-        font-weight: 700;
-        font-size: 10px;
-    }
 
-    /* Button Action Styling */
-    .btn-action {
-        width: 32px;
-        height: 32px;
-        padding: 0;
-        line-height: 32px;
-        border-radius: 8px;
-    }
-</style>
+        {{-- MAIN CARD --}}
+        <div class="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
 
-<div class="card-body">
-    <div class="card-header py-3 d-flex justify-content-between">
-        <h6 class="m-0 font-weight-bold text-primary">Manajemen Project</h6>
-        <button class="btn btn-primary btn-sm rounded-pill px-3" data-toggle="modal" data-target="#modalTambah">
-            <i class="fas fa-plus mr-1"></i> Tambah Project
-        </button>
-    </div>
-    <div class="table-responsive">
-        <table class="table table-bordered table-hover text-center" id="dataTable" width="100%" cellspacing="0">
-            <thead class="thead-light">
-                <tr>
-                    <th>No</th>
-                    <th>Project</th>
-                    <th>Barang</th>
-                    <th>Shipping</th>
-                    <th>Ongkir</th>
-                    <th>Biaya Layanan</th>
-                    <th>Biaya Penanganan</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($data as $d)
-                    @php
-                        // Pastikan data didecode menjadi array
-                        $barangArray = is_array($d->barang) ? $d->barang : json_decode($d->barang, true);
-                        $shippingArray = is_array($d->shipping) ? $d->shipping : json_decode($d->shipping, true);
+            {{-- CARD HEADER --}}
+            <div class="border-b border-zinc-200 px-5 py-5 sm:px-6">
 
-                        // Ambil objek pertama dari array data
-                        $itemBarang = $barangArray[0] ?? [];
-                        $itemShipping = $shippingArray[0] ?? [];
-                    @endphp
-                    <tr>
-                        <td>{{ $loop->iteration }}</td>
-                        <td class="font-weight-bold text-dark">{{ $d->project }}</td>
-                        
-                        <td>
-                            <div class="d-flex flex-wrap justify-content-center">
-                                @if(!empty($itemBarang))
-                                @foreach($itemBarang as $key => $val)
-                                @if(str_contains($key, 'kategori_barang'))
-                                @php
-                                                // Mengambil angka indeks dari key
-                                                $index = str_replace('kategori_barang_', '', $key);
-                                                $hargaKey = 'harga_barang_' . $index;
-                                                $harga = $itemBarang[$hargaKey] ?? 0;
-                                                @endphp
-                                            
-                                            <div class="badge badge-light border m-2 shadow-sm d-inline-flex flex-column align-items-center" 
-                                            style="border-radius: 12px; border-color: #dee2e6 !important; min-width: 130px;">
-                                            
-                                            <div class="px-2 pt-2 text-dark font-weight-bold" style="font-size: 0.95rem; letter-spacing: 0.3px;">
-                                                    <i class="fas fa-box mr-1 text-primary"></i> 
-                                                    {{ is_array($val) ? implode(', ', $val) : $val }}
-                                                </div>
+                <div class="flex items-center justify-between gap-4">
 
-                                                <div class="px-2 pb-2 text-primary font-weight-bold" style="font-size: 0.9rem;">
-                                                    Rp {{ number_format((float)$harga, 0, ',', '.') }}
-                                                </div>
-                                            </div>
-                                        @endif
-                                    @endforeach
-                                @else
-                                    <span class="text-muted small italic">Tidak ada data barang</span>
-                                @endif
-                            </div>
-                        </td>
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">
+                            Project
+                        </p>
 
-                        <td>
-                            <div class="d-flex flex-wrap justify-content-center">
-                                @if(!empty($itemShipping))
-                                    @foreach($itemShipping as $key => $val)
-                                        @if(str_contains($key, 'kategori_shipping'))
-                                            @php
-                                                $indexShipping = str_replace('kategori_shipping_', '', $key);
-                                                $hargaShippingKey = 'harga_shipping_' . $indexShipping;
-                                                $hargaShipping = $itemShipping[$hargaShippingKey] ?? 0;
-                                            @endphp
-                                            
-                                            <div class="badge badge-light border m-2 shadow-sm d-inline-flex flex-column align-items-center" 
-                                                style="border-radius: 12px; border-color: #d4edda !important; min-width: 130px; transition: 0.3s;">
-                                                
-                                                <div class="px-2 pt-2 text-dark font-weight-bold" style="font-size: 0.95rem; letter-spacing: 0.3px;">
-                                                    <i class="fas fa-truck-moving mr-1 text-success"></i> 
-                                                    {{ is_array($val) ? implode(', ', $val) : $val }}
-                                                </div>
-
-                                                <div class="px-2 pb-2 text-success font-weight-bold" style="font-size: 0.9rem;">
-                                                    Rp {{ number_format((float)$hargaShipping, 0, ',', '.') }}
-                                                </div>
-                                            </div>
-                                        @endif
-                                    @endforeach
-                                @else
-                                    <span class="text-muted small italic">Tidak ada data shipping</span>
-                                @endif
-                            </div>
-                        </td>
-
-                        <td class="font-weight-bold text-dark">Rp {{ number_format((float)$d->ongkir, 0, ',', '.') }}</td>
-                        <td class="font-weight-bold text-dark">Rp {{ number_format((float)$d->biaya_layanan_pembeli, 0, ',', '.') }}</td>
-                        <td class="font-weight-bold text-dark">Rp {{ number_format((float)$d->biaya_penanganan, 0, ',', '.') }}</td>
-
-                        <td>
-                            <div class="d-flex justify-content-center">
-                                <button class="btn btn-info btn-action mr-1 shadow-sm" data-toggle="modal" data-target="#modalEdit{{ $d->id }}">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-danger btn-action shadow-sm" data-toggle="modal" data-target="#modalHapus{{ $d->id }}">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<div class="modal fade" id="modalTambah" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-lg" role="document">
-        <form action="{{ route('barang_client.store') }}" method="POST">
-            @csrf
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title font-weight-bold">Tambah Project Baru</h5>
-                    <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
-                </div>
-                <div class="modal-body bg-light">
-                    <div class="form-group mb-4">
-                        <label class="font-weight-bold text-dark">Nama Project</label>
-                        <input type="text" name="project" class="form-control border-0 shadow-sm" placeholder="Masukkan nama project..." required>
+                        <h2 class="mt-1 text-lg font-bold text-zinc-950">
+                            Daftar Project
+                        </h2>
                     </div>
 
-                    <div class="row">
-                        <div class="col-md-6">
-                            <label class="font-weight-bold text-primary mb-2">
-                                <i class="fas fa-box mr-1"></i> Daftar Barang
-                            </label>
-                            <div class="card border-0 shadow-sm rounded-lg mb-4">
-                                <div class="card-body p-3" id="barang-container">
-                                    <div class="barang-row mb-2">
-                                        <div class="input-group">
-                                            <input type="text" name="barang[]" class="form-control" placeholder="Nama Barang" required>
-                                            <input type="text" name="harga_barang[]" class="form-control format-rupiah" placeholder="Harga Barang" required>
-                                            <div class="input-group-append">
-                                                <button type="button" class="btn btn-success add-barang" data-target="#barang-container">+</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="font-weight-bold text-success mb-2">
-                                <i class="fas fa-truck mr-1"></i> Daftar Shipping
-                            </label>
-                            <div class="card border-0 shadow-sm rounded-lg mb-4">
-                                <div class="card-body p-3" id="shipping-container">
-                                    <div class="shipping-row mb-2">
-                                        <div class="input-group">
-                                            <input type="text" name="shipping[]" class="form-control" placeholder="Nama Barang Shipping" required>
-                                            <input type="text" name="harga_shipping[]" class="form-control format-rupiah" placeholder="Harga Barang Shipping" required>
-                                            <div class="input-group-append">
-                                                <button type="button" class="btn btn-success add-shipping" data-target="#shipping-container">+</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="hidden rounded-lg bg-zinc-100 px-3 py-2 text-xs font-semibold text-zinc-500 sm:block">
+                        Data dimuat otomatis
                     </div>
 
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label class="font-weight-bold text-dark small text-uppercase">Ongkos Kirim</label>
-                                <div class="input-group shadow-sm">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text bg-white border-0 text-muted">Rp</span>
-                                    </div>
-                                    <input type="text" name="ongkir" class="form-control border-0 format-rupiah" placeholder="0">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label class="font-weight-bold text-dark small text-uppercase">Biaya Layanan</label>
-                                <div class="input-group shadow-sm">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text bg-white border-0 text-muted">Rp</span>
-                                    </div>
-                                    <input type="text" name="biaya_layanan" class="form-control border-0 format-rupiah" placeholder="0">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label class="font-weight-bold text-dark small text-uppercase">Biaya Penanganan</label>
-                                <div class="input-group shadow-sm">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text bg-white border-0 text-muted">Rp</span>
-                                    </div>
-                                    <input type="text" name="biaya_penanganan" class="form-control border-0 format-rupiah" placeholder="0">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
-                <div class="modal-footer bg-white border-0">
-                    <button type="button" class="btn btn-light rounded-pill px-4" data-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-primary rounded-pill px-4 shadow">Simpan Project</button>
-                </div>
             </div>
-        </form>
+
+
+            {{-- TABLE --}}
+            <div class="overflow-x-auto">
+
+                <table
+                    id="projectMcnTable"
+                    data-native-table="project"
+                    data-api="{{ route('api.mcn.projects') }}"
+                    class="w-full min-w-[1100px] border-collapse text-left"
+                >
+
+                    <thead>
+                        <tr class="border-b border-zinc-200 bg-[#161616]">
+
+                            <th class="px-4 py-4 text-center text-[10px] font-bold uppercase tracking-[0.15em] text-white">
+                                No
+                            </th>
+
+                            <th class="px-4 py-4 text-[10px] font-bold uppercase tracking-[0.15em] text-white">
+                                Project
+                            </th>
+
+                            <th class="px-4 py-4 text-center text-[10px] font-bold uppercase tracking-[0.15em] text-white">
+                                Barang
+                            </th>
+
+                            <th class="px-4 py-4 text-center text-[10px] font-bold uppercase tracking-[0.15em] text-white">
+                                Shipping
+                            </th>
+
+                            <th class="px-4 py-4 text-right text-[10px] font-bold uppercase tracking-[0.15em] text-white">
+                                Ongkir
+                            </th>
+
+                            <th class="px-4 py-4 text-right text-[10px] font-bold uppercase tracking-[0.15em] text-white">
+                                Biaya Layanan
+                            </th>
+
+                            <th class="px-4 py-4 text-right text-[10px] font-bold uppercase tracking-[0.15em] text-white">
+                                Biaya Penanganan
+                            </th>
+
+                            <th class="px-4 py-4 text-center text-[10px] font-bold uppercase tracking-[0.15em] text-white">
+                                Action
+                            </th>
+
+                        </tr>
+                    </thead>
+
+
+                    <tbody class="divide-y divide-zinc-100">
+
+                        @forelse ($data as $d)
+
+                            @php
+                                $barangArray = is_array($d->barang)
+                                    ? $d->barang
+                                    : json_decode($d->barang, true);
+
+                                $shippingArray = is_array($d->shipping)
+                                    ? $d->shipping
+                                    : json_decode($d->shipping, true);
+
+                                $itemBarang = $barangArray[0] ?? [];
+                                $itemShipping = $shippingArray[0] ?? [];
+                            @endphp
+
+                            <tr class="transition hover:bg-zinc-50">
+
+                                {{-- NO --}}
+                                <td class="px-4 py-5 text-center text-sm font-semibold text-zinc-400">
+                                    {{ $loop->iteration }}
+                                </td>
+
+
+                                {{-- PROJECT --}}
+                                <td class="px-4 py-5">
+
+                                    <div class="max-w-[220px]">
+                                        <p class="font-bold text-zinc-900">
+                                            {{ $d->project }}
+                                        </p>
+
+                                        <p class="mt-1 text-xs text-zinc-400">
+                                            Project #{{ $d->id }}
+                                        </p>
+                                    </div>
+
+                                </td>
+
+
+                                {{-- BARANG --}}
+                                <td class="px-4 py-5">
+
+                                    <div class="flex flex-wrap justify-center gap-2">
+
+                                        @if(!empty($itemBarang))
+
+                                            @foreach($itemBarang as $key => $val)
+
+                                                @if(str_contains($key, 'kategori_barang'))
+
+                                                    @php
+                                                        $index = str_replace('kategori_barang_', '', $key);
+                                                        $hargaKey = 'harga_barang_' . $index;
+                                                        $harga = $itemBarang[$hargaKey] ?? 0;
+                                                    @endphp
+
+                                                    <div class="flex min-w-[145px] flex-col items-center rounded-xl border border-zinc-200 bg-white px-3 py-3 shadow-sm">
+
+                                                        <div class="flex items-center gap-1.5 text-center text-xs font-bold text-zinc-800">
+                                                            <i
+                                                                data-lucide="package"
+                                                                class="h-3.5 w-3.5 shrink-0 text-zinc-500"
+                                                            ></i>
+
+                                                            <span>
+                                                                {{ is_array($val) ? implode(', ', $val) : $val }}
+                                                            </span>
+                                                        </div>
+
+                                                        <div class="mt-1.5 text-xs font-bold text-zinc-950">
+                                                            Rp {{ number_format((float)$harga, 0, ',', '.') }}
+                                                        </div>
+
+                                                    </div>
+
+                                                @endif
+
+                                            @endforeach
+
+                                        @else
+
+                                            <span class="text-xs italic text-zinc-400">
+                                                Tidak ada data barang
+                                            </span>
+
+                                        @endif
+
+                                    </div>
+
+                                </td>
+
+
+                                {{-- SHIPPING --}}
+                                <td class="px-4 py-5">
+
+                                    <div class="flex flex-wrap justify-center gap-2">
+
+                                        @if(!empty($itemShipping))
+
+                                            @foreach($itemShipping as $key => $val)
+
+                                                @if(str_contains($key, 'kategori_shipping'))
+
+                                                    @php
+                                                        $indexShipping = str_replace('kategori_shipping_', '', $key);
+                                                        $hargaShippingKey = 'harga_shipping_' . $indexShipping;
+                                                        $hargaShipping = $itemShipping[$hargaShippingKey] ?? 0;
+                                                    @endphp
+
+                                                    <div class="flex min-w-[145px] flex-col items-center rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-3">
+
+                                                        <div class="flex items-center gap-1.5 text-center text-xs font-bold text-zinc-800">
+
+                                                            <i
+                                                                data-lucide="truck"
+                                                                class="h-3.5 w-3.5 shrink-0 text-zinc-500"
+                                                            ></i>
+
+                                                            <span>
+                                                                {{ is_array($val) ? implode(', ', $val) : $val }}
+                                                            </span>
+
+                                                        </div>
+
+                                                        <div class="mt-1.5 text-xs font-bold text-zinc-950">
+                                                            Rp {{ number_format((float)$hargaShipping, 0, ',', '.') }}
+                                                        </div>
+
+                                                    </div>
+
+                                                @endif
+
+                                            @endforeach
+
+                                        @else
+
+                                            <span class="text-xs italic text-zinc-400">
+                                                Tidak ada data shipping
+                                            </span>
+
+                                        @endif
+
+                                    </div>
+
+                                </td>
+
+
+                                {{-- ONGKIR --}}
+                                <td class="whitespace-nowrap px-4 py-5 text-right">
+                                    <span class="text-sm font-bold text-zinc-900">
+                                        Rp {{ number_format((float)$d->ongkir, 0, ',', '.') }}
+                                    </span>
+                                </td>
+
+
+                                {{-- LAYANAN --}}
+                                <td class="whitespace-nowrap px-4 py-5 text-right">
+                                    <span class="text-sm font-bold text-zinc-900">
+                                        Rp {{ number_format((float)$d->biaya_layanan_pembeli, 0, ',', '.') }}
+                                    </span>
+                                </td>
+
+
+                                {{-- PENANGANAN --}}
+                                <td class="whitespace-nowrap px-4 py-5 text-right">
+                                    <span class="text-sm font-bold text-zinc-900">
+                                        Rp {{ number_format((float)$d->biaya_penanganan, 0, ',', '.') }}
+                                    </span>
+                                </td>
+
+
+                                {{-- ACTION --}}
+                                <td class="px-4 py-5">
+
+                                    <div class="flex items-center justify-center gap-2">
+
+                                        <label
+                                            for="modalEditToggle{{ $d->id }}"
+                                            class="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-600 transition hover:border-zinc-900 hover:bg-zinc-950 hover:text-white"
+                                            title="Edit"
+                                        >
+                                            <i data-lucide="pencil" class="h-4 w-4"></i>
+                                        </label>
+
+
+                                        <label
+                                            for="modalHapusToggle{{ $d->id }}"
+                                            class="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-600 transition hover:border-red-600 hover:bg-red-600 hover:text-white"
+                                            title="Hapus"
+                                        >
+                                            <i data-lucide="trash-2" class="h-4 w-4"></i>
+                                        </label>
+
+                                    </div>
+
+                                </td>
+
+                            </tr>
+
+                        @empty
+
+                            <tr>
+                                <td
+                                    colspan="8"
+                                    class="px-6 py-16 text-center"
+                                >
+                                    <div class="mx-auto flex max-w-sm flex-col items-center">
+
+                                        <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-400">
+                                            <i data-lucide="folder-open" class="h-6 w-6"></i>
+                                        </div>
+
+                                        <h3 class="font-bold text-zinc-900">
+                                            Belum ada project
+                                        </h3>
+
+                                        <p class="mt-1 text-sm text-zinc-500">
+                                            Tambahkan project baru untuk mulai mengelola data.
+                                        </p>
+
+                                    </div>
+                                </td>
+                            </tr>
+
+                        @endforelse
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            <div id="projectMcnTablePagination" class="native-table-pagination"></div>
+
+        </div>
+
     </div>
+
 </div>
+
+
+{{-- ========================================================= --}}
+{{-- MODAL TAMBAH --}}
+{{-- ========================================================= --}}
+
+<input
+    type="checkbox"
+    id="modalTambahToggle"
+    class="peer sr-only"
+>
+
+<div class="pointer-events-none fixed inset-0 z-[100000] flex items-center justify-center overflow-y-auto p-4 opacity-0 transition duration-200 peer-checked:pointer-events-auto peer-checked:opacity-100 sm:p-6">
+
+    <label
+        for="modalTambahToggle"
+        class="absolute inset-0 cursor-pointer bg-zinc-950/60 backdrop-blur-sm"
+    ></label>
+
+    <div
+        class="relative z-10 my-auto w-full max-w-4xl scale-95 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl transition duration-200 peer-checked:scale-100"
+    >
+
+        <form action="{{ route('barang_client.store') }}" method="POST">
+
+            @csrf
+
+            {{-- HEADER --}}
+            <div class="flex items-center justify-between bg-[#161616] px-6 py-5 sm:px-7">
+
+                <div>
+                    <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">
+                        Project Management
+                    </p>
+
+                    <h2 class="mt-1 text-lg font-bold text-white">
+                        Tambah Project Baru
+                    </h2>
+                </div>
+
+                <label
+                    for="modalTambahToggle"
+                    class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-zinc-400 transition hover:bg-white/10 hover:text-white"
+                >
+                    <i data-lucide="x" class="h-5 w-5"></i>
+                </label>
+
+            </div>
+
+
+            {{-- BODY --}}
+            <div class="max-h-[75vh] overflow-y-auto bg-zinc-50 px-6 py-6 sm:px-7">
+
+                {{-- PROJECT --}}
+                <div class="mb-6">
+
+                    <label
+                        for="project_tambah"
+                        class="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-900"
+                    >
+                        Nama Project
+                    </label>
+
+                    <input
+                        type="text"
+                        name="project"
+                        id="project_tambah"
+                        class="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-[#161616] focus:ring-4 focus:ring-zinc-900/5"
+                        placeholder="Masukkan nama project..."
+                        required
+                    >
+
+                </div>
+
+
+                {{-- BARANG & SHIPPING --}}
+                <div class="grid gap-6 lg:grid-cols-2">
+
+                    {{-- BARANG --}}
+                    <div>
+
+                        <div class="mb-3 flex items-center justify-between">
+
+                            <label class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-900">
+                                <i data-lucide="package" class="h-4 w-4 text-zinc-500"></i>
+                                Daftar Barang
+                            </label>
+
+                        </div>
+
+                        <div
+                            id="barang-container"
+                            class="space-y-3 rounded-2xl border border-zinc-200 bg-white p-4"
+                        >
+
+                            <div class="barang-row">
+
+                                <div class="grid grid-cols-[1fr_1fr_auto] gap-2">
+
+                                    <input
+                                        type="text"
+                                        name="barang[]"
+                                        class="min-w-0 rounded-xl border border-zinc-300 bg-white px-3 py-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-[#161616] focus:ring-4 focus:ring-zinc-900/5"
+                                        placeholder="Nama Barang"
+                                        required
+                                    >
+
+                                    <input
+                                        type="text"
+                                        name="harga_barang[]"
+                                        class="format-rupiah min-w-0 rounded-xl border border-zinc-300 bg-white px-3 py-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-[#161616] focus:ring-4 focus:ring-zinc-900/5"
+                                        placeholder="Harga"
+                                        required
+                                    >
+
+                                    <button
+                                        type="button"
+                                        class="add-barang inline-flex h-[46px] w-[46px] items-center justify-center rounded-xl bg-[#161616] text-white transition hover:bg-zinc-800"
+                                        data-target="#barang-container"
+                                    >
+                                        <i data-lucide="plus" class="h-4 w-4"></i>
+                                    </button>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    {{-- SHIPPING --}}
+                    <div>
+
+                        <label class="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-900">
+                            <i data-lucide="truck" class="h-4 w-4 text-zinc-500"></i>
+                            Daftar Shipping
+                        </label>
+
+                        <div
+                            id="shipping-container"
+                            class="space-y-3 rounded-2xl border border-zinc-200 bg-white p-4"
+                        >
+
+                            <div class="shipping-row">
+
+                                <div class="grid grid-cols-[1fr_1fr_auto] gap-2">
+
+                                    <input
+                                        type="text"
+                                        name="shipping[]"
+                                        class="min-w-0 rounded-xl border border-zinc-300 bg-white px-3 py-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-[#161616] focus:ring-4 focus:ring-zinc-900/5"
+                                        placeholder="Nama Shipping"
+                                        required
+                                    >
+
+                                    <input
+                                        type="text"
+                                        name="harga_shipping[]"
+                                        class="format-rupiah min-w-0 rounded-xl border border-zinc-300 bg-white px-3 py-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-[#161616] focus:ring-4 focus:ring-zinc-900/5"
+                                        placeholder="Harga"
+                                        required
+                                    >
+
+                                    <button
+                                        type="button"
+                                        class="add-shipping inline-flex h-[46px] w-[46px] items-center justify-center rounded-xl bg-[#161616] text-white transition hover:bg-zinc-800"
+                                        data-target="#shipping-container"
+                                    >
+                                        <i data-lucide="plus" class="h-4 w-4"></i>
+                                    </button>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                {{-- COST --}}
+                <div class="mt-6">
+
+                    <div class="mb-4 border-t border-zinc-200 pt-6">
+
+                        <p class="text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">
+                            Biaya Project
+                        </p>
+
+                    </div>
+
+                    <div class="grid gap-4 md:grid-cols-3">
+
+                        <div>
+
+                            <label
+                                for="ongkir_tambah"
+                                class="mb-2 block text-xs font-bold text-zinc-700"
+                            >
+                                Ongkos Kirim
+                            </label>
+
+                            <div class="flex overflow-hidden rounded-xl border border-zinc-300 bg-white focus-within:border-[#161616] focus-within:ring-4 focus-within:ring-zinc-900/5">
+
+                                <span class="flex items-center border-r border-zinc-200 px-3 text-xs font-bold text-zinc-400">
+                                    Rp
+                                </span>
+
+                                <input
+                                    type="text"
+                                    name="ongkir"
+                                    id="ongkir_tambah"
+                                    class="format-rupiah min-w-0 flex-1 border-0 bg-transparent px-3 py-3 text-sm text-zinc-900 outline-none"
+                                    placeholder="0"
+                                >
+
+                            </div>
+
+                        </div>
+
+
+                        <div>
+
+                            <label
+                                for="layanan_tambah"
+                                class="mb-2 block text-xs font-bold text-zinc-700"
+                            >
+                                Biaya Layanan
+                            </label>
+
+                            <div class="flex overflow-hidden rounded-xl border border-zinc-300 bg-white focus-within:border-[#161616] focus-within:ring-4 focus-within:ring-zinc-900/5">
+
+                                <span class="flex items-center border-r border-zinc-200 px-3 text-xs font-bold text-zinc-400">
+                                    Rp
+                                </span>
+
+                                <input
+                                    type="text"
+                                    name="biaya_layanan"
+                                    id="layanan_tambah"
+                                    class="format-rupiah min-w-0 flex-1 border-0 bg-transparent px-3 py-3 text-sm text-zinc-900 outline-none"
+                                    placeholder="0"
+                                >
+
+                            </div>
+
+                        </div>
+
+
+                        <div>
+
+                            <label
+                                for="penanganan_tambah"
+                                class="mb-2 block text-xs font-bold text-zinc-700"
+                            >
+                                Biaya Penanganan
+                            </label>
+
+                            <div class="flex overflow-hidden rounded-xl border border-zinc-300 bg-white focus-within:border-[#161616] focus-within:ring-4 focus-within:ring-zinc-900/5">
+
+                                <span class="flex items-center border-r border-zinc-200 px-3 text-xs font-bold text-zinc-400">
+                                    Rp
+                                </span>
+
+                                <input
+                                    type="text"
+                                    name="biaya_penanganan"
+                                    id="penanganan_tambah"
+                                    class="format-rupiah min-w-0 flex-1 border-0 bg-transparent px-3 py-3 text-sm text-zinc-900 outline-none"
+                                    placeholder="0"
+                                >
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            {{-- FOOTER --}}
+            <div class="flex flex-col-reverse gap-3 border-t border-zinc-200 bg-white px-6 py-5 sm:flex-row sm:justify-end sm:px-7">
+
+                <label
+                    for="modalTambahToggle"
+                    class="inline-flex cursor-pointer items-center justify-center rounded-xl border border-zinc-200 bg-white px-5 py-3 text-sm font-bold text-zinc-600 transition hover:bg-zinc-50 hover:text-zinc-900"
+                >
+                    Batal
+                </label>
+
+                <button
+                    type="submit"
+                    class="inline-flex items-center justify-center gap-2 rounded-xl bg-[#161616] px-5 py-3 text-sm font-bold text-white transition hover:bg-zinc-800"
+                >
+                    <i data-lucide="save" class="h-4 w-4"></i>
+                    Simpan Project
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+{{-- ========================================================= --}}
+{{-- MODAL EDIT & DELETE --}}
+{{-- ========================================================= --}}
 
 @foreach ($data as $d)
-    
-    @php
-        // Pastikan data adalah array. Jika string JSON, decode dulu.
-        $barangData = is_array($d->barang) ? $d->barang : json_decode($d->barang, true);
-        $shippingData = is_array($d->shipping) ? $d->shipping : json_decode($d->shipping, true);
 
-        // Jika data dibungkus dalam array lagi (seperti hasil store sebelumnya)
-        $itemBarang = (isset($barangData[0]) && is_array($barangData[0])) ? $barangData[0] : $barangData;
-        $itemShipping = (isset($shippingData[0]) && is_array($shippingData[0])) ? $shippingData[0] : $shippingData;
+    @php
+        $barangData = is_array($d->barang)
+            ? $d->barang
+            : json_decode($d->barang, true);
+
+        $shippingData = is_array($d->shipping)
+            ? $d->shipping
+            : json_decode($d->shipping, true);
+
+        $itemBarang = (isset($barangData[0]) && is_array($barangData[0]))
+            ? $barangData[0]
+            : $barangData;
+
+        $itemShipping = (isset($shippingData[0]) && is_array($shippingData[0]))
+            ? $shippingData[0]
+            : $shippingData;
     @endphp
 
-    <div class="modal fade" id="modalEdit{{ $d->id }}" tabindex="-1" role="dialog">
-        <div class="modal-dialog modal-lg" role="document">
-            <form action="{{ route('barang_client.update', $d->id) }}" method="POST">
+
+    {{-- ===================================================== --}}
+    {{-- MODAL EDIT --}}
+    {{-- ===================================================== --}}
+
+    <input
+        type="checkbox"
+        id="modalEditToggle{{ $d->id }}"
+        class="peer sr-only"
+    >
+
+    <div class="pointer-events-none fixed inset-0 z-[100000] flex items-center justify-center overflow-y-auto p-4 opacity-0 transition duration-200 peer-checked:pointer-events-auto peer-checked:opacity-100 sm:p-6">
+
+        <label
+            for="modalEditToggle{{ $d->id }}"
+            class="absolute inset-0 cursor-pointer bg-zinc-950/60 backdrop-blur-sm"
+        ></label>
+
+        <div
+            class="relative z-10 my-auto w-full max-w-4xl scale-95 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl transition duration-200 peer-checked:scale-100"
+        >
+
+            <form
+                action="{{ route('barang_client.update', $d->id) }}"
+                method="POST"
+            >
+
                 @csrf
                 @method('PUT')
-                <div class="modal-content border-0 shadow-lg">
-                    <div class="modal-header bg-info text-white">
-                        <h5 class="modal-title font-weight-bold">
-                            <i class="fas fa-edit mr-2"></i>Edit Project: {{ $d->project }}
-                        </h5>
-                        <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+
+
+                {{-- HEADER --}}
+                <div class="flex items-center justify-between bg-[#161616] px-6 py-5 sm:px-7">
+
+                    <div class="min-w-0">
+
+                        <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">
+                            Project Management
+                        </p>
+
+                        <h2 class="mt-1 truncate text-lg font-bold text-white">
+                            Edit Project
+                        </h2>
+
+                        <p class="mt-1 truncate text-xs text-zinc-400">
+                            {{ $d->project }}
+                        </p>
+
                     </div>
-                    <div class="modal-body bg-light">
-                        <div class="form-group mb-4">
-                            <label class="font-weight-bold">Nama Project</label>
-                            <input type="text" name="project" class="form-control border-0 shadow-sm" value="{{ $d->project }}" required>
-                        </div>
 
-                        <div class="row">
-                            <div class="col-md-6">
-                                <label class="font-weight-bold text-primary mb-2">
-                                    <i class="fas fa-box mr-1"></i> Daftar Barang & Harga
-                                </label>
-                                <div id="edit-barang-container-{{ $d->id }}">
-                                    @php $i = 1; @endphp
-                                    @while(isset($barangData[0]["kategori_barang_$i"]))
-                                        <div class="barang-row mb-2">
-                                            <div class="input-group shadow-sm">
-                                                <input type="text" name="barang[]" class="form-control" 
-                                                    value="{{ $barangData[0]["kategori_barang_$i"] }}" placeholder="Nama Barang">
-                                                <input type="text" name="harga_barang[]" class="form-control format-rupiah" 
-                                                    value="Rp {{ number_format($barangData[0]["harga_barang_$i"] ?? 0, 0, ',', '.') }}" placeholder="Harga">
-                                                <div class="input-group-append">
-                                                    <button type="button" class="btn btn-danger remove-barang border-0">-</button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        @php $i++; @endphp
-                                    @endwhile
-                                </div>
-                                <button type="button" class="btn btn-outline-primary btn-sm mt-2 add-barang" data-target="#edit-barang-container-{{ $d->id }}">
-                                    <i class="fas fa-plus mr-1"></i> Tambah Barang
-                                </button>
-                            </div>
+                    <label
+                        for="modalEditToggle{{ $d->id }}"
+                        class="ml-4 flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-zinc-400 transition hover:bg-white/10 hover:text-white"
+                    >
+                        <i data-lucide="x" class="h-5 w-5"></i>
+                    </label>
 
-                            <div class="col-md-6">
-                                <label class="font-weight-bold text-success mb-2">
-                                    <i class="fas fa-truck mr-1"></i> Daftar Shipping & Harga
-                                </label>
-                                <div id="edit-shipping-container-{{ $d->id }}">
-                                    @php $j = 1; @endphp
-                                    @while(isset($shippingData[0]["kategori_shipping_$j"]))
-                                        <div class="shipping-row mb-2">
-                                            <div class="input-group shadow-sm">
-                                                <input type="text" name="shipping[]" class="form-control" 
-                                                    value="{{ $shippingData[0]["kategori_shipping_$j"] }}" placeholder="Nama Shipping">
-                                                <input type="text" name="harga_shipping[]" class="form-control format-rupiah" 
-                                                    value="Rp {{ number_format($shippingData[0]["harga_shipping_$j"] ?? 0, 0, ',', '.') }}" placeholder="Harga">
-                                                <div class="input-group-append">
-                                                    <button type="button" class="btn btn-danger remove-shipping border-0">-</button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        @php $j++; @endphp
-                                    @endwhile
-                                </div>
-                                <button type="button" class="btn btn-outline-success btn-sm mt-2 add-shipping" data-target="#edit-shipping-container-{{ $d->id }}">
-                                    <i class="fas fa-plus mr-1"></i> Tambah Shipping
-                                </button>
-                            </div>
-                        </div>
-
-                        <hr class="my-4">
-
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label class="font-weight-bold text-dark small text-uppercase">Ongkos Kirim</label>
-                                    <div class="input-group shadow-sm">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text bg-white border-0 text-muted small">Rp</span>
-                                        </div>
-                                        <input type="number" name="ongkir" class="form-control border-0 format-rupiah" 
-                                            value="{{ number_format($d->ongkir ?? 0, 0, ',', '.') }}" placeholder="0">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label class="font-weight-bold text-dark small text-uppercase">Biaya Layanan</label>
-                                    <div class="input-group shadow-sm">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text bg-white border-0 text-muted small">Rp</span>
-                                        </div>
-                                        <input type="number" name="biaya_layanan" class="form-control border-0 format-rupiah" 
-                                            value="{{ number_format($d->biaya_layanan ?? 0, 0, ',', '.') }}" placeholder="0">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label class="font-weight-bold text-dark small text-uppercase">Biaya Penanganan</label>
-                                    <div class="input-group shadow-sm">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text bg-white border-0 text-muted small">Rp</span>
-                                        </div>
-                                        <input type="number" name="biaya_penanganan" class="form-control border-0 format-rupiah" 
-                                            value="{{ number_format($d->biaya_penanganan ?? 0, 0, ',', '.') }}" placeholder="0">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer bg-white border-0">
-                        <button type="button" class="btn btn-light rounded-pill px-4" data-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-info rounded-pill px-4 shadow">Update Project</button>
-                    </div>
                 </div>
+
+
+                {{-- BODY --}}
+                <div class="max-h-[75vh] overflow-y-auto bg-zinc-50 px-6 py-6 sm:px-7">
+
+                    {{-- PROJECT --}}
+                    <div class="mb-6">
+
+                        <label
+                            for="project_edit_{{ $d->id }}"
+                            class="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-900"
+                        >
+                            Nama Project
+                        </label>
+
+                        <input
+                            type="text"
+                            name="project"
+                            id="project_edit_{{ $d->id }}"
+                            class="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-[#161616] focus:ring-4 focus:ring-zinc-900/5"
+                            value="{{ $d->project }}"
+                            required
+                        >
+
+                    </div>
+
+
+                    {{-- BARANG + SHIPPING --}}
+                    <div class="grid gap-6 lg:grid-cols-2">
+
+                        {{-- BARANG --}}
+                        <div>
+
+                            <label class="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-900">
+
+                                <i
+                                    data-lucide="package"
+                                    class="h-4 w-4 text-zinc-500"
+                                ></i>
+
+                                Daftar Barang & Harga
+
+                            </label>
+
+                            <div
+                                id="edit-barang-container-{{ $d->id }}"
+                                class="space-y-3 rounded-2xl border border-zinc-200 bg-white p-4"
+                            >
+
+                                @php $i = 1; @endphp
+
+                                @while(isset($barangData[0]["kategori_barang_$i"]))
+
+                                    <div class="barang-row">
+
+                                        <div class="grid grid-cols-[1fr_1fr_auto] gap-2">
+
+                                            <input
+                                                type="text"
+                                                name="barang[]"
+                                                class="min-w-0 rounded-xl border border-zinc-300 bg-white px-3 py-3 text-sm text-zinc-900 outline-none focus:border-[#161616] focus:ring-4 focus:ring-zinc-900/5"
+                                                value="{{ $barangData[0]["kategori_barang_$i"] }}"
+                                                placeholder="Nama Barang"
+                                            >
+
+                                            <input
+                                                type="text"
+                                                name="harga_barang[]"
+                                                class="format-rupiah min-w-0 rounded-xl border border-zinc-300 bg-white px-3 py-3 text-sm text-zinc-900 outline-none focus:border-[#161616] focus:ring-4 focus:ring-zinc-900/5"
+                                                value="Rp {{ number_format($barangData[0]["harga_barang_$i"] ?? 0, 0, ',', '.') }}"
+                                                placeholder="Harga"
+                                            >
+
+                                            <button
+                                                type="button"
+                                                class="remove-barang inline-flex h-[46px] w-[46px] items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-500 transition hover:border-red-600 hover:bg-red-600 hover:text-white"
+                                            >
+                                                <i data-lucide="minus" class="h-4 w-4"></i>
+                                            </button>
+
+                                        </div>
+
+                                    </div>
+
+                                    @php $i++; @endphp
+
+                                @endwhile
+
+                            </div>
+
+
+                            <button
+                                type="button"
+                                class="add-barang mt-3 inline-flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-xs font-bold text-zinc-700 transition hover:border-zinc-900 hover:bg-zinc-950 hover:text-white"
+                                data-target="#edit-barang-container-{{ $d->id }}"
+                            >
+                                <i data-lucide="plus" class="h-4 w-4"></i>
+                                Tambah Barang
+                            </button>
+
+                        </div>
+
+
+                        {{-- SHIPPING --}}
+                        <div>
+
+                            <label class="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-900">
+
+                                <i
+                                    data-lucide="truck"
+                                    class="h-4 w-4 text-zinc-500"
+                                ></i>
+
+                                Daftar Shipping & Harga
+
+                            </label>
+
+                            <div
+                                id="edit-shipping-container-{{ $d->id }}"
+                                class="space-y-3 rounded-2xl border border-zinc-200 bg-white p-4"
+                            >
+
+                                @php $j = 1; @endphp
+
+                                @while(isset($shippingData[0]["kategori_shipping_$j"]))
+
+                                    <div class="shipping-row">
+
+                                        <div class="grid grid-cols-[1fr_1fr_auto] gap-2">
+
+                                            <input
+                                                type="text"
+                                                name="shipping[]"
+                                                class="min-w-0 rounded-xl border border-zinc-300 bg-white px-3 py-3 text-sm text-zinc-900 outline-none focus:border-[#161616] focus:ring-4 focus:ring-zinc-900/5"
+                                                value="{{ $shippingData[0]["kategori_shipping_$j"] }}"
+                                                placeholder="Nama Shipping"
+                                            >
+
+                                            <input
+                                                type="text"
+                                                name="harga_shipping[]"
+                                                class="format-rupiah min-w-0 rounded-xl border border-zinc-300 bg-white px-3 py-3 text-sm text-zinc-900 outline-none focus:border-[#161616] focus:ring-4 focus:ring-zinc-900/5"
+                                                value="Rp {{ number_format($shippingData[0]["harga_shipping_$j"] ?? 0, 0, ',', '.') }}"
+                                                placeholder="Harga"
+                                            >
+
+                                            <button
+                                                type="button"
+                                                class="remove-shipping inline-flex h-[46px] w-[46px] items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-500 transition hover:border-red-600 hover:bg-red-600 hover:text-white"
+                                            >
+                                                <i data-lucide="minus" class="h-4 w-4"></i>
+                                            </button>
+
+                                        </div>
+
+                                    </div>
+
+                                    @php $j++; @endphp
+
+                                @endwhile
+
+                            </div>
+
+
+                            <button
+                                type="button"
+                                class="add-shipping mt-3 inline-flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-xs font-bold text-zinc-700 transition hover:border-zinc-900 hover:bg-zinc-950 hover:text-white"
+                                data-target="#edit-shipping-container-{{ $d->id }}"
+                            >
+                                <i data-lucide="plus" class="h-4 w-4"></i>
+                                Tambah Shipping
+                            </button>
+
+                        </div>
+
+                    </div>
+
+
+                    {{-- COST --}}
+                    <div class="mt-7 border-t border-zinc-200 pt-6">
+
+                        <p class="mb-4 text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">
+                            Biaya Project
+                        </p>
+
+                        <div class="grid gap-4 md:grid-cols-3">
+
+                            <div>
+
+                                <label
+                                    for="ongkir_edit_{{ $d->id }}"
+                                    class="mb-2 block text-xs font-bold text-zinc-700"
+                                >
+                                    Ongkos Kirim
+                                </label>
+
+                                <div class="flex overflow-hidden rounded-xl border border-zinc-300 bg-white focus-within:border-[#161616] focus-within:ring-4 focus-within:ring-zinc-900/5">
+
+                                    <span class="flex items-center border-r border-zinc-200 px-3 text-xs font-bold text-zinc-400">
+                                        Rp
+                                    </span>
+
+                                    <input
+                                        type="number"
+                                        name="ongkir"
+                                        id="ongkir_edit_{{ $d->id }}"
+                                        class="format-rupiah min-w-0 flex-1 border-0 bg-transparent px-3 py-3 text-sm text-zinc-900 outline-none"
+                                        value="{{ number_format($d->ongkir ?? 0, 0, ',', '.') }}"
+                                        placeholder="0"
+                                    >
+
+                                </div>
+
+                            </div>
+
+
+                            <div>
+
+                                <label
+                                    for="layanan_edit_{{ $d->id }}"
+                                    class="mb-2 block text-xs font-bold text-zinc-700"
+                                >
+                                    Biaya Layanan
+                                </label>
+
+                                <div class="flex overflow-hidden rounded-xl border border-zinc-300 bg-white focus-within:border-[#161616] focus-within:ring-4 focus-within:ring-zinc-900/5">
+
+                                    <span class="flex items-center border-r border-zinc-200 px-3 text-xs font-bold text-zinc-400">
+                                        Rp
+                                    </span>
+
+                                    <input
+                                        type="number"
+                                        name="biaya_layanan"
+                                        id="layanan_edit_{{ $d->id }}"
+                                        class="format-rupiah min-w-0 flex-1 border-0 bg-transparent px-3 py-3 text-sm text-zinc-900 outline-none"
+                                        value="{{ number_format($d->biaya_layanan ?? 0, 0, ',', '.') }}"
+                                        placeholder="0"
+                                    >
+
+                                </div>
+
+                            </div>
+
+
+                            <div>
+
+                                <label
+                                    for="penanganan_edit_{{ $d->id }}"
+                                    class="mb-2 block text-xs font-bold text-zinc-700"
+                                >
+                                    Biaya Penanganan
+                                </label>
+
+                                <div class="flex overflow-hidden rounded-xl border border-zinc-300 bg-white focus-within:border-[#161616] focus-within:ring-4 focus-within:ring-zinc-900/5">
+
+                                    <span class="flex items-center border-r border-zinc-200 px-3 text-xs font-bold text-zinc-400">
+                                        Rp
+                                    </span>
+
+                                    <input
+                                        type="number"
+                                        name="biaya_penanganan"
+                                        id="penanganan_edit_{{ $d->id }}"
+                                        class="format-rupiah min-w-0 flex-1 border-0 bg-transparent px-3 py-3 text-sm text-zinc-900 outline-none"
+                                        value="{{ number_format($d->biaya_penanganan ?? 0, 0, ',', '.') }}"
+                                        placeholder="0"
+                                    >
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                {{-- FOOTER --}}
+                <div class="flex flex-col-reverse gap-3 border-t border-zinc-200 bg-white px-6 py-5 sm:flex-row sm:justify-end sm:px-7">
+
+                    <label
+                        for="modalEditToggle{{ $d->id }}"
+                        class="inline-flex cursor-pointer items-center justify-center rounded-xl border border-zinc-200 bg-white px-5 py-3 text-sm font-bold text-zinc-600 transition hover:bg-zinc-50 hover:text-zinc-900"
+                    >
+                        Batal
+                    </label>
+
+                    <button
+                        type="submit"
+                        class="inline-flex items-center justify-center gap-2 rounded-xl bg-[#161616] px-5 py-3 text-sm font-bold text-white transition hover:bg-zinc-800"
+                    >
+                        <i data-lucide="save" class="h-4 w-4"></i>
+                        Update Project
+                    </button>
+
+                </div>
+
             </form>
+
         </div>
+
     </div>
 
-    <div class="modal fade" id="modalHapus{{ $d->id }}" tabindex="-1" role="dialog">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title">Konfirmasi Hapus</h5>
-                    <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+
+    {{-- ===================================================== --}}
+    {{-- MODAL HAPUS --}}
+    {{-- ===================================================== --}}
+
+    <input
+        type="checkbox"
+        id="modalHapusToggle{{ $d->id }}"
+        class="peer sr-only"
+    >
+
+    <div class="pointer-events-none fixed inset-0 z-[100000] flex items-center justify-center overflow-y-auto p-4 opacity-0 transition duration-200 peer-checked:pointer-events-auto peer-checked:opacity-100">
+
+        <label
+            for="modalHapusToggle{{ $d->id }}"
+            class="absolute inset-0 cursor-pointer bg-zinc-950/60 backdrop-blur-sm"
+        ></label>
+
+        <div
+            class="relative z-10 w-full max-w-md scale-95 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl transition duration-200 peer-checked:scale-100"
+        >
+
+            {{-- HEADER --}}
+            <div class="flex items-center justify-between bg-[#161616] px-6 py-5">
+
+                <div>
+                    <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">
+                        Confirmation
+                    </p>
+
+                    <h2 class="mt-1 text-lg font-bold text-white">
+                        Konfirmasi Hapus
+                    </h2>
                 </div>
-                <div class="modal-body">
-                    <p>Apakah Anda yakin ingin menghapus project <b>{{ $d->project }}</b>?</p>
-                    <p class="text-danger small">*Data yang dihapus tidak dapat dikembalikan.</p>
-                </div>
-                <div class="modal-footer">
-                    <form action="{{ route('barang_client.destroy', $d->id) }}" method="POST">
-                        @csrf
-                        @method('DELETE')
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-danger">Ya, Hapus Sekarang</button>
-                    </form>
-                </div>
+
+                <label
+                    for="modalHapusToggle{{ $d->id }}"
+                    class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-zinc-400 transition hover:bg-white/10 hover:text-white"
+                >
+                    <i data-lucide="x" class="h-5 w-5"></i>
+                </label>
+
             </div>
+
+
+            {{-- BODY --}}
+            <div class="px-6 py-6">
+
+                <div class="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+                    <i data-lucide="trash-2" class="h-6 w-6"></i>
+                </div>
+
+                <p class="text-sm leading-6 text-zinc-600">
+                    Apakah Anda yakin ingin menghapus project
+                    <strong class="font-bold text-zinc-950">
+                        {{ $d->project }}
+                    </strong>
+                    ?
+                </p>
+
+                <div class="mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3">
+                    <p class="text-xs font-medium leading-5 text-red-600">
+                        Data yang sudah dihapus tidak dapat dikembalikan.
+                    </p>
+                </div>
+
+            </div>
+
+
+            {{-- FOOTER --}}
+            <div class="flex justify-end gap-3 border-t border-zinc-200 bg-zinc-50 px-6 py-5">
+
+                <label
+                    for="modalHapusToggle{{ $d->id }}"
+                    class="inline-flex cursor-pointer items-center justify-center rounded-xl border border-zinc-200 bg-white px-5 py-3 text-sm font-bold text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
+                >
+                    Batal
+                </label>
+
+                <form
+                    action="{{ route('barang_client.destroy', $d->id) }}"
+                    method="POST"
+                >
+
+                    @csrf
+                    @method('DELETE')
+
+                    <button
+                        type="submit"
+                        class="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-red-700"
+                    >
+                        <i data-lucide="trash-2" class="h-4 w-4"></i>
+                        Ya, Hapus
+                    </button>
+
+                </form>
+
+            </div>
+
         </div>
+
     </div>
 
 @endforeach
+
 
 <script>
     function formatRupiah(angka, prefix) {
@@ -442,56 +1148,129 @@
             rupiah += separator + ribuan.join('.');
         }
 
-        rupiah = split[1] != undefined ? rupiah + ',' + split[1] : rupiah;
-        return prefix == undefined ? rupiah : (rupiah ? 'Rp' + rupiah : '');
+        rupiah = split[1] != undefined
+            ? rupiah + ',' + split[1]
+            : rupiah;
+
+        return prefix == undefined
+            ? rupiah
+            : (rupiah ? 'Rp' + rupiah : '');
     }
+
 
     $(document).on('keyup', '.format-rupiah', function() {
         $(this).val(formatRupiah($(this).val()));
     });
 
+
     $(document).on('click', '.add-barang', function() {
+
         let targetSelector = $(this).data('target');
         let $container = $(targetSelector);
 
         let newRow = `
-            <div class="barang-row mb-2 mt-2">
-                <div class="input-group shadow-sm">
-                    <input type="text" name="barang[]" class="form-control" placeholder="Nama Barang" required>
-                    <input type="text" name="harga_barang[]" class="form-control format-rupiah" placeholder="Harga Barang" required>
-                    <div class="input-group-append">
-                        <button type="button" class="btn btn-danger remove-barang">-</button>
-                    </div>
+            <div class="barang-row">
+
+                <div class="grid grid-cols-[1fr_1fr_auto] gap-2">
+
+                    <input
+                        type="text"
+                        name="barang[]"
+                        class="min-w-0 rounded-xl border border-zinc-300 bg-white px-3 py-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-[#161616] focus:ring-4 focus:ring-zinc-900/5"
+                        placeholder="Nama Barang"
+                        required
+                    >
+
+                    <input
+                        type="text"
+                        name="harga_barang[]"
+                        class="format-rupiah min-w-0 rounded-xl border border-zinc-300 bg-white px-3 py-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-[#161616] focus:ring-4 focus:ring-zinc-900/5"
+                        placeholder="Harga Barang"
+                        required
+                    >
+
+                    <button
+                        type="button"
+                        class="remove-barang inline-flex h-[46px] w-[46px] items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-500 transition hover:border-red-600 hover:bg-red-600 hover:text-white"
+                    >
+                        <i data-lucide="minus" class="h-4 w-4"></i>
+                    </button>
+
                 </div>
-            </div>`;
-        
+
+            </div>
+        `;
+
         $container.append(newRow);
+
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
     });
+
 
     $(document).on('click', '.add-shipping', function() {
+
         let targetSelector = $(this).data('target');
         let $container = $(targetSelector);
 
         let newRow = `
-            <div class="shipping-row mb-2 mt-2">
-                <div class="input-group shadow-sm">
-                    <input type="text" name="shipping[]" class="form-control" placeholder="Nama Barang Shipping" required>
-                    <input type="text" name="harga_shipping[]" class="form-control format-rupiah" placeholder="Harga Barang Shipping" required>
-                    <div class="input-group-append">
-                        <button type="button" class="btn btn-danger remove-shipping">-</button>
-                    </div>
+            <div class="shipping-row">
+
+                <div class="grid grid-cols-[1fr_1fr_auto] gap-2">
+
+                    <input
+                        type="text"
+                        name="shipping[]"
+                        class="min-w-0 rounded-xl border border-zinc-300 bg-white px-3 py-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-[#161616] focus:ring-4 focus:ring-zinc-900/5"
+                        placeholder="Nama Barang Shipping"
+                        required
+                    >
+
+                    <input
+                        type="text"
+                        name="harga_shipping[]"
+                        class="format-rupiah min-w-0 rounded-xl border border-zinc-300 bg-white px-3 py-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-[#161616] focus:ring-4 focus:ring-zinc-900/5"
+                        placeholder="Harga Barang Shipping"
+                        required
+                    >
+
+                    <button
+                        type="button"
+                        class="remove-shipping inline-flex h-[46px] w-[46px] items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-500 transition hover:border-red-600 hover:bg-red-600 hover:text-white"
+                    >
+                        <i data-lucide="minus" class="h-4 w-4"></i>
+                    </button>
+
                 </div>
-            </div>`;
-        
+
+            </div>
+        `;
+
         $container.append(newRow);
+
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
     });
+
 
     $(document).on('click', '.remove-barang', function() {
         $(this).closest('.barang-row').remove();
     });
 
+
     $(document).on('click', '.remove-shipping', function() {
         $(this).closest('.shipping-row').remove();
+    });
+
+
+    document.addEventListener('DOMContentLoaded', function() {
+
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
     });
 </script>
 

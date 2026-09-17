@@ -13,16 +13,38 @@ class BlacklistController extends Controller
     public function index()
     {
         $title = "Blacklist";
-        $data = Blacklist::leftjoin('social_commerce_creator', 'social_commerce_creator.id', '=', 'black_list.id_creator')
-        ->select('black_list.*', 'social_commerce_creator.user_tt', 'social_commerce_creator.url_tt', 'social_commerce_creator.user_ig', 'social_commerce_creator.url_ig', 'social_commerce_creator.user_shopee', 'social_commerce_creator.url_shopee', 'social_commerce_creator.alamat', 'social_commerce_creator.contact')
-        ->orderBy('black_list.bulan', 'asc')
-        ->get();
+        $data = collect();
+        $months = Blacklist::whereNotNull('bulan')->distinct()->orderBy('bulan')->pluck('bulan');
+        $jobs = Blacklist::whereNotNull('job')->distinct()->orderBy('job')->pluck('job');
         $blacklistIds = Blacklist::pluck('id_creator')->toArray();
-
-        // 3. Cari kreator yang BELUM ada di blacklist (yang muncul hanya yang bersih)
         $creators = Social_Creator::whereNotIn('id', $blacklistIds)->get();
+        $creators_blacklist = collect();
+        return view('mcn.blacklist', compact('title', 'data', 'creators', 'creators_blacklist', 'months', 'jobs'));
+    }
+
+    public function dataApi(Request $request)
+    {
+        $query = Blacklist::leftjoin('social_commerce_creator', 'social_commerce_creator.id', '=', 'black_list.id_creator')
+        ->select('black_list.*', 'social_commerce_creator.user_tt', 'social_commerce_creator.url_tt', 'social_commerce_creator.user_ig', 'social_commerce_creator.url_ig', 'social_commerce_creator.user_shopee', 'social_commerce_creator.url_shopee', 'social_commerce_creator.alamat', 'social_commerce_creator.contact')
+        ->when($request->filled('filterBulan'), fn ($builder) => $builder->where('black_list.bulan', $request->filterBulan))
+        ->when($request->filled('filterJob'), fn ($builder) => $builder->where('black_list.job', $request->filterJob))
+        ->when($request->filled('filterKet'), fn ($builder) => $builder->where('black_list.keterangan', $request->filterKet));
+        $paginator = $query->orderBy('black_list.bulan')->paginate(10)->withQueryString();
+        $data = $paginator->getCollection();
+        $creators = collect();
         $creators_blacklist = Social_Creator::all();
-        return view('mcn.blacklist', compact('title', 'data', 'creators', 'creators_blacklist'));
+        $months = collect();
+        $jobs = collect();
+        $title = 'Blacklist';
+        $html = view('mcn.blacklist', compact('title', 'data', 'creators', 'creators_blacklist', 'months', 'jobs'))->render();
+        return response()->json([
+            'html' => $html,
+            'current_page' => $paginator->currentPage(),
+            'last_page' => $paginator->lastPage(),
+            'from' => $paginator->firstItem(),
+            'to' => $paginator->lastItem(),
+            'total' => $paginator->total(),
+        ]);
     }
 
     /**

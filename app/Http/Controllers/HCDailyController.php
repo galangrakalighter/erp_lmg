@@ -430,6 +430,7 @@ class HCDailyController extends Controller
 
         $data = $this->validateTaskAssignment($data);
         $this->validateWorkingHours($data);
+        $this->validateScheduleConflict($data);
 
         $task = Task::create($this->mapApiTask($data));
         return response()->json(['message' => 'Task berhasil ditambahkan.', 'id' => $task->id], 201);
@@ -453,6 +454,7 @@ class HCDailyController extends Controller
         ]);
         $data = $this->validateTaskAssignment($data);
         $this->validateWorkingHours($data);
+        $this->validateScheduleConflict($data, $task->id);
         $task->update($this->mapApiTask($data, false));
         return response()->json(['message' => 'Task berhasil diperbarui.']);
     }
@@ -593,6 +595,82 @@ class HCDailyController extends Controller
         }
     }
 
+    private function validateScheduleConflict(array $data, ?int $ignoreTaskId = null): void
+    {
+        $newStart = Carbon::createFromFormat('Y-m-d H:i', $data['start_date'].' '.$data['start_time']);
+        $newEnd = $newStart->copy()->addMinutes((int) $data['minutes']);
+
+        $conflict = Task::query()
+            ->where('pic', $data['pic_id'])
+            ->whereDate('tanggal_mulai', $data['start_date'])
+            ->whereNotNull('jam_mulai')
+            ->when($ignoreTaskId, fn ($query) => $query->where('id', '!=', $ignoreTaskId))
+            ->get(['id', 'nama_task', 'jam_mulai', 'menit'])
+            ->first(function (Task $task) use ($data, $newStart, $newEnd): bool {
+                $existingStart = Carbon::createFromFormat(
+                    'Y-m-d H:i:s',
+                    $data['start_date'].' '.Carbon::parse($task->jam_mulai)->format('H:i:s')
+                );
+                $existingEnd = $existingStart->copy()->addMinutes((int) $task->menit);
+
+                return $newStart->lt($existingEnd) && $newEnd->gt($existingStart);
+            });
+
+        if ($conflict) {
+            $conflictStart = Carbon::parse($conflict->jam_mulai);
+            $conflictEnd = $conflictStart->copy()->addMinutes((int) $conflict->menit);
+            throw ValidationException::withMessages([
+                'start_time' => sprintf(
+                    'Jadwal bentrok dengan task "%s" pada pukul %s–%s WIB.',
+                    $conflict->nama_task,
+                    $conflictStart->format('H:i'),
+                    $conflictEnd->format('H:i'),
+                ),
+            ]);
+        }
+    }
+
+    public function schedulePreview(Request $request)
+    {
+        $validated = $request->validate([
+            'pic_id' => ['required', 'integer', 'exists:users,id'],
+            'date' => ['required', 'date'],
+        ]);
+        $context = $this->dailyWorkFormContext($request->user());
+        abort_unless(
+            $context['people']->pluck('id')->map(fn ($id) => (int) $id)->contains((int) $validated['pic_id']),
+            403,
+            'Anda tidak berhak melihat jadwal pengguna ini.'
+        );
+
+        $tasks = Task::query()
+            ->leftJoin('produk_client', 'produk_client.id', '=', 'task.project')
+            ->leftJoin('kpi', 'kpi.id', '=', 'task.id_kpi')
+            ->where('task.pic', $validated['pic_id'])
+            ->whereDate('task.tanggal_mulai', $validated['date'])
+            ->whereNotNull('task.jam_mulai')
+            ->orderBy('task.jam_mulai')
+            ->get([
+                'task.id', 'task.nama_task', 'task.jam_mulai', 'task.menit', 'task.status',
+                'produk_client.nama as project_name', 'kpi.nama_kpi as kpi_name',
+            ])
+            ->map(function ($task): array {
+                $start = Carbon::parse($task->jam_mulai);
+                return [
+                    'id' => $task->id,
+                    'name' => $task->nama_task,
+                    'start' => $start->format('H:i'),
+                    'end' => $start->copy()->addMinutes((int) $task->menit)->format('H:i'),
+                    'minutes' => (int) $task->menit,
+                    'status' => (int) $task->status,
+                    'project' => $task->project_name ?: 'Tanpa project',
+                    'kpi' => $task->kpi_name,
+                ];
+            });
+
+        return response()->json(['tasks' => $tasks]);
+    }
+
     public function updateSchedule(Request $request)
     {   
         $task = Task::find($request->id);
@@ -619,6 +697,13 @@ class HCDailyController extends Controller
                     'message' => 'Task tidak dapat dijadwalkan karena akan selesai melewati pukul 17.00 WIB.',
                 ], 422);
             }
+
+            $this->validateScheduleConflict([
+                'pic_id' => $task->pic,
+                'start_date' => Carbon::today()->toDateString(),
+                'start_time' => $newTime->format('H:i'),
+                'minutes' => (int) $task->menit,
+            ], $task->id);
 
             $task->update([
                 'jam_mulai' => $newTime->format('H:i:s'),

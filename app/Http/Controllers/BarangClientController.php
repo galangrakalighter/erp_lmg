@@ -14,14 +14,28 @@ class BarangClientController extends Controller
     public function index()
     {
         $title = "Project MCN";
-        $barang = DB::table('barang_client')->orderBy('id', 'desc')->get();
-        $data = $barang->map(function ($item) {
+        $data = collect();
+        return view('mcn.barang', compact('title', 'data'));
+    }
+
+    public function dataApi(Request $request)
+    {
+        $paginator = DB::table('barang_client')->orderByDesc('id')->paginate(10);
+        $data = $paginator->getCollection()->map(function ($item) {
             $item->barang = json_decode($item->barang, true); 
             $item->shipping = json_decode($item->shipping, true);
-
             return $item;
         });
-        return view('mcn.barang', compact('title', 'data'));
+        $title = 'Project MCN';
+        $html = view('mcn.barang', compact('title', 'data'))->render();
+        return response()->json([
+            'html' => $html,
+            'current_page' => $paginator->currentPage(),
+            'last_page' => $paginator->lastPage(),
+            'from' => $paginator->firstItem(),
+            'to' => $paginator->lastItem(),
+            'total' => $paginator->total(),
+        ]);
     }
 
     public function index_tools(){

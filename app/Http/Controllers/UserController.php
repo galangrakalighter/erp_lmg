@@ -36,7 +36,11 @@ class UserController extends Controller
         ->orderBy('name', 'ASC')
         ->get();
 
-        $divisions = Division::all();
+        // IDME merupakan workspace khusus admin, bukan divisi penempatan user.
+        $divisions = Division::query()
+            ->whereRaw("LOWER(TRIM(name)) <> 'idme'")
+            ->orderBy('name')
+            ->get();
         $roles = Role::all();
 
         return view('users.index', compact('title', 'data', 'divisions', 'roles'));
@@ -136,6 +140,9 @@ class UserController extends Controller
             'jabatan' => [$isLmg ? 'required' : 'nullable', 'in:ceo,coo,cmo,cfo'],
             'role_id' => [$isLmg ? 'nullable' : 'required', 'nullable', 'integer'],
         ]);
+        if (!$isLmg && Division::whereKey($request->divisi_id)->whereRaw("LOWER(TRIM(name)) = 'idme'")->exists()) {
+            return redirect()->back()->withInput()->with('error', 'IDME bukan divisi penempatan user.');
+        }
         $exists = User::where('email', $request->email)->exists();
         if ($exists) {
             return redirect()->back()->with('error', 'Email Sudah Terdaftar Di Sistem');
@@ -192,6 +199,9 @@ class UserController extends Controller
             'jabatan' => [$isLmg ? 'required' : 'nullable', 'in:ceo,coo,cmo,cfo'],
             'role_id' => [$isLmg ? 'nullable' : 'required', 'nullable', 'integer'],
         ]);
+        if (!$isLmg && Division::whereKey($request->divisi_id)->whereRaw("LOWER(TRIM(name)) = 'idme'")->exists()) {
+            return redirect()->back()->withInput()->with('error', 'IDME bukan divisi penempatan user.');
+        }
         $level = Role::find((int)$request->role_id);
 
         // 1. Cek duplikasi email (kecuali email milik user ini sendiri)

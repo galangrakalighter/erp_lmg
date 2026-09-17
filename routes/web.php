@@ -24,6 +24,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/digital-marketing/client/{id_produk}', [App\Http\Controllers\DigitalMarketingWorkspaceController::class, 'show'])
         ->name('digital-marketing.workspace');
     Route::get('/idme/client/{id_produk}', [App\Http\Controllers\IdmeClientWorkspaceController::class, 'show'])
+        ->middleware(EnsureUserIsAdmin::class)
         ->name('idme.workspace');
     Route::get('/division/{division}/client/{id_produk}', [App\Http\Controllers\DivisionClientWorkspaceController::class, 'show'])
         ->whereIn('division', ['mcn', 'tech', 'ecommerce'])

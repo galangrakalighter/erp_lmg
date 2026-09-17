@@ -17,6 +17,7 @@ Route::middleware(['web', 'auth'])->prefix('hc')->group(function () {
     Route::post('/daily-work/tasks', [App\Http\Controllers\HCDailyController::class, 'storeTaskApi']);
     Route::put('/daily-work/tasks/{task}', [App\Http\Controllers\HCDailyController::class, 'updateTaskApi']);
     Route::delete('/daily-work/tasks/{task}', [App\Http\Controllers\HCDailyController::class, 'deleteTaskApi']);
+    Route::get('/daily-work/tasks/{task}/proof', [App\Http\Controllers\HCDailyController::class, 'viewCompletionProof']);
     Route::post('/update-schedule', [App\Http\Controllers\HCDailyController::class, 'updateSchedule'])->name('hc.updateSchedule');
     Route::post('/update-status', [App\Http\Controllers\HCDailyController::class, 'updateStatus'])->name('hc.updateStatus');
     Route::post('/cancel-remaining', [App\Http\Controllers\HCDailyController::class, 'cancelRemaining'])->name('hc.cancelRemaining');

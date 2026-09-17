@@ -9,5 +9,8 @@ return [
     ),
     'default_collection' => env('FIREBASE_DEFAULT_COLLECTION'),
     'activity_log_collection' => env('FIREBASE_ACTIVITY_LOG_COLLECTION', 'logs'),
-    'timeout' => (int) env('FIREBASE_HTTP_TIMEOUT', 15),
+    'timeout' => (int) env('FIREBASE_HTTP_TIMEOUT', 30),
+    'connect_timeout' => (int) env('FIREBASE_CONNECT_TIMEOUT', 5),
+    'retry_times' => (int) env('FIREBASE_RETRY_TIMES', 1),
+    'token_cache_seconds' => (int) env('FIREBASE_TOKEN_CACHE_SECONDS', 3300),
 ];

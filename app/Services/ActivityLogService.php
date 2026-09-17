@@ -131,12 +131,15 @@ class ActivityLogService
                     $activity
                 );
             } catch (Throwable $exception) {
-                Log::warning('Gagal menyimpan activity log ke Firestore.', [
-                    'error' => $exception->getMessage(),
-                    'action' => $activity['action'] ?? null,
-                    'module' => $activity['module'] ?? null,
-                    'user_id' => $activity['user_id'] ?? null,
-                ]);
+                $warningKey = 'activity_log.firestore_warning.'.now()->format('YmdHi');
+                if (cache()->add($warningKey, true, now()->addMinute())) {
+                    Log::warning('Gagal menyimpan activity log ke Firestore.', [
+                        'error' => $exception->getMessage(),
+                        'action' => $activity['action'] ?? null,
+                        'module' => $activity['module'] ?? null,
+                        'user_id' => $activity['user_id'] ?? null,
+                    ]);
+                }
             }
         }
     }

@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Carbon\CarbonPeriod;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 class HCDailyController extends Controller
 {
@@ -252,6 +253,7 @@ class HCDailyController extends Controller
         }
 
         $today = Carbon::today();
+        $formContext = $this->dailyWorkFormContext($currentUser);
         $selfOnly = str_starts_with((string) $request->query('scope'), 'self');
         $visibleUserIds = collect([$currentUser->id]);
 
@@ -329,8 +331,7 @@ class HCDailyController extends Controller
             ->leftJoin('produk_client', 'produk_client.id', '=', 'task.project')
             ->leftJoin('kpi', 'kpi.id', '=', 'task.id_kpi')
             ->whereIn('task.pic', $approvalUserIds)
-            ->where('task.status', '!=', 4)
-            ->whereDate('task.tanggal_mulai', '!=', $today)
+            ->whereIn('task.status', [3, 9])
             ->select('task.*', 'users.email as pic_email',
                 'produk_client.nama as project_name', 'kpi.nama_kpi as kpi_name')
             ->orderBy('task.tanggal_mulai')
@@ -355,9 +356,17 @@ class HCDailyController extends Controller
             'workday_start' => $workdayStart,
             'workday_end' => 17,
             'people' => $people,
-            'projects' => ProdukClient::select('id', 'nama')->orderBy('nama')->get(),
+            'assignable_people' => $formContext['people'],
+            'form_division_id' => $formContext['division_id'],
+            'division_locked' => $formContext['division_locked'],
+            'projects' => ProdukClient::query()
+                ->leftJoin('client_division', 'client_division.client_id', '=', 'produk_client.id')
+                ->select('produk_client.id', 'produk_client.nama', 'client_division.division_id')
+                ->orderBy('produk_client.nama')
+                ->get(),
             'divisions' => Division::select('id', 'name')->orderBy('name')->get(),
-            'kpis' => KPI::select('id', 'nama_kpi')->orderBy('nama_kpi')->get(),
+            'kpis' => KPI::select('id', 'nama_kpi', 'divisi as division_id', 'project as project_id')
+                ->orderBy('nama_kpi')->get(),
             'tasks' => $tasks,
             'approval_tasks' => $approvalTasks,
             'summary' => [
@@ -396,6 +405,12 @@ class HCDailyController extends Controller
             'status_label' => $labels[(int) $task->status] ?? 'Tidak diketahui',
             'note' => $task->note,
             'kpi' => $task->kpi_name,
+            'proof' => $task->completion_proof_path ? [
+                'name' => $task->completion_proof_name ?: 'Bukti penyelesaian',
+                'mime' => $task->completion_proof_mime,
+                'size' => (int) ($task->completion_proof_size ?: 0),
+                'url' => url('/api/hc/daily-work/tasks/'.$task->id.'/proof'),
+            ] : null,
             'is_overdue' => $task->tanggal_deadline
                 && Carbon::parse($task->tanggal_deadline)->lt($today)
                 && !in_array((int) $task->status, [4, 5]),
@@ -413,6 +428,7 @@ class HCDailyController extends Controller
             'note' => 'nullable|string',
         ]);
 
+        $data = $this->validateTaskAssignment($data);
         $this->validateWorkingHours($data);
 
         $task = Task::create($this->mapApiTask($data));
@@ -435,6 +451,7 @@ class HCDailyController extends Controller
             'start_time' => 'required|date_format:H:i', 'kpi_id' => 'nullable|integer|exists:kpi,id',
             'note' => 'nullable|string',
         ]);
+        $data = $this->validateTaskAssignment($data);
         $this->validateWorkingHours($data);
         $task->update($this->mapApiTask($data, false));
         return response()->json(['message' => 'Task berhasil diperbarui.']);
@@ -463,6 +480,101 @@ class HCDailyController extends Controller
         ];
         if ($includeStatus) $mapped['status'] = 0;
         return $mapped;
+    }
+
+    private function dailyWorkFormContext(User $user): array
+    {
+        $assignment = DB::table('user_division')
+            ->join('roles', 'roles.id', '=', 'user_division.role_id')
+            ->where('user_division.user_id', $user->id)
+            ->select('user_division.division_id', 'roles.level')
+            ->orderBy('roles.level')
+            ->first();
+
+        if (! $assignment) {
+            $people = $user->isAdmin
+                ? User::select('id', 'email')->orderBy('email')->get()
+                : User::whereKey($user->id)->select('id', 'email')->get();
+
+            return [
+                'division_id' => null,
+                'division_locked' => false,
+                'people' => $people->map(fn ($person) => ['id' => $person->id, 'email' => $person->email]),
+            ];
+        }
+
+        $rows = DB::table('user_division')
+            ->join('users', 'users.id', '=', 'user_division.user_id')
+            ->join('roles', 'roles.id', '=', 'user_division.role_id')
+            ->where('user_division.division_id', $assignment->division_id)
+            ->whereNull('users.deleted_at')
+            ->select('users.id', 'users.email', 'user_division.parent_id', 'roles.level')
+            ->orderBy('roles.level')
+            ->orderBy('users.email')
+            ->get();
+
+        $allowedIds = collect([(int) $user->id]);
+        $frontier = collect([(int) $user->id]);
+        while ($frontier->isNotEmpty()) {
+            $children = $rows
+                ->whereIn('parent_id', $frontier)
+                ->where('level', '>', (int) $assignment->level)
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->diff($allowedIds)
+                ->values();
+            if ($children->isEmpty()) break;
+            $allowedIds = $allowedIds->merge($children)->unique()->values();
+            $frontier = $children;
+        }
+
+        return [
+            'division_id' => (int) $assignment->division_id,
+            'division_locked' => true,
+            'people' => $rows->whereIn('id', $allowedIds)->unique('id')->values()->map(fn ($person) => [
+                'id' => (int) $person->id,
+                'email' => $person->email,
+                'level' => (int) $person->level,
+            ]),
+        ];
+    }
+
+    private function validateTaskAssignment(array $data): array
+    {
+        $context = $this->dailyWorkFormContext(Auth::user());
+        if ($context['division_locked']) {
+            $data['division_id'] = $context['division_id'];
+        }
+
+        abort_unless(
+            $context['people']->pluck('id')->map(fn ($id) => (int) $id)->contains((int) $data['pic_id']),
+            403,
+            'PIC hanya dapat dipilih dari diri sendiri atau bawahan Anda.'
+        );
+
+        $projectMatchesDivision = DB::table('client_division')
+            ->where('client_id', $data['project_id'])
+            ->where('division_id', $data['division_id'])
+            ->exists();
+        if (! $projectMatchesDivision) {
+            throw ValidationException::withMessages([
+                'project_id' => 'Project tidak terdaftar pada divisi yang dipilih.',
+            ]);
+        }
+
+        if (! empty($data['kpi_id'])) {
+            $kpiMatches = KPI::whereKey($data['kpi_id'])
+                ->where('divisi', $data['division_id'])
+                ->where('project', $data['project_id'])
+                ->exists();
+            if (! $kpiMatches) {
+                throw ValidationException::withMessages([
+                    'kpi_id' => 'KPI tidak sesuai dengan divisi dan project yang dipilih.',
+                ]);
+            }
+        }
+
+        return $data;
     }
 
     private function validateWorkingHours(array $data): void
@@ -519,17 +631,53 @@ class HCDailyController extends Controller
 
     public function updateStatus(Request $request)
     {
+        $request->validate([
+            'id' => ['required', 'integer'],
+            'action' => ['required', 'in:play,stop,revisi,approve,set_overdue,habis'],
+            'proof' => [
+                $request->input('action') === 'stop' ? 'required' : 'nullable',
+                'file',
+                'max:10240',
+                'mimes:jpg,jpeg,png,webp,pdf,doc,docx,xls,xlsx,ppt,pptx,zip',
+            ],
+        ], [
+            'proof.required' => 'Bukti penyelesaian wajib diunggah sebelum task dikirim untuk approval.',
+            'proof.max' => 'Ukuran bukti maksimal 10 MB.',
+            'proof.mimes' => 'Format bukti harus berupa gambar, PDF, dokumen Office, atau ZIP.',
+        ]);
+
         $task = Task::find($request->id);
         if (!$task) return response()->json(['success' => false], 404);
 
         $action = $request->action;
-        if (in_array($action, ['approve', 'revisi'], true) && ! Auth::user()->isAdmin) {
-            $isDirectSubordinate = DB::table('user_division')
-                ->where('user_id', $task->pic)
-                ->where('parent_id', Auth::id())
-                ->exists();
+        if (in_array($action, ['play', 'stop'], true)) {
+            abort_unless((int) $task->pic === (int) Auth::id() || Auth::user()->isAdmin, 403, 'Anda tidak berhak mengubah task ini.');
+        }
 
-            abort_unless($isDirectSubordinate, 403, 'Task ini bukan milik bawahan Anda.');
+        if (in_array($action, ['approve', 'revisi'], true)) {
+            abort_if(
+                (int) $task->pic === (int) Auth::id(),
+                403,
+                'Anda tidak dapat menyetujui atau merevisi pekerjaan milik sendiri.'
+            );
+
+            $taskOwnerLevel = DB::table('user_division')
+                ->join('roles', 'roles.id', '=', 'user_division.role_id')
+                ->where('user_division.user_id', $task->pic)
+                ->where('user_division.division_id', $task->divisi)
+                ->value('roles.level');
+
+            if ((int) $taskOwnerLevel === 1) {
+                abort_unless(Auth::user()->isAdmin, 403, 'Task PIC level 1 hanya dapat disetujui oleh admin.');
+            } elseif (! Auth::user()->isAdmin) {
+                $isDirectSubordinate = DB::table('user_division')
+                    ->where('user_id', $task->pic)
+                    ->where('division_id', $task->divisi)
+                    ->where('parent_id', Auth::id())
+                    ->exists();
+
+                abort_unless($isDirectSubordinate, 403, 'Task ini bukan milik bawahan langsung Anda.');
+            }
         }
 
         if ($request->action == 'play') {
@@ -542,14 +690,31 @@ class HCDailyController extends Controller
 
             $task->update($updateData);
         } elseif ($action == 'stop') {
+            $proof = $request->file('proof');
+            $oldProofPath = $task->completion_proof_path;
+            $storedPath = $proof->store('daily-work-proofs/'.$task->id, 'local');
+            $task->forceFill([
+                'completion_proof_path' => $storedPath,
+                'completion_proof_name' => $proof->getClientOriginalName(),
+                'completion_proof_mime' => $proof->getMimeType(),
+                'completion_proof_size' => $proof->getSize(),
+                'completion_proof_uploaded_at' => now(),
+            ]);
             if($task->status == 7){
-                $task->update(['status' => 9, 'jam_mulai' => $task->jam_mulai]);
+                $task->status = 9;
             }else{
-                $task->update(['status' => 3]); // Menunggu Approval
+                $task->status = 3; // Menunggu Approval
+            }
+            $task->save();
+            if ($oldProofPath && $oldProofPath !== $storedPath) {
+                Storage::disk('local')->delete($oldProofPath);
             }
         } elseif ($action == 'revisi') {
             $task->update(['status' => 2, 'tanggal_revisi' => now()]); // Balik ke Pool Jadi Revisi
         } elseif ($action == 'approve') {
+            if (! $task->completion_proof_path || ! Storage::disk('local')->exists($task->completion_proof_path)) {
+                return response()->json(['message' => 'Task belum memiliki bukti penyelesaian.'], 422);
+            }
             if($task->status == 9){
                 $task->update(['status' => 7,'tanggal_approve' => now()]); // Selesai
             }else{
@@ -562,6 +727,32 @@ class HCDailyController extends Controller
         }
 
         return response()->json(['success' => true]);
+    }
+
+    public function viewCompletionProof(Task $task)
+    {
+        $user = Auth::user();
+        $isDirectSupervisor = DB::table('user_division')
+            ->where('user_id', $task->pic)
+            ->where('parent_id', $user->id)
+            ->exists();
+
+        abort_unless(
+            (int) $task->pic === (int) $user->id || $user->isAdmin || $isDirectSupervisor,
+            403,
+            'Anda tidak berhak melihat bukti task ini.'
+        );
+        abort_unless(
+            $task->completion_proof_path && Storage::disk('local')->exists($task->completion_proof_path),
+            404,
+            'File bukti tidak ditemukan.'
+        );
+
+        return Storage::disk('local')->response(
+            $task->completion_proof_path,
+            $task->completion_proof_name ?: basename($task->completion_proof_path),
+            ['Content-Type' => $task->completion_proof_mime ?: 'application/octet-stream']
+        );
     }
 
     public function cancelRemaining(Request $request)

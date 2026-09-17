@@ -25,7 +25,16 @@ class Task extends Model
         'tanggal_approve',
         'tanggal_revisi',
         'tanggal_split',
-        'jira'
+        'jira',
+        'completion_proof_path',
+        'completion_proof_name',
+        'completion_proof_mime',
+        'completion_proof_size',
+        'completion_proof_uploaded_at'
+    ];
+
+    protected $casts = [
+        'completion_proof_uploaded_at' => 'datetime',
     ];
 
     public function user(){

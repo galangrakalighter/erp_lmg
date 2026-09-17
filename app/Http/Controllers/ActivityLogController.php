@@ -9,6 +9,8 @@ use App\Services\ActivityPageDescription;
 use App\Services\FirestoreService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 use Throwable;
 
@@ -33,29 +35,42 @@ class ActivityLogController extends Controller
         try {
             $collection = (string) config('firestore.activity_log_collection', 'logs');
             $selectedEmail = $request->string('email')->trim()->toString();
+            $snapshotKey = 'activity_logs.firestore_snapshot.'.sha1($collection.'|'.$selectedEmail);
 
-            if ($selectedEmail !== '') {
-                $documents = $firestore->queryByField(
-                    $collection,
-                    'email',
-                    $selectedEmail,
-                    1000,
-                );
-                usort(
-                    $documents,
-                    fn (array $left, array $right): int => strcmp(
-                        (string) data_get($right, 'data.created_at', ''),
-                        (string) data_get($left, 'data.created_at', ''),
-                    ),
-                );
-                $result = ['documents' => $documents, 'next_page_token' => null];
-            } else {
-                $result = $firestore->list(
-                    $collection,
-                    1000,
-                    null,
-                    'created_at desc',
-                );
+            try {
+                if ($selectedEmail !== '') {
+                    $documents = $firestore->queryByField(
+                        $collection,
+                        'email',
+                        $selectedEmail,
+                        1000,
+                    );
+                    usort(
+                        $documents,
+                        fn (array $left, array $right): int => strcmp(
+                            (string) data_get($right, 'data.created_at', ''),
+                            (string) data_get($left, 'data.created_at', ''),
+                        ),
+                    );
+                    $result = ['documents' => $documents, 'next_page_token' => null];
+                } else {
+                    $result = $firestore->list(
+                        $collection,
+                        1000,
+                        null,
+                        'created_at desc',
+                    );
+                }
+                Cache::put($snapshotKey, $result, now()->addDay());
+            } catch (Throwable $firestoreException) {
+                $result = Cache::get($snapshotKey);
+                if (! is_array($result)) {
+                    throw $firestoreException;
+                }
+                $error = 'Koneksi Firestore sedang terganggu. Data yang ditampilkan adalah snapshot terakhir.';
+                Log::warning('Activity log menggunakan snapshot Firestore.', [
+                    'error' => $firestoreException->getMessage(),
+                ]);
             }
             $divisionEmails = $selectedDivision === ''
                 ? []
@@ -95,7 +110,9 @@ class ActivityLogController extends Controller
             ));
             $uniqueUsers = count(array_unique(array_filter(array_column($allLogs, 'email'))));
         } catch (Throwable $exception) {
-            report($exception);
+            Log::warning('Activity log belum dapat dimuat dari Firestore.', [
+                'error' => $exception->getMessage(),
+            ]);
             $error = 'Activity log belum dapat dimuat. Periksa koneksi Firestore pada server.';
         }
 

@@ -6,8 +6,10 @@ use DateTimeInterface;
 use Google\Auth\Credentials\ServiceAccountCredentials;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;
 use InvalidArgumentException;
 use RuntimeException;
+use Throwable;
 
 class FirestoreService
 {
@@ -147,7 +149,8 @@ class FirestoreService
             ->asJson()
             ->withToken($this->accessToken())
             ->timeout(config('firestore.timeout', 15))
-            ->retry(2, 250);
+            ->connectTimeout(config('firestore.connect_timeout', 5))
+            ->retry(config('firestore.retry_times', 1), 250);
     }
 
     private function accessToken(): string
@@ -156,15 +159,38 @@ class FirestoreService
             return $this->cachedAccessToken;
         }
 
-        $credentials = new ServiceAccountCredentials(self::SCOPE, $this->credentialsPath());
-        $token = $credentials->fetchAuthToken();
+        $cacheKey = 'firestore.access_token.'.sha1($this->projectId());
+        $failureKey = $cacheKey.'.temporarily_unavailable';
+        if (Cache::get($failureKey)) {
+            throw new RuntimeException('Koneksi autentikasi Firestore sedang dalam masa pemulihan.');
+        }
+        $cachedToken = Cache::get($cacheKey);
+        if (is_string($cachedToken) && $cachedToken !== '') {
+            $this->cachedAccessToken = $cachedToken;
+            $this->accessTokenExpiresAt = time() + (int) config('firestore.token_cache_seconds', 3300);
+
+            return $cachedToken;
+        }
+
+        try {
+            $credentials = new ServiceAccountCredentials(self::SCOPE, $this->credentialsPath());
+            $token = $credentials->fetchAuthToken();
+        } catch (Throwable $exception) {
+            Cache::put($failureKey, true, now()->addMinute());
+            throw $exception;
+        }
 
         if (empty($token['access_token'])) {
             throw new RuntimeException('Google tidak mengembalikan access token untuk service account.');
         }
 
         $this->cachedAccessToken = $token['access_token'];
-        $this->accessTokenExpiresAt = time() + (int) ($token['expires_in'] ?? 3600);
+        $cacheSeconds = min(
+            max(60, (int) config('firestore.token_cache_seconds', 3300)),
+            max(60, (int) ($token['expires_in'] ?? 3600) - 60),
+        );
+        $this->accessTokenExpiresAt = time() + $cacheSeconds;
+        Cache::put($cacheKey, $this->cachedAccessToken, now()->addSeconds($cacheSeconds));
 
         return $this->cachedAccessToken;
     }

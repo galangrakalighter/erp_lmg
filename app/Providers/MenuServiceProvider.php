@@ -80,7 +80,9 @@ class MenuServiceProvider extends ServiceProvider
             $ecommerceProduk = $sidebarProducts->get(7, collect());
             $idmeClients = DB::table('produk_client')
                 ->join('client_division', 'client_division.client_id', '=', 'produk_client.id')
+                ->join('divisions', 'divisions.id', '=', 'client_division.division_id')
                 ->where('produk_client.status', 1)
+                ->whereRaw("LOWER(TRIM(divisions.name)) <> 'finance'")
                 ->select('produk_client.*')
                 ->groupBy('produk_client.id')
                 ->havingRaw('COUNT(DISTINCT client_division.division_id) > 1')

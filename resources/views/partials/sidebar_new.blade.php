@@ -230,6 +230,9 @@
             $techProdukList = $techProduk->contains('client_id', $currentProduct);
             $isEcommerceList = $ecommerceProduk->contains('client_id', $currentProduct);
 
+            $isBusinessDevWorkspace = Route::is('digital-marketing.workspace')
+                && request()->query('source') === 'business-dev';
+
             $isMarketingPage = Route::is([
                 'market_research',
                 'branding',
@@ -237,7 +240,7 @@
                 'manajemen',
                 'PDF',
                 'digital-marketing.workspace'
-            ]);
+            ]) && !$isBusinessDevWorkspace;
 
             $divisiOpen = Route::is([
                 'client.produk_divisi',
@@ -429,7 +432,7 @@
         <div class="mt-5 border-t border-zinc-800 pt-4">
 
             @php
-                $isBDOpen = $isMarketingPage && $isBDProduct;
+                $isBDOpen = $isBusinessDevWorkspace && $isBDProduct;
             @endphp
 
             <button
@@ -566,12 +569,12 @@
                         @forelse ($businessDevClients as $client)
                             @php
                                 $canOpen = $checkAccess($client);
-                                $isActiveClient = $currentProduct == $client->client_id;
+                                $isActiveClient = $isBusinessDevWorkspace && $currentProduct == $client->client_id;
                             @endphp
 
                             @if($canOpen)
                                 <a
-                                    href="{{ route('digital-marketing.workspace', ['id_produk' => $client->client_id]) }}"
+                                    href="{{ route('digital-marketing.workspace', ['id_produk' => $client->client_id, 'source' => 'business-dev']) }}"
                                     class="group flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs transition
                                     {{ $isActiveClient
                                         ? 'bg-white font-semibold text-zinc-950'

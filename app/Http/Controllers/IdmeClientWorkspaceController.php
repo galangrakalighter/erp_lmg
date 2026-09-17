@@ -15,7 +15,9 @@ class IdmeClientWorkspaceController extends Controller
         abort_unless((bool) $user->isAdmin, 403);
 
         $client = ProdukClient::query()
-            ->with(['divisions' => fn ($query) => $query->orderBy('name')])
+            ->with(['divisions' => fn ($query) => $query
+                ->whereRaw("LOWER(TRIM(divisions.name)) <> 'finance'")
+                ->orderBy('name')])
             ->where('status', 1)
             ->findOrFail($id_produk);
         abort_unless($client->divisions->unique('id')->count() > 1, 404);

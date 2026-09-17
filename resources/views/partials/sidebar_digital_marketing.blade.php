@@ -37,13 +37,13 @@
                     stroke-linecap="round"
                     stroke-linejoin="round"
                     stroke-width="1.8"
-                    d="M4 19V9l8-5 8 5v10"
+                    d="M3 11v2a2 2 0 002 2h2l3.5 4.5a1 1 0 001.8-.6V15l7-3V6L7 9H5a2 2 0 00-2 2z"
                 />
                 <path
                     stroke-linecap="round"
                     stroke-linejoin="round"
                     stroke-width="1.8"
-                    d="M8 19v-6h8v6M3 19h18"
+                    d="M19 8.5a2.5 2.5 0 010 5"
                 />
             </svg>
 
@@ -246,7 +246,7 @@
                             );
 
                         $isActiveClient =
-                            $currentProduct == $client->client_id;
+                            $isMarketingPage && $currentProduct == $client->client_id;
                     @endphp
 
 

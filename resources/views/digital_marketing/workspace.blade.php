@@ -9,11 +9,11 @@
 <main class="min-h-screen bg-[#f5f5f3] px-4 py-5 sm:px-6 lg:px-8">
     <div class="mx-auto max-w-[1800px] space-y-5">
         <header class="rounded-[28px] bg-zinc-950 px-6 py-7 text-white shadow-xl shadow-zinc-950/10 sm:px-8">
-            <p class="text-[10px] font-bold uppercase tracking-[.22em] text-zinc-400">Digital Marketing · Client Workspace</p>
+            <p class="text-[10px] font-bold uppercase tracking-[.22em] text-zinc-400">{{ $workspaceLabel }} · Client Workspace</p>
             <div class="mt-2 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div>
                     <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">{{ $client->nama }}</h1>
-                    <p class="mt-1 text-sm text-zinc-400">Kelola seluruh area marketing client tanpa berpindah halaman.</p>
+                    <p class="mt-1 text-sm text-zinc-400">{{ $workspaceDescription }}</p>
                 </div>
 
                 <div class="flex w-full flex-col gap-3 sm:flex-row sm:items-end lg:w-auto">
@@ -36,7 +36,7 @@
         </header>
 
         <section class="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
-            <nav id="dmWorkspaceTabs" class="flex gap-1 overflow-x-auto border-b border-zinc-200 bg-zinc-50 p-2" aria-label="Menu client Digital Marketing">
+            <nav id="dmWorkspaceTabs" class="flex gap-1 overflow-x-auto border-b border-zinc-200 bg-zinc-50 p-2" aria-label="Menu client {{ $workspaceLabel }}">
                 @php
                     $firstPlatform = $platforms->first();
                     $tabs = [

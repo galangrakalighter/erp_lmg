@@ -32,6 +32,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const cache = new Map();
 
     function openTab(button) {
+        if (!button) return;
+
         buttons.forEach(item => item.classList.remove('is-active'));
         button.classList.add('is-active');
         Array.from(panel.children).forEach(child => child.classList.add('hidden'));
@@ -55,6 +57,13 @@ document.addEventListener('DOMContentLoaded', function () {
         pageUrl.searchParams.set('tab', button.dataset.divisionTab);
         history.replaceState({}, '', pageUrl);
     }
+
+    buttons.forEach(function (button) {
+        button.addEventListener('click', function (event) {
+            event.preventDefault();
+            openTab(button);
+        });
+    });
 
     const requested = new URLSearchParams(window.location.search).get('tab');
     openTab(buttons.find(button => button.dataset.divisionTab === requested) || buttons[0]);

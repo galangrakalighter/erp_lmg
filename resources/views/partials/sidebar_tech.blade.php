@@ -271,15 +271,12 @@
                                     $myRole->role_name == "Busines Unit Head";
 
                                 // Permission membuka client
+                                // Akses client Tech harus mengecek divisi Tech (ID 5),
+                                // bukan ID Digital Marketing. Sebelumnya kondisi ini
+                                // membuat menu File Dokumen tidak dapat dibuka oleh PIC Tech.
                                 $canOpen =
                                     $isPowerUser ||
-                                    (
-                                        in_array(
-                                            1,
-                                            $myDivision->pluck('id')->toArray()
-                                        )
-                                        && $hasClientAccess
-                                    );
+                                    ($myDivision->name === 'Tech' && $hasClientAccess);
 
                                 // Active client
                                 $isActiveClient =

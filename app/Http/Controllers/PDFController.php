@@ -311,6 +311,12 @@ class PDFController extends Controller
         ]);
     }
 
+    /** Tampilan PDF halaman penuh, terpisah dari daftar dokumen. */
+    public function viewFile(FilePdf $file)
+    {
+        return view('pdf.viewer', compact('file'));
+    }
+
     public function update(Request $request, $id)
     {
         $file = FilePDF::findOrFail($id);

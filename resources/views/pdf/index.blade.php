@@ -210,14 +210,13 @@ body.lmg-embedded .lmg-pdf-table-scroll {
                             <td>{{ $item->uploader->name ?? $item->uploader->email ?? ($item->is_system_template ? 'Sistem' : '-') }}</td>
 
                             <td>
-                                @unless($item->is_system_template)
-                                <button
-                                    class="btn btn-info btn-sm btn-preview"
-                                    data-pdf="{{ route('PDF.files.preview', $item) }}"
-                                    data-title="{{ $item->nama_file }}">
+                                {{-- Dokumen pinned/bawaan tetap dapat dilihat, hanya tidak dapat dihapus. --}}
+                                <a
+                                    href="{{ route('PDF.files.view', $item) }}"
+                                    class="btn btn-info btn-sm"
+                                    title="Buka PDF di halaman penuh">
                                     <i class="fa fa-eye"></i> Lihat
-                                </button>
-                                @endunless
+                                </a>
                             </td>
 
                             <td>

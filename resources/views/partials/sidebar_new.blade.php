@@ -24,6 +24,13 @@
         font-weight: 700;
     }
 
+    /* Hanya tautan halaman yang aktif berwarna putih. Pastikan label dan
+       ikon turunannya tetap gelap meski class bawaan memberi warna sendiri. */
+    #accordionSidebar a.bg-white *,
+    #accordionSidebar a[data-sidebar-active="true"] * {
+        color: #161616 !important;
+    }
+
     #accordionSidebar a:hover svg,
     #accordionSidebar button[data-sidebar-collapse]:hover svg,
     #accordionSidebar a.bg-white svg,
@@ -33,6 +40,10 @@
 
     #accordionSidebar button[data-sidebar-parent-active="true"] {
         background-color: transparent !important;
+        color: #fff !important;
+    }
+
+    #accordionSidebar button[data-sidebar-parent-active="true"] svg {
         color: #fff !important;
     }
 </style>
@@ -103,6 +114,11 @@
     ====================================================== --}}
     <div id="sidebarNavigationContent" class="min-h-0 flex-1 overflow-y-auto px-3 py-4 scrollbar-thin">
 
+        {{-- Nilai awal agar state dropdown selalu tersedia pada seluruh halaman. --}}
+        @php
+            $divisiActive = false;
+        @endphp
+
         {{-- =================================================
             PRIMARY NAVIGATION
         ================================================== --}}
@@ -154,65 +170,58 @@
                 <span class="font-medium">Daily Work</span>
             </a>
 
+            {{-- Storage --}}
+            @php
+                $isStoragePage = request()->routeIs('master-folder.*', 'file-master.*');
+            @endphp
+            <div class="mb-4 border-b border-zinc-800 pb-4">
+                <button
+                    type="button"
+                    data-sidebar-collapse="collapseStorage"
+                    data-sidebar-group="primary"
+                    class="group flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition
+                    {{ $isStoragePage
+                        ? 'bg-zinc-900 text-white'
+                        : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
+                    }}"
+                    aria-expanded="{{ $isStoragePage ? 'true' : 'false' }}"
+                >
+                    <span class="flex items-center gap-3">
+                        <svg class="h-[18px] w-[18px] text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 7a2 2 0 012-2h5l2 2h7a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+                        </svg>
+                        <span class="font-medium">Storage</span>
+                    </span>
 
-            {{-- Folder Master --}}
-            <a
-                href="{{ route('master-folder.index') }}"
-                class="group mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition
-                {{ request()->routeIs('master-folder.*')
-                    ? 'bg-white text-zinc-950'
-                    : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
-                }}"
-            >
-                <svg class="h-[18px] w-[18px] shrink-0 {{ request()->routeIs('master-folder.*') ? 'text-zinc-950' : 'text-zinc-500 group-hover:text-white' }}"
-                     fill="none"
-                     stroke="currentColor"
-                     viewBox="0 0 24 24">
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="1.8"
-                        d="M3 7a2 2 0 012-2h5l2 2h7a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"
-                    />
-                </svg>
+                    <svg class="sidebar-chevron h-4 w-4 text-zinc-600 transition-transform duration-200 {{ $isStoragePage ? 'rotate-180' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 9l6 6 6-6" />
+                    </svg>
+                </button>
 
-                <span class="font-medium">
-                    Folder Master
-                </span>
-            </a>
+                <div id="collapseStorage" class="{{ $isStoragePage ? '' : 'hidden' }} mt-1 space-y-1 pl-3">
+                    <a
+                        href="{{ route('master-folder.index') }}"
+                        class="group flex items-center gap-3 rounded-lg px-3 py-2 text-xs transition
+                        {{ request()->routeIs('master-folder.*') ? 'bg-white font-semibold text-zinc-950' : 'text-zinc-400 hover:bg-zinc-900 hover:text-white' }}"
+                    >
+                        <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 7a2 2 0 012-2h5l2 2h7a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+                        </svg>
+                        <span>Folder Master</span>
+                    </a>
 
-
-            {{-- File Master --}}
-            <a
-                href="{{ route('file-master.index') }}"
-                class="group mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition
-                {{ request()->routeIs('file-master.*')
-                    ? 'bg-white text-zinc-950'
-                    : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
-                }}"
-            >
-                <svg class="h-[18px] w-[18px] shrink-0 {{ request()->routeIs('file-master.*') ? 'text-zinc-950' : 'text-zinc-500 group-hover:text-white' }}"
-                     fill="none"
-                     stroke="currentColor"
-                     viewBox="0 0 24 24">
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="1.8"
-                        d="M6 3h8l4 4v14H6V3z"
-                    />
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="1.8"
-                        d="M14 3v5h5M9 13h6M9 17h6"
-                    />
-                </svg>
-
-                <span class="font-medium">
-                    File Master
-                </span>
-            </a>
+                    <a
+                        href="{{ route('file-master.index') }}"
+                        class="group flex items-center gap-3 rounded-lg px-3 py-2 text-xs transition
+                        {{ request()->routeIs('file-master.*') ? 'bg-white font-semibold text-zinc-950' : 'text-zinc-400 hover:bg-zinc-900 hover:text-white' }}"
+                    >
+                        <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 3h8l4 4v14H6V3zM14 3v5h5M9 13h6M9 17h6" />
+                        </svg>
+                        <span>File Master</span>
+                    </a>
+                </div>
+            </div>
 
         </div>
 

@@ -74,6 +74,20 @@ class MenuServiceProvider extends ServiceProvider
                 ->where('produk_client.status', 1)
                 ->whereRaw("LOWER(TRIM(produk_client.nama)) <> 'internal'")
                 ->where(fn ($query) => $query->whereNull('kategori_jasa.category')->orWhereRaw("LOWER(TRIM(kategori_jasa.category)) NOT LIKE 'internal%'"))
+                // Klien Digital Marketing hanya tampil bila memang ada PIC
+                // yang terdaftar pada divisi Digital Marketing.
+                ->where(function ($query) {
+                    $query->where('client_division.division_id', '!=', 1)
+                        ->orWhereExists(function ($picQuery) {
+                            $picQuery->selectRaw('1')
+                                ->from('user_client as uc')
+                                ->join('user_division as ud', 'ud.user_id', '=', 'uc.user_id')
+                                ->join('users as u', 'u.id', '=', 'uc.user_id')
+                                ->whereColumn('uc.client_id', 'client_division.client_id')
+                                ->where('ud.division_id', 1)
+                                ->whereNull('u.deleted_at');
+                        });
+                })
                 ->select('client_division.division_id', 'client_division.client_id', 'produk_client.*')
                 ->orderBy('produk_client.nama')
                 ->get()

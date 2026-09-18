@@ -31,6 +31,17 @@ class ProdukController extends Controller
                 ->leftJoin('kategori_jasa', 'kategori_jasa.id', '=', 'produk_client.kategori_jasa_id')
                 ->select('produk_client.*', 'kategori_jasa.category')
                 ->where('client_division.division_id', $divisiId)
+                ->when($divisiId === 1, function ($query) {
+                    $query->whereExists(function ($picQuery) {
+                        $picQuery->selectRaw('1')
+                            ->from('user_client as uc')
+                            ->join('user_division as ud', 'ud.user_id', '=', 'uc.user_id')
+                            ->join('users as u', 'u.id', '=', 'uc.user_id')
+                            ->whereColumn('uc.client_id', 'client_division.client_id')
+                            ->where('ud.division_id', 1)
+                            ->whereNull('u.deleted_at');
+                    });
+                })
                 ->get()
                 ->map(function($client) {
                     $teams = $client->teams;

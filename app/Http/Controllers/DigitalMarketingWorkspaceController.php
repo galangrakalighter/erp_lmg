@@ -16,6 +16,15 @@ class DigitalMarketingWorkspaceController extends Controller
         $isWorkspaceClient = DB::table('client_division')
             ->where('client_id', $client->id)
             ->where('division_id', 1)
+            ->whereExists(function ($query) {
+                $query->selectRaw('1')
+                    ->from('user_client as uc')
+                    ->join('user_division as ud', 'ud.user_id', '=', 'uc.user_id')
+                    ->join('users as u', 'u.id', '=', 'uc.user_id')
+                    ->whereColumn('uc.client_id', 'client_division.client_id')
+                    ->where('ud.division_id', 1)
+                    ->whereNull('u.deleted_at');
+            })
             ->exists();
 
         abort_unless($isWorkspaceClient && (int) $client->status === 1, 404);

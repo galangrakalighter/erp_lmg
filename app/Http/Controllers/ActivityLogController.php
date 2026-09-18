@@ -31,6 +31,18 @@ class ActivityLogController extends Controller
         $actionCounts = [];
         $uniqueUsers = 0;
         $selectedDivision = $request->string('division')->toString();
+        $currentUser = $request->user();
+        $visibleUserIds = $currentUser->isAdmin
+            ? null
+            : $this->visibleUserIds($currentUser->id);
+        $allowedEmails = $visibleUserIds === null
+            ? []
+            : User::query()
+                ->whereIn('id', $visibleUserIds)
+                ->pluck('email')
+                ->filter()
+                ->map(fn (string $email): string => strtolower($email))
+                ->all();
 
         try {
             $collection = (string) config('firestore.activity_log_collection', 'logs');
@@ -72,9 +84,15 @@ class ActivityLogController extends Controller
                     'error' => $firestoreException->getMessage(),
                 ]);
             }
+            $divisionUserQuery = User::query();
+
+            if ($visibleUserIds !== null) {
+                $divisionUserQuery->whereIn('id', $visibleUserIds);
+            }
+
             $divisionEmails = $selectedDivision === ''
                 ? []
-                : User::query()
+                : $divisionUserQuery
                     ->whereHas('userDivisions', fn ($query) => $query->where('division_id', $selectedDivision))
                     ->pluck('email')
                     ->filter()
@@ -86,6 +104,7 @@ class ActivityLogController extends Controller
                 $request->string('start_date')->toString(),
                 $request->string('end_date')->toString(),
                 $divisionEmails,
+                $allowedEmails,
             );
             $allLogs = array_map(
                 function (array $document) use ($formatter, $pageDescription): array {
@@ -117,6 +136,10 @@ class ActivityLogController extends Controller
         }
 
         $emailQuery = User::query()->orderBy('email');
+
+        if ($visibleUserIds !== null) {
+            $emailQuery->whereIn('id', $visibleUserIds);
+        }
 
         if ($selectedDivision !== '') {
             $emailQuery->whereHas(
@@ -152,9 +175,15 @@ class ActivityLogController extends Controller
         string $startDate,
         string $endDate,
         array $divisionEmails = [],
+        array $allowedEmails = [],
     ): array {
-        return array_values(array_filter($documents, function (array $document) use ($division, $startDate, $endDate, $divisionEmails): bool {
+        return array_values(array_filter($documents, function (array $document) use ($division, $startDate, $endDate, $divisionEmails, $allowedEmails): bool {
             $data = $document['data'] ?? [];
+
+            if ($allowedEmails !== []
+                && ! in_array(strtolower((string) ($data['email'] ?? '')), $allowedEmails, true)) {
+                return false;
+            }
 
             if ($division !== '') {
                 $divisionIds = array_map('strval', (array) ($data['division_ids'] ?? []));
@@ -184,5 +213,29 @@ class ActivityLogController extends Controller
             return ($startDate === '' || $logDate >= $startDate)
                 && ($endDate === '' || $logDate <= $endDate);
         }));
+    }
+
+    private function visibleUserIds(int $userId): array
+    {
+        $visibleIds = [$userId];
+        $parents = [$userId];
+
+        while ($parents !== []) {
+            $children = \App\Models\userDivision::query()
+                ->whereIn('parent_id', $parents)
+                ->pluck('user_id')
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->reject(fn (int $id) => in_array($id, $visibleIds, true))
+                ->values()
+                ->all();
+
+            if ($children === []) break;
+
+            $visibleIds = array_values(array_unique([...$visibleIds, ...$children]));
+            $parents = $children;
+        }
+
+        return $visibleIds;
     }
 }

@@ -270,21 +270,28 @@
     </section>
 
 <div class="modal fade" id="modalTambah" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title font-weight-bold">Tambah Data Blacklist</h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <form action="{{ route('blacklist.store') }}" method="POST">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" role="document">
+        <div class="modal-content overflow-hidden rounded-2xl border-0 bg-white shadow-2xl" style="max-height: calc(100dvh - 3rem);">
+            <form action="{{ route('blacklist.store') }}" method="POST" class="flex min-h-0 flex-1 flex-col overflow-hidden">
                 @csrf
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6 form-group">
-                            <label class="font-weight-bold">Pilih Kreator</label>
-                            <select name="id_creator" class="form-control select-choices-creator" required>
+                <div class="flex shrink-0 items-center justify-between gap-4 bg-[#161616] px-5 py-4 text-white sm:px-6">
+                    <div class="flex min-w-0 items-center gap-3">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10"><i class="fas fa-user-slash text-sm"></i></div>
+                        <div class="min-w-0">
+                            <p class="mb-0 text-[10px] font-bold uppercase tracking-[.18em] text-zinc-400">Database MCN</p>
+                            <h5 class="m-0 truncate text-lg font-bold text-white">Tambah Blacklist</h5>
+                            <p class="mb-0 mt-1 text-xs text-zinc-400">Catat affiliator bermasalah beserta campaign dan tindak lanjutnya.</p>
+                        </div>
+                    </div>
+                    <button type="button" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/5 text-xl text-white transition hover:bg-white/15" data-dismiss="modal" aria-label="Tutup">&times;</button>
+                </div>
+
+                <div class="modal-body min-h-0 flex-1 overflow-y-auto bg-zinc-50 p-5 sm:p-6">
+                    <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+                        <div class="md:col-span-2">
+                            <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-700">Pilih Kreator <span class="text-red-600">*</span></label>
+                            <select name="id_creator" class="select-choices-creator w-full" required>
+                                <option value="">Pilih affiliator</option>
                                 @foreach($creators as $c)
                                     <option value="{{ $c->id }}">
                                         {{ $c->user_ig ?? '-' }} (IG) / {{ $c->user_tt ?? '-' }} (TT)
@@ -292,17 +299,18 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-6 form-group">
-                            <label class="font-weight-bold">Bulan</label>
-                            <input type="text" name="bulan" class="form-control" placeholder="Contoh: JULI-AGUST" required>
+                        <div>
+                            <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-700">Periode/Bulan <span class="text-red-600">*</span></label>
+                            <input type="text" name="bulan" class="h-11 w-full rounded-xl border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-zinc-950 focus:ring-4 focus:ring-zinc-900/5" placeholder="Contoh: SEPTEMBER 2026" required>
                         </div>
-                        <div class="col-md-6 form-group">
-                            <label class="font-weight-bold">Job Campaign</label>
-                            <input type="text" name="job" class="form-control" placeholder="Nama Campaign" required>
+                        <div>
+                            <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-700">Job Campaign <span class="text-red-600">*</span></label>
+                            <input type="text" name="job" class="h-11 w-full rounded-xl border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-zinc-950 focus:ring-4 focus:ring-zinc-900/5" placeholder="Nama campaign" required>
                         </div>
-                        <div class="col-md-6 form-group">
-                            <label class="font-weight-bold">Status Keterangan</label>
-                            <select name="keterangan" class="form-control" required>
+                        <div class="md:col-span-2">
+                            <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-700">Status Keterangan <span class="text-red-600">*</span></label>
+                            <select name="keterangan" class="h-11 w-full rounded-xl border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-4 focus:ring-zinc-900/5" required>
+                                <option value="" disabled selected>Pilih status pelanggaran</option>
                                 <option value="1">Tidak Mengerjakan Job</option>
                                 <option value="2">Tidak Menyelesaikan Job</option>
                                 <option value="3">Cancel Campaign</option>
@@ -310,26 +318,20 @@
                                 <option value="5">BLACK LIST</option>
                             </select>
                         </div>
-                        <div class="col-md-12 form-group">
-                            <label class="font-weight-bold">Link Report (Optional)</label>
-                            <input type="text" name="link_report" class="form-control" placeholder="https://...">
+                        <div class="md:col-span-2">
+                            <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-700">Link Report <span class="font-medium normal-case tracking-normal text-zinc-400">(opsional)</span></label>
+                            <input type="url" name="link_report" class="h-11 w-full rounded-xl border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-zinc-950 focus:ring-4 focus:ring-zinc-900/5" placeholder="https://...">
                         </div>
-                        <div class="col-md-12 form-group">
-                            <label class="text-dark font-weight-bold small">
-                                <i class="fas fa-link mr-1 text-primary"></i> Catatan Tambahan <span class="text-muted">(Optional)</span>
-                            </label>
-                            <textarea 
-                                name="note" 
-                                class="form-control shadow-sm" 
-                                rows="4" 
-                                style="border-radius: 10px; border: 1px solid #d1d3e2; resize: none;"></textarea>
-                            <small class="form-text text-muted italic">Pastikan link dapat diakses oleh tim terkait.</small>
+                        <div class="md:col-span-2">
+                            <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-700">Catatan Tambahan <span class="font-medium normal-case tracking-normal text-zinc-400">(opsional)</span></label>
+                            <textarea name="note" rows="4" class="w-full resize-y rounded-xl border border-zinc-300 bg-white px-3 py-3 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-zinc-950 focus:ring-4 focus:ring-zinc-900/5" placeholder="Tuliskan kronologi atau informasi penting untuk tim..."></textarea>
+                            <p class="mb-0 mt-1.5 text-xs text-zinc-400">Pastikan informasi dan link report dapat diakses oleh tim terkait.</p>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-danger btn-sm">Simpan Data</button>
+                <div class="flex shrink-0 flex-col-reverse gap-2 border-t border-zinc-200 bg-white px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
+                    <button type="button" class="inline-flex min-h-[42px] items-center justify-center rounded-xl border border-zinc-300 bg-white px-5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl bg-[#161616] px-5 text-sm font-bold text-white transition hover:bg-zinc-800"><i class="fas fa-save text-xs"></i>Simpan Data</button>
                 </div>
             </form>
         </div>

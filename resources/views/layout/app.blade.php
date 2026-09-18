@@ -23,7 +23,7 @@
     {{-- Legacy pages still use the existing Font Awesome icon classes. --}}
     <link rel="stylesheet" href="{{ asset('vendor/fontawesome-free/css/all.min.css') }}">
 
-    @if(request()->routeIs('market_research', 'branding', 'analisis', 'manajemen', 'PDF', 'api.digital-marketing.*'))
+    @if(request()->routeIs('market_research', 'branding', 'analisis', 'manajemen', 'PDF', 'api.digital-marketing.*', 'api.business-dev.*'))
         {{-- Keep the original Bootstrap/SB Admin component placement inside client tabs. --}}
         <link rel="stylesheet" href="{{ asset('css/sb-admin-2.min.css') }}">
     @endif
@@ -1404,7 +1404,7 @@
 </head>
 
 
-<body id="page-top" class="min-h-screen bg-[#f5f5f3] text-zinc-900 {{ request()->boolean('embed') ? 'lmg-embedded' : '' }} {{ request()->routeIs('market_research', 'branding', 'analisis', 'manajemen', 'PDF', 'api.digital-marketing.*') ? 'lmg-client-tabs' : '' }} {{ request()->routeIs('analisis', 'api.digital-marketing.analisis') ? 'lmg-analysis-page' : '' }}">
+<body id="page-top" class="min-h-screen bg-[#f5f5f3] text-zinc-900 {{ request()->boolean('embed') ? 'lmg-embedded' : '' }} {{ request()->routeIs('market_research', 'branding', 'analisis', 'manajemen', 'PDF', 'api.digital-marketing.*', 'api.business-dev.*') ? 'lmg-client-tabs' : '' }} {{ request()->routeIs('analisis', 'api.digital-marketing.analisis', 'api.business-dev.analisis') ? 'lmg-analysis-page' : '' }}">
 
     {{-- =========================================================
         LOADING OVERLAY
@@ -2822,6 +2822,220 @@ Target:"
 
         );
 
+    </script>
+
+
+    {{-- Memastikan scroll halaman kembali normal setelah modal ditutup. --}}
+    <script>
+        (function () {
+            function hasOpenModal() {
+                if (document.querySelector('.modal.show')) return true;
+
+                return Array.from(document.querySelectorAll('[data-modal-backdrop]')).some(function (backdrop) {
+                    const modal = backdrop.closest('[id]');
+
+                    return modal &&
+                        !modal.classList.contains('hidden') &&
+                        modal.getAttribute('aria-hidden') !== 'true' &&
+                        window.getComputedStyle(modal).display !== 'none';
+                });
+            }
+
+            function restorePageScroll() {
+                if (hasOpenModal()) return;
+
+                document.body.classList.remove('modal-open', 'overflow-hidden', 'overflow-y-hidden');
+                document.documentElement.classList.remove('modal-open', 'overflow-hidden', 'overflow-y-hidden');
+                document.body.style.removeProperty('overflow');
+                document.body.style.removeProperty('overflow-y');
+                document.body.style.removeProperty('padding-right');
+                document.documentElement.style.removeProperty('overflow');
+                document.documentElement.style.removeProperty('overflow-y');
+
+                document.querySelectorAll('.modal-backdrop').forEach(function (backdrop) {
+                    backdrop.remove();
+                });
+            }
+
+            function scheduleScrollRestore() {
+                window.setTimeout(restorePageScroll, 0);
+                window.setTimeout(restorePageScroll, 250);
+            }
+
+            window.lmgRestorePageScroll = restorePageScroll;
+
+            document.addEventListener('click', function (event) {
+                const closeControl = event.target.closest(
+                    '[data-dismiss="modal"], [data-bs-dismiss="modal"], [data-modal-close], [data-audit-close], .modal-close'
+                );
+
+                if (closeControl) {
+                    scheduleScrollRestore();
+                    return;
+                }
+
+                const backdrop = event.target.closest('[data-modal-backdrop]');
+
+                if (backdrop && event.target === backdrop) {
+                    scheduleScrollRestore();
+                }
+            });
+
+            document.addEventListener('hidden.bs.modal', restorePageScroll);
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') scheduleScrollRestore();
+            });
+
+            new MutationObserver(function () {
+                scheduleScrollRestore();
+            }).observe(document.body, {
+                attributes: true,
+                attributeFilter: ['class', 'style', 'aria-hidden', 'hidden'],
+                childList: true,
+                subtree: true,
+            });
+
+            window.addEventListener('pageshow', restorePageScroll);
+        })();
+    </script>
+
+
+    {{-- Sinkronisasi pilihan divisi dengan pengguna pada filter dan modal. --}}
+    <script>
+        (function () {
+            const selectableUsersUrl = @json(route('api.selectable-users'));
+            const userSelector = [
+                'select[name="email"]',
+                'select[name="user_id"]',
+                'select[name="pic"]',
+                'select[name="pic[]"]',
+                'select[id*="pic"]',
+                'select[id="user-filter"]',
+                'select[id="filterUser"]',
+                'select[id="form-pic"]',
+            ].join(', ');
+            const divisionSelector = [
+                'select[name="divisi"]',
+                'select[name="division"]',
+                'select[name="division_id"]',
+                'select[id="form-division"]',
+                'select[id*="division-filter"]',
+                'select[id*="divisi-filter"]',
+            ].join(', ');
+
+            function scopeFor(element) {
+                return element.closest('form, .modal, [role="dialog"], .fixed.inset-0') || document;
+            }
+
+            function divisionFor(userSelect) {
+                const scope = scopeFor(userSelect);
+                const division = scope.querySelector(divisionSelector);
+
+                return division && division.value && division.value !== 'all'
+                    ? division.value
+                    : '';
+            }
+
+            function selectedValues(select) {
+                return Array.from(select.selectedOptions)
+                    .map(function (option) { return option.value; })
+                    .filter(Boolean);
+            }
+
+            function defaultLabel(select) {
+                const currentEmptyOption = Array.from(select.options)
+                    .find(function (option) { return option.value === ''; });
+
+                if (currentEmptyOption) return currentEmptyOption.textContent;
+
+                return select.required ? '-- Pilih pengguna --' : 'Semua pengguna';
+            }
+
+            async function populateUserSelect(select, divisionId) {
+                if (!(select instanceof HTMLSelectElement) || select.dataset.userOptionsLoading === 'true') return;
+
+                const selected = selectedValues(select);
+                const label = defaultLabel(select);
+                const requestedDivision = divisionId === undefined ? divisionFor(select) : divisionId;
+                const url = new URL(selectableUsersUrl, window.location.origin);
+
+                if (requestedDivision) url.searchParams.set('division_id', requestedDivision);
+
+                select.dataset.userOptionsLoading = 'true';
+                select.setAttribute('aria-busy', 'true');
+
+                try {
+                    const response = await fetch(url.toString(), {
+                        headers: { 'Accept': 'application/json' },
+                        credentials: 'same-origin',
+                    });
+
+                    if (!response.ok) throw new Error('Gagal memuat pengguna');
+
+                    const users = await response.json();
+                    select.replaceChildren();
+
+                    if (!select.multiple) {
+                        select.add(new Option(label, ''));
+                    }
+
+                    users.forEach(function (user) {
+                        const option = new Option(
+                            user.name ? `${user.email} — ${user.name}` : user.email,
+                            user.id,
+                            false,
+                            selected.includes(String(user.id)),
+                        );
+                        select.add(option);
+                    });
+
+                    if (window.jQuery && window.jQuery(select).hasClass('select2-hidden-accessible')) {
+                        window.jQuery(select).trigger('change.select2');
+                    }
+                } catch (error) {
+                    // Biarkan pilihan server-side tetap dapat dipakai bila jaringan sedang bermasalah.
+                    console.warn('Pilihan pengguna tidak dapat diperbarui.', error);
+                } finally {
+                    delete select.dataset.userOptionsLoading;
+                    select.removeAttribute('aria-busy');
+                }
+            }
+
+            function refreshUserSelects(scope) {
+                const root = scope || document;
+                root.querySelectorAll(userSelector).forEach(function (select) {
+                    populateUserSelect(select);
+                });
+            }
+
+            window.lmgPopulateUserSelect = populateUserSelect;
+            window.lmgRefreshUserSelects = refreshUserSelects;
+
+            document.addEventListener('change', function (event) {
+                if (!event.target.matches(divisionSelector)) return;
+
+                const scope = scopeFor(event.target);
+                scope.querySelectorAll(userSelector).forEach(function (select) {
+                    populateUserSelect(select, event.target.value === 'all' ? '' : event.target.value);
+                });
+            });
+
+            document.addEventListener('click', function (event) {
+                if (!event.target.closest('[data-modal-open], [data-toggle="modal"]')) return;
+
+                window.setTimeout(function () {
+                    refreshUserSelects(document);
+                }, 0);
+            });
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function () {
+                    refreshUserSelects(document);
+                });
+            } else {
+                refreshUserSelects(document);
+            }
+        })();
     </script>
 
 

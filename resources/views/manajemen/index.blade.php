@@ -87,9 +87,9 @@
 
     {{-- MODAL TAMBAH --}}
     <div class="modal fade" id="tambahModal" tabindex="-1" role="dialog" aria-labelledby="tambahModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-            <div class="modal-content border-0 shadow-lg" style="border-radius: 15px; overflow: hidden;">
-                <form action="{{ route('manajemen_create', $produk->id) }}" method="POST">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" role="document" style="max-height: calc(100dvh - 3rem);">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 15px; overflow: hidden; max-height: calc(100dvh - 3rem);">
+                <form action="{{ route('manajemen_create', $produk->id) }}" method="POST" style="display: flex; min-height: 0; max-height: calc(100dvh - 3rem); flex: 1 1 auto; flex-direction: column; overflow: hidden;">
                     @csrf
                     <input type="hidden" name="platform" value="{{ $platform }}">
                     
@@ -136,7 +136,7 @@
                         </button>
                     </div>
 
-                    <div class="modal-body p-4" style="background-color: #fcfcfd;">
+                    <div class="modal-body p-4" style="min-height: 0; flex: 1 1 auto; background-color: #fcfcfd; overflow-y: auto; overscroll-behavior: contain;">
                         
                         <div class="section-title mb-3 d-flex align-items-center">
                             <div class="bg-primary mr-2" style="width: 4px; height: 16px; border-radius: 2px;"></div>

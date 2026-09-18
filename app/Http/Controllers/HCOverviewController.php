@@ -15,6 +15,7 @@ use App\Models\Task;
 use App\Models\ProdukClient;
 use Carbon\CarbonPeriod;
 use Carbon\Carbon;
+use Illuminate\Validation\Rule;
 class HCOverviewController extends Controller
 {
     /**
@@ -29,6 +30,7 @@ class HCOverviewController extends Controller
         $divisi = $client->divisions->pluck('name', 'id');
         
         $user = Auth::user();
+        $user->loadMissing('userDivisions.role');
         $divisi = User::find($user->id)->userDivisions[0] ?? "Super Admin";
         $RoleSekarang = $user->isAdmin == false ? DB::table('roles')->where('id', $divisi['role_id'])->value('role_name') : "Super Admin";
         // Label kesulitan tetap perlu dikirim ke view untuk filter select
@@ -47,6 +49,9 @@ class HCOverviewController extends Controller
             }
         }
 
+        $currentLevel = (int) ($user->userDivisions->first()?->role?->level ?? 0);
+        $canCreateTask = (bool) $user->isAdmin || ($currentLevel > 0 && $currentLevel < 3);
+
          $handed_client = User::leftjoin('user_division', 'user_division.user_id', '=', 'users.id')
             ->select('users.id', 'users.name', 'users.email')
             ->distinct();
@@ -54,20 +59,29 @@ class HCOverviewController extends Controller
         if ($RoleSekarang == "Super Admin") {
             $vic_list = $handed_client->where('users.isAdmin', false)->get();
         } else {
-            $vic_list = $handed_client->where(function($q) use ($user) {
-                $q->where('users.id', $user->id)
-                ->orWhere('user_division.parent_id', $user->id);
-            })->get();
+            $vic_list = $canCreateTask
+                ? $handed_client->where('users.isAdmin', false)->where('user_division.parent_id', $user->id)->get()
+                : collect();
         }
 
-        return view('hc.overview', compact('title', 'id', 'client', 'difficultyLabels', 'divisi_list', 'result', 'vic_list'));
+        return view('hc.overview', compact('title', 'id', 'client', 'difficultyLabels', 'divisi_list', 'result', 'vic_list', 'canCreateTask'));
     }
 
     public function tambahKPI(Request $request){
+        $actor = Auth::user();
+        $actor->loadMissing('userDivisions.role');
+        $actorLevel = (int) ($actor->userDivisions->first()?->role?->level ?? 0);
+        abort_unless($actor->isAdmin || ($actorLevel > 0 && $actorLevel < 3), 403, 'Anda tidak memiliki akses untuk membuat KPI atau task.');
+
+        $allowedPicIds = $actor->isAdmin
+            ? User::where('isAdmin', false)->pluck('id')->all()
+            : UserDivision::where('parent_id', $actor->id)->pluck('user_id')->all();
+
         $request->validate([
             'nama_kpi'         => 'required',
             'divisi'           => 'required',
             'pic'              => 'required|array', // Pastikan datang sebagai array
+            'pic.*'            => ['required', 'integer', Rule::in($allowedPicIds)],
             'point'            => 'required',
             'tanggal_mulai'    => 'required',
             'tanggal_deadline' => 'required',
@@ -138,9 +152,12 @@ class HCOverviewController extends Controller
     }
 
     public function getUsers($id, $id_user){
-        $user = User::find($id_user);
+        $user = Auth::user();
+        abort_unless((int) $id_user === (int) $user->id, 403);
+        $user->loadMissing('userDivisions.role');
         $userQuery = User::join('user_division', 'user_division.user_id', '=', 'users.id')
                     ->where('user_division.division_id', $id)
+                    ->where('users.isAdmin', false)
                     ->select('users.id', 'users.email')
                     ->distinct();
         $RoleSekarang = $user->isAdmin == false ? DB::table('roles')->where('id', $user->userDivisions[0]->role_id)->value('role_name') : "Super Admin";
@@ -150,12 +167,12 @@ class HCOverviewController extends Controller
             $currentLevel = $level->level;
         }
 
-        if ($currentLevel == 0) {
+        if ($user->isAdmin) {
             $vic_list = $userQuery->get();
-        }else{
-            $vic_list = $userQuery->where(function($q) use ($user) {
-                $q->where('users.id', $user->id)->orWhere('user_division.parent_id', $user->id);
-            })->get();
+        } elseif ($currentLevel > 0 && $currentLevel < 3) {
+            $vic_list = $userQuery->where('user_division.parent_id', $user->id)->get();
+        } else {
+            $vic_list = collect();
         }
 
 
@@ -292,6 +309,16 @@ class HCOverviewController extends Controller
      */
     public function store(Request $request, $id_client)
     {   
+        $actor = Auth::user();
+        $actor->loadMissing('userDivisions.role');
+        $actorLevel = (int) ($actor->userDivisions->first()?->role?->level ?? 0);
+        abort_unless($actor->isAdmin || ($actorLevel > 0 && $actorLevel < 3), 403, 'Anda tidak memiliki akses untuk membuat task.');
+
+        $allowedPicIds = $actor->isAdmin
+            ? User::where('isAdmin', false)->pluck('id')
+            : UserDivision::where('parent_id', $actor->id)->pluck('user_id');
+        abort_unless($allowedPicIds->map(fn ($id) => (int) $id)->contains((int) $request->pic), 403, 'PIC harus merupakan bawahan Anda.');
+
         $data = Task::where('pic', (int)$request->pic)->get();
 
         $newStart = Carbon::parse($request->tanggal_mulai . ' ' . $request->jam_mulai);
@@ -505,12 +532,28 @@ class HCOverviewController extends Controller
         }
 
         // 2. Query ProdukClient hanya untuk ID yang ada di array tersebut
-        $project = ProdukClient::join('client_division', 'client_division.client_id', 'produk_client.id')->join('divisions', 'divisions.id', '=', 'client_division.division_id')->select('produk_client.id', 'produk_client.nama as nama_client', 'divisions.name as nama_divisi');
+        $internalIds = ProdukClient::query()->internal()->pluck('id');
+        $project = ProdukClient::leftJoin('client_division', 'client_division.client_id', 'produk_client.id')
+            ->leftJoin('divisions', 'divisions.id', '=', 'client_division.division_id')
+            ->select('produk_client.id', 'produk_client.nama as nama_client', 'divisions.name as nama_divisi');
             if(Auth::user()->isAdmin == false){
-                $projects = $project->whereIn('produk_client.id', $userHandledClients); // Filter Utama
+                $projects = $project->where(function ($query) use ($userHandledClients, $internalIds) {
+                    $query->whereIn('produk_client.id', $userHandledClients)
+                        ->orWhereIn('produk_client.id', $internalIds);
+                });
             }
             $projects = $project->get()
-            ->map(function ($client) {
+            ->groupBy('id')
+            ->map(function ($clientRows) use ($internalIds) {
+                $client = $clientRows->first();
+                $divisions = $internalIds->contains($client->id)
+                    ? collect(['Internal'])
+                    : $clientRows->pluck('nama_divisi')->filter()->unique()->sort()->values();
+
+                if ($divisions->isEmpty()) {
+                    $divisions = collect(['Tanpa Divisi']);
+                }
+
                 // Hitung total task milik client ini
                 $totalKPI = KPI::where('project', $client->id)->count();
                 $totalTask = Task::where('project', $client->id)->whereNot('status', 5)->count();
@@ -528,13 +571,14 @@ class HCOverviewController extends Controller
                 return [
                     'project_id'  => $client->id,
                     'nama_client' => $client->nama_client,
-                    'nama_divisi' => $client->nama_divisi,
+                    'nama_divisi' => $divisions->implode(', '),
+                    'divisions'   => $divisions->all(),
                     'percentage'  => $percentage,
                     'total'       => $totalKPI,
                     'done'        => $doneKPI,
                     'color'       => ($totalKPI == 0) ? 'secondary' : ($percentage == 100 ? 'success' : ($percentage > 50 ? 'primary' : 'warning'))
                 ];
-            });
+            })->values();
 
         return view('hc.list_client', compact('title', 'projects'));
     }

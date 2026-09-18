@@ -23,7 +23,7 @@
                 </p>
             </div>
 
-            @if(Auth::user()->role != "content_creator")
+            @if($canCreateTask)
                 <button
                     type="button"
                     data-modal-open="tambahModal"
@@ -38,7 +38,7 @@
                         <path d="M12 5v14M5 12h14"/>
                     </svg>
 
-                    Tambah Task
+                    Tambah KPI
                 </button>
             @endif
         </div>
@@ -190,7 +190,7 @@
                     </h2>
                 </div>
 
-                @if(Auth::user()->role != "content_creator")
+                {{-- @if(Auth::user()->role != "content_creator")
                     <button
                         type="button"
                         data-modal-open="tambahModal"
@@ -207,7 +207,7 @@
 
                         Tambah Task
                     </button>
-                @endif
+                @endif --}}
             </div>
 
 
@@ -1847,6 +1847,13 @@
 
 
         if (!picSelect) {
+            return;
+        }
+
+        // Gunakan sumber pengguna global agar pilihan PIC selalu mengikuti divisi
+        // dan hak akses akun yang sedang masuk.
+        if (window.lmgPopulateUserSelect) {
+            await window.lmgPopulateUserSelect(picSelect, el.value);
             return;
         }
 

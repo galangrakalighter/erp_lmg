@@ -230,8 +230,7 @@
             $techProdukList = $techProduk->contains('client_id', $currentProduct);
             $isEcommerceList = $ecommerceProduk->contains('client_id', $currentProduct);
 
-            $isBusinessDevWorkspace = Route::is('digital-marketing.workspace')
-                && request()->query('source') === 'business-dev';
+            $isBusinessDevWorkspace = Route::is('business-dev.workspace');
 
             $isMarketingPage = Route::is([
                 'market_research',
@@ -240,7 +239,7 @@
                 'manajemen',
                 'PDF',
                 'digital-marketing.workspace'
-            ]) && !$isBusinessDevWorkspace;
+            ]);
 
             $divisiOpen = Route::is([
                 'client.produk_divisi',
@@ -554,7 +553,7 @@
                             return
                                 $isPowerUser ||
                                 (
-                                    in_array(1, $divisionIds) &&
+                                    in_array(2, $divisionIds) &&
                                     in_array($client->client_id, $myClientIds)
                                 );
                         };
@@ -574,7 +573,7 @@
 
                             @if($canOpen)
                                 <a
-                                    href="{{ route('digital-marketing.workspace', ['id_produk' => $client->client_id, 'source' => 'business-dev']) }}"
+                                    href="{{ route('business-dev.workspace', ['id_produk' => $client->client_id]) }}"
                                     class="group flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs transition
                                     {{ $isActiveClient
                                         ? 'bg-white font-semibold text-zinc-950'

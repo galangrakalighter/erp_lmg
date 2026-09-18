@@ -928,7 +928,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    document.addEventListener('change', function (event) {
+    document.addEventListener('change', async function (event) {
         if (event.target.matches('#activityAction')) {
             applyFilter();
             return;
@@ -953,6 +953,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 if (email) {
                     email.value = '';
+
+                    if (window.lmgPopulateUserSelect) {
+                        await window.lmgPopulateUserSelect(email, event.target.value);
+                    }
                 }
             }
 

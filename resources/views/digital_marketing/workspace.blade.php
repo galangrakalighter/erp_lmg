@@ -39,11 +39,12 @@
             <nav id="dmWorkspaceTabs" class="flex gap-1 overflow-x-auto border-b border-zinc-200 bg-zinc-50 p-2" aria-label="Menu client {{ $workspaceLabel }}">
                 @php
                     $firstPlatform = $platforms->first();
+                    $apiNamespace = $workspaceApiNamespace ?? 'api.digital-marketing';
                     $tabs = [
-                        ['key' => 'market-research', 'label' => 'Market Research', 'url' => $firstPlatform ? route('api.digital-marketing.market-research', [$client->id, $firstPlatform]) : null, 'platform' => true],
-                        ['key' => 'branding', 'label' => 'Branding', 'url' => $firstPlatform ? route('api.digital-marketing.branding', [$client->id, $firstPlatform]) : null, 'platform' => true],
-                        ['key' => 'analisis', 'label' => 'Analisis', 'url' => $firstPlatform ? route('api.digital-marketing.analisis', [$client->id, $firstPlatform]) : null, 'platform' => true],
-                        ['key' => 'content-plan', 'label' => 'Content Plan', 'url' => $firstPlatform ? route('api.digital-marketing.content-plan', [$client->id, $firstPlatform]) : null, 'platform' => true],
+                        ['key' => 'market-research', 'label' => 'Market Research', 'url' => $firstPlatform ? route($apiNamespace.'.market-research', [$client->id, $firstPlatform]) : null, 'platform' => true],
+                        ['key' => 'branding', 'label' => 'Branding', 'url' => $firstPlatform ? route($apiNamespace.'.branding', [$client->id, $firstPlatform]) : null, 'platform' => true],
+                        ['key' => 'analisis', 'label' => 'Analisis', 'url' => $firstPlatform ? route($apiNamespace.'.analisis', [$client->id, $firstPlatform]) : null, 'platform' => true],
+                        ['key' => 'content-plan', 'label' => 'Content Plan', 'url' => $firstPlatform ? route($apiNamespace.'.content-plan', [$client->id, $firstPlatform]) : null, 'platform' => true],
                         ['key' => 'dokumen', 'label' => 'File Dokumen', 'url' => route('PDF', $client->id), 'platform' => false],
                     ];
                 @endphp

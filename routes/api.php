@@ -8,6 +8,11 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
+Route::middleware(['web', 'auth'])->get(
+    '/selectable-users',
+    [App\Http\Controllers\UserController::class, 'selectableUsers'],
+)->name('api.selectable-users');
+
 Route::get('/get-dm/{id}', [App\Http\Controllers\ProdukController::class, 'getBawahanDM'])->name('getBawahanDM');
 Route::get('/get-cc/{id}', [App\Http\Controllers\ProdukController::class, 'getBawahanCC'])->name('getBawahanCC');
 Route::get('/dashboard-bawahan/{id}', [App\Http\Controllers\HCOverviewController::class, 'getDataDashboardBawahan'])->name('getDataDashboardBawahan');
@@ -43,6 +48,16 @@ Route::middleware(['web', 'auth'])
             ->name('analisis');
         Route::get('/content-plan/{produk_id}/{platform}', [App\Http\Controllers\ManajemenKontenController::class, 'index'])
             ->name('content-plan');
+    });
+
+Route::middleware(['web', 'auth'])
+    ->prefix('business-dev/workspace')
+    ->name('api.business-dev.')
+    ->group(function () {
+        Route::get('/market-research/{id}/{platform}', [App\Http\Controllers\marketResearchController::class, 'index'])->name('market-research');
+        Route::get('/branding/{id}/{platform}', [App\Http\Controllers\brandingController::class, 'index'])->name('branding');
+        Route::get('/analisis/{produk}/{platform}', [App\Http\Controllers\AnalisisController::class, 'index'])->name('analisis');
+        Route::get('/content-plan/{produk_id}/{platform}', [App\Http\Controllers\ManajemenKontenController::class, 'index'])->name('content-plan');
     });
 
 Route::post('/updateStatusChecked', [App\Http\Controllers\selectionController::class, 'updateStatus'])->name('selection.updateStatus');

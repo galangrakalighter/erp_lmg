@@ -20,6 +20,7 @@ class IdmeClientWorkspaceController extends Controller
                 ->orderBy('name')])
             ->where('status', 1)
             ->findOrFail($id_produk);
+        abort_if($client->is_internal, 404);
         abort_unless($client->divisions->unique('id')->count() > 1, 404);
 
         $accessToken = is_array($client->access_token)

@@ -109,6 +109,62 @@ class UserController extends Controller
         return response()->json($result);
     }
 
+    /**
+     * Daftar pengguna yang boleh dipilih oleh akun yang sedang masuk.
+     * Digunakan oleh filter dan modal agar pilihan pengguna selalu sesuai divisi.
+     */
+    public function selectableUsers(Request $request)
+    {
+        $currentUser = $request->user();
+        $divisionId = $request->integer('division_id') ?: null;
+
+        $query = User::query()->orderBy('email');
+
+        if (! $currentUser->isAdmin) {
+            $query->whereIn('id', $this->visibleUserIds($currentUser->id));
+        }
+
+        if ($divisionId) {
+            $query->whereHas('userDivisions', function ($userDivisions) use ($divisionId) {
+                $userDivisions->where('division_id', $divisionId);
+            });
+        }
+
+        return response()->json(
+            $query->get(['id', 'name', 'email'])->map(fn (User $user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+            ])->values(),
+        );
+    }
+
+    private function visibleUserIds(int $userId): array
+    {
+        $visibleIds = [$userId];
+        $parents = [$userId];
+
+        while ($parents !== []) {
+            $children = userDivision::query()
+                ->whereIn('parent_id', $parents)
+                ->pluck('user_id')
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->reject(fn (int $id) => in_array($id, $visibleIds, true))
+                ->values()
+                ->all();
+
+            if ($children === []) {
+                break;
+            }
+
+            $visibleIds = array_values(array_unique([...$visibleIds, ...$children]));
+            $parents = $children;
+        }
+
+        return $visibleIds;
+    }
+
     private function lmgPositionLevel(?string $position): int
     {
         return match (strtolower((string) $position)) {

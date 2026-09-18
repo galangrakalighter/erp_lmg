@@ -3,22 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Models\ProdukClient;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class DigitalMarketingWorkspaceController extends Controller
 {
-    public function show(Request $request, int $id_produk)
+    public function show(int $id_produk)
     {
         $client = ProdukClient::query()->findOrFail($id_produk);
-        $isBusinessDevWorkspace = $request->query('source') === 'business-dev';
-        $targetDivisionId = $isBusinessDevWorkspace ? 6 : 1;
-        $workspaceLabel = $isBusinessDevWorkspace ? 'Business Dev' : 'Digital Marketing';
+        abort_if($client->is_internal, 404);
 
         $isWorkspaceClient = DB::table('client_division')
             ->where('client_id', $client->id)
-            ->where('division_id', $targetDivisionId)
+            ->where('division_id', 1)
             ->exists();
 
         abort_unless($isWorkspaceClient && (int) $client->status === 1, 404);
@@ -29,11 +26,10 @@ class DigitalMarketingWorkspaceController extends Controller
         $isPowerUser = (bool) $user->isAdmin
             || $user->userDivisions->contains(fn ($row) => $row->role?->role_name === 'Performance & Reporting');
         $isEcommerce = $user->userDivisions->contains(fn ($row) => $row->division?->name === 'Ecommerce');
-        $isWorkspaceDivision = $user->userDivisions->contains('division_id', $targetDivisionId);
+        $isWorkspaceDivision = $user->userDivisions->contains('division_id', 1);
         $hasClientAccess = $user->userClients->contains('client_id', $client->id);
 
-        $canUseEcommerceAccess = !$isBusinessDevWorkspace && $isEcommerce;
-        abort_unless($isPowerUser || $canUseEcommerceAccess || ($isWorkspaceDivision && $hasClientAccess), 403);
+        abort_unless($isPowerUser || $isEcommerce || ($isWorkspaceDivision && $hasClientAccess), 403);
 
         $accessToken = is_array($client->access_token)
             ? $client->access_token
@@ -45,13 +41,12 @@ class DigitalMarketingWorkspaceController extends Controller
             ->values();
 
         return view('digital_marketing.workspace', [
-            'title' => $client->nama.' · '.$workspaceLabel,
+            'title' => $client->nama.' · Digital Marketing',
             'client' => $client,
             'platforms' => $platforms,
-            'workspaceLabel' => $workspaceLabel,
-            'workspaceDescription' => $isBusinessDevWorkspace
-                ? 'Kelola kebutuhan pengembangan bisnis client tanpa berpindah halaman.'
-                : 'Kelola seluruh area marketing client tanpa berpindah halaman.',
+            'workspaceLabel' => 'Digital Marketing',
+            'workspaceDescription' => 'Kelola seluruh area marketing client tanpa berpindah halaman.',
+            'workspaceApiNamespace' => 'api.digital-marketing',
         ]);
     }
 }

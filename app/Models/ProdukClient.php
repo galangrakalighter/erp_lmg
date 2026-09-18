@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Models\KategoriJasa;
+use Illuminate\Database\Eloquent\Builder;
 class ProdukClient extends Model
 {
     protected $table = "produk_client";
@@ -17,10 +18,47 @@ class ProdukClient extends Model
 
     protected $casts = [
         'access_token' => 'array',
+        'is_internal' => 'boolean',
     ];
 
+    public function scopeInternal(Builder $query): Builder
+    {
+        return $query->where(function (Builder $builder) {
+            $builder->whereRaw("LOWER(TRIM(produk_client.nama)) = 'internal'")
+                ->orWhereIn('produk_client.kategori_jasa_id', function ($subquery) {
+                    $subquery->select('id')->from('kategori_jasa')
+                        ->whereRaw("LOWER(TRIM(category)) LIKE 'internal%'");
+                });
+        });
+    }
+
+    public function scopeExternal(Builder $query): Builder
+    {
+        return $query->where(function (Builder $builder) {
+            $builder->whereRaw("LOWER(TRIM(produk_client.nama)) <> 'internal'")
+                ->whereNotIn('produk_client.kategori_jasa_id', function ($subquery) {
+                    $subquery->select('id')->from('kategori_jasa')
+                        ->whereRaw("LOWER(TRIM(category)) LIKE 'internal%'");
+                })
+                ->orWhere(function (Builder $nullCategory) {
+                    $nullCategory->whereRaw("LOWER(TRIM(produk_client.nama)) <> 'internal'")
+                        ->whereNull('produk_client.kategori_jasa_id');
+                });
+        });
+    }
+
+    public function getIsInternalAttribute(): bool
+    {
+        if (strtolower(trim((string) $this->nama)) === 'internal') {
+            return true;
+        }
+
+        $category = $this->relationLoaded('group') ? $this->group?->category : KategoriJasa::whereKey($this->kategori_jasa_id)->value('category');
+        return str_starts_with(strtolower(trim((string) $category)), 'internal');
+    }
+
     public function group(){
-        return $this->belongsTo(KategoriJasa::class);
+        return $this->belongsTo(KategoriJasa::class, 'kategori_jasa_id');
     }
 
     public function teams() {

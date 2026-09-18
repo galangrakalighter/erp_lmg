@@ -54,9 +54,12 @@
                                     Semua Divisi
                                 </option>
 
-                                @foreach($projects->unique('nama_divisi') as $p)
-                                    <option value="{{ $p['nama_divisi'] }}">
-                                        {{ $p['nama_divisi'] }}
+                                @php
+                                    $divisionOptions = $projects->flatMap(fn ($project) => $project['divisions'])->unique()->sort()->values();
+                                @endphp
+                                @foreach($divisionOptions as $division)
+                                    <option value="{{ $division }}">
+                                        {{ $division }}
                                     </option>
                                 @endforeach
                             </select>
@@ -123,7 +126,7 @@
 
                 <div
                     class="project-card"
-                    data-divisi="{{ $p['nama_divisi'] }}"
+                    data-divisi='@json($p['divisions'])'
                 >
 
                     <a
@@ -150,11 +153,13 @@
                                         {{ $p['nama_client'] }}
                                     </h2>
 
-                                    @if(Auth::user()->isAdmin)
-                                        <p class="mt-1 truncate text-xs text-zinc-500">
-                                            {{ $p['nama_divisi'] }}
-                                        </p>
-                                    @endif
+                                    <div class="mt-2 flex flex-wrap gap-1.5">
+                                        @foreach($p['divisions'] as $division)
+                                            <span class="inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-[10px] font-semibold text-zinc-600">
+                                                {{ $division }}
+                                            </span>
+                                        @endforeach
+                                    </div>
 
                                 </div>
 
@@ -433,11 +438,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
         cards.forEach(function (card) {
 
-            const cardDivisi = card.getAttribute('data-divisi');
+            let cardDivisions = [];
+            try {
+                cardDivisions = JSON.parse(card.getAttribute('data-divisi') || '[]');
+            } catch (error) {
+                cardDivisions = [];
+            }
 
             const shouldShow =
                 selectedDivisi === 'all' ||
-                cardDivisi === selectedDivisi;
+                cardDivisions.includes(selectedDivisi);
 
 
             if (shouldShow) {

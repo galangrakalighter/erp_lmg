@@ -46,8 +46,12 @@
                         {{-- Logo --}}
                         <div>
                             <div class="flex items-center gap-3">
-                                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-black">
-                                    <span class="text-lg font-extrabold">L</span>
+                                <div class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white">
+                                    <img
+                                        src="{{ asset('img/logo.jpg') }}"
+                                        class="h-full w-full object-cover"
+                                        alt="Lighter Media Group"
+                                    >
                                 </div>
 
                                 <div>
@@ -121,8 +125,12 @@
                         {{-- Mobile Logo --}}
                         <div class="mb-10">
                             <div class="flex items-center gap-3">
-                                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-black text-white">
-                                    <span class="text-lg font-extrabold">L</span>
+                                <div class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white">
+                                    <img
+                                        src="{{ asset('img/logo.jpg') }}"
+                                        class="h-full w-full object-cover"
+                                        alt="Lighter Media Group"
+                                    >
                                 </div>
 
                                 <div>

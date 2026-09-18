@@ -1,6 +1,16 @@
 @once
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+    const initializeChoices = root => {
+        if (typeof Choices === 'undefined') return;
+        root.querySelectorAll('.select-choices-creator, .select-choices-edit, .select-choices-blacklist-edit').forEach(element => {
+            if (element.dataset.choice !== 'active') {
+                new Choices(element, { searchEnabled: true, itemSelectText: '', shouldSort: false, searchPlaceholderValue: 'Cari affiliator...' });
+            }
+        });
+    };
+    initializeChoices(document);
+
     document.querySelectorAll('[data-native-table]').forEach((table) => {
         const pagination = document.getElementById(`${table.id}Pagination`);
         const apiUrl = table.dataset.api;
@@ -39,9 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             document.body.append(host);
             if (typeof lucide !== 'undefined') lucide.createIcons();
-            if (typeof Choices !== 'undefined') host.querySelectorAll('.select-choices-edit, .select-choices-blacklist-edit').forEach(element => {
-                if (!element.dataset.choice) new Choices(element, { searchEnabled: true, itemSelectText: '', shouldSort: false });
-            });
+            initializeChoices(host);
         }
 
         function renderPagination(meta) {

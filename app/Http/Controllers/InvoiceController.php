@@ -32,8 +32,11 @@ class InvoiceController extends Controller
         $customers = DB::table('client_division')
             ->join('divisions', 'divisions.id', '=', 'client_division.division_id')
             ->join('produk_client', 'produk_client.id', '=', 'client_division.client_id')
+            ->leftJoin('kategori_jasa', 'kategori_jasa.id', '=', 'produk_client.kategori_jasa_id')
             ->where('client_division.division_id', 6)
             ->where('produk_client.status', 1)
+            ->whereRaw("LOWER(TRIM(produk_client.nama)) <> 'internal'")
+            ->where(fn ($query) => $query->whereNull('kategori_jasa.category')->orWhereRaw("LOWER(TRIM(kategori_jasa.category)) NOT LIKE 'internal%'"))
             ->get();
         $accountPendapatan = ChartOfAccount::where('category', 'pendapatan')->where('perusahaan', $id)->where('is_active', true)->get();
         $accountPiutang = ChartOfAccount::where('category', 'aset')->where('perusahaan', $id)->where('is_active', true)->get();

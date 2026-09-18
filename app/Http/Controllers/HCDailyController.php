@@ -361,7 +361,9 @@ class HCDailyController extends Controller
             'division_locked' => $formContext['division_locked'],
             'projects' => ProdukClient::query()
                 ->leftJoin('client_division', 'client_division.client_id', '=', 'produk_client.id')
+                ->leftJoin('kategori_jasa', 'kategori_jasa.id', '=', 'produk_client.kategori_jasa_id')
                 ->select('produk_client.id', 'produk_client.nama', 'client_division.division_id')
+                ->selectRaw("CASE WHEN LOWER(TRIM(produk_client.nama)) = 'internal' OR LOWER(TRIM(COALESCE(kategori_jasa.category, ''))) LIKE 'internal%' THEN TRUE ELSE FALSE END AS is_internal")
                 ->orderBy('produk_client.nama')
                 ->get(),
             'divisions' => Division::select('id', 'name')->orderBy('name')->get(),
@@ -554,7 +556,8 @@ class HCDailyController extends Controller
             'PIC hanya dapat dipilih dari diri sendiri atau bawahan Anda.'
         );
 
-        $projectMatchesDivision = DB::table('client_division')
+        $project = ProdukClient::query()->findOrFail($data['project_id']);
+        $projectMatchesDivision = $project->is_internal || DB::table('client_division')
             ->where('client_id', $data['project_id'])
             ->where('division_id', $data['division_id'])
             ->exists();

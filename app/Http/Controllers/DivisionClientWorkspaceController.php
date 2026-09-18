@@ -41,10 +41,10 @@ class DivisionClientWorkspaceController extends Controller
                 ['key' => 'overview', 'label' => 'Overview', 'message' => 'Halaman Overview Tech belum tersedia.'],
                 ['key' => 'github', 'label' => 'GitHub', 'message' => 'Integrasi GitHub client belum tersedia.'],
                 ['key' => 'monitoring', 'label' => 'Monitoring', 'message' => 'Halaman Monitoring client belum tersedia.'],
-                ['key' => 'documents', 'label' => 'File Dokumen', 'url' => route('PDF', $client->id)],
+                ['key' => 'documents', 'label' => 'File Dokumen', 'url' => route('PDF', ['id_produk' => $client->id, 'division_id' => $config['id']])],
             ],
             default => [
-                ['key' => 'documents', 'label' => 'File Dokumen', 'url' => route('PDF', $client->id)],
+                ['key' => 'documents', 'label' => 'File Dokumen', 'url' => route('PDF', ['id_produk' => $client->id, 'division_id' => $config['id']])],
             ],
         };
 

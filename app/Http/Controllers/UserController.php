@@ -9,6 +9,7 @@ use App\Models\userDivision;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 use Yajra\DataTables\Facades\DataTables;
 
 class UserController extends Controller
@@ -31,7 +32,8 @@ class UserController extends Controller
                     $adminQuery->where('isAdmin', true)
                         ->whereNotNull('jabatan')
                         ->where('jabatan', '!=', '');
-                });
+                })
+                ->orWhereHas('userDivisions');
         })
         ->orderBy('name', 'ASC')
         ->get();
@@ -51,11 +53,12 @@ class UserController extends Controller
         $users = User::with(['userDivisions.division', 'userDivisions.role', 'userDivisions.parent', 'userClients.client'])
             ->where(function ($query) {
                 $query->where('isAdmin', false)
-                    ->orWhere(function ($adminQuery) {
-                        $adminQuery->where('isAdmin', true)
-                            ->whereNotNull('jabatan')
-                            ->where('jabatan', '!=', '');
-                    });
+                ->orWhere(function ($adminQuery) {
+                    $adminQuery->where('isAdmin', true)
+                        ->whereNotNull('jabatan')
+                        ->where('jabatan', '!=', '');
+                    })
+                    ->orWhereHas('userDivisions');
             })
             ->orderBy('name')
             ->get();
@@ -70,10 +73,12 @@ class UserController extends Controller
                 'photo_profile_url' => $user->photo_profile ? asset('storage/' . $user->photo_profile) : null,
                 'is_locked' => (bool) $user->is_locked,
                 'is_current_user' => Auth::id() === $user->id,
+                // Akun pimpinan selalu dikelompokkan pada IDME di manajemen user.
+                // Penempatan operasionalnya (jika pernah ada) tidak mengubah tampilan ini.
                 'user_divisions' => $user->isAdmin && filled($user->jabatan)
                     ? [[
-                        'division_id' => 'lmg',
-                        'division' => ['name' => 'Lighter Media Group'],
+                        'division_id' => 'idme',
+                        'division' => ['name' => 'IDME'],
                         'role_id' => null,
                         'role' => strtoupper($user->jabatan),
                         'level' => $this->lmgPositionLevel($user->jabatan),
@@ -187,7 +192,7 @@ class UserController extends Controller
     }
 
     public function store(Request $request){
-        $isLmg = $request->input('divisi_id') === 'lmg';
+        $isLmg = in_array((string) $request->input('divisi_id'), ['lmg', 'idme'], true);
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255'],
@@ -199,6 +204,10 @@ class UserController extends Controller
         if (!$isLmg && Division::whereKey($request->divisi_id)->whereRaw("LOWER(TRIM(name)) = 'idme'")->exists()) {
             return redirect()->back()->withInput()->with('error', 'IDME bukan divisi penempatan user.');
         }
+        $role = $isLmg ? null : Role::whereKey($request->role_id)
+            ->where('division_id', $request->divisi_id)
+            ->firstOrFail();
+        $parentId = $this->validatedParentId($request, $role);
         $exists = User::where('email', $request->email)->exists();
         if ($exists) {
             return redirect()->back()->with('error', 'Email Sudah Terdaftar Di Sistem');
@@ -221,17 +230,18 @@ class UserController extends Controller
                     'user_id' => $newUser->id,
                     'division_id' => (int)$request->divisi_id,
                     'role_id' => (int)$request->role_id,
-                    'parent_id' => $request->filled('parent_id') ? $request->parent_id : null
+                    'parent_id' => $parentId,
                 ]);
             }
 
-            if (!$isLmg && $request->has('subordinate_ids') && is_array($request->subordinate_ids)) {
+            if (!$isLmg && ! $this->isFinanceDivision((int) $request->divisi_id) && $request->has('subordinate_ids') && is_array($request->subordinate_ids)) {
                 foreach ($request->subordinate_ids as $subordinateId) {
                     $subordinate = User::find($subordinateId);
                     if ($subordinate) {
-                        $user_division = userDivision::where('user_id', $subordinateId)->update([
-                            'parent_id' => $newUser->id
-                        ]);
+                        userDivision::where('user_id', $subordinateId)
+                            ->where('division_id', (int) $request->divisi_id)
+                            ->whereHas('role', fn ($query) => $query->where('parent_id', $role->id))
+                            ->update(['parent_id' => $newUser->id]);
                     }
                 }
             }
@@ -246,7 +256,7 @@ class UserController extends Controller
 
     public function update($id, Request $request){
         $user = User::findOrFail($id);
-        $isLmg = $request->input('divisi_id') === 'lmg';
+        $isLmg = in_array((string) $request->input('divisi_id'), ['lmg', 'idme'], true);
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255'],
@@ -258,7 +268,10 @@ class UserController extends Controller
         if (!$isLmg && Division::whereKey($request->divisi_id)->whereRaw("LOWER(TRIM(name)) = 'idme'")->exists()) {
             return redirect()->back()->withInput()->with('error', 'IDME bukan divisi penempatan user.');
         }
-        $level = Role::find((int)$request->role_id);
+        $level = $isLmg ? null : Role::whereKey($request->role_id)
+            ->where('division_id', $request->divisi_id)
+            ->firstOrFail();
+        $parentId = $this->validatedParentId($request, $level);
 
         // 1. Cek duplikasi email (kecuali email milik user ini sendiri)
         $exists = User::where('email', $request->email)->where('id', '!=', $id)->exists();
@@ -284,25 +297,27 @@ class UserController extends Controller
 
             $user->update($userData);
 
-            // 3. Update User Division (Atasan)
-            UserDivision::where('parent_id', $id)->update(['parent_id' => null]);
-            UserDivision::where('user_id', $id)->delete();
+            // 3. Update User Division (Atasan). Mengubah data pimpinan di IDME
+            // tidak boleh menghapus penempatan Finance atau relasi bawahannya.
+            if (! $isLmg) {
+                UserDivision::where('parent_id', $id)->update(['parent_id' => null]);
+                UserDivision::where('user_id', $id)->delete();
 
-            if (!$isLmg) {
                 UserDivision::create([
                     'user_id' => $id,
                     'division_id' => (int)$request->divisi_id,
                     'role_id' => (int)$request->role_id,
-                    'parent_id' => ($level && $level->level == 1) ? null : ($request->parent_id ?: null),
+                    'parent_id' => $parentId,
                 ]);
             }
 
             // 4. Update Hierarki Bawahan
             // Langkah A: Lepas semua bawahan lama yang sebelumnya melapor ke user ini
             // Langkah B: Set bawahan baru berdasarkan pilihan di modal
-            if (!$isLmg && $request->has('subordinate_ids') && is_array($request->subordinate_ids)) {
+            if (!$isLmg && ! $this->isFinanceDivision((int) $request->divisi_id) && $request->has('subordinate_ids') && is_array($request->subordinate_ids)) {
                 UserDivision::whereIn('user_id', $request->subordinate_ids)
                     ->where('division_id', (int)$request->divisi_id)
+                    ->whereHas('role', fn ($query) => $query->where('parent_id', $level->id))
                     ->update(['parent_id' => $id]);
             }
 
@@ -330,6 +345,69 @@ class UserController extends Controller
         } catch (\Throwable $th) {
             return redirect()->back()->with('error', 'Gagal menghapus user: ' . $th->getMessage());
         }
+    }
+
+    private function validatedParentId(Request $request, ?Role $role): ?int
+    {
+        if ($role === null) {
+            return null;
+        }
+
+        // Struktur Finance tidak mengikuti level role biasa: seluruh pengguna
+        // Finance, termasuk Business Unit Head, melapor langsung kepada CFO.
+        if ($this->isFinanceDivision($request->integer('divisi_id'))) {
+            $request->validate([
+                'parent_id' => ['required', 'integer', 'exists:users,id'],
+            ], [
+                'parent_id.required' => 'Atasan Finance wajib dipilih dari akun CFO.',
+            ]);
+
+            $isCfo = User::query()
+                ->whereKey($request->integer('parent_id'))
+                ->where('isAdmin', true)
+                ->whereRaw("LOWER(TRIM(COALESCE(jabatan, ''))) = 'cfo'")
+                ->exists();
+
+            if (! $isCfo) {
+                throw ValidationException::withMessages([
+                    'parent_id' => 'Seluruh pengguna Finance harus memiliki atasan dengan jabatan CFO.',
+                ]);
+            }
+
+            return $request->integer('parent_id');
+        }
+
+        if (empty($role->parent_id)) {
+            return null;
+        }
+
+        $request->validate([
+            'parent_id' => ['required', 'integer', 'exists:users,id'],
+        ], [
+            'parent_id.required' => 'Atasan wajib dipilih untuk role ini.',
+        ]);
+
+        $isValidParent = userDivision::query()
+            ->where('user_id', $request->integer('parent_id'))
+            ->where('division_id', $request->integer('divisi_id'))
+            ->where('role_id', $role->parent_id)
+            ->exists();
+
+        if (! $isValidParent) {
+            throw ValidationException::withMessages([
+                'parent_id' => 'Atasan harus berasal dari divisi yang sama dengan role atasan yang sesuai.',
+            ]);
+        }
+
+        return $request->integer('parent_id');
+    }
+
+    private function isFinanceDivision(?int $divisionId): bool
+    {
+        return $divisionId && Division::query()
+            ->whereKey($divisionId)
+            ->whereRaw("LOWER(TRIM(name)) = 'finance'")
+            ->exists();
     }
 
     public function toggleLock(User $user)

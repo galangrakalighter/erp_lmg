@@ -46,6 +46,7 @@ class BusinessDevWorkspaceController extends Controller
             'workspaceLabel' => 'Business Dev',
             'workspaceDescription' => 'Kelola market research, branding, analisis, content plan, dan dokumen client Business Dev.',
             'workspaceApiNamespace' => 'api.business-dev',
+            'workspaceDivisionId' => 2,
         ]);
     }
 }

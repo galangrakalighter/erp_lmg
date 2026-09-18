@@ -10,12 +10,197 @@ use App\Models\UserDivision;
 use App\Models\ProdukClient;
 use App\Models\AuditTrail;
 use App\Services\TrialBalanceService;
+use Illuminate\Support\Carbon;
+use Throwable;
 
 class DashboardController extends Controller
 {
-    public function index(){
+    public function index(Request $request){
         $title = "Dashbard";
-        return view('index', compact('title'));
+        $dashboardData = $this->executiveDashboardData($request);
+
+        switch (Auth::user()->jabatan) {
+            case "ceo":
+                return view('dashboard.ceo', array_merge(compact('title'), $dashboardData));
+            case "cfo":
+                return view('dashboard.cfo', array_merge(compact('title'), $dashboardData));
+            case "coo":
+                return view('dashboard.coo', array_merge(compact('title'), $dashboardData));
+            default:
+                return view('index', compact('title'));
+        }
+    }
+
+    private function executiveDashboardData(Request $request): array
+    {
+        $today = Carbon::today();
+        $period = $request->string('period')->toString();
+
+        try {
+            $selectedPeriod = $period !== ''
+                ? Carbon::createFromFormat('Y-m', $period)->startOfMonth()
+                : $today->copy()->startOfMonth();
+        } catch (Throwable) {
+            $selectedPeriod = $today->copy()->startOfMonth();
+        }
+
+        $period = $selectedPeriod->format('Y-m');
+        $monthStart = $selectedPeriod->toDateString();
+        $monthEnd = $selectedPeriod->copy()->endOfMonth()->toDateString();
+        $selectedDivisionId = $request->integer('division_id') ?: null;
+        $filterDivisions = Division::query()->orderBy('name')->get(['id', 'name']);
+
+        $clients = ProdukClient::query()->external();
+        $activeClients = (clone $clients)->where('status', 1)->count();
+        $totalClients = (clone $clients)->count();
+        $totalEmployees = User::query()->where('isAdmin', false)->count();
+
+        $taskBase = DB::table('task');
+        $tasksToday = (clone $taskBase)->when($selectedDivisionId, fn ($query) => $query->where('divisi', $selectedDivisionId))->whereDate('tanggal_mulai', $today)->count();
+        $tasksDoneThisMonth = (clone $taskBase)->when($selectedDivisionId, fn ($query) => $query->where('divisi', $selectedDivisionId))
+            ->where('status', 4)
+            ->whereBetween('tanggal_approve', [$monthStart, $monthEnd])
+            ->count();
+        $tasksAwaitingApproval = (clone $taskBase)->when($selectedDivisionId, fn ($query) => $query->where('divisi', $selectedDivisionId))->where('status', 3)->count();
+        $overdueTasks = (clone $taskBase)->when($selectedDivisionId, fn ($query) => $query->where('divisi', $selectedDivisionId))
+            ->where('status', '!=', 4)
+            ->whereDate('tanggal_deadline', '<', $today)
+            ->count();
+
+        $divisionPerformance = DB::table('divisions as d')
+            ->leftJoin('task as t', 't.divisi', '=', 'd.id')
+            ->selectRaw("d.id, d.name, COUNT(t.id) as total_tasks, SUM(CASE WHEN t.status = 4 THEN 1 ELSE 0 END) as completed_tasks, SUM(CASE WHEN t.status = 3 THEN 1 ELSE 0 END) as awaiting_approval, SUM(CASE WHEN t.status <> 4 AND t.tanggal_deadline < ? THEN 1 ELSE 0 END) as overdue_tasks", [$today->toDateString()])
+            ->groupBy('d.id', 'd.name')
+            ->when($selectedDivisionId, fn ($query) => $query->where('d.id', $selectedDivisionId))
+            ->orderBy('d.name')
+            ->get();
+
+        $clientByDivision = DB::table('client_division as cd')
+            ->join('divisions as d', 'd.id', '=', 'cd.division_id')
+            ->join('produk_client as pc', 'pc.id', '=', 'cd.client_id')
+            ->where('pc.status', 1)
+            ->whereRaw("LOWER(TRIM(pc.nama)) <> 'internal'")
+            ->when($selectedDivisionId, fn ($query) => $query->where('d.id', $selectedDivisionId))
+            ->selectRaw('d.name, COUNT(DISTINCT pc.id) as clients')
+            ->groupBy('d.id', 'd.name')
+            ->orderByDesc('clients')
+            ->get();
+
+        $finance = $this->executiveFinanceSummary($monthStart, $monthEnd, $selectedDivisionId);
+
+        $upcomingTasks = DB::table('task as t')
+            ->leftJoin('divisions as d', 'd.id', '=', 't.divisi')
+            ->leftJoin('produk_client as pc', 'pc.id', '=', 't.project')
+            ->leftJoin('users as u', 'u.id', '=', 't.pic')
+            ->where('t.status', '!=', 4)
+            ->when($selectedDivisionId, fn ($query) => $query->where('t.divisi', $selectedDivisionId))
+            ->orderBy('t.tanggal_deadline')
+            ->limit(8)
+            ->get(['t.nama_task', 't.status', 't.tanggal_deadline', 'd.name as division_name', 'pc.nama as project_name', 'u.email as pic_email']);
+
+        $outstandingInvoices = DB::table('invoices as i')
+            ->join('produk_client as pc', 'pc.id', '=', 'i.customer_id')
+            ->whereColumn('i.paid_amount', '<', 'i.total_amount')
+            ->when($selectedDivisionId, function ($query) use ($selectedDivisionId) {
+                $query->whereExists(function ($subQuery) use ($selectedDivisionId) {
+                    $subQuery->selectRaw('1')->from('client_division as cd')
+                        ->whereColumn('cd.client_id', 'i.customer_id')
+                        ->where('cd.division_id', $selectedDivisionId);
+                });
+            })
+            ->orderBy('i.due_date')
+            ->limit(8)
+            ->get(['i.no_invoice', 'i.total_amount', 'i.paid_amount', 'i.due_date', 'i.status', 'pc.nama as client_name']);
+
+        $payrollThisMonth = DB::table('payroll')
+            ->whereBetween('payroll_date', [$monthStart, $monthEnd])
+            ->when($selectedDivisionId, function ($query) use ($selectedDivisionId) {
+                $query->whereExists(function ($subQuery) use ($selectedDivisionId) {
+                    $subQuery->selectRaw('1')->from('user_division as ud')
+                        ->whereColumn('ud.user_id', 'payroll.user_id')
+                        ->where('ud.division_id', $selectedDivisionId);
+                });
+            })
+            ->selectRaw('COALESCE(SUM(total_amount), 0) as total, COALESCE(SUM(paid_amount), 0) as paid')
+            ->first();
+
+        return compact(
+            'today',
+            'period',
+            'selectedDivisionId',
+            'filterDivisions',
+            'activeClients',
+            'totalClients',
+            'totalEmployees',
+            'tasksToday',
+            'tasksDoneThisMonth',
+            'tasksAwaitingApproval',
+            'overdueTasks',
+            'divisionPerformance',
+            'clientByDivision',
+            'finance',
+            'upcomingTasks',
+            'outstandingInvoices',
+            'payrollThisMonth',
+        );
+    }
+
+    private function executiveFinanceSummary(string $monthStart, string $monthEnd, ?int $divisionId = null): array
+    {
+        $invoiceQuery = DB::table('invoices as i');
+
+        if ($divisionId) {
+            $invoiceQuery->whereExists(function ($query) use ($divisionId) {
+                $query->selectRaw('1')->from('client_division as cd')
+                    ->whereColumn('cd.client_id', 'i.customer_id')
+                    ->where('cd.division_id', $divisionId);
+            });
+        }
+
+        $invoice = $invoiceQuery
+            ->selectRaw('COALESCE(SUM(total_amount), 0) as billed, COALESCE(SUM(paid_amount), 0) as collected')
+            ->first();
+
+        $monthlyPayments = DB::table('invoice_payments as ip')
+            ->whereBetween('payment_date', [$monthStart, $monthEnd])
+            ->when($divisionId, function ($query) use ($divisionId) {
+                $query->whereExists(function ($subQuery) use ($divisionId) {
+                    $subQuery->selectRaw('1')->from('invoices as i')
+                        ->join('client_division as cd', 'cd.client_id', '=', 'i.customer_id')
+                        ->whereColumn('i.id', 'ip.invoice_id')
+                        ->where('cd.division_id', $divisionId);
+                });
+            });
+        $monthlyCollected = $monthlyPayments->sum('amount');
+
+        $income = 0.0;
+        $expense = 0.0;
+
+        try {
+            $journal = DB::table('general_journal_details as gjd')
+                ->join('general_journals as gj', 'gj.id', '=', 'gjd.general_journal_id')
+                ->join('chart_of_account as coa', 'coa.id', '=', 'gjd.chart_of_account_id')
+                ->where('gj.status', 'posted')
+                ->whereBetween('gj.tgl_transaksi', [$monthStart, $monthEnd])
+                ->selectRaw("COALESCE(SUM(CASE WHEN LOWER(COALESCE(coa.category, '')) = 'pendapatan' OR coa.kode LIKE '4%' THEN gjd.kredit - gjd.debit ELSE 0 END), 0) as income")
+                ->selectRaw("COALESCE(SUM(CASE WHEN LOWER(COALESCE(coa.category, '')) = 'beban' OR coa.kode LIKE '5%' OR coa.kode LIKE '6%' THEN gjd.debit - gjd.kredit ELSE 0 END), 0) as expense")
+                ->first();
+
+            $income = (float) ($journal->income ?? 0);
+            $expense = (float) ($journal->expense ?? 0);
+        } catch (Throwable) {
+            // Dashboard tetap dapat dipakai pada instalasi yang belum memiliki jurnal lengkap.
+        }
+
+        return [
+            'billed' => (float) ($invoice->billed ?? 0),
+            'collected' => (float) ($invoice->collected ?? 0),
+            'outstanding' => max(0, (float) ($invoice->billed ?? 0) - (float) ($invoice->collected ?? 0)),
+            'monthly_collected' => (float) $monthlyCollected,
+            'income' => $income,
+            'expense' => $expense,
+            'profit' => $income - $expense,
+        ];
     }
 
     public function dashboard(){

@@ -828,7 +828,8 @@
                     'invoice.index',
                     'profit.list',
                     'payroll.index',
-                    'audit.index'
+                    'audit.index',
+                    'perusahaan.index'
                 ]);
             @endphp
 
@@ -893,50 +894,19 @@
 
                     <div class="rounded-xl border border-zinc-800 bg-zinc-900/50 p-2">
 
-                        {{-- CMS Finance --}}
-                        @if ($isSuperAdmin || ($myDivision->name == "Finance" && $myRole->level < 2))
-
+                        {{-- Master perusahaan khusus Finance, bukan produk client. --}}
+                        @if($canManageFinanceCompanies)
                             <a
-                                href="{{ route('client.produk_divisi', 6) }}"
-                                class="mb-2 flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-xs font-semibold text-zinc-950 transition hover:bg-zinc-200"
+                                href="{{ route('perusahaan.index') }}"
+                                class="mb-2 flex items-center rounded-lg px-3 py-2 text-xs font-semibold transition
+                                {{ Route::is('perusahaan.index')
+                                    ? 'bg-white text-zinc-950'
+                                    : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                                }}"
                             >
-                                <svg
-                                    class="h-4 w-4"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="1.8"
-                                        d="M12 15.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7z"
-                                    />
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="1.8"
-                                        d="M19 13a7 7 0 00-.1-2l2-1.5-2-3.5-2.3 1a7 7 0 00-1.7-1L14.5 3h-5L9 6a7 7 0 00-1.7 1L5 6 3 9.5 5 11a7 7 0 000 2l-2 1.5L5 18l2.3-1a7 7 0 001.7 1l.5 3h5l.5-3a7 7 0 001.7-1l2.3 1 2-3.5L19 13z"
-                                    />
-                                </svg>
-
-                                Dashboard CMS
+                                Master Perusahaan
                             </a>
-
                         @endif
-
-
-                        {{-- Perusahaan --}}
-                        <a
-                            href="{{ route('perusahaan.index') }}"
-                            class="mb-2 flex items-center rounded-lg px-3 py-2 text-xs font-semibold transition
-                            {{ Route::is('perusahaan.index')
-                                ? 'bg-white text-zinc-950'
-                                : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
-                            }}"
-                        >
-                            Perusahaan
-                        </a>
 
 
                         @foreach ($perusahaan as $pe)

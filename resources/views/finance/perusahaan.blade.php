@@ -10,19 +10,20 @@
                 <div class="mb-2 flex items-center gap-2">
                     <span class="h-px w-8 bg-zinc-900"></span>
                     <span class="text-[11px] font-semibold uppercase tracking-[0.22em] text-zinc-500">
-                        Company Products
+                        Finance · Master Data
                     </span>
                 </div>
 
                 <h1 class="text-2xl font-semibold tracking-tight text-zinc-950 sm:text-3xl">
-                    Produk Perusahaan
+                    Manajemen Perusahaan
                 </h1>
 
                 <p class="mt-2 max-w-2xl text-sm leading-6 text-zinc-500">
-                    Kelola daftar perusahaan dan status publikasinya dalam satu tempat.
+                    Kelola perusahaan yang digunakan dalam pencatatan Finance, beserta pengguna Finance yang dapat mengaksesnya.
                 </p>
             </div>
 
+            @if($user->isAdmin && strtolower(trim((string) $user->jabatan)) === 'cfo')
             <button
                 type="button"
                 onclick="addPerusahaan()"
@@ -36,8 +37,9 @@
                      class="h-4 w-4">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/>
                 </svg>
-                Tambah Produk
+                Tambah Perusahaan
             </button>
+            @endif
         </div>
 
         {{-- ================= TABLE CARD ================= --}}
@@ -50,7 +52,7 @@
                         Daftar Perusahaan
                     </h2>
                     <p class="mt-1 text-xs text-zinc-500">
-                        Daftar produk/perusahaan yang tersedia di sistem.
+                        Daftar perusahaan yang tersedia untuk proses dan laporan Finance.
                     </p>
                 </div>
 
@@ -81,6 +83,10 @@
 
                                 <th class="w-[20%] px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
                                     Status
+                                </th>
+
+                                <th class="w-[28%] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+                                    Akses Finance
                                 </th>
 
                                 <th class="w-[20%] px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
@@ -127,14 +133,14 @@
                     <div class="flex items-start justify-between gap-4">
                         <div>
                             <div class="mb-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-400">
-                                Company Product
+                            Finance · Perusahaan
                             </div>
 
                             <h2
                                 id="modalTitle"
                                 class="text-lg font-semibold tracking-tight text-white"
                             >
-                                Tambah Produk Perusahaan
+                                Tambah Perusahaan
                             </h2>
                         </div>
 
@@ -175,6 +181,16 @@
                             placeholder="Masukkan nama perusahaan"
                             class="block w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-sm text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950"
                         >
+                    </div>
+
+                    <div>
+                        <label for="company_user_ids" class="mb-2 block text-sm font-medium text-zinc-900">Pengguna yang dapat melihat perusahaan</label>
+                        <select id="company_user_ids" name="user_ids[]" multiple class="block min-h-32 w-full rounded-xl border border-zinc-300 bg-white px-3.5 py-2.5 text-sm text-zinc-950 outline-none transition focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950">
+                            @foreach($financeUsers as $financeUser)
+                                <option value="{{ $financeUser->id }}">{{ $financeUser->email }} — {{ $financeUser->name }}</option>
+                            @endforeach
+                        </select>
+                        <p class="mt-2 text-xs leading-5 text-zinc-500">Hanya pengguna yang terdaftar pada divisi Finance dapat dipilih. Admin selalu dapat melihat semua perusahaan.</p>
                     </div>
 
                     <div>
@@ -339,6 +355,7 @@
 ========================================================= --}}
 <script>
     let isEditing = false;
+    const canManagePerusahaan = @json((bool) ($user->isAdmin && strtolower(trim((string) $user->jabatan)) === 'cfo'));
 
     document.addEventListener('DOMContentLoaded', function () {
         loadData();
@@ -478,11 +495,24 @@
                     },
 
                     {
+                        data: 'user_emails',
+                        className: 'align-middle',
+                        render: function (data) {
+                            if (!data || data.length === 0) {
+                                return '<span class="text-xs text-zinc-400">Belum ada pengguna Finance</span>';
+                            }
+
+                            return `<div class="flex flex-wrap gap-1">${data.map(email => `<span class="rounded-full bg-zinc-100 px-2 py-1 text-[11px] font-medium text-zinc-700">${escapeHtml(email)}</span>`).join('')}</div>`;
+                        }
+                    },
+
+                    {
                         data: null,
                         className: 'text-center align-middle',
                         orderable: false,
                         searchable: false,
                         render: function (data, type, row) {
+                            if (!canManagePerusahaan) return '';
                             const rowJson = JSON.stringify(row)
                                 .replace(/'/g, '&#39;');
 
@@ -551,9 +581,10 @@
 
         document.getElementById('produk_id').value = '';
         document.getElementById('modalTitle').textContent =
-            'Tambah Produk Perusahaan';
+            'Tambah Perusahaan';
 
         document.getElementById('saveBtn').textContent = 'Simpan';
+        Array.from(document.getElementById('company_user_ids').options).forEach(option => option.selected = false);
 
         openModal('produkModal');
     }
@@ -581,9 +612,13 @@
                 : '0';
 
         document.getElementById('status').value = statusValue;
+        const selectedUsers = (row.user_ids || []).map(String);
+        Array.from(document.getElementById('company_user_ids').options).forEach(function (option) {
+            option.selected = selectedUsers.includes(option.value);
+        });
 
         document.getElementById('modalTitle').textContent =
-            'Edit Produk Perusahaan';
+            'Edit Perusahaan';
 
         document.getElementById('saveBtn').textContent = 'Update';
 
@@ -606,7 +641,9 @@
             nama_perusahaan:
                 document.getElementById('nama_perusahaan').value,
             status:
-                document.getElementById('status').value
+                document.getElementById('status').value,
+            user_ids: Array.from(document.getElementById('company_user_ids').selectedOptions)
+                .map(option => option.value)
         };
 
         const saveBtn = document.getElementById('saveBtn');

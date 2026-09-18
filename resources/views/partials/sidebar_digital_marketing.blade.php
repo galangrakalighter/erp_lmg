@@ -457,7 +457,8 @@
                                 ================================== --}}
                                 <a
                                     href="{{ route('PDF', [
-                                        'id_produk' => $client->id
+                                        'id_produk' => $client->id,
+                                        'division_id' => 1
                                     ]) }}"
                                     class="mt-2 flex items-center gap-2 rounded-lg px-2.5 py-2 text-[11px] transition
                                     {{ Route::is('PDF') && $isActiveClient

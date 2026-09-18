@@ -37,9 +37,9 @@ class IdmeClientWorkspaceController extends Controller
                 ['key' => 'market-research', 'label' => 'Market Research', 'url' => $platform ? route('api.digital-marketing.market-research', [$client->id, $platform]) : null, 'platform' => true],
                 ['key' => 'analisis', 'label' => 'Analisis', 'url' => $platform ? route('api.digital-marketing.analisis', [$client->id, $platform]) : null, 'platform' => true],
                 ['key' => 'content-plan', 'label' => 'Content Plan', 'url' => $platform ? route('api.digital-marketing.content-plan', [$client->id, $platform]) : null, 'platform' => true],
-                ['key' => 'documents', 'label' => 'File Dokumen', 'url' => route('PDF', $client->id), 'platform' => false],
+                ['key' => 'documents', 'label' => 'File Dokumen', 'url' => route('PDF', ['id_produk' => $client->id, 'division_id' => $division->id]), 'platform' => false],
             ] : [
-                ['key' => 'documents', 'label' => 'File Dokumen', 'url' => route('PDF', $client->id), 'platform' => false],
+                ['key' => 'documents', 'label' => 'File Dokumen', 'url' => route('PDF', ['id_produk' => $client->id, 'division_id' => $division->id]), 'platform' => false],
             ];
 
             return [

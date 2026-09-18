@@ -47,6 +47,7 @@ class DigitalMarketingWorkspaceController extends Controller
             'workspaceLabel' => 'Digital Marketing',
             'workspaceDescription' => 'Kelola seluruh area marketing client tanpa berpindah halaman.',
             'workspaceApiNamespace' => 'api.digital-marketing',
+            'workspaceDivisionId' => 1,
         ]);
     }
 }

@@ -10,7 +10,8 @@ class Role extends Model
     protected $fillable = [
         'role_name',
         'level',
-        'division_id'
+        'division_id',
+        'parent_id'
     ];
 
     public function division()

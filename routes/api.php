@@ -70,7 +70,9 @@ Route::get('kpi-data/{id}/{id_user}', [App\Http\Controllers\HCOverviewController
 Route::get('kpi-data-daily/{id}/{id_user}', [App\Http\Controllers\HCOverviewController::class, 'getKPIDataDaily'])->name('kpi.data-daily');
 Route::get('get-users/{id}/{id_user}', [App\Http\Controllers\HCOverviewController::class, 'getUsers'])->name('kpi.getUser');
 Route::get('/get-data-division/{user}/{division}', [App\Http\Controllers\ProdukController::class, 'getDataDivision'])->name('client.getDataDivision');
-Route::get('/get-data-perusahaan', [App\Http\Controllers\PerusahaanController::class, 'getDataPerusahaan'])->name('perusahaan.getDataPerusahaan');
+Route::middleware(['web', 'auth'])
+    ->get('/get-data-perusahaan', [App\Http\Controllers\PerusahaanController::class, 'getDataPerusahaan'])
+    ->name('perusahaan.getDataPerusahaan');
 Route::post('/produk/{divisi}', [App\Http\Controllers\ProdukController::class, 'tambahDataClient'])->name('client.tambahDataClient');
 Route::PUT('/produk/{id}', [App\Http\Controllers\ProdukController::class, 'updateDataClient'])->name('client.updateDataClient');
 Route::DELETE('/produk/{id}', [App\Http\Controllers\ProdukController::class, 'hapusDataClient'])->name('client.hapusDataClient');

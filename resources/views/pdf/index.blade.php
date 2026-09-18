@@ -155,7 +155,7 @@ body.lmg-embedded .lmg-pdf-table-scroll {
 
         <div class="card-header d-flex justify-content-between align-items-center">
             <h6 class="m-0 font-weight-bold text-primary">
-                Data File PDF
+                Data File PDF · {{ $divisionName }}
             </h6>
 
             <div>
@@ -177,9 +177,10 @@ body.lmg-embedded .lmg-pdf-table-scroll {
                 <div class="alert alert-danger"><ul class="mb-0 pl-3">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
             @endif
 
-            <form method="GET" action="{{ route('PDF', $id) }}" class="d-flex flex-wrap align-items-end mb-3" style="gap:10px">
+            <form method="GET" action="{{ route('PDF', ['id_produk' => $id, 'division_id' => $divisionId]) }}" class="d-flex flex-wrap align-items-end mb-3" style="gap:10px">
+                <input type="hidden" name="division_id" value="{{ $divisionId }}">
                 <label class="mb-0 flex-grow-1" style="min-width:220px;max-width:380px"><span class="d-block small font-weight-bold text-uppercase text-muted mb-1">Pengunggah</span><select name="uploaded_by" class="form-control" onchange="this.form.submit()"><option value="">Semua Pengunggah</option>@foreach($uploaders as $uploader)<option value="{{ $uploader->id }}" @selected((int)$selectedUploaderId === (int)$uploader->id)>{{ $uploader->name ?: $uploader->email }}</option>@endforeach</select></label>
-                @if($selectedUploaderId)<a href="{{ route('PDF', $id) }}" class="btn btn-light border">Reset</a>@endif
+                @if($selectedUploaderId)<a href="{{ route('PDF', ['id_produk' => $id, 'division_id' => $divisionId]) }}" class="btn btn-light border">Reset</a>@endif
             </form>
 
             <div class="table-responsive lmg-pdf-table-scroll">
@@ -265,6 +266,7 @@ body.lmg-embedded .lmg-pdf-table-scroll {
         <form id="clientDocumentForm" action="{{ route('PDF.documents.store') }}" method="POST" class="modal-content">
             @csrf
             <input type="hidden" name="client" value="{{ $id }}">
+            <input type="hidden" name="division_id" value="{{ $divisionId }}">
             <input type="hidden" name="form_type" value="create_document">
             <input type="hidden" id="clientDocumentContent" name="content">
             <div class="modal-header">
@@ -334,6 +336,7 @@ body.lmg-embedded .lmg-pdf-table-scroll {
                 @csrf
 
                 <input type="hidden" name="client" value="{{ $id }}">
+                <input type="hidden" name="division_id" value="{{ $divisionId }}">
 
                 <div class="modal-header">
                     <h5 class="modal-title">

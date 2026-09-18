@@ -181,8 +181,11 @@ class PDFController extends Controller
     }
 
     public function index(Request $request, $id){
-        $title = "File";
+        $divisionId = $this->resolveClientDivision($request, (int) $id);
+        $divisionName = DB::table('divisions')->where('id', $divisionId)->value('name');
+        $title = "File · ".($divisionName ?: 'Divisi');
         $clients = FilePDF::where('client', $id)
+            ->where('division_id', $divisionId)
             ->with('uploader')
             ->when($request->filled('uploaded_by'), fn ($query) => $query->where('uploaded_by', $request->integer('uploaded_by')))
             ->orderByDesc('is_pinned')
@@ -191,11 +194,11 @@ class PDFController extends Controller
             ->get();
 
         $uploaders = User::query()
-            ->whereIn('id', FilePdf::where('client', $id)->whereNotNull('uploaded_by')->select('uploaded_by'))
+            ->whereIn('id', FilePdf::where('client', $id)->where('division_id', $divisionId)->whereNotNull('uploaded_by')->select('uploaded_by'))
             ->orderBy('name')->get(['id', 'name', 'email']);
         $selectedUploaderId = $request->integer('uploaded_by') ?: null;
 
-        return view('pdf.index', compact('clients', 'title', 'id', 'uploaders', 'selectedUploaderId'));
+        return view('pdf.index', compact('clients', 'title', 'id', 'divisionId', 'divisionName', 'uploaders', 'selectedUploaderId'));
     }
 
     public function store(Request $request)
@@ -203,11 +206,13 @@ class PDFController extends Controller
         $request->validate([
             'nama_file' => 'required|string|max:255',
             'client'    => 'required',
+            'division_id' => ['required', 'integer', 'exists:divisions,id'],
             'pdf'       => 'required|mimes:pdf', // Maksimal 10MB
         ]);
 
         // Folder berdasarkan ID client
-        $folder = 'pdf/' . $request->client;
+        $this->ensureClientDivision((int) $request->client, (int) $request->division_id);
+        $folder = 'pdf/'.$request->client.'/'.$request->division_id;
 
         // Nama file unik
         $filename = time() . '_' . $request->file('pdf')->getClientOriginalName();
@@ -223,6 +228,7 @@ class PDFController extends Controller
         FilePDF::create([
             'nama_file' => $request->nama_file,
             'client'    => $request->client,
+            'division_id' => $request->division_id,
             'uploaded_by' => Auth::id(),
             'location'  => $path,
         ]);
@@ -234,6 +240,7 @@ class PDFController extends Controller
     {
         $validated = $request->validate([
             'client' => ['required', 'integer', 'exists:produk_client,id'],
+            'division_id' => ['required', 'integer', 'exists:divisions,id'],
             'nama_file' => ['required', 'string', 'max:150'],
             'content' => ['required', 'string', 'max:15000000'],
         ], [
@@ -254,8 +261,9 @@ class PDFController extends Controller
         }
 
         $client = ProdukClient::findOrFail($validated['client']);
+        $this->ensureClientDivision($client->id, (int) $validated['division_id']);
         $filename = (string) str()->uuid().'.pdf';
-        $path = 'pdf/'.$client->id.'/'.$filename;
+        $path = 'pdf/'.$client->id.'/'.$validated['division_id'].'/'.$filename;
         $pdfContent = Pdf::loadView(
             'pdf.client_document',
             compact('client', 'documentName', 'content')
@@ -270,6 +278,7 @@ class PDFController extends Controller
         FilePdf::create([
             'nama_file' => $documentName,
             'client' => $client->id,
+            'division_id' => $validated['division_id'],
             'uploaded_by' => Auth::id(),
             'location' => $path,
             'editor_content' => $content,
@@ -383,6 +392,30 @@ class PDFController extends Controller
         $file->delete();
 
         return redirect()->back()->with('success', 'File berhasil dihapus.');
+    }
+
+    private function resolveClientDivision(Request $request, int $clientId): int
+    {
+        $divisionId = $request->integer('division_id');
+
+        if (! $divisionId) {
+            $divisionId = (int) DB::table('client_division')
+                ->where('client_id', $clientId)
+                ->orderBy('division_id')
+                ->value('division_id');
+        }
+
+        $this->ensureClientDivision($clientId, $divisionId);
+
+        return $divisionId;
+    }
+
+    private function ensureClientDivision(int $clientId, int $divisionId): void
+    {
+        abort_unless($divisionId > 0 && DB::table('client_division')
+            ->where('client_id', $clientId)
+            ->where('division_id', $divisionId)
+            ->exists(), 404, 'Client tidak tersedia pada divisi tersebut.');
     }
 
     private function sanitizeDocumentHtml(string $html): string

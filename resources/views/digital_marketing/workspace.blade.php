@@ -45,7 +45,7 @@
                         ['key' => 'branding', 'label' => 'Branding', 'url' => $firstPlatform ? route($apiNamespace.'.branding', [$client->id, $firstPlatform]) : null, 'platform' => true],
                         ['key' => 'analisis', 'label' => 'Analisis', 'url' => $firstPlatform ? route($apiNamespace.'.analisis', [$client->id, $firstPlatform]) : null, 'platform' => true],
                         ['key' => 'content-plan', 'label' => 'Content Plan', 'url' => $firstPlatform ? route($apiNamespace.'.content-plan', [$client->id, $firstPlatform]) : null, 'platform' => true],
-                        ['key' => 'dokumen', 'label' => 'File Dokumen', 'url' => route('PDF', $client->id), 'platform' => false],
+                        ['key' => 'dokumen', 'label' => 'File Dokumen', 'url' => route('PDF', ['id_produk' => $client->id, 'division_id' => $workspaceDivisionId]), 'platform' => false],
                     ];
                 @endphp
 

@@ -37,6 +37,9 @@ class MenuServiceProvider extends ServiceProvider
             $myRole = (object) ['name' => '-', 'id' => null];
             $myClientIds = [];
             $user = Auth::user();
+            $canManageFinanceCompanies = $user
+                && $user->isAdmin
+                && strtolower(trim((string) $user->jabatan)) === 'cfo';
 
             if ($user) {
                 $isSuperAdmin = $user->isAdmin == true;
@@ -95,7 +98,18 @@ class MenuServiceProvider extends ServiceProvider
                 ->orderBy('produk_client.nama')
                 ->get();
 
-            $perusahaanFinance = DB::table('perusahaan')->where('status', true)->get();
+            $perusahaanFinance = DB::table('perusahaan as p')
+                ->where('p.status', true)
+                ->when($user && ! $isSuperAdmin, function ($query) use ($user) {
+                    $query->whereExists(function ($subQuery) use ($user) {
+                        $subQuery->selectRaw('1')
+                            ->from('perusahaan_user as pu')
+                            ->whereColumn('pu.perusahaan_id', 'p.id')
+                            ->where('pu.user_id', $user->id);
+                    });
+                })
+                ->orderBy('p.nama_perusahaan')
+                ->get();
 
             $view->with([
                 'businessDevProduk' => $businessDevProduk,
@@ -111,6 +125,7 @@ class MenuServiceProvider extends ServiceProvider
                 'ecommerceProduk' => $ecommerceProduk,
                 'idmeClients' => $idmeClients,
                 'perusahaan' => $perusahaanFinance,
+                'canManageFinanceCompanies' => $canManageFinanceCompanies,
                 'auth' => $user
             ]);
         });

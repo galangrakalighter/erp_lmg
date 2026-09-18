@@ -11,6 +11,7 @@ class FilePdf extends Model
     protected $fillable = [
         'nama_file',
         'client',
+        'division_id',
         'uploaded_by',
         'location',
         'editor_content',
@@ -30,5 +31,10 @@ class FilePdf extends Model
     public function uploader()
     {
         return $this->belongsTo(User::class, 'uploaded_by');
+    }
+
+    public function division()
+    {
+        return $this->belongsTo(Division::class);
     }
 }

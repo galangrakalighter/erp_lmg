@@ -88,15 +88,15 @@
                         <button
                             type="button"
                             class="division-tab group relative flex min-w-[190px] items-center gap-3 border-b-2 border-zinc-950 px-4 py-4 text-left text-zinc-950 transition"
-                            data-divisi="lmg"
-                            data-name="Lighter Media Group"
+                            data-divisi="idme"
+                            data-name="IDME"
                             role="tab"
                             aria-selected="true"
                         >
-                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-zinc-950 text-[10px] font-bold text-white transition">LMG</span>
+                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-zinc-950 text-[10px] font-bold text-white transition">IDME</span>
                             <span class="flex min-w-0 flex-1 flex-col">
-                                <span class="truncate text-xs font-semibold uppercase tracking-[0.08em]">Lighter Media Group</span>
-                                <span class="division-count mt-1 text-[10px] font-medium text-zinc-400" data-count-division="lmg">-</span>
+                                <span class="truncate text-xs font-semibold uppercase tracking-[0.08em]">IDME</span>
+                                <span class="division-count mt-1 text-[10px] font-medium text-zinc-400" data-count-division="idme">-</span>
                             </span>
                         </button>
 
@@ -414,7 +414,7 @@
                                     >
                                         <option value="">-- Pilih Divisi --</option>
 
-                                        <option value="lmg">Lighter Media Group</option>
+                                        <option value="idme">IDME</option>
 
                                         @foreach($divisions as $div)
                                             <option value="{{ $div->id }}">
@@ -425,7 +425,7 @@
                                 </div>
 
                                 <div id="modal_jabatan_group" class="hidden">
-                                    <label class="mb-1.5 block text-xs font-medium text-zinc-600">Jabatan Lighter Media Group</label>
+                                    <label class="mb-1.5 block text-xs font-medium text-zinc-600">Jabatan IDME</label>
                                     <select name="jabatan" id="modal_jabatan" disabled class="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-700 outline-none focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950">
                                         <option value="">-- Pilih Jabatan --</option>
                                         <option value="ceo">CEO</option>
@@ -455,6 +455,7 @@
                                                 value="{{ $role->id }}"
                                                 data-divisi="{{ $role->division_id }}"
                                                 data-level="{{ $role->level }}"
+                                                data-parent="{{ $role->parent_id }}"
                                             >
                                                 {{ strtoupper(str_replace('_', ' ', $role->role_name)) }}
                                             </option>
@@ -488,7 +489,7 @@
 
                             <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 
-                                <div class="md:border-r md:border-zinc-200 md:pr-6">
+                                <div id="modal_parent_panel" class="md:border-r md:border-zinc-200 md:pr-6">
 
                                     <p class="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
                                         Atasan Langsung
@@ -686,7 +687,7 @@
                                     >
                                         <option value="">-- Pilih Divisi --</option>
 
-                                        <option value="lmg">Lighter Media Group</option>
+                                        <option value="idme">IDME</option>
 
                                         @foreach($divisions as $div)
                                             <option value="{{ $div->id }}">
@@ -697,7 +698,7 @@
                                 </div>
 
                                 <div id="edit_jabatan_group" class="hidden">
-                                    <label class="mb-1.5 block text-xs font-medium text-zinc-600">Jabatan Lighter Media Group</label>
+                                    <label class="mb-1.5 block text-xs font-medium text-zinc-600">Jabatan IDME</label>
                                     <select name="jabatan" id="edit_jabatan" disabled class="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-700 outline-none focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950">
                                         <option value="">-- Pilih Jabatan --</option>
                                         <option value="ceo">CEO</option>
@@ -727,6 +728,7 @@
                                                 value="{{ $role->id }}"
                                                 data-divisi="{{ $role->division_id }}"
                                                 data-level="{{ $role->level }}"
+                                                data-parent="{{ $role->parent_id }}"
                                             >
                                                 {{ strtoupper(str_replace('_', ' ', $role->role_name)) }}
                                             </option>
@@ -762,7 +764,7 @@
 
                             <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 
-                                <div class="md:border-r md:border-zinc-200 md:pr-6">
+                                <div id="edit_parent_panel" class="md:border-r md:border-zinc-200 md:pr-6">
 
                                     <p class="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
                                         Atasan Langsung
@@ -1006,7 +1008,7 @@
     */
 
     const divisionHierarchy = {
-        "Lighter Media Group": [
+        "IDME": [
             { role: "CEO", label: "CEO" },
             { role: "COO", label: "COO" },
             { role: "CMO", label: "CMO" },
@@ -1055,6 +1057,23 @@
     let allUsers = [];
     let currentDivisionId = null;
     let currentDivisionName = null;
+    const financeDivisionId = @json($divisions->firstWhere('name', 'Finance')?->id);
+
+    function isExecutivePlacement(divisiId) {
+        return ['lmg', 'idme'].includes(String(divisiId));
+    }
+
+    function isFinancePlacement(divisiId) {
+        return String(divisiId) === String(financeDivisionId);
+    }
+
+    function cfoUsers(excludeUserId = null) {
+        return allUsers.filter(function (user) {
+            return user.is_admin &&
+                String(user.jabatan ?? '').toLowerCase() === 'cfo' &&
+                String(user.id) !== String(excludeUserId ?? '');
+        });
+    }
 
 
     /*
@@ -1732,6 +1751,11 @@
                 })
                 .join('');
 
+        const relationshipHeaders = `
+            <th class="min-w-[170px] px-4 py-3">Atasan langsung</th>
+            <th class="min-w-[170px] px-4 py-3">Bawahan langsung</th>
+        `;
+
 
         container.html(`
 
@@ -1754,6 +1778,8 @@
                             <th class="min-w-[150px] px-4 py-3">
                                 Role
                             </th>
+
+                            ${relationshipHeaders}
 
                             ${hierarchyHeaders}
 
@@ -1841,6 +1867,20 @@
 
         const role =
             current?.role ?? '-';
+
+        const divisionUsers = getCurrentDivisionUsers();
+        const parent = current?.parent_id
+            ? divisionUsers.find(item => String(item.id) === String(current.parent_id))
+            : null;
+        const parentEmail = current?.parent?.email ?? parent?.email ?? null;
+        const subordinates = divisionUsers.filter(function (item) {
+            const placement = (item.user_divisions ?? []).find(division => String(division.division_id) === String(currentDivisionId));
+            return placement && String(placement.parent_id) === String(user.id);
+        });
+        const relationshipCells = `
+            <td class="px-4 py-4"><span class="text-[11px] font-medium text-zinc-600">${parentEmail ? escapeHtml(parentEmail) : '—'}</span></td>
+            <td class="px-4 py-4"><div class="flex flex-col gap-1">${subordinates.length ? subordinates.map(item => `<span class="text-[11px] font-medium text-zinc-600">${escapeHtml(item.email)}</span>`).join('') : '<span class="text-zinc-300">—</span>'}</div></td>
+        `;
 
 
         const hierarchyCells =
@@ -1977,6 +2017,9 @@
                     </span>
 
                 </td>
+
+
+                ${relationshipCells}
 
 
                 ${hierarchyCells}
@@ -2285,7 +2328,7 @@
         const $roleSelect =
             $('#modal_role');
 
-        const isLmg = String(divisiId) === 'lmg';
+        const isLmg = isExecutivePlacement(divisiId);
 
         $('#modal_jabatan_group').toggleClass('hidden', !isLmg);
         $('#modal_role_group').toggleClass('hidden', isLmg);
@@ -2359,6 +2402,9 @@
                     .data('level')
             );
 
+        const parentRoleId =
+            $('#modal_role option:selected').data('parent');
+
 
         const $parentSelect =
             $('#modal_parent');
@@ -2372,6 +2418,9 @@
         const $subPanel =
             $('#subordinate_panel');
 
+        const $parentPanel =
+            $('#modal_parent_panel');
+
 
         if (!roleId) {
 
@@ -2382,6 +2431,11 @@
 
 
         $panel.removeClass('hidden');
+
+        const isFinance = isFinancePlacement(divisiId);
+        const requiresParent = isFinance || !!parentRoleId;
+        $parentPanel.toggleClass('hidden', !requiresParent);
+        $parentSelect.prop('disabled', !requiresParent);
 
 
         const allData =
@@ -2417,8 +2471,9 @@
             '<option value="">-- Tanpa Atasan --</option>';
 
 
-        const parents =
-            allData.filter(function (user) {
+        const parents = isFinance
+            ? cfoUsers()
+            : allData.filter(function (user) {
 
                 const ud =
                     (user.user_divisions ?? [])
@@ -2432,8 +2487,8 @@
 
                 return (
                     ud &&
-                    parseInt(ud.level) <
-                    selectedLevel
+                    String(ud.role_id) ===
+                    String(parentRoleId)
                 );
 
             });
@@ -2455,30 +2510,12 @@
         );
 
 
-        if (
-            selectedLevel >=
-            maxLevel
-        ) {
-
-            $subPanel.addClass('hidden');
-
-            $subSelect
-                .html('')
-                .trigger('change');
-
-            return;
-
-        }
-
-
-        $subPanel.removeClass('hidden');
-
-
         let htmlSub = '';
 
 
-        const subordinates =
-            allData.filter(function (user) {
+        const subordinates = isFinance
+            ? []
+            : allData.filter(function (user) {
 
                 const ud =
                     (user.user_divisions ?? [])
@@ -2492,8 +2529,9 @@
 
                 return (
                     ud &&
-                    parseInt(ud.level) ===
-                    selectedLevel + 1
+                    String(
+                        $('#modal_role option[value="' + ud.role_id + '"]').data('parent')
+                    ) === String(roleId)
                 );
 
             });
@@ -2513,6 +2551,8 @@
         $subSelect
             .html(htmlSub)
             .trigger('change');
+
+        $subPanel.toggleClass('hidden', htmlSub === '');
 
     }
 
@@ -2590,7 +2630,7 @@
                 .trigger('change');
 
 
-            if (String(currentPlacement.division_id) === 'lmg') {
+            if (isExecutivePlacement(currentPlacement.division_id)) {
                 $('#edit_jabatan').val(user.jabatan ?? '');
                 $('#hierarchy_panel_edit').addClass('hidden');
             } else {
@@ -2748,7 +2788,10 @@
         const $panel =
             $('#hierarchy_panel_edit');
 
-        const isLmg = String(divisiId) === 'lmg';
+        const $parentPanel =
+            $('#edit_parent_panel');
+
+        const isLmg = isExecutivePlacement(divisiId);
 
         $('#edit_jabatan_group').toggleClass('hidden', !isLmg);
         $('#edit_role_group').toggleClass('hidden', isLmg);
@@ -2821,6 +2864,9 @@
                     .data('level')
             );
 
+        const roleId = $('#edit_role').val();
+        const parentRoleId = $('#edit_role option:selected').data('parent');
+
 
         const currentUserId =
             $('#formEditUser')
@@ -2837,6 +2883,9 @@
 
         const $panel =
             $('#hierarchy_panel_edit');
+
+        const $parentPanel =
+            $('#edit_parent_panel');
 
 
         if (
@@ -2857,6 +2906,11 @@
             'hidden'
         );
 
+        const isFinance = isFinancePlacement(divisiId);
+        const requiresParent = isFinance || !!parentRoleId;
+        $parentPanel.toggleClass('hidden', !requiresParent);
+        $parentSelect.prop('disabled', !requiresParent);
+
 
         const allData =
             getCurrentDivisionUsers();
@@ -2866,8 +2920,9 @@
             '<option value="">-- Tanpa Atasan --</option>';
 
 
-        const potentialParents =
-            allData.filter(function (user) {
+        const potentialParents = isFinance
+            ? cfoUsers(currentUserId)
+            : allData.filter(function (user) {
 
                 const ud =
                     (user.user_divisions ?? [])
@@ -2881,8 +2936,7 @@
 
                 return (
                     ud &&
-                    parseInt(ud.level) <
-                    selectedLevel &&
+                    String(ud.role_id) === String(parentRoleId) &&
                     String(user.id) !==
                     String(currentUserId)
                 );
@@ -2909,8 +2963,9 @@
         let htmlSub = '';
 
 
-        const potentialSubordinates =
-            allData.filter(function (user) {
+        const potentialSubordinates = isFinance
+            ? []
+            : allData.filter(function (user) {
 
                 const ud =
                     (user.user_divisions ?? [])
@@ -2932,8 +2987,9 @@
 
 
                 return (
-                    userLevel ===
-                    selectedLevel + 1 &&
+                    String(
+                        $('#edit_role option[value="' + ud.role_id + '"]').data('parent')
+                    ) === String(roleId) &&
                     String(user.id) !==
                     String(currentUserId)
                 );

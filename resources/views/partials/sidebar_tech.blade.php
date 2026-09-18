@@ -508,7 +508,7 @@
 
                                             {{-- FILE --}}
                                             <a
-                                                href="{{ route('PDF', ['id_produk' => $client->id]) }}"
+                                                href="{{ route('PDF', ['id_produk' => $client->id, 'division_id' => 5]) }}"
                                                 class="flex items-center
                                                        px-3 py-2 rounded-md
                                                        text-sm

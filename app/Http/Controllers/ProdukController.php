@@ -245,7 +245,7 @@ class ProdukController extends Controller
                 'updated_at'   => now(),
             ]);
 
-            $this->ensureDefaultClientDocuments($produk);
+            $this->ensureDefaultClientDocuments($produk, (int) $request->divisi);
 
             DB::commit();
 
@@ -662,7 +662,7 @@ class ProdukController extends Controller
                 'updated_at' => now(),
             ]);
 
-            $this->ensureDefaultClientDocuments($produk);
+            $this->ensureDefaultClientDocuments($produk, (int) $divisi);
 
             return response()->json([
                 'success' => $isExistingClient
@@ -674,7 +674,7 @@ class ProdukController extends Controller
         });
     }
 
-    private function ensureDefaultClientDocuments(ProdukClient $client): void
+    private function ensureDefaultClientDocuments(ProdukClient $client, int $divisionId): void
     {
         $documents = [
             'Contract Status.pdf',
@@ -686,6 +686,7 @@ class ProdukController extends Controller
         foreach ($documents as $index => $fileName) {
             $exists = FilePdf::query()
                 ->where('client', $client->id)
+                ->where('division_id', $divisionId)
                 ->whereRaw('LOWER(nama_file) = ?', [mb_strtolower($fileName)])
                 ->exists();
 
@@ -696,7 +697,7 @@ class ProdukController extends Controller
             $documentName = pathinfo($fileName, PATHINFO_FILENAME);
             $content = '<p><br></p>';
             $storedName = (string) str()->uuid().'.pdf';
-            $path = 'pdf/'.$client->id.'/'.$storedName;
+            $path = 'pdf/'.$client->id.'/'.$divisionId.'/'.$storedName;
             $pdfContent = Pdf::loadView(
                 'pdf.client_document',
                 compact('client', 'documentName', 'content')
@@ -711,6 +712,7 @@ class ProdukController extends Controller
             FilePdf::create([
                 'nama_file' => $fileName,
                 'client' => $client->id,
+                'division_id' => $divisionId,
                 'uploaded_by' => Auth::id(),
                 'location' => $path,
                 'editor_content' => $content,

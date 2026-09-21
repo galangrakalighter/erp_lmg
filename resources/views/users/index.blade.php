@@ -468,12 +468,17 @@
                                         Password
                                     </label>
 
-                                    <input
-                                        type="password"
-                                        name="password"
-                                        class="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-800 outline-none transition placeholder:text-zinc-400 focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950"
-                                        required
-                                    >
+                                    <div class="relative">
+                                        <input
+                                            type="password"
+                                            name="password"
+                                            class="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 pr-11 text-sm text-zinc-800 outline-none transition placeholder:text-zinc-400 focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950"
+                                            required
+                                        >
+                                        <button type="button" data-password-toggle class="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-zinc-400 transition hover:text-zinc-900" aria-label="Tampilkan password" title="Tampilkan password">
+                                            <i class="fas fa-eye" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
                                 </div>
 
                             </div>
@@ -744,12 +749,17 @@
                                         </span>
                                     </label>
 
-                                    <input
-                                        type="password"
-                                        name="password"
-                                        class="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-800 outline-none placeholder:text-zinc-400 focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950"
-                                        placeholder="Kosongkan jika tidak ingin mengubah password"
-                                    >
+                                    <div class="relative">
+                                        <input
+                                            type="password"
+                                            name="password"
+                                            class="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 pr-11 text-sm text-zinc-800 outline-none placeholder:text-zinc-400 focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950"
+                                            placeholder="Kosongkan jika tidak ingin mengubah password"
+                                        >
+                                        <button type="button" data-password-toggle class="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-zinc-400 transition hover:text-zinc-900" aria-label="Tampilkan password" title="Tampilkan password">
+                                            <i class="fas fa-eye" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
                                 </div>
 
                             </div>
@@ -3052,6 +3062,34 @@
     | HELPERS
     |--------------------------------------------------------------------------
     */
+
+    $(document).on('click', '[data-password-toggle]', function () {
+
+        const $button = $(this);
+        const $input = $button.siblings('input[name="password"]');
+        const showPassword = $input.attr('type') === 'password';
+
+        $input.attr('type', showPassword ? 'text' : 'password');
+        $button
+            .attr('aria-label', showPassword ? 'Sembunyikan password' : 'Tampilkan password')
+            .attr('title', showPassword ? 'Sembunyikan password' : 'Tampilkan password');
+        $button.find('i')
+            .toggleClass('fa-eye', !showPassword)
+            .toggleClass('fa-eye-slash', showPassword);
+
+    });
+
+    $(document).on('hidden.bs.modal', '.modal', function () {
+
+        $(this).find('input[name="password"]').attr('type', 'password');
+        $(this).find('[data-password-toggle]')
+            .attr('aria-label', 'Tampilkan password')
+            .attr('title', 'Tampilkan password')
+            .find('i')
+            .removeClass('fa-eye-slash')
+            .addClass('fa-eye');
+
+    });
 
     function getInitials(name) {
 

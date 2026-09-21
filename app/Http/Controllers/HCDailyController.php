@@ -331,6 +331,11 @@ class HCDailyController extends Controller
             ->leftJoin('produk_client', 'produk_client.id', '=', 'task.project')
             ->leftJoin('kpi', 'kpi.id', '=', 'task.id_kpi')
             ->whereIn('task.pic', $approvalUserIds)
+            // Filter anggota tim yang dipilih juga berlaku untuk task approval.
+            // Sebelumnya filter ini hanya dipakai query Kanban di atas.
+            ->when($request->filled('user_id'), function ($query) use ($selectedUserId) {
+                $query->where('task.pic', $selectedUserId);
+            })
             ->whereIn('task.status', [3, 9])
             ->select('task.*', 'users.email as pic_email',
                 'produk_client.nama as project_name', 'kpi.nama_kpi as kpi_name')

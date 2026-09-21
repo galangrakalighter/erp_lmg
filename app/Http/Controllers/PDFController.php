@@ -320,6 +320,7 @@ class PDFController extends Controller
     public function update(Request $request, $id)
     {
         $file = FilePDF::findOrFail($id);
+        abort_if($file->is_pinned, 403, 'File yang disematkan bersifat read-only dan tidak dapat diedit.');
 
         $request->validate([
             'nama_file' => 'required|string|max:255',

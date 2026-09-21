@@ -205,7 +205,12 @@ body.lmg-embedded .lmg-pdf-table-scroll {
 
                             <td>{{ $loop->iteration }}</td>
 
-                            <td>{{ $item->nama_file }}</td>
+                            <td>
+                                {{ $item->nama_file }}
+                                @if($item->is_pinned)
+                                    <span class="badge badge-secondary ml-1"><i class="fas fa-thumbtack mr-1"></i>Read-only</span>
+                                @endif
+                            </td>
 
                             <td>{{ $item->uploader->name ?? $item->uploader->email ?? ($item->is_system_template ? 'Sistem' : '-') }}</td>
 
@@ -221,11 +226,13 @@ body.lmg-embedded .lmg-pdf-table-scroll {
 
                             <td>
 
+                                @unless($item->is_pinned)
                                 <button class="btn btn-warning btn-sm"
                                         data-toggle="modal"
                                         data-target="#editModal_{{ $item->id }}">
                                     Edit
                                 </button>
+                                @endunless
 
                                 @unless($item->is_system_template)
                                 <button class="btn btn-danger btn-sm"
@@ -396,6 +403,7 @@ body.lmg-embedded .lmg-pdf-table-scroll {
 
 @foreach($clients as $item)
 
+@unless($item->is_pinned)
 <div class="modal fade" id="editModal_{{ $item->id }}">
 
     <div class="modal-dialog {{ $item->is_generated_document ? 'modal-xl' : 'modal-lg' }}">
@@ -496,6 +504,7 @@ body.lmg-embedded .lmg-pdf-table-scroll {
     </div>
 
 </div>
+@endunless
 
 {{-- ==================== MODAL HAPUS ==================== --}}
 

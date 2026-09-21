@@ -320,7 +320,6 @@ class PDFController extends Controller
     public function update(Request $request, $id)
     {
         $file = FilePDF::findOrFail($id);
-        abort_if($file->is_pinned, 403, 'File yang disematkan bersifat read-only dan tidak dapat diedit.');
 
         $request->validate([
             'nama_file' => 'required|string|max:255',
@@ -340,7 +339,7 @@ class PDFController extends Controller
             }
 
             $client = ProdukClient::findOrFail($file->client);
-            $documentName = trim(preg_replace('/\.pdf$/i', '', $request->nama_file));
+            $documentName = trim(preg_replace('/\.pdf$/i', '', $file->is_pinned ? $file->nama_file : $request->nama_file));
             $content = $editorContent;
             $pdfContent = Pdf::loadView(
                 'pdf.client_document',
@@ -376,7 +375,7 @@ class PDFController extends Controller
         }
 
         $file->update([
-            'nama_file' => $request->nama_file,
+            'nama_file' => $file->is_pinned ? $file->nama_file : $request->nama_file,
             'location'  => $path,
             'editor_content' => $editorContent,
             'is_generated_document' => $isGeneratedDocument,

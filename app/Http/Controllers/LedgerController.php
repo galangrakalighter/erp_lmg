@@ -73,9 +73,19 @@ class LedgerController extends Controller
             ->orderBy('public.chart_of_account.kode', 'asc')
             ->get();
 
+        $previousPeriod = Carbon::createFromFormat('Y-m', $periode)->subMonth()->format('Y-m');
+        $closedAccountIds = DB::table('account_closings')
+            ->where('perusahaan', $id)
+            ->where('periode', $previousPeriod)
+            ->pluck('chart_of_account_id')
+            ->map(fn ($accountId) => (int) $accountId)
+            ->all();
+
         // Lakukan mapping php untuk menghitung rumus saldo berjalan real-time per akun
-        $accounts = $accountsData->map(function($account) {
-            $opening = (float) $account->opening_saldo;
+        $accounts = $accountsData->map(function($account) use ($closedAccountIds) {
+            $opening = in_array((int) $account->id, $closedAccountIds, true)
+                ? 0
+                : (float) $account->opening_saldo;
             $debit = (float) $account->total_debit;
             $kredit = (float) $account->total_kredit;
 

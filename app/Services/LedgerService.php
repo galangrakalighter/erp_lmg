@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\ChartOfAccount; // Sesuaikan dengan nama Model COA Anda
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 class LedgerService
 {
     public function getAccountLedger(int $coaId, string $periode)
@@ -17,6 +18,17 @@ class LedgerService
             ->where('chart_of_account_id', $coaId)
             ->where('periode', $periode)
             ->value('saldo') ?? 0.00;
+
+        $previousPeriod = Carbon::createFromFormat('Y-m', $periode)->subMonth()->format('Y-m');
+        $wasClosed = DB::table('account_closings')
+            ->where('perusahaan', $coa->perusahaan)
+            ->where('periode', $previousPeriod)
+            ->where('chart_of_account_id', $coaId)
+            ->exists();
+
+        if ($wasClosed) {
+            $openingBalance = 0.00;
+        }
 
         // 3. Ambil seluruh mutasi transaksi jurnal yang terikat dengan akun ini
         $mutasi = DB::table('general_journal_details as ji')

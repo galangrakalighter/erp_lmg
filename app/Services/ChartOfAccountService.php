@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\ChartOfAccount; // Sesuaikan dengan nama Model COA Anda
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 class ChartOfAccountService
 {
     /**
@@ -148,13 +149,20 @@ class ChartOfAccountService
 
             // 3. Logika Upsert Saldo Awal
             if (!empty($openingPeriode)) {
+                $previousPeriod = Carbon::createFromFormat('Y-m', $openingPeriode)->subMonth()->format('Y-m');
+                $isClosed = DB::table('account_closings')
+                    ->where('perusahaan', (int) $data['perusahaan'])
+                    ->where('periode', $previousPeriod)
+                    ->where('chart_of_account_id', $coa->id)
+                    ->exists();
+
                 DB::table('opening_balances')->updateOrInsert(
                     [
                         'periode'             => $openingPeriode,
                         'chart_of_account_id' => $coa->id,
                     ],
                     [
-                        'saldo'       => $openingSaldo,
+                        'saldo'       => $isClosed ? 0 : $openingSaldo,
                         'perusahaan'  => (int) $data['perusahaan'],
                         'updated_at'  => now(),
                     ]

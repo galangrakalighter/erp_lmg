@@ -15,6 +15,8 @@ class TrialBalanceService
      */
     public function getTrialBalance(string $periode, int $id): array
     {
+        $previousPeriod = Carbon::createFromFormat('Y-m', $periode)->subMonth()->format('Y-m');
+
         // 1. Query gabungan untuk mengambil COA, Saldo Awal, dan akumulasi mutasi POSTED
         $balances = DB::table('public.chart_of_account as coa')
             ->select([
@@ -23,13 +25,18 @@ class TrialBalanceService
                 'coa.nama_akun',
                 'coa.type',
                 'coa.category',
-                'ob.saldo as opening_balance',
+                DB::raw('CASE WHEN ac.id IS NOT NULL THEN 0 ELSE ob.saldo END as opening_balance'),
                 DB::raw('COALESCE(SUM(CASE WHEN ju.id IS NOT NULL THEN ji.debit ELSE 0 END), 0) as total_debit'),
                 DB::raw('COALESCE(SUM(CASE WHEN ju.id IS NOT NULL THEN ji.kredit ELSE 0 END), 0) as total_kredit')
             ])
             ->leftJoin('public.opening_balances as ob', function($join) use ($periode) {
                 $join->on('coa.id', '=', 'ob.chart_of_account_id')
                      ->where('ob.periode', '=', $periode);
+            })
+            ->leftJoin('account_closings as ac', function ($join) use ($previousPeriod, $id) {
+                $join->on('coa.id', '=', 'ac.chart_of_account_id')
+                    ->where('ac.periode', '=', $previousPeriod)
+                    ->where('ac.perusahaan', '=', $id);
             })
             ->leftJoin('public.general_journal_details as ji', function($join) {
                 $join->on('coa.id', '=', 'ji.chart_of_account_id');
@@ -41,7 +48,7 @@ class TrialBalanceService
             })
             ->where('coa.is_active', true)
             ->where('coa.perusahaan', $id)
-            ->groupBy('coa.id', 'coa.kode', 'coa.nama_akun', 'coa.type', 'coa.category', 'ob.saldo')
+            ->groupBy('coa.id', 'coa.kode', 'coa.nama_akun', 'coa.type', 'coa.category', 'ob.saldo', 'ac.id')
             ->orderBy('coa.kode', 'asc')
             ->get();
 

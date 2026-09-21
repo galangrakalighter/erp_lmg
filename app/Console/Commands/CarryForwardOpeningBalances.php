@@ -55,15 +55,25 @@ class CarryForwardOpeningBalances extends Command
             &$changed
         ) {
             foreach ($accounts as $account) {
-                $ledger = $ledgerService->getAccountLedger(
-                    (int) $account->id,
-                    $previousPeriod
-                );
+                $isClosed = DB::table('account_closings')
+                    ->where('perusahaan', $account->perusahaan)
+                    ->where('periode', $previousPeriod)
+                    ->where('chart_of_account_id', $account->id)
+                    ->exists();
 
-                $finalBalance = round(
-                    (float) $ledger['final_balance'],
-                    2
-                );
+                if ($isClosed) {
+                    $finalBalance = 0.0;
+                } else {
+                    $ledger = $ledgerService->getAccountLedger(
+                        (int) $account->id,
+                        $previousPeriod
+                    );
+
+                    $finalBalance = round(
+                        (float) $ledger['final_balance'],
+                        2
+                    );
+                }
 
                 // Khusus akun 301 (modal/laba ditahan), saldo awal periode baru
                 // juga membawa laba-rugi bersih periode sebelumnya. Nilai laba

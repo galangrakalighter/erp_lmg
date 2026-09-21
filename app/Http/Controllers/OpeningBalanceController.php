@@ -14,6 +14,7 @@ class OpeningBalanceController extends Controller
         $title = "Opening Balance";
         // Default periode ke bulan berjalan saat ini jika user belum memilih filter periode
         $periode = $request->get('periode', Carbon::now()->format('Y-m'));
+        $previousPeriod = Carbon::createFromFormat('Y-m', $periode)->subMonth()->format('Y-m');
 
         // Ambil semua akun COA yang aktif, gabungkan dengan tabel opening_balances (jika sudah ada saldonya)
         $coas = DB::table('public.chart_of_account as coa')
@@ -26,8 +27,12 @@ class OpeningBalanceController extends Controller
                 'coa.kode as kode_akun',
                 'coa.nama_akun',
                 'coa.type as tipe_akun',
-                DB::raw('COALESCE(ob.saldo, 0.00) as saldo_awal')
+                DB::raw('CASE WHEN ac.id IS NOT NULL THEN 0 ELSE COALESCE(ob.saldo, 0.00) END as saldo_awal')
             )
+            ->leftJoin('account_closings as ac', function ($join) use ($previousPeriod) {
+                $join->on('coa.id', '=', 'ac.chart_of_account_id')
+                    ->where('ac.periode', '=', $previousPeriod);
+            })
             ->where('coa.is_active', true)
             ->orderBy('coa.kode', 'asc')
             ->get();
@@ -54,12 +59,21 @@ class OpeningBalanceController extends Controller
 
         $periode = $request->input('periode');
         $balances = $request->input('balances'); // Format kiriman array: [coa_id => nominal]
+        $previousPeriod = Carbon::createFromFormat('Y-m', $periode)->subMonth()->format('Y-m');
 
         DB::beginTransaction();
         try {
             foreach ($balances as $coaId => $saldo) {
                 // Konversi input kosong atau null menjadi 0.00
                 $nominalSaldo = !empty($saldo) ? $saldo : 0.00;
+                $isClosed = DB::table('account_closings')
+                    ->where('periode', $previousPeriod)
+                    ->where('chart_of_account_id', $coaId)
+                    ->exists();
+
+                if ($isClosed) {
+                    $nominalSaldo = 0.00;
+                }
 
                 // Eksekusi Upsert ke PostgreSQL
                 DB::table('public.opening_balances')->updateOrInsert(

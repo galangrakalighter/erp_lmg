@@ -37,4 +37,9 @@ class FilePdf extends Model
     {
         return $this->belongsTo(Division::class);
     }
+
+    public function versions()
+    {
+        return $this->hasMany(FilePdfVersion::class)->orderByDesc('version_number');
+    }
 }

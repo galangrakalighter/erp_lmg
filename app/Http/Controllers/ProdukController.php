@@ -720,7 +720,7 @@ class ProdukController extends Controller
                 'Dokumen bawaan client gagal dibuat.'
             );
 
-            FilePdf::create([
+            $file = FilePdf::create([
                 'nama_file' => $fileName,
                 'client' => $client->id,
                 'division_id' => $divisionId,
@@ -731,6 +731,14 @@ class ProdukController extends Controller
                 'is_system_template' => true,
                 'is_pinned' => true,
                 'pin_order' => $index + 1,
+            ]);
+
+            $file->versions()->create([
+                'version_number' => 1,
+                'nama_file' => $fileName,
+                'location' => $path,
+                'editor_content' => $content,
+                'changed_by' => Auth::id(),
             ]);
         }
     }

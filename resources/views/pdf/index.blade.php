@@ -232,6 +232,14 @@ body.lmg-embedded .lmg-pdf-table-scroll {
                                     Edit
                                 </button>
 
+                                @if($item->is_pinned)
+                                <button class="btn btn-outline-secondary btn-sm"
+                                        data-toggle="modal"
+                                        data-target="#historyModal_{{ $item->id }}">
+                                    <i class="fas fa-history mr-1"></i>Riwayat
+                                </button>
+                                @endif
+
                                 @unless($item->is_system_template)
                                 <button class="btn btn-danger btn-sm"
                                         data-toggle="modal"
@@ -505,6 +513,44 @@ body.lmg-embedded .lmg-pdf-table-scroll {
     </div>
 
 </div>
+
+@if($item->is_pinned)
+<div class="modal fade" id="historyModal_{{ $item->id }}" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title font-weight-bold"><i class="fas fa-history mr-2"></i>Riwayat {{ $item->nama_file }}</h5>
+                    <small class="text-muted">Setiap perubahan isi disimpan sebagai versi PDF terpisah.</small>
+                </div>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="thead-light"><tr><th>Versi</th><th>Diubah oleh</th><th>Waktu</th><th class="text-right">Aksi</th></tr></thead>
+                        <tbody>
+                        @forelse($item->versions as $version)
+                            <tr>
+                                <td class="align-middle font-weight-bold">v{{ $version->version_number }} @if($loop->first)<span class="badge badge-success ml-1">Terbaru</span>@endif</td>
+                                <td class="align-middle">{{ $version->changedBy->name ?? $version->changedBy->email ?? 'Sistem (versi awal)' }}</td>
+                                <td class="align-middle text-muted">{{ $version->created_at->format('d M Y, H:i') }}</td>
+                                <td class="align-middle text-right">
+                                    <a href="{{ route('PDF.files.versions.preview', [$item, $version]) }}" target="_blank" rel="noopener" class="btn btn-sm btn-info"><i class="fas fa-eye mr-1"></i>Lihat</a>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="4" class="text-center py-4 text-muted">Belum ada riwayat versi.</td></tr>
+                        @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer"><button type="button" class="btn btn-light border" data-dismiss="modal">Tutup</button></div>
+        </div>
+    </div>
+</div>
+@endif
 
 {{-- ==================== MODAL HAPUS ==================== --}}
 

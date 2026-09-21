@@ -9,6 +9,7 @@ use App\Services\LedgerService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
 use App\Models\FilePdf;
+use App\Models\FilePdfVersion;
 use App\Models\ChartOfAccount;
 use App\Models\ProdukClient;
 use Carbon\Carbon;
@@ -186,7 +187,7 @@ class PDFController extends Controller
         $title = "File · ".($divisionName ?: 'Divisi');
         $clients = FilePDF::where('client', $id)
             ->where('division_id', $divisionId)
-            ->with('uploader')
+            ->with(['uploader', 'versions.changedBy'])
             ->when($request->filled('uploaded_by'), fn ($query) => $query->where('uploaded_by', $request->integer('uploaded_by')))
             ->orderByDesc('is_pinned')
             ->orderBy('pin_order')
@@ -317,6 +318,18 @@ class PDFController extends Controller
         return view('pdf.viewer', compact('file'));
     }
 
+    public function previewVersion(FilePdf $file, FilePdfVersion $version)
+    {
+        abort_unless($file->is_pinned && (int) $version->file_pdf_id === (int) $file->id, 404);
+        abort_unless(Storage::disk('public')->exists($version->location), 404, 'File versi tidak ditemukan.');
+
+        return Storage::disk('public')->response(
+            $version->location,
+            pathinfo($version->nama_file, PATHINFO_FILENAME).' - v'.$version->version_number.'.pdf',
+            ['Content-Type' => 'application/pdf']
+        );
+    }
+
     public function update(Request $request, $id)
     {
         $file = FilePDF::findOrFail($id);
@@ -328,6 +341,7 @@ class PDFController extends Controller
         ]);
 
         $path = $file->location;
+        $previousPath = $file->location;
         $editorContent = $file->editor_content;
         $isGeneratedDocument = $file->is_generated_document;
 
@@ -346,22 +360,27 @@ class PDFController extends Controller
                 compact('client', 'documentName', 'content')
             )->setPaper('a4', 'portrait')->output();
 
+            $newPath = $file->is_pinned
+                ? 'pdf/'.$file->client.'/'.$file->division_id.'/'.str()->uuid().'.pdf'
+                : $path;
+
             abort_unless(
-                Storage::disk('public')->put($path, $pdfContent),
+                Storage::disk('public')->put($newPath, $pdfContent),
                 500,
                 'Dokumen gagal diperbarui.'
             );
+            $path = $newPath;
         }
 
         // Jika upload file baru
         if ($request->hasFile('pdf')) {
 
             // Hapus file lama
-            if (Storage::disk('public')->exists($file->location)) {
+            if (! $file->is_pinned && Storage::disk('public')->exists($file->location)) {
                 Storage::disk('public')->delete($file->location);
             }
 
-            $folder = 'pdf/' . $file->client;
+            $folder = 'pdf/'.$file->client.($file->division_id ? '/'.$file->division_id : '');
 
             $filename = time() . '_' . $request->file('pdf')->getClientOriginalName();
 
@@ -374,12 +393,34 @@ class PDFController extends Controller
             $isGeneratedDocument = false;
         }
 
-        $file->update([
+        $updateData = [
             'nama_file' => $file->is_pinned ? $file->nama_file : $request->nama_file,
-            'location'  => $path,
+            'location' => $path,
             'editor_content' => $editorContent,
             'is_generated_document' => $isGeneratedDocument,
-        ]);
+        ];
+
+        try {
+            DB::transaction(function () use ($file, $updateData, $editorContent, $path) {
+                $file->update($updateData);
+
+                if ($file->is_pinned) {
+                    $nextVersion = ((int) $file->versions()->reorder()->max('version_number')) + 1;
+                    $file->versions()->create([
+                        'version_number' => $nextVersion,
+                        'nama_file' => $file->nama_file,
+                        'location' => $path,
+                        'editor_content' => $editorContent,
+                        'changed_by' => Auth::id(),
+                    ]);
+                }
+            });
+        } catch (\Throwable $exception) {
+            if ($file->is_pinned && $path !== $previousPath) {
+                Storage::disk('public')->delete($path);
+            }
+            throw $exception;
+        }
 
         return redirect()->back()->with('success', 'File berhasil diperbarui.');
     }

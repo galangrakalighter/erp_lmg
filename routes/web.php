@@ -310,6 +310,7 @@ Route::middleware('auth')->group(function () {
     Route::get('profit/detail/{id}', [App\Http\Controllers\InvoiceController::class, 'detail'])->name('profit.detail');
     Route::get('/PDF/file/{file}/view', [App\Http\Controllers\PDFController::class, 'viewFile'])->name('PDF.files.view');
     Route::get('/PDF/file/{file}/preview', [App\Http\Controllers\PDFController::class, 'previewFile'])->name('PDF.files.preview');
+    Route::get('/PDF/file/{file}/versions/{version}/preview', [App\Http\Controllers\PDFController::class, 'previewVersion'])->name('PDF.files.versions.preview');
     Route::get('/PDF/{id_produk}', [App\Http\Controllers\PDFController::class, 'index'])->name('PDF');
     Route::post('/PDF/document/create', [App\Http\Controllers\PDFController::class, 'createDocument'])->name('PDF.documents.store');
     Route::resource('PDF', App\Http\Controllers\PDFController::class);

@@ -33,14 +33,30 @@ class IdmeClientWorkspaceController extends Controller
             $isDigitalMarketing = $normalized === 'digital marketing';
             $platform = $platforms->first();
 
+            $documentTab = ['key' => 'documents', 'label' => 'File Dokumen', 'url' => route('PDF', ['id_produk' => $client->id, 'division_id' => $division->id]), 'platform' => false];
+
             $tabs = $isDigitalMarketing ? [
                 ['key' => 'market-research', 'label' => 'Market Research', 'url' => $platform ? route('api.digital-marketing.market-research', [$client->id, $platform]) : null, 'platform' => true],
                 ['key' => 'analisis', 'label' => 'Analisis', 'url' => $platform ? route('api.digital-marketing.analisis', [$client->id, $platform]) : null, 'platform' => true],
                 ['key' => 'content-plan', 'label' => 'Content Plan', 'url' => $platform ? route('api.digital-marketing.content-plan', [$client->id, $platform]) : null, 'platform' => true],
-                ['key' => 'documents', 'label' => 'File Dokumen', 'url' => route('PDF', ['id_produk' => $client->id, 'division_id' => $division->id]), 'platform' => false],
-            ] : [
-                ['key' => 'documents', 'label' => 'File Dokumen', 'url' => route('PDF', ['id_produk' => $client->id, 'division_id' => $division->id]), 'platform' => false],
-            ];
+                $documentTab,
+            ] : [$documentTab];
+
+            // Relasi Digital Marketing tetap valid walaupun platform belum
+            // disetel. Tampilkan dokumen terlebih dahulu agar tidak terlihat
+            // seolah-olah client tersebut tidak ada pada tab Digital Marketing.
+            if ($isDigitalMarketing && ! $platform) {
+                $tabs = [
+                    $documentTab,
+                    [
+                        'key' => 'platform-needed',
+                        'label' => 'Informasi Client',
+                        'url' => null,
+                        'platform' => false,
+                        'message' => 'Platform Digital Marketing belum disetel untuk client ini. File Dokumen tetap dapat digunakan.',
+                    ],
+                ];
+            }
 
             return [
                 'id' => $division->id,

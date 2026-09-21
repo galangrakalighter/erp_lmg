@@ -70,7 +70,8 @@ document.addEventListener('DOMContentLoaded', function () {
         Array.from(panel.children).forEach(child => child.classList.add('hidden'));
         const url = resolvedUrl(tab);
         if (!url) {
-            panel.innerHTML = '<div class="grid min-h-[70vh] place-items-center text-sm text-zinc-500">Platform client belum tersedia.</div>';
+            const message = tab.message || 'Platform client belum tersedia.';
+            panel.innerHTML = `<div class="grid min-h-[70vh] place-items-center px-6 text-center text-sm text-zinc-500">${message}</div>`;
             return;
         }
         const key = `${activeDivision.id}:${tab.key}:${tab.platform ? platformSelect?.value : 'global'}`;

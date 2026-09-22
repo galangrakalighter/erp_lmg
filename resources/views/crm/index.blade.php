@@ -1,7 +1,6 @@
 @extends('layout.app')
 
 @section('content')
-<link rel="stylesheet" href="{{ asset('vendor-local/flatpickr/flatpickr.min.css') }}">
 <style>
     #crmApp .crm-table-shell {
         max-height: 68vh;
@@ -616,6 +615,5 @@
 <script src="{{ asset('js/crm/ai.js') }}?v={{ filemtime(public_path('js/crm/ai.js')) }}"></script>
 <script src="{{ asset('js/crm/human.js') }}?v={{ filemtime(public_path('js/crm/human.js')) }}"></script>
 <script src="{{ asset('js/crm/meeting.js') }}?v={{ filemtime(public_path('js/crm/meeting.js')) }}"></script>
-<script src="{{ asset('vendor-local/flatpickr/flatpickr.min.js') }}"></script>
 <script src="{{ asset('js/crm/common.js') }}?v={{ filemtime(public_path('js/crm/common.js')) }}"></script>
 @endsection

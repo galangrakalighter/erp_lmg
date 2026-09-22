@@ -436,16 +436,6 @@
             return;
         }
 
-        if (input._flatpickr) {
-            if (value) {
-                input._flatpickr.setDate(value, false, 'Y-m-d');
-            } else {
-                input._flatpickr.clear();
-            }
-
-            return;
-        }
-
         input.value = value || '';
     }
 
@@ -663,26 +653,6 @@
         } finally {
             clearTimeout(timeoutId);
         }
-    }
-
-    function initializeDatePickers() {
-        if (typeof window.flatpickr !== 'function') {
-            return;
-        }
-
-        [elements.startDate, elements.endDate]
-            .filter(Boolean)
-            .forEach(input => {
-                window.flatpickr(input, {
-                    dateFormat: 'Y-m-d',
-                    altInput: true,
-                    altFormat: 'd/m/Y',
-                    altInputClass: input.className,
-                    allowInput: false,
-                    disableMobile: true,
-                    clickOpens: true,
-                });
-            });
     }
 
     function formValue(id) {
@@ -1278,9 +1248,8 @@
         }
     );
 
-    // Kalender lokal menulis nilai pilihan langsung ke input. Tidak ada filter
-    // otomatis; data baru diterapkan saat tombol Filter diklik.
-    initializeDatePickers();
+    // Input tanggal menggunakan kalender bawaan browser. Data baru diterapkan
+    // saat tombol Filter diklik.
     showTab('ai');
     loadData();
 

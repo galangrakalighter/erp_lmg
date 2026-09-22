@@ -3,6 +3,111 @@
 @section('content')
 <link rel="stylesheet" href="{{ asset('vendor-local/flatpickr/flatpickr.min.css') }}">
 <style>
+    #crmApp .crm-date-input {
+        min-height: 44px;
+        border-color: #e4e4e7;
+        background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, .8);
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+    }
+
+    #crmApp .crm-date-input:hover {
+        border-color: #a1a1aa;
+    }
+
+    #crmApp .crm-date-input:focus {
+        border-color: #161616;
+        box-shadow: 0 0 0 3px rgba(22, 22, 22, .1);
+    }
+
+    .crm-date-picker.flatpickr-calendar {
+        overflow: hidden;
+        border: 1px solid #e4e4e7;
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 18px 40px rgba(24, 24, 27, .16);
+        font-family: inherit;
+    }
+
+    .crm-date-picker .flatpickr-months {
+        min-height: 48px;
+        align-items: center;
+        background: #161616;
+    }
+
+    .crm-date-picker .flatpickr-month,
+    .crm-date-picker .flatpickr-current-month,
+    .crm-date-picker .flatpickr-current-month input.cur-year,
+    .crm-date-picker .flatpickr-current-month .flatpickr-monthDropdown-months,
+    .crm-date-picker .flatpickr-prev-month,
+    .crm-date-picker .flatpickr-next-month {
+        color: #fff;
+        fill: #fff;
+    }
+
+    .crm-date-picker .flatpickr-current-month {
+        padding-top: 13px;
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .crm-date-picker .flatpickr-current-month .flatpickr-monthDropdown-months option {
+        color: #18181b;
+    }
+
+    .crm-date-picker .flatpickr-prev-month,
+    .crm-date-picker .flatpickr-next-month {
+        top: 7px;
+        border-radius: 8px;
+        padding: 10px;
+    }
+
+    .crm-date-picker .flatpickr-prev-month:hover,
+    .crm-date-picker .flatpickr-next-month:hover {
+        background: #27272a;
+        color: #fff;
+        fill: #fff;
+    }
+
+    .crm-date-picker .flatpickr-weekdays {
+        height: 38px;
+        background: #f4f4f5;
+    }
+
+    .crm-date-picker span.flatpickr-weekday {
+        color: #71717a;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+    }
+
+    .crm-date-picker .flatpickr-day {
+        border-radius: 9px;
+        color: #3f3f46;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .crm-date-picker .flatpickr-day:hover {
+        border-color: #e4e4e7;
+        background: #f4f4f5;
+    }
+
+    .crm-date-picker .flatpickr-day.today {
+        border-color: #161616;
+        color: #161616;
+    }
+
+    .crm-date-picker .flatpickr-day.selected,
+    .crm-date-picker .flatpickr-day.selected:hover,
+    .crm-date-picker .flatpickr-day.today.selected {
+        border-color: #161616;
+        background: #161616;
+        color: #fff;
+    }
+
     #crmApp .crm-table-shell {
         max-height: 68vh;
         scrollbar-color: #a1a1aa #f4f4f5;
@@ -424,7 +529,7 @@
                                 type="date"
                                 id="startDate"
                                 value="{{ now('Asia/Jakarta')->subDay()->toDateString() }}"
-                                class="block w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950"
+                                class="crm-date-input block w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950"
                             >
                         </div>
 
@@ -442,7 +547,7 @@
                                 type="date"
                                 id="endDate"
                                 value="{{ now('Asia/Jakarta')->toDateString() }}"
-                                class="block w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950"
+                                class="crm-date-input block w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950"
                             >
                         </div>
 

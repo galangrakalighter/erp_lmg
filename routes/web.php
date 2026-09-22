@@ -14,6 +14,14 @@ Route::middleware('auth')->group(function () {
         ->middleware(EnsureUserIsAdmin::class)
         ->name('activity-logs.index');
 
+    Route::get('monitoring', [App\Http\Controllers\MonitoringController::class, 'index'])
+        ->name('monitoring.index');
+    Route::post('monitoring/sessions', [App\Http\Controllers\MonitoringController::class, 'start'])->name('monitoring.sessions.start');
+    Route::post('monitoring/sessions/{session}/join', [App\Http\Controllers\MonitoringController::class, 'join'])->name('monitoring.sessions.join');
+    Route::post('monitoring/sessions/{session}/signal', [App\Http\Controllers\MonitoringController::class, 'sendSignal'])->name('monitoring.sessions.signal');
+    Route::get('monitoring/sessions/{session}/signals', [App\Http\Controllers\MonitoringController::class, 'signals'])->name('monitoring.sessions.signals');
+    Route::post('monitoring/sessions/{session}/stop', [App\Http\Controllers\MonitoringController::class, 'stop'])->name('monitoring.sessions.stop');
+
     // Dashboard
     Route::get('/home', [App\Http\Controllers\DashboardController::class, 'index'])->name('home');
     Route::get('/daily-work', [App\Http\Controllers\HCDailyController::class, 'index'])->name('daily-work.self');

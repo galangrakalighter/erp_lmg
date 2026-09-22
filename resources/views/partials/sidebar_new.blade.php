@@ -155,6 +155,22 @@
                 </span>
             </a>
 
+            @unless($isSuperAdmin)
+                <a
+                    href="{{ route('monitoring.index') }}"
+                    class="group mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition
+                    {{ Route::is('monitoring.*')
+                        ? 'bg-white text-zinc-950'
+                        : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
+                    }}"
+                >
+                    <svg class="h-[18px] w-[18px] shrink-0 text-zinc-500 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 7a3 3 0 013-3h6a3 3 0 013 3v10a3 3 0 01-3 3H7a3 3 0 01-3-3V7zM16 10l4-2v8l-4-2v-4z" />
+                    </svg>
+                    <span class="font-medium">Monitoring</span>
+                </a>
+            @endunless
+
             {{-- Daily Work pribadi --}}
             <a
                 href="{{ route('daily-work.self') }}"
@@ -1126,15 +1142,46 @@
         {{-- =================================================
             SUPER ADMIN
         ================================================== --}}
-        @if($isSuperAdmin)
-
             <div class="mt-5 border-t border-zinc-800 pt-4">
-
+                @if($isSuperAdmin)
                 <div class="mb-2 px-3 text-[9px] font-bold uppercase tracking-[0.18em] text-zinc-600">
                     Administration
                 </div>
+                @endif
 
 
+                <a
+                    href="{{ route('monitoring.index') }}"
+                    class="mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition
+                    {{ Route::is('monitoring.*')
+                        ? 'bg-white font-semibold text-zinc-950'
+                        : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
+                    }}"
+                >
+                    <svg
+                        class="h-[18px] w-[18px]"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="1.8"
+                            d="M4 7a3 3 0 013-3h6a3 3 0 013 3v10a3 3 0 01-3 3H7a3 3 0 01-3-3V7z"
+                        />
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="1.8"
+                            d="M16 10l4-2v8l-4-2v-4zM8 8v4m0 4h.01"
+                        />
+                    </svg>
+
+                    Monitoring
+                </a>
+
+                @if($isSuperAdmin)
                 <a
                     href="{{ route('activity-logs.index') }}"
                     class="mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition
@@ -1185,10 +1232,9 @@
 
                     Manajemen User
                 </a>
+                @endif
 
             </div>
-
-        @endif
 
 
         {{-- =================================================

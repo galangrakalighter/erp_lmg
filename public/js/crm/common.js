@@ -431,6 +431,24 @@
         return url.toString();
     }
 
+    function setFilterDateValue(input, value) {
+        if (!input) {
+            return;
+        }
+
+        if (input._flatpickr) {
+            if (value) {
+                input._flatpickr.setDate(value, false, 'Y-m-d');
+            } else {
+                input._flatpickr.clear();
+            }
+
+            return;
+        }
+
+        input.value = value || '';
+    }
+
     function fillFilters(result) {
         const filters =
             result.filters || {};
@@ -449,16 +467,14 @@
             !elements.startDate.value &&
             filters.start_date
         ) {
-            elements.startDate.value =
-                filters.start_date;
+            setFilterDateValue(elements.startDate, filters.start_date);
         }
 
         if (
             !elements.endDate.value &&
             filters.end_date
         ) {
-            elements.endDate.value =
-                filters.end_date;
+            setFilterDateValue(elements.endDate, filters.end_date);
         }
 
         elements.service.innerHTML =
@@ -649,33 +665,24 @@
         }
     }
 
-    function jakartaToday() {
-        const parts = new Intl.DateTimeFormat('en-CA', {
-            timeZone: 'Asia/Jakarta',
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-        }).formatToParts(new Date());
-
-        const value = Object.fromEntries(
-            parts
-                .filter(part => ['year', 'month', 'day'].includes(part.type))
-                .map(part => [part.type, part.value])
-        );
-
-        return `${value.year}-${value.month}-${value.day}`;
-    }
-
-    function setInitialDateRange() {
-        const today = jakartaToday();
-
-        if (elements.startDate && !elements.startDate.value) {
-            elements.startDate.value = today;
+    function initializeDatePickers() {
+        if (typeof window.flatpickr !== 'function') {
+            return;
         }
 
-        if (elements.endDate && !elements.endDate.value) {
-            elements.endDate.value = today;
-        }
+        [elements.startDate, elements.endDate]
+            .filter(Boolean)
+            .forEach(input => {
+                window.flatpickr(input, {
+                    dateFormat: 'Y-m-d',
+                    altInput: true,
+                    altFormat: 'd/m/Y',
+                    altInputClass: input.className,
+                    allowInput: false,
+                    disableMobile: true,
+                    clickOpens: true,
+                });
+            });
     }
 
     function formValue(id) {
@@ -1161,8 +1168,8 @@
                         tab === 'meeting' ||
                         previousTab === 'meeting'
                     ) {
-                        elements.startDate.value = '';
-                        elements.endDate.value = '';
+                        setFilterDateValue(elements.startDate, '');
+                        setFilterDateValue(elements.endDate, '');
                     }
 
                     elements.service.value =
@@ -1189,11 +1196,8 @@
         ?.addEventListener(
             'click',
             () => {
-                elements.startDate.value =
-                    '';
-
-                elements.endDate.value =
-                    '';
+                setFilterDateValue(elements.startDate, '');
+                setFilterDateValue(elements.endDate, '');
 
                 if (elements.dateField) {
                     elements.dateField.value = 'chat';
@@ -1274,9 +1278,9 @@
         }
     );
 
-    // Nilai tanggal tersedia sejak halaman terbuka, bukan setelah API selesai
-    // merespons. Pengguna dapat langsung menggantinya dari date picker.
-    setInitialDateRange();
+    // Kalender lokal menulis nilai pilihan langsung ke input. Tidak ada filter
+    // otomatis; data baru diterapkan saat tombol Filter diklik.
+    initializeDatePickers();
     showTab('ai');
     loadData();
 

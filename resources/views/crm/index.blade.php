@@ -1,6 +1,7 @@
 @extends('layout.app')
 
 @section('content')
+<link rel="stylesheet" href="{{ asset('vendor-local/flatpickr/flatpickr.min.css') }}">
 <style>
     #crmApp .crm-table-shell {
         max-height: 68vh;
@@ -422,6 +423,7 @@
                             <input
                                 type="date"
                                 id="startDate"
+                                value="{{ now('Asia/Jakarta')->subDay()->toDateString() }}"
                                 class="block w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950"
                             >
                         </div>
@@ -439,6 +441,7 @@
                             <input
                                 type="date"
                                 id="endDate"
+                                value="{{ now('Asia/Jakarta')->toDateString() }}"
                                 class="block w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950"
                             >
                         </div>
@@ -613,5 +616,6 @@
 <script src="{{ asset('js/crm/ai.js') }}?v={{ filemtime(public_path('js/crm/ai.js')) }}"></script>
 <script src="{{ asset('js/crm/human.js') }}?v={{ filemtime(public_path('js/crm/human.js')) }}"></script>
 <script src="{{ asset('js/crm/meeting.js') }}?v={{ filemtime(public_path('js/crm/meeting.js')) }}"></script>
+<script src="{{ asset('vendor-local/flatpickr/flatpickr.min.js') }}"></script>
 <script src="{{ asset('js/crm/common.js') }}?v={{ filemtime(public_path('js/crm/common.js')) }}"></script>
 @endsection

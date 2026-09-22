@@ -284,13 +284,17 @@ class HCDailyController extends Controller
             ->leftJoin('produk_client', 'produk_client.id', '=', 'task.project')
             ->leftJoin('kpi', 'kpi.id', '=', 'task.id_kpi')
             ->where('task.pic', $selectedUserId)
+            // Workspace Hari Ini hanya berisi pekerjaan harian yang seluruh
+            // rentangnya berada pada hari ini. Task dari hari sebelumnya yang
+            // belum selesai ditangani melalui tab Approval, bukan kanban hari ini.
+            ->whereDate('task.tanggal_mulai', $today)
+            ->whereDate('task.tanggal_deadline', $today)
             ->where(function ($query) use ($today) {
                 $query->where(function ($scheduled) use ($today) {
                     $scheduled->whereNotNull('task.jam_mulai')
                         ->where(function ($scheduledToday) use ($today) {
-                            $scheduledToday->where(function ($activeToday) use ($today) {
-                                $activeToday->whereDate('task.tanggal_mulai', $today)
-                                    ->whereNotIn('task.status', [4, 5]);
+                            $scheduledToday->where(function ($activeToday) {
+                                $activeToday->whereNotIn('task.status', [4, 5]);
                             })->orWhere(function ($approvedToday) use ($today) {
                                 $approvedToday->where('task.status', 4)
                                     ->whereDate('task.tanggal_approve', $today);
@@ -301,14 +305,8 @@ class HCDailyController extends Controller
                         });
                 })->orWhere(function ($pool) use ($today) {
                     $pool->whereNull('task.jam_mulai')
-                        ->whereNotIn('task.status', [4, 5])
-                        ->where(function ($available) use ($today) {
-                            $available->where(function ($range) use ($today) {
-                                $range->whereDate('task.tanggal_mulai', '<=', $today)
-                                    ->whereDate('task.tanggal_deadline', '>=', $today);
-                            })->orWhereDate('task.tanggal_deadline', '<', $today);
-                        });
-                    });
+                        ->whereNotIn('task.status', [4, 5]);
+                });
             })
             ->select('task.*', 'users.email as pic_email',
                 'produk_client.nama as project_name', 'kpi.nama_kpi as kpi_name')

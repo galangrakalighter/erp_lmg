@@ -649,6 +649,39 @@
         }
     }
 
+    function refreshDateFilter() {
+        loadData();
+    }
+
+    function jakartaToday() {
+        const parts = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'Asia/Jakarta',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+        }).formatToParts(new Date());
+
+        const value = Object.fromEntries(
+            parts
+                .filter(part => ['year', 'month', 'day'].includes(part.type))
+                .map(part => [part.type, part.value])
+        );
+
+        return `${value.year}-${value.month}-${value.day}`;
+    }
+
+    function setInitialDateRange() {
+        const today = jakartaToday();
+
+        if (elements.startDate && !elements.startDate.value) {
+            elements.startDate.value = today;
+        }
+
+        if (elements.endDate && !elements.endDate.value) {
+            elements.endDate.value = today;
+        }
+    }
+
     function formValue(id) {
         const field =
             document.getElementById(id);
@@ -1201,8 +1234,16 @@
                 if (elements.endDateContext) {
                     elements.endDateContext.textContent = context;
                 }
+
+                refreshDateFilter();
             }
         );
+
+    [elements.startDate, elements.endDate]
+        .filter(Boolean)
+        .forEach(input => {
+            input.addEventListener('change', refreshDateFilter);
+        });
 
     elements.addButton
         ?.addEventListener(
@@ -1245,6 +1286,9 @@
         }
     );
 
+    // Nilai tanggal tersedia sejak halaman terbuka, bukan setelah API selesai
+    // merespons. Pengguna dapat langsung menggantinya dari date picker.
+    setInitialDateRange();
     showTab('ai');
     loadData();
 

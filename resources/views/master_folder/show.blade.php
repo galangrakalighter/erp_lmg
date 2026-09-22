@@ -430,7 +430,8 @@
                 method="POST"
                 action="{{ route('master-folder.files.update', [$folder, $file]) }}"
                 class="modal-content edit-file-form"
-                data-file-id="{{ $file->id }}">
+                data-file-id="{{ $file->id }}"
+                onsubmit="syncMasterDocumentEditor(this)">
 
                 @csrf
                 @method('PUT')
@@ -583,6 +584,12 @@
 
 
                     @if($file->is_generated_document)
+
+                        @if($errors->has('content') && (int) old('edit_file_id') === $file->id)
+                            <div class="alert alert-danger py-2 small">
+                                {{ $errors->first('content') }}
+                            </div>
+                        @endif
 
                         {{-- TOOLBAR --}}
                         <div class="bg-white border rounded-top p-2">
@@ -1161,6 +1168,27 @@
             editor.querySelector('.document-page.is-active') ||
             editor.querySelector('.document-page')
         );
+    }
+
+    // Dipanggil langsung oleh form agar isi editor selalu tersalin sebelum request
+    // dibuat, termasuk saat modal ditampilkan ulang setelah validasi gagal.
+    function syncMasterDocumentEditor(form) {
+        const fileId = form.dataset.fileId;
+        const editor = document.getElementById('edit-file-editor-' + fileId);
+        const hiddenContent = document.getElementById('edit-file-content-' + fileId);
+        const page = resolveDocumentPage(editor);
+
+        if (!page || !hiddenContent) return;
+
+        page.querySelectorAll('img').forEach(function (image) {
+            const rectangle = image.getBoundingClientRect();
+            if (rectangle.width > 0 && rectangle.height > 0) {
+                image.style.width = Math.round(rectangle.width) + 'px';
+                image.style.height = Math.round(rectangle.height) + 'px';
+            }
+        });
+
+        hiddenContent.value = page.innerHTML;
     }
 
 
@@ -2256,36 +2284,7 @@
                         form.addEventListener(
                             'submit',
                             function () {
-
-                                const fileId =
-                                    form.dataset.fileId;
-
-                                const editEditor =
-                                    document.getElementById(
-                                        'edit-file-editor-' +
-                                        fileId
-                                    );
-
-                                const hiddenContent =
-                                    document.getElementById(
-                                        'edit-file-content-' +
-                                        fileId
-                                    );
-
-                                if (
-                                    editEditor &&
-                                    hiddenContent
-                                ) {
-
-                                    freezeImageDimensions(
-                                        editEditor
-                                    );
-
-                                    hiddenContent.value =
-                                        serializeDocumentPages(
-                                            editEditor
-                                        );
-                                }
+                                syncMasterDocumentEditor(form);
                             }
                         );
                     }

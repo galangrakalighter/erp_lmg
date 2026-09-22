@@ -419,7 +419,8 @@ body.lmg-embedded .lmg-pdf-table-scroll {
                   method="POST"
                   enctype="multipart/form-data"
                   class="client-edit-document-form"
-                  data-file-id="{{ $item->id }}">
+                  data-file-id="{{ $item->id }}"
+                  onsubmit="syncClientDocumentEditor(this)">
 
                 @csrf
                 @method('PUT')
@@ -455,6 +456,9 @@ body.lmg-embedded .lmg-pdf-table-scroll {
                     @if($item->is_generated_document)
                     <div class="form-group">
                         <label class="font-weight-bold">Isi Dokumen</label>
+                        @if($errors->has('content') && (int) old('edit_file_id') === $item->id)
+                            <div class="alert alert-danger py-2 small">{{ $errors->first('content') }}</div>
+                        @endif
                         <div id="clientEditWorkspace_{{ $item->id }}" class="lmg-editor-workspace">
                         <div class="lmg-document-toolbar">
                             <div class="btn-group btn-group-sm mr-2">
@@ -495,12 +499,12 @@ body.lmg-embedded .lmg-pdf-table-scroll {
 
                 <div class="modal-footer">
 
-                    <button class="btn btn-secondary"
+                    <button type="button" class="btn btn-secondary"
                             data-dismiss="modal">
                         Batal
                     </button>
 
-                    <button class="btn btn-primary">
+                    <button type="submit" class="btn btn-primary">
                         Update
                     </button>
 
@@ -680,6 +684,16 @@ function clientEditorCommand(editorId, command, value) {
     document.execCommand(command, false, value || null);
 }
 
+function syncClientDocumentEditor(form) {
+    const fileId = form.dataset.fileId;
+    const editor = document.getElementById('clientEditEditor_' + fileId);
+    const contentInput = document.getElementById('clientEditContent_' + fileId);
+
+    if (editor && contentInput) {
+        contentInput.value = editor.innerHTML;
+    }
+}
+
 const clientDocumentForm = document.getElementById('clientDocumentForm');
 if (clientDocumentForm) {
     clientDocumentForm.addEventListener('submit', function () {
@@ -689,10 +703,7 @@ if (clientDocumentForm) {
 
 document.querySelectorAll('.client-edit-document-form').forEach(function (form) {
     form.addEventListener('submit', function () {
-        const fileId = form.dataset.fileId;
-        const editor = document.getElementById('clientEditEditor_' + fileId);
-        const contentInput = document.getElementById('clientEditContent_' + fileId);
-        if (editor && contentInput) contentInput.value = editor.innerHTML;
+        syncClientDocumentEditor(form);
     });
 });
 

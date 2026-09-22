@@ -391,6 +391,142 @@
         }
     }
 
+    const datePicker = {
+        root: null,
+        activeInput: null,
+        visibleMonth: null,
+    };
+
+    function parseFilterDate(value) {
+        const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        return match ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])) : null;
+    }
+
+    function toFilterDateValue(date) {
+        return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
+    }
+
+    function displayFilterDate(value) {
+        const date = parseFilterDate(value);
+        return date
+            ? [String(date.getDate()).padStart(2, '0'), String(date.getMonth() + 1).padStart(2, '0'), date.getFullYear()].join('/')
+            : 'Pilih tanggal';
+    }
+
+    function datePickerTrigger(input) {
+        return document.getElementById(`${input?.id || ''}Picker`);
+    }
+
+    function syncDatePickerDisplay(input) {
+        const trigger = datePickerTrigger(input);
+        const label = trigger?.querySelector('span');
+        if (label) {
+            label.textContent = displayFilterDate(input.value);
+        }
+    }
+
+    function closeDatePicker() {
+        if (!datePicker.root) return;
+        datePicker.root.hidden = true;
+        datePickerTrigger(datePicker.activeInput)?.setAttribute('aria-expanded', 'false');
+        datePicker.activeInput = null;
+    }
+
+    function renderDatePicker() {
+        const month = datePicker.visibleMonth;
+        const selected = datePicker.activeInput?.value || '';
+        const today = toFilterDateValue(new Date());
+        const firstDay = new Date(month.getFullYear(), month.getMonth(), 1);
+        const start = new Date(month.getFullYear(), month.getMonth(), 1 - firstDay.getDay());
+        const monthLabel = new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(month);
+        const weekdays = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+        const days = Array.from({ length: 42 }, (_, index) => {
+            const date = new Date(start.getFullYear(), start.getMonth(), start.getDate() + index);
+            const value = toFilterDateValue(date);
+            const muted = date.getMonth() !== month.getMonth();
+            return `<button type="button" class="crm-date-popover__day${muted ? ' is-muted' : ''}${value === today ? ' is-today' : ''}${value === selected ? ' is-selected' : ''}" data-date-value="${value}">${date.getDate()}</button>`;
+        }).join('');
+
+        datePicker.root.innerHTML = `
+            <div class="crm-date-popover__header">
+                <button type="button" class="crm-date-popover__nav" data-date-nav="-1" aria-label="Bulan sebelumnya">‹</button>
+                <strong class="crm-date-popover__month">${monthLabel}</strong>
+                <button type="button" class="crm-date-popover__nav" data-date-nav="1" aria-label="Bulan berikutnya">›</button>
+            </div>
+            <div class="crm-date-popover__weekdays">${weekdays.map(day => `<span>${day}</span>`).join('')}</div>
+            <div class="crm-date-popover__days">${days}</div>
+            <div class="crm-date-popover__footer">
+                <button type="button" class="crm-date-popover__action" data-date-action="clear">Clear</button>
+                <button type="button" class="crm-date-popover__action" data-date-action="today">Today</button>
+            </div>`;
+    }
+
+    function openDatePicker(input) {
+        if (!datePicker.root) return;
+        const trigger = datePickerTrigger(input);
+        datePicker.activeInput = input;
+        datePicker.visibleMonth = parseFilterDate(input.value) || new Date();
+        datePicker.visibleMonth = new Date(datePicker.visibleMonth.getFullYear(), datePicker.visibleMonth.getMonth(), 1);
+        renderDatePicker();
+
+        const rect = trigger.getBoundingClientRect();
+        datePicker.root.style.top = `${Math.min(rect.bottom + 6, window.innerHeight - 320)}px`;
+        datePicker.root.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - 226))}px`;
+        datePicker.root.hidden = false;
+        trigger.setAttribute('aria-expanded', 'true');
+    }
+
+    function initializeDatePickers() {
+        datePicker.root = document.createElement('div');
+        datePicker.root.className = 'crm-date-popover';
+        datePicker.root.hidden = true;
+        datePicker.root.setAttribute('role', 'dialog');
+        datePicker.root.setAttribute('aria-label', 'Pilih tanggal');
+        document.body.appendChild(datePicker.root);
+
+        [elements.startDate, elements.endDate].filter(Boolean).forEach(input => {
+            syncDatePickerDisplay(input);
+            datePickerTrigger(input)?.addEventListener('click', () => {
+                if (datePicker.activeInput === input && !datePicker.root.hidden) {
+                    closeDatePicker();
+                } else {
+                    openDatePicker(input);
+                }
+            });
+        });
+
+        datePicker.root.addEventListener('click', event => {
+            const navigation = event.target.closest('[data-date-nav]');
+            if (navigation) {
+                datePicker.visibleMonth = new Date(datePicker.visibleMonth.getFullYear(), datePicker.visibleMonth.getMonth() + Number(navigation.dataset.dateNav), 1);
+                renderDatePicker();
+                return;
+            }
+
+            const day = event.target.closest('[data-date-value]');
+            if (day && datePicker.activeInput) {
+                setFilterDateValue(datePicker.activeInput, day.dataset.dateValue);
+                closeDatePicker();
+                return;
+            }
+
+            const action = event.target.closest('[data-date-action]')?.dataset.dateAction;
+            if (action && datePicker.activeInput) {
+                setFilterDateValue(datePicker.activeInput, action === 'today' ? toFilterDateValue(new Date()) : '');
+                closeDatePicker();
+            }
+        });
+
+        document.addEventListener('click', event => {
+            if (!datePicker.root.hidden && !datePicker.root.contains(event.target) && !datePickerTrigger(datePicker.activeInput)?.contains(event.target)) {
+                closeDatePicker();
+            }
+        });
+        document.addEventListener('keydown', event => { if (event.key === 'Escape') closeDatePicker(); });
+        window.addEventListener('resize', closeDatePicker);
+        window.addEventListener('scroll', closeDatePicker, true);
+    }
+
     function buildApiUrl() {
         const baseUrl = urls[state.activeTab];
 
@@ -437,6 +573,7 @@
         }
 
         input.value = value || '';
+        syncDatePickerDisplay(input);
     }
 
     function fillFilters(result) {
@@ -1248,8 +1385,9 @@
         }
     );
 
-    // Input tanggal menggunakan kalender bawaan browser. Data baru diterapkan
+    // Pemilih tanggal ringan hanya memperbarui input; data baru diterapkan
     // saat tombol Filter diklik.
+    initializeDatePickers();
     showTab('ai');
     loadData();
 

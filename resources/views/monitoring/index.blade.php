@@ -33,8 +33,10 @@
                 <p id="notice" class="mt-3 hidden text-xs font-semibold"></p>
             </div>
             @elseif($canView)
-                @if($activeSession)<button id="join-live" class="mt-6 rounded-lg bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white">Lihat live monitoring</button>
-                @else <div class="mt-6 rounded-xl bg-zinc-50 p-4 text-sm text-zinc-600">Target belum memulai monitoring dari perangkatnya.</div>@endif
+                <div id="viewer-actions" class="mt-6">
+                    @if($activeSession)<button id="join-live" class="rounded-lg bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white">Lihat live monitoring</button>
+                    @else <div class="rounded-xl bg-zinc-50 p-4 text-sm text-zinc-600">Menunggu target memulai monitoring...</div>@endif
+                </div>
             @else
                 <div class="mt-6 rounded-xl bg-zinc-50 p-4 text-sm text-zinc-600">Hanya admin yang dapat melihat live monitoring pengguna lain.</div>
             @endif
@@ -52,7 +54,7 @@
 @push('script')
 <script>
 (() => {
- const csrf='{{ csrf_token() }}', isTarget={{ $canStart ? 'true':'false' }}, sessionId={{ $activeSession?->id ?? 'null' }};
+ const csrf='{{ csrf_token() }}', isTarget={{ $canStart ? 'true':'false' }}, canView={{ $canView ? 'true':'false' }}, sessionId={{ $activeSession?->id ?? 'null' }}, targetId={{ $target->id }};
  const screen=document.getElementById('screen-video'), camera=document.getElementById('camera-video'), notice=document.getElementById('notice'), status=document.getElementById('live-status');
  let session=sessionId, pc, screenStream, cameraStream, poller;
  const url=(name,id)=>({start:'{{ route('monitoring.sessions.start') }}',join:'{{ url('monitoring/sessions') }}/'+id+'/join',signal:'{{ url('monitoring/sessions') }}/'+id+'/signal',signals:'{{ url('monitoring/sessions') }}/'+id+'/signals',stop:'{{ url('monitoring/sessions') }}/'+id+'/stop'})[name];
@@ -76,9 +78,11 @@
    if(!window.isSecureContext||!navigator.mediaDevices?.getUserMedia)return say('Browser hanya dapat meminta izin kamera melalui HTTPS atau localhost. Buka ERP memakai https://, bukan http://alamat-IP.',true);
    try{screenStream=await navigator.mediaDevices.getDisplayMedia({video:true,audio:false});cameraStream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});let data=await post(url('start'),{consent:true});session=data.session.id;show(screen,'screen-empty',screenStream);show(camera,'camera-empty',cameraStream);let c=peer(true);screenStream.getTracks().forEach(t=>c.addTrack(t,screenStream));cameraStream.getTracks().forEach(t=>c.addTrack(t,cameraStream));screenStream.getVideoTracks()[0].onended=()=>end(true);document.getElementById('start-live').classList.add('hidden');document.getElementById('stop-live').classList.remove('hidden');status.textContent='Live monitoring aktif';status.className='rounded-full bg-red-50 px-3 py-2 text-xs font-semibold text-red-700';say('Streaming aktif. Menunggu admin terhubung.');beginPoll()}catch(e){say('Izin layar atau kamera tidak diberikan.',true)}}
  async function join(){try{await post(url('join',session));let c=peer(false);let offer=await c.createOffer({offerToReceiveVideo:true});await c.setLocalDescription(offer);await send('offer',c.localDescription);status.textContent='Menghubungkan live stream...';beginPoll()}catch(e){alert(e.message)}}
+ async function findLive(){if(isTarget||session||!canView)return;try{let data=await fetch('{{ url('monitoring/users') }}/'+targetId+'/active-session',{headers:{Accept:'application/json'}}).then(r=>r.json());if(!data.session)return;session=data.session.id;status.textContent='Target sedang online';status.className='rounded-full bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700';const actions=document.getElementById('viewer-actions');actions.innerHTML='<button id="join-live" class="rounded-lg bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white">Lihat live monitoring</button>';document.getElementById('join-live').addEventListener('click',join)}catch(e){}}
  async function end(notify){clearInterval(poller);if(pc){pc.close();pc=null}if(isTarget&&session&&notify)try{await post(url('stop',session))}catch(e){};[screenStream,cameraStream].forEach(s=>s&&s.getTracks().forEach(t=>t.stop()));session=null;if(isTarget){document.getElementById('start-live').classList.remove('hidden');document.getElementById('stop-live').classList.add('hidden');say('Monitoring dihentikan.')}status.textContent='Sesi berakhir';}
  document.getElementById('start-live')?.addEventListener('click',start);document.getElementById('stop-live')?.addEventListener('click',()=>end(true));document.getElementById('join-live')?.addEventListener('click',join);
  if(isTarget&&session){status.textContent='Monitoring masih aktif';beginPoll()}
+ if(canView&&!session)setInterval(findLive,2000);
 })();
 </script>
 @endpush

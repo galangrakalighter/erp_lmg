@@ -17,6 +17,7 @@ Route::middleware('auth')->group(function () {
     Route::get('monitoring', [App\Http\Controllers\MonitoringController::class, 'index'])
         ->name('monitoring.index');
     Route::post('monitoring/sessions', [App\Http\Controllers\MonitoringController::class, 'start'])->name('monitoring.sessions.start');
+    Route::get('monitoring/users/{user}/active-session', [App\Http\Controllers\MonitoringController::class, 'active'])->name('monitoring.users.active');
     Route::post('monitoring/sessions/{session}/join', [App\Http\Controllers\MonitoringController::class, 'join'])->name('monitoring.sessions.join');
     Route::post('monitoring/sessions/{session}/signal', [App\Http\Controllers\MonitoringController::class, 'sendSignal'])->name('monitoring.sessions.signal');
     Route::get('monitoring/sessions/{session}/signals', [App\Http\Controllers\MonitoringController::class, 'signals'])->name('monitoring.sessions.signals');

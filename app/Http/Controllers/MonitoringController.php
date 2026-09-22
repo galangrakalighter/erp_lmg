@@ -50,6 +50,21 @@ class MonitoringController extends Controller
         return response()->json(['session' => ['id' => $session->id]]);
     }
 
+    public function active(Request $request, User $user)
+    {
+        abort_unless($request->user()->isAdmin, 403);
+
+        $session = MonitoringSession::query()
+            ->where('target_user_id', $user->id)
+            ->where('status', 'active')
+            ->latest('started_at')
+            ->first();
+
+        return response()->json([
+            'session' => $session ? ['id' => $session->id] : null,
+        ]);
+    }
+
     public function sendSignal(Request $request, MonitoringSession $session)
     {
         $sender = $request->user();

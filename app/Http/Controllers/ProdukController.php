@@ -31,17 +31,8 @@ class ProdukController extends Controller
                 ->leftJoin('kategori_jasa', 'kategori_jasa.id', '=', 'produk_client.kategori_jasa_id')
                 ->select('produk_client.*', 'kategori_jasa.category')
                 ->where('client_division.division_id', $divisiId)
-                ->when($divisiId === 1, function ($query) {
-                    $query->whereExists(function ($picQuery) {
-                        $picQuery->selectRaw('1')
-                            ->from('user_client as uc')
-                            ->join('user_division as ud', 'ud.user_id', '=', 'uc.user_id')
-                            ->join('users as u', 'u.id', '=', 'uc.user_id')
-                            ->whereColumn('uc.client_id', 'client_division.client_id')
-                            ->where('ud.division_id', 1)
-                            ->whereNull('u.deleted_at');
-                    });
-                })
+                // Keanggotaan client di CMS mengikuti client_division, sama seperti sidebar.
+                // PIC boleh belum diatur; client tetap harus terlihat untuk divisinya.
                 ->get()
                 ->map(function($client) {
                     $teams = $client->teams;
@@ -580,12 +571,8 @@ class ProdukController extends Controller
             ->where('client_division.division_id', $divisi)
             ->select('produk_client.*');
 
-        // Jika bukan admin, hanya tampilkan client yang dimiliki user
-        if (!$user->isAdmin) {
-            $query->whereHas('teams', function ($q) use ($user) {
-                $q->where('users.id', $user->id);
-            });
-        }
+        // Gunakan client_division sebagai sumber daftar client seluruh CMS divisi.
+        // Relasi tim/PIC hanya untuk informasi penanggung jawab, bukan syarat tampil.
 
         $data = $query->get()->map(function ($client) {
 

@@ -649,10 +649,6 @@
         }
     }
 
-    function refreshDateFilter() {
-        loadData();
-    }
-
     function jakartaToday() {
         const parts = new Intl.DateTimeFormat('en-CA', {
             timeZone: 'Asia/Jakarta',
@@ -1234,16 +1230,8 @@
                 if (elements.endDateContext) {
                     elements.endDateContext.textContent = context;
                 }
-
-                refreshDateFilter();
             }
         );
-
-    [elements.startDate, elements.endDate]
-        .filter(Boolean)
-        .forEach(input => {
-            input.addEventListener('change', refreshDateFilter);
-        });
 
     elements.addButton
         ?.addEventListener(

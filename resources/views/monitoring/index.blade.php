@@ -70,9 +70,9 @@
  }
  async function handleSignals(){
    if(!session)return; try{let data=await fetch(url('signals',session),{headers:{Accept:'application/json'}}).then(r=>r.json());if(data.status!=='active')return end(false);
-   for(const signal of data.signals){let p=signal.payload||{}; if(signal.type==='offer'&&isTarget){let c=peer(true);await c.setRemoteDescription(p);if(!c.getSenders().some(sender=>sender.track)){screenStream.getVideoTracks().forEach(track=>c.addTrack(track,screenStream));cameraStream.getVideoTracks().forEach(track=>c.addTrack(track,cameraStream))}let answer=await c.createAnswer();await c.setLocalDescription(answer);await send('answer',c.localDescription)}
+   for(const signal of data.signals){let p=signal.payload||{}; if(signal.type==='offer'&&isTarget){let c=peer(true);await c.setRemoteDescription(p);const [screenTransceiver,cameraTransceiver]=c.getTransceivers();await screenTransceiver.sender.replaceTrack(screenStream.getVideoTracks()[0]);await cameraTransceiver.sender.replaceTrack(cameraStream.getVideoTracks()[0]);screenTransceiver.direction='sendonly';cameraTransceiver.direction='sendonly';let answer=await c.createAnswer();await c.setLocalDescription(answer);await send('answer',c.localDescription)}
    else if(signal.type==='answer'&&!isTarget){await peer(false).setRemoteDescription(p)}
-   else if(signal.type==='candidate'&&pc){try{await pc.addIceCandidate(p)}catch(e){}}}}catch(e){}}
+   else if(signal.type==='candidate'&&pc){try{await pc.addIceCandidate(p)}catch(e){}}}}catch(e){if(isTarget)say('Koneksi live gagal: '+(e.message||'periksa koneksi browser'),true);else status.textContent='Koneksi live gagal'}}
  function beginPoll(){clearInterval(poller);poller=setInterval(handleSignals,1200);handleSignals()}
  async function start(){
    if(!window.isSecureContext||!navigator.mediaDevices?.getUserMedia)return say('Browser hanya dapat meminta izin kamera melalui HTTPS atau localhost. Buka ERP memakai https://, bukan http://alamat-IP.',true);

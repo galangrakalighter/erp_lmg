@@ -681,9 +681,6 @@
                     allowInput: false,
                     disableMobile: true,
                     clickOpens: true,
-                    onReady: (_, __, instance) => {
-                        instance.calendarContainer.classList.add('crm-date-picker');
-                    },
                 });
             });
     }

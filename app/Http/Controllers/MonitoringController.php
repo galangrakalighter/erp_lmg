@@ -57,6 +57,13 @@ class MonitoringController extends Controller
         abort_if((int) $session->target_user_id === (int) $request->user()->id, 422);
         abort_if($session->viewer_user_id && (int) $session->viewer_user_id !== (int) $request->user()->id, 409, 'Sesi sedang dipantau oleh admin lain.');
         $session->update(['viewer_user_id' => $request->user()->id]);
+        MonitoringSignal::create([
+            'monitoring_session_id' => $session->id,
+            'sender_user_id' => $request->user()->id,
+            'recipient_user_id' => $session->target_user_id,
+            'type' => 'ready',
+            'payload' => [],
+        ]);
 
         return response()->json(['session' => ['id' => $session->id]]);
     }

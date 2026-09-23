@@ -60,8 +60,8 @@ class MonitoringController extends Controller
         abort_unless($request->user()->isAdmin, 403);
         abort_unless($session->status === 'active', 409, 'Sesi monitoring sudah berakhir.');
         abort_if((int) $session->target_user_id === (int) $request->user()->id, 422);
-        abort_if($session->viewer_user_id && (int) $session->viewer_user_id !== (int) $request->user()->id, 409, 'Sesi sedang dipantau oleh admin lain.');
-        $session->update(['viewer_user_id' => $request->user()->id]);
+        // A target may be observed by more than one admin. Every admin has a
+        // separate WebRTC peer connection and receives only their own signals.
         MonitoringSignal::create([
             'monitoring_session_id' => $session->id,
             'sender_user_id' => $request->user()->id,
@@ -89,8 +89,8 @@ class MonitoringController extends Controller
     }
 
     /**
-     * Provides short-lived Cloudflare TURN credentials only to the two
-     * authorised browsers participating in this monitoring session.
+     * Provides short-lived Cloudflare TURN credentials to authorised target
+     * and administrator browsers participating in this monitoring session.
      */
     public function iceServers(Request $request, MonitoringSession $session)
     {
@@ -125,7 +125,11 @@ class MonitoringController extends Controller
         $sender = $request->user();
         $this->authorizeParticipant($sender, $session);
         abort_unless($session->status === 'active', 409, 'Sesi monitoring sudah berakhir.');
-        $validated = $request->validate(['type' => ['required', 'in:offer,answer,candidate'], 'payload' => ['nullable', 'array']]);
+        $validated = $request->validate([
+            'type' => ['required', 'in:offer,answer,candidate'],
+            'payload' => ['nullable', 'array'],
+            'recipient_user_id' => ['nullable', 'integer', 'exists:users,id'],
+        ]);
         $payload = $validated['payload'] ?? [];
 
         // Chrome requires every SDP line, including the last one, to end in
@@ -135,7 +139,16 @@ class MonitoringController extends Controller
             $payload['sdp'] = preg_replace("/\\r?\\n/", "\r\n", rtrim($payload['sdp'])) . "\r\n";
         }
 
-        $recipientId = (int) $sender->id === (int) $session->target_user_id ? $session->viewer_user_id : $session->target_user_id;
+        $recipientId = (int) $sender->id === (int) $session->target_user_id
+            ? (int) ($validated['recipient_user_id'] ?? 0)
+            : (int) $session->target_user_id;
+        if ((int) $sender->id === (int) $session->target_user_id) {
+            abort_unless(
+                $recipientId > 0 && User::query()->whereKey($recipientId)->where('isAdmin', true)->exists(),
+                422,
+                'Tujuan pemantau tidak valid.'
+            );
+        }
         abort_unless($recipientId, 409, 'Pemantau belum terhubung.');
 
         MonitoringSignal::create([
@@ -158,7 +171,7 @@ class MonitoringController extends Controller
             ->where('recipient_user_id', $user->id)
             ->whereNull('read_at')
             ->orderBy('id')
-            ->get(['id', 'type', 'payload']);
+            ->get(['id', 'sender_user_id', 'type', 'payload']);
         if ($signals->isNotEmpty()) MonitoringSignal::whereIn('id', $signals->pluck('id'))->update(['read_at' => now()]);
 
         return response()->json(['status' => $session->fresh()->status, 'signals' => $signals]);
@@ -175,7 +188,7 @@ class MonitoringController extends Controller
     private function authorizeParticipant(User $user, MonitoringSession $session): void
     {
         $isTarget = (int) $user->id === (int) $session->target_user_id;
-        $isViewer = (int) $user->id === (int) $session->viewer_user_id && $user->isAdmin;
+        $isViewer = (bool) $user->isAdmin && (int) $user->id !== (int) $session->target_user_id;
         abort_unless($isTarget || $isViewer, 403);
     }
 }

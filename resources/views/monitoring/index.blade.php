@@ -65,7 +65,7 @@
 (() => {
  const csrf='{{ csrf_token() }}', isTarget={{ $canStart ? 'true':'false' }}, canView={{ $canView ? 'true':'false' }}, sessionId={{ $activeSession?->id ?? 'null' }}, targetId={{ $target->id }};
  const screen=document.getElementById('screen-video'), camera=document.getElementById('camera-video'), notice=document.getElementById('notice'), status=document.getElementById('live-status');
- let session=sessionId, pc, targetPeers=new Map(), screenStream, cameraStream, cameraPublishedStream, cameraSourceVideo, cameraCanvas, cameraFrame, cameraBlurred=false, selfieSegmenter, segmentationBusy=false, lastSegmentationAt=0, poller, pendingCandidates=new Map(), pollDelay=300, iceServers=[], iceRequest;
+ let session=sessionId, pc, targetPeers=new Map(), screenStream, cameraStream, cameraPublishedStream, cameraSourceVideo, cameraCanvas, cameraFrame, cameraBlurred=false, selfieSegmenter, segmentationBusy=false, lastSegmentationAt=0, poller, pendingCandidates=new Map(), pollDelay=250, iceServers=[], iceRequest;
  const url=(name,id)=>({start:'{{ route('monitoring.sessions.start') }}',join:'{{ url('monitoring/sessions') }}/'+id+'/join',ice:'{{ url('monitoring/sessions') }}/'+id+'/ice-servers',signal:'{{ url('monitoring/sessions') }}/'+id+'/signal',signals:'{{ url('monitoring/sessions') }}/'+id+'/signals',stop:'{{ url('monitoring/sessions') }}/'+id+'/stop'})[name];
  const mediapipeBase='{{ asset('vendor-local/mediapipe') }}/';
  const say=(text,bad=false)=>{if(!notice)return;notice.textContent=text;notice.className='mt-3 text-xs font-semibold '+(bad?'text-red-700':'text-emerald-700')};
@@ -99,7 +99,9 @@
      if(connection.connectionState==='connected'){
        status.textContent='Live monitoring terhubung';
        status.className='rounded-full bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700';
-       pollDelay=2500;
+       // Target must stay responsive for every additional admin that joins.
+       // The viewer can poll less frequently once its own stream is ready.
+       pollDelay=isTarget?250:750;
        beginPoll();
      }
      if(['failed','disconnected'].includes(connection.connectionState)){
@@ -184,7 +186,7 @@
    if(!screenStream||allowButton?.disabled)return;
    if(allowButton)allowButton.disabled=true;
    try{cameraStream=await navigator.mediaDevices.getUserMedia({video:{frameRate:{ideal:10,max:15},width:{ideal:640,max:640},height:{ideal:360,max:360}},audio:false});show(camera,'camera-empty',cameraStream);let data=await post(url('start'),{consent:true});session=data.session.id;await loadIceServers();allowButton.classList.add('hidden');document.getElementById('stop-live').classList.remove('hidden');document.getElementById('toggle-camera-blur').classList.remove('hidden');status.textContent='Live monitoring aktif';status.className='rounded-full bg-red-50 px-3 py-2 text-xs font-semibold text-red-700';say('Streaming aktif. Menunggu admin terhubung.');beginPoll()}catch(e){if(allowButton)allowButton.disabled=false;say('Live monitoring tidak dapat dimulai: '+(e.message||'periksa izin kamera dan konfigurasi TURN.'),true)}}
- async function join(){try{await post(url('join',session));await loadIceServers();peer(false);status.textContent='Menghubungkan live stream...';beginPoll()}catch(e){status.textContent='Koneksi live gagal';const target=document.getElementById('viewer-actions');if(target)target.innerHTML='<div class="rounded-xl bg-red-50 p-4 text-sm text-red-700">'+(e.message||'Cloudflare TURN belum dapat dihubungkan.')+'</div>'}}
+ async function join(){try{await Promise.all([post(url('join',session)),loadIceServers()]);peer(false);status.textContent='Menghubungkan live stream...';beginPoll()}catch(e){status.textContent='Koneksi live gagal';const target=document.getElementById('viewer-actions');if(target)target.innerHTML='<div class="rounded-xl bg-red-50 p-4 text-sm text-red-700">'+(e.message||'Cloudflare TURN belum dapat dihubungkan.')+'</div>'}}
  async function findLive(){if(isTarget||session||!canView)return;try{let data=await fetch('{{ url('monitoring/users') }}/'+targetId+'/active-session',{headers:{Accept:'application/json'}}).then(r=>r.json());if(!data.session)return;session=data.session.id;status.textContent='Menghubungkan live stream...';status.className='rounded-full bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700';document.getElementById('viewer-actions').innerHTML='<div class="rounded-xl bg-zinc-50 p-4 text-sm text-zinc-600">Menghubungkan live monitoring...</div>';join()}catch(e){}}
  async function end(notify){clearInterval(poller);if(pc){pc.close();pc=null}targetPeers.forEach(connection=>connection.close());targetPeers.clear();pendingCandidates.clear();if(isTarget&&session&&notify)try{await post(url('stop',session))}catch(e){};[screenStream,cameraStream,cameraPublishedStream].forEach(s=>s&&s.getTracks().forEach(t=>t.stop()));cancelAnimationFrame(cameraFrame);cameraSourceVideo?.remove();cameraSourceVideo=null;cameraCanvas=null;screenStream=null;cameraStream=null;cameraPublishedStream=null;session=null;if(isTarget){document.getElementById('start-live').classList.remove('hidden');document.getElementById('allow-camera').classList.add('hidden');document.getElementById('stop-live').classList.add('hidden');document.getElementById('toggle-camera-blur').classList.add('hidden');cameraBlurred=false;say('Monitoring dihentikan.')}status.textContent='Sesi berakhir';}
  document.getElementById('start-live')?.addEventListener('click',start);document.getElementById('allow-camera')?.addEventListener('click',allowCamera);document.getElementById('stop-live')?.addEventListener('click',()=>end(true));
@@ -197,7 +199,7 @@
  });
  if(isTarget&&session){status.textContent='Monitoring masih aktif';beginPoll()}
  if(canView&&session)join();
- if(canView&&!session)setInterval(findLive,2000);
+ if(canView&&!session)setInterval(findLive,750);
 })();
 </script>
 @endpush

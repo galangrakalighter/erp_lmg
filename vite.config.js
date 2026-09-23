@@ -17,14 +17,9 @@ export default defineConfig({
     server: {
         host: '0.0.0.0',
         port: 5173,
-
-        cors: {
-            origin: 'http://192.168.14.99:8000',
-        },
-
-        hmr: {
-            host: '192.168.14.99',
-            port: 5173,
-        },
+        // Do not hard-code a LAN URL here.  Laravel uses the production
+        // manifest when Vite is not running, while local development can be
+        // reached from localhost or the current LAN host.
+        cors: true,
     },
 });

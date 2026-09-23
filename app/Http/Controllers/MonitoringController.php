@@ -6,6 +6,8 @@ use App\Models\MonitoringSession;
 use App\Models\MonitoringSignal;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\View\View;
 
 class MonitoringController extends Controller
@@ -83,12 +85,53 @@ class MonitoringController extends Controller
         ]);
     }
 
+    /**
+     * Provides short-lived Cloudflare TURN credentials only to the two
+     * authorised browsers participating in this monitoring session.
+     */
+    public function iceServers(Request $request, MonitoringSession $session)
+    {
+        $this->authorizeParticipant($request->user(), $session);
+        abort_unless($session->status === 'active', 409, 'Sesi monitoring sudah berakhir.');
+
+        $keyId = config('services.cloudflare_turn.key_id');
+        $apiToken = config('services.cloudflare_turn.api_token');
+        abort_unless($keyId && $apiToken, 503, 'Cloudflare TURN belum dikonfigurasi pada server ERP.');
+
+        $ttl = min(max((int) config('services.cloudflare_turn.ttl', 3600), 300), 86_400);
+        $iceServers = Cache::remember("monitoring-turn-{$session->id}", now()->addSeconds($ttl - 60), function () use ($keyId, $apiToken, $ttl) {
+            $response = Http::acceptJson()
+                ->withToken($apiToken)
+                ->timeout(12)
+                ->post("https://rtc.live.cloudflare.com/v1/turn/keys/{$keyId}/credentials/generate-ice-servers", [
+                    'ttl' => $ttl,
+                ]);
+
+            if (! $response->successful() || ! is_array($response->json('iceServers'))) {
+                abort(503, 'Credential Cloudflare TURN tidak dapat dibuat. Periksa TURN Key dan API Token server.');
+            }
+
+            return $response->json('iceServers');
+        });
+
+        return response()->json(['iceServers' => $iceServers]);
+    }
+
     public function sendSignal(Request $request, MonitoringSession $session)
     {
         $sender = $request->user();
         $this->authorizeParticipant($sender, $session);
         abort_unless($session->status === 'active', 409, 'Sesi monitoring sudah berakhir.');
         $validated = $request->validate(['type' => ['required', 'in:offer,answer,candidate'], 'payload' => ['nullable', 'array']]);
+        $payload = $validated['payload'] ?? [];
+
+        // Chrome requires every SDP line, including the last one, to end in
+        // CRLF. getOffer()/getAnswer() may omit it, so normalise it before the
+        // description is persisted and delivered to the other browser.
+        if (in_array($validated['type'], ['offer', 'answer'], true) && isset($payload['sdp']) && is_string($payload['sdp'])) {
+            $payload['sdp'] = preg_replace("/\\r?\\n/", "\r\n", rtrim($payload['sdp'])) . "\r\n";
+        }
+
         $recipientId = (int) $sender->id === (int) $session->target_user_id ? $session->viewer_user_id : $session->target_user_id;
         abort_unless($recipientId, 409, 'Pemantau belum terhubung.');
 
@@ -97,7 +140,7 @@ class MonitoringController extends Controller
             'sender_user_id' => $sender->id,
             'recipient_user_id' => $recipientId,
             'type' => $validated['type'],
-            'payload' => $validated['payload'] ?? [],
+            'payload' => $payload,
         ]);
 
         return response()->json(['ok' => true]);
@@ -107,7 +150,12 @@ class MonitoringController extends Controller
     {
         $user = $request->user();
         $this->authorizeParticipant($user, $session);
-        $signals = MonitoringSignal::query()->where('monitoring_session_id', $session->id)->where('recipient_user_id', $user->id)->whereNull('read_at')->oldest()->get(['id', 'type', 'payload']);
+        $signals = MonitoringSignal::query()
+            ->where('monitoring_session_id', $session->id)
+            ->where('recipient_user_id', $user->id)
+            ->whereNull('read_at')
+            ->orderBy('id')
+            ->get(['id', 'type', 'payload']);
         if ($signals->isNotEmpty()) MonitoringSignal::whereIn('id', $signals->pluck('id'))->update(['read_at' => now()]);
 
         return response()->json(['status' => $session->fresh()->status, 'signals' => $signals]);

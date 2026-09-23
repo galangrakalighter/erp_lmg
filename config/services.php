@@ -43,4 +43,10 @@ return [
         'api_key' => env('YOUTUBE_API_KEY'),
     ],
 
+    'cloudflare_turn' => [
+        'key_id' => env('CLOUDFLARE_TURN_KEY_ID'),
+        'api_token' => env('CLOUDFLARE_TURN_API_TOKEN'),
+        'ttl' => (int) env('CLOUDFLARE_TURN_TTL', 3600),
+    ],
+
 ];

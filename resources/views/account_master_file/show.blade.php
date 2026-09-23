@@ -10,6 +10,11 @@
     .account-editor img { max-width:100%; height:auto; }
     .fullscreen-exit { display:none; position:fixed; top:14px; right:18px; z-index:100002; }
     .account-document-workspace.fullscreen .fullscreen-exit { display:block; }
+    .account-file-filter { overflow:visible !important; }
+    .account-file-filter .card-body { padding:18px 20px; overflow:visible; gap:12px; }
+    .account-file-filter-field { display:flex; flex:1 1 280px; min-width:220px; flex-direction:column; gap:6px; margin:0; }
+    .account-file-filter-label { display:block; position:static; margin:0; line-height:1.3; }
+    .account-file-filter-select { display:block; min-height:42px; height:42px; margin:0; line-height:1.5; }
 </style>
 <div class="d-flex justify-content-between align-items-start mb-4">
     <div><a href="{{ route('file-master.index') }}" class="btn btn-sm btn-light border mb-3"><i class="fas fa-arrow-left mr-1"></i>Kembali</a>
@@ -22,7 +27,22 @@
     @if($canManage)<div><button class="btn btn-success btn-sm" data-toggle="modal" data-target="#createAccountDocument"><i class="fas fa-file-pdf mr-1"></i>Buat Dokumen</button> <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#uploadAccountFile"><i class="fas fa-upload mr-1"></i>Upload</button></div>@endif
 </div>
 
-<form method="GET" action="{{ route('file-master.show', $owner) }}" class="card border-0 shadow-sm mb-3"><div class="card-body d-flex flex-wrap align-items-end" style="gap:12px"><label class="mb-0 flex-grow-1" style="min-width:220px"><span class="d-block small font-weight-bold text-uppercase text-muted mb-1">Pengunggah</span><select name="uploaded_by" class="form-control" onchange="this.form.submit()"><option value="">Semua Pengunggah</option>@foreach($uploaders as $uploader)<option value="{{ $uploader->id }}" @selected((int)$selectedUploaderId === (int)$uploader->id)>{{ $uploader->name ?: $uploader->email }}</option>@endforeach</select></label>@if($selectedUploaderId)<a href="{{ route('file-master.show', $owner) }}" class="btn btn-light border">Reset</a>@endif</div></form>
+<form method="GET" action="{{ route('file-master.show', $owner) }}" class="card account-file-filter border-0 shadow-sm mb-3">
+    <div class="card-body d-flex flex-wrap align-items-end">
+        <label class="account-file-filter-field">
+            <span class="account-file-filter-label small font-weight-bold text-uppercase text-muted">Pengunggah</span>
+            <select name="uploaded_by" class="form-control account-file-filter-select" onchange="this.form.submit()">
+                <option value="">Semua Pengunggah</option>
+                @foreach($uploaders as $uploader)
+                    <option value="{{ $uploader->id }}" @selected((int)$selectedUploaderId === (int)$uploader->id)>{{ $uploader->name ?: $uploader->email }}</option>
+                @endforeach
+            </select>
+        </label>
+        @if($selectedUploaderId)
+            <a href="{{ route('file-master.show', $owner) }}" class="btn btn-light border">Reset</a>
+        @endif
+    </div>
+</form>
 
 <div class="card shadow-sm border-0"><div class="table-responsive"><table class="table table-hover mb-0">
     <thead class="thead-light"><tr><th>Nama File</th><th>Tipe</th><th>Ukuran</th><th>Pengunggah</th><th>Dibuat</th><th class="text-right">Aksi</th></tr></thead><tbody>

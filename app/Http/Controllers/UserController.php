@@ -416,7 +416,12 @@ class UserController extends Controller
             return redirect()->back()->with('error', 'Akun yang sedang digunakan tidak dapat dikunci.');
         }
 
-        $user->update(['is_locked' => !$user->is_locked]);
+        $willBeLocked = ! (bool) $user->is_locked;
+        $user->forceFill([
+            'is_locked' => $willBeLocked,
+            'remember_token' => $willBeLocked ? \Illuminate\Support\Str::random(60) : $user->getRememberToken(),
+        ])->save();
+        $user->refresh();
 
         return redirect()->back()->with(
             'success',

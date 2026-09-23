@@ -1,0 +1,43 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn() && request.auth.token.erp_is_admin == true;
+    }
+
+    function room(sessionId) {
+      return get(/databases/$(database)/documents/monitoring_sessions/$(sessionId));
+    }
+
+    function isTarget(sessionId) {
+      return signedIn() && room(sessionId).data.target_uid == request.auth.uid;
+    }
+
+    match /monitoring_sessions/{sessionId} {
+      // Session state is written only by Laravel using its service account.
+      allow get, list: if isAdmin() || isTarget(sessionId);
+      allow create, update, delete: if false;
+
+      match /signals/{signalId} {
+        // A browser receives only documents explicitly addressed to its UID.
+        allow get, list: if signedIn()
+          && resource.data.recipient_uid == request.auth.uid;
+
+        // Target may reply to an administrator. An administrator may send only
+        // to the target of this particular monitoring session.
+        allow create: if signedIn()
+          && request.resource.data.sender_uid == request.auth.uid
+          && (
+            isTarget(sessionId)
+            || (isAdmin() && request.resource.data.recipient_uid == room(sessionId).data.target_uid)
+          );
+        allow update, delete: if false;
+      }
+    }
+  }
+}

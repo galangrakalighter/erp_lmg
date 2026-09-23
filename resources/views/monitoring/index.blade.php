@@ -60,19 +60,40 @@
 @endsection
 
 @push('script')
+@vite('resources/js/monitoring-firebase.js')
 <script src="{{ asset('vendor-local/mediapipe/selfie_segmentation.js') }}"></script>
 <script>
 (() => {
- const csrf='{{ csrf_token() }}', isTarget={{ $canStart ? 'true':'false' }}, canView={{ $canView ? 'true':'false' }}, sessionId={{ $activeSession?->id ?? 'null' }}, targetId={{ $target->id }};
+ const csrf='{{ csrf_token() }}', isTarget={{ $canStart ? 'true':'false' }}, canView={{ $canView ? 'true':'false' }}, sessionId={{ $activeSession?->id ?? 'null' }}, targetId={{ $target->id }}, currentUserId={{ auth()->id() }}, firebaseConfig=@json($firebaseWebConfig);
  const screen=document.getElementById('screen-video'), camera=document.getElementById('camera-video'), notice=document.getElementById('notice'), status=document.getElementById('live-status');
- let session=sessionId, pc, targetPeers=new Map(), screenStream, cameraStream, cameraPublishedStream, cameraSourceVideo, cameraCanvas, cameraFrame, cameraBlurred=false, selfieSegmenter, segmentationBusy=false, lastSegmentationAt=0, poller, pendingCandidates=new Map(), pollDelay=250, iceServers=[], iceRequest;
- const url=(name,id)=>({start:'{{ route('monitoring.sessions.start') }}',join:'{{ url('monitoring/sessions') }}/'+id+'/join',ice:'{{ url('monitoring/sessions') }}/'+id+'/ice-servers',signal:'{{ url('monitoring/sessions') }}/'+id+'/signal',signals:'{{ url('monitoring/sessions') }}/'+id+'/signals',stop:'{{ url('monitoring/sessions') }}/'+id+'/stop'})[name];
+ let session=sessionId, pc, targetPeers=new Map(), screenStream, cameraStream, cameraPublishedStream, cameraSourceVideo, cameraCanvas, cameraFrame, cameraBlurred=false, selfieSegmenter, segmentationBusy=false, lastSegmentationAt=0, poller, pendingCandidates=new Map(), pollDelay=250, iceServers=[], iceRequest, realtime, realtimePromise;
+ const url=(name,id)=>({start:'{{ route('monitoring.sessions.start') }}',join:'{{ url('monitoring/sessions') }}/'+id+'/join',ice:'{{ url('monitoring/sessions') }}/'+id+'/ice-servers',signal:'{{ url('monitoring/sessions') }}/'+id+'/signal',signals:'{{ url('monitoring/sessions') }}/'+id+'/signals',firebaseToken:'{{ url('monitoring/sessions') }}/'+id+'/firebase-token',stop:'{{ url('monitoring/sessions') }}/'+id+'/stop'})[name];
  const mediapipeBase='{{ asset('vendor-local/mediapipe') }}/';
  const say=(text,bad=false)=>{if(!notice)return;notice.textContent=text;notice.className='mt-3 text-xs font-semibold '+(bad?'text-red-700':'text-emerald-700')};
  const show=(video,empty,stream)=>{video.srcObject=stream;video.classList.remove('hidden');document.getElementById(empty).classList.add('hidden')};
  const waitForVideo=video=>new Promise((resolve,reject)=>{video.onloadedmetadata=resolve;video.onerror=reject;setTimeout(resolve,3000)});
  const post=async(u,body={})=>{let r=await fetch(u,{method:'POST',headers:{'X-CSRF-TOKEN':csrf,'Accept':'application/json','Content-Type':'application/json'},body:JSON.stringify(body)});if(!r.ok)throw new Error((await r.json().catch(()=>({}))).message||'Permintaan gagal.');return r.json()};
- const send=(type,payload,recipientId=null)=>post(url('signal',session),{type,payload,...(recipientId?{recipient_user_id:recipientId}:{})});
+ const firebaseReady=()=>window.ERPMonitoringFirebase?Promise.resolve():new Promise(resolve=>window.addEventListener('erp-monitoring-firebase-ready',resolve,{once:true}));
+ async function ensureRealtime(){
+   if(realtime)return realtime;
+   if(realtimePromise)return realtimePromise;
+   if(!firebaseConfig.apiKey||!firebaseConfig.projectId||!firebaseConfig.appId)return null;
+   realtimePromise=(async()=>{
+     await firebaseReady();
+     const auth=await post(url('firebaseToken',session));
+     realtime=await window.ERPMonitoringFirebase.connect({
+       config:{...firebaseConfig,__erpUserId:currentUserId},token:auth.token,sessionId:session,
+       onSignal:signal=>processSignals([signal]),
+     });
+     return realtime;
+   })().catch(error=>{realtimePromise=null;console.error('Firebase monitoring connection error:',error);throw error});
+   return realtimePromise;
+ }
+ const send=async(type,payload,recipientId=null)=>{
+   const live=await ensureRealtime();
+   if(live)return live.send(type,payload,recipientId||targetId);
+   return post(url('signal',session),{type,payload,...(recipientId?{recipient_user_id:recipientId}:{})});
+ };
  async function loadIceServers(){
    if(iceServers.length)return iceServers;
    if(!iceRequest)iceRequest=fetch(url('ice',session),{headers:{Accept:'application/json'}}).then(async response=>{
@@ -128,13 +149,19 @@
  async function flushCandidates(connection,key){if(!connection?.remoteDescription)return;const candidates=pendingCandidates.get(key)||[];while(candidates.length){try{await connection.addIceCandidate(candidates.shift())}catch(e){}}pendingCandidates.delete(key)}
  function queueCandidate(key,candidate){const candidates=pendingCandidates.get(key)||[];candidates.push(candidate);pendingCandidates.set(key,candidates)}
  function publishMedia(connection){screenStream?.getVideoTracks().forEach(track=>publishTrack(connection,track,screenStream));const activeCameraStream=cameraBlurred&&cameraPublishedStream?cameraPublishedStream:cameraStream;activeCameraStream?.getVideoTracks().forEach(track=>publishTrack(connection,track,activeCameraStream))}
- async function handleSignals(){
-   if(!session)return; try{let response=await fetch(url('signals',session),{headers:{Accept:'application/json'}});if(!response.ok)throw new Error('Sinyal monitoring tidak dapat dimuat.');let data=await response.json();if(data.status!=='active')return end(false);
-   for(const signal of data.signals){let p=signal.payload||{},viewerId=Number(signal.sender_user_id),targetConnection=isTarget?peer(true,viewerId):peer(false),key=peerKey(isTarget,viewerId);if(signal.type==='ready'&&isTarget){publishMedia(targetConnection);await negotiate(viewerId)}
+ async function processSignals(signals){
+   for(const signal of signals){let p=signal.payload||{},viewerId=Number(signal.sender_user_id),targetConnection=isTarget?peer(true,viewerId):peer(false),key=peerKey(isTarget,viewerId);if(signal.type==='ready'&&isTarget){publishMedia(targetConnection);await negotiate(viewerId)}
    else if(signal.type==='offer'&&!isTarget){await targetConnection.setRemoteDescription(description(p));await flushCandidates(targetConnection,key);let answer=await targetConnection.createAnswer();await targetConnection.setLocalDescription(answer);await send('answer',targetConnection.localDescription)}
    else if(signal.type==='answer'&&isTarget){await targetConnection.setRemoteDescription(description(p));await flushCandidates(targetConnection,key)}
-   else if(signal.type==='candidate'){if(!targetConnection.remoteDescription)queueCandidate(key,p);else{try{await targetConnection.addIceCandidate(p)}catch(e){}}}}}catch(e){console.error('Monitoring WebRTC error:',e);if(isTarget)say('Koneksi live gagal: '+(e.message||'periksa koneksi browser'),true);else{status.textContent='Koneksi live gagal';const target=document.getElementById('viewer-actions');if(target)target.innerHTML='<div class="rounded-xl bg-red-50 p-4 text-sm text-red-700">Koneksi live gagal. '+(e.message||'Silakan mulai ulang share layar target.')+'</div>'}}}
- function beginPoll(){clearInterval(poller);poller=setInterval(handleSignals,pollDelay);handleSignals()}
+   else if(signal.type==='candidate'){if(!targetConnection.remoteDescription)queueCandidate(key,p);else{try{await targetConnection.addIceCandidate(p)}catch(e){}}}}
+ }
+ async function handleSignals(){
+   if(!session)return; try{let response=await fetch(url('signals',session),{headers:{Accept:'application/json'}});if(!response.ok)throw new Error('Sinyal monitoring tidak dapat dimuat.');let data=await response.json();if(data.status!=='active')return end(false);await processSignals(data.signals)}catch(e){console.error('Monitoring WebRTC error:',e);if(isTarget)say('Koneksi live gagal: '+(e.message||'periksa koneksi browser'),true);else{status.textContent='Koneksi live gagal';const target=document.getElementById('viewer-actions');if(target)target.innerHTML='<div class="rounded-xl bg-red-50 p-4 text-sm text-red-700">Koneksi live gagal. '+(e.message||'Silakan mulai ulang share layar target.')+'</div>'}}}
+ async function beginPoll(){
+   clearInterval(poller);
+   try{if(await ensureRealtime())return}catch(error){console.warn('Firebase tidak dapat digunakan, memakai jalur cadangan.',error)}
+   poller=setInterval(handleSignals,pollDelay);handleSignals();
+ }
  async function negotiate(viewerId){const c=peer(true,viewerId);if(c.signalingState!=='stable')throw new Error('Menunggu koneksi sebelumnya selesai.');const offer=await c.createOffer();await c.setLocalDescription(offer);await send('offer',c.localDescription,viewerId)}
  async function start(){
    if(screenStream)return;
@@ -186,9 +213,9 @@
    if(!screenStream||allowButton?.disabled)return;
    if(allowButton)allowButton.disabled=true;
    try{cameraStream=await navigator.mediaDevices.getUserMedia({video:{frameRate:{ideal:10,max:15},width:{ideal:640,max:640},height:{ideal:360,max:360}},audio:false});show(camera,'camera-empty',cameraStream);let data=await post(url('start'),{consent:true});session=data.session.id;await loadIceServers();allowButton.classList.add('hidden');document.getElementById('stop-live').classList.remove('hidden');document.getElementById('toggle-camera-blur').classList.remove('hidden');status.textContent='Live monitoring aktif';status.className='rounded-full bg-red-50 px-3 py-2 text-xs font-semibold text-red-700';say('Streaming aktif. Menunggu admin terhubung.');beginPoll()}catch(e){if(allowButton)allowButton.disabled=false;say('Live monitoring tidak dapat dimulai: '+(e.message||'periksa izin kamera dan konfigurasi TURN.'),true)}}
- async function join(){try{await Promise.all([post(url('join',session)),loadIceServers()]);peer(false);status.textContent='Menghubungkan live stream...';beginPoll()}catch(e){status.textContent='Koneksi live gagal';const target=document.getElementById('viewer-actions');if(target)target.innerHTML='<div class="rounded-xl bg-red-50 p-4 text-sm text-red-700">'+(e.message||'Cloudflare TURN belum dapat dihubungkan.')+'</div>'}}
+ async function join(){try{await Promise.all([post(url('join',session)),loadIceServers()]);peer(false);const live=await ensureRealtime();if(live)await live.send('ready',{},targetId);status.textContent='Menghubungkan live stream...';beginPoll()}catch(e){status.textContent='Koneksi live gagal';const target=document.getElementById('viewer-actions');if(target)target.innerHTML='<div class="rounded-xl bg-red-50 p-4 text-sm text-red-700">'+(e.message||'Cloudflare TURN belum dapat dihubungkan.')+'</div>'}}
  async function findLive(){if(isTarget||session||!canView)return;try{let data=await fetch('{{ url('monitoring/users') }}/'+targetId+'/active-session',{headers:{Accept:'application/json'}}).then(r=>r.json());if(!data.session)return;session=data.session.id;status.textContent='Menghubungkan live stream...';status.className='rounded-full bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700';document.getElementById('viewer-actions').innerHTML='<div class="rounded-xl bg-zinc-50 p-4 text-sm text-zinc-600">Menghubungkan live monitoring...</div>';join()}catch(e){}}
- async function end(notify){clearInterval(poller);if(pc){pc.close();pc=null}targetPeers.forEach(connection=>connection.close());targetPeers.clear();pendingCandidates.clear();if(isTarget&&session&&notify)try{await post(url('stop',session))}catch(e){};[screenStream,cameraStream,cameraPublishedStream].forEach(s=>s&&s.getTracks().forEach(t=>t.stop()));cancelAnimationFrame(cameraFrame);cameraSourceVideo?.remove();cameraSourceVideo=null;cameraCanvas=null;screenStream=null;cameraStream=null;cameraPublishedStream=null;session=null;if(isTarget){document.getElementById('start-live').classList.remove('hidden');document.getElementById('allow-camera').classList.add('hidden');document.getElementById('stop-live').classList.add('hidden');document.getElementById('toggle-camera-blur').classList.add('hidden');cameraBlurred=false;say('Monitoring dihentikan.')}status.textContent='Sesi berakhir';}
+ async function end(notify){clearInterval(poller);realtime?.disconnect();realtime=null;realtimePromise=null;if(pc){pc.close();pc=null}targetPeers.forEach(connection=>connection.close());targetPeers.clear();pendingCandidates.clear();if(isTarget&&session&&notify)try{await post(url('stop',session))}catch(e){};[screenStream,cameraStream,cameraPublishedStream].forEach(s=>s&&s.getTracks().forEach(t=>t.stop()));cancelAnimationFrame(cameraFrame);cameraSourceVideo?.remove();cameraSourceVideo=null;cameraCanvas=null;screenStream=null;cameraStream=null;cameraPublishedStream=null;session=null;if(isTarget){document.getElementById('start-live').classList.remove('hidden');document.getElementById('allow-camera').classList.add('hidden');document.getElementById('stop-live').classList.add('hidden');document.getElementById('toggle-camera-blur').classList.add('hidden');cameraBlurred=false;say('Monitoring dihentikan.')}status.textContent='Sesi berakhir';}
  document.getElementById('start-live')?.addEventListener('click',start);document.getElementById('allow-camera')?.addEventListener('click',allowCamera);document.getElementById('stop-live')?.addEventListener('click',()=>end(true));
  document.getElementById('toggle-camera-blur')?.addEventListener('click',toggleCameraBlur);
  window.addEventListener('beforeunload',event=>{

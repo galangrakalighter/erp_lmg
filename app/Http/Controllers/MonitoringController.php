@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\MonitoringSession;
 use App\Models\MonitoringSignal;
 use App\Models\User;
+use App\Services\FirebaseCustomTokenService;
+use App\Services\FirestoreService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -42,6 +44,7 @@ class MonitoringController extends Controller
             // non-admin target users on their own device.
             'canStart' => ! $viewer->isAdmin && (int) $viewer->id === (int) $target->id,
             'canView' => $viewer->isAdmin && (int) $viewer->id !== (int) $target->id,
+            'firebaseWebConfig' => array_filter(config('firestore.web', [])),
         ]);
     }
 
@@ -51,6 +54,14 @@ class MonitoringController extends Controller
         $user = $request->user();
         MonitoringSession::query()->where('target_user_id', $user->id)->where('status', 'active')->update(['status' => 'ended', 'ended_at' => now()]);
         $session = MonitoringSession::create(['target_user_id' => $user->id, 'status' => 'active', 'consented_at' => now(), 'started_at' => now()]);
+
+        // The document is created by the server so browser users cannot
+        // impersonate another target or open an arbitrary monitoring room.
+        app(FirestoreService::class)->set('monitoring_sessions', (string) $session->id, [
+            'target_uid' => 'erp_'.$user->id,
+            'status' => 'active',
+            'started_at' => now(),
+        ]);
 
         return response()->json(['session' => ['id' => $session->id]]);
     }
@@ -85,6 +96,17 @@ class MonitoringController extends Controller
 
         return response()->json([
             'session' => $session ? ['id' => $session->id] : null,
+        ]);
+    }
+
+    /** Return a Firebase custom token only to an authorised session participant. */
+    public function firebaseToken(Request $request, MonitoringSession $session, FirebaseCustomTokenService $tokens)
+    {
+        $this->authorizeParticipant($request->user(), $session);
+        abort_unless($session->status === 'active', 409, 'Sesi monitoring sudah berakhir.');
+
+        return response()->json([
+            'token' => $tokens->forUser((int) $request->user()->id, (bool) $request->user()->isAdmin),
         ]);
     }
 
@@ -181,6 +203,11 @@ class MonitoringController extends Controller
     {
         abort_unless((int) $session->target_user_id === (int) $request->user()->id, 403);
         $session->update(['status' => 'ended', 'ended_at' => now()]);
+        app(FirestoreService::class)->set('monitoring_sessions', (string) $session->id, [
+            'target_uid' => 'erp_'.$session->target_user_id,
+            'status' => 'ended',
+            'ended_at' => now(),
+        ]);
 
         return response()->json(['ok' => true]);
     }

@@ -34,8 +34,7 @@
             </div>
             @elseif($canView)
                 <div id="viewer-actions" class="mt-6">
-                    @if($activeSession)<button id="join-live" class="rounded-lg bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white">Lihat live monitoring</button>
-                    @else <div class="rounded-xl bg-zinc-50 p-4 text-sm text-zinc-600">Menunggu target memulai monitoring...</div>@endif
+                    <div class="rounded-xl bg-zinc-50 p-4 text-sm text-zinc-600">{{ $activeSession ? 'Menghubungkan live monitoring...' : 'Menunggu target memulai monitoring...' }}</div>
                 </div>
             @else
                 <div class="mt-6 rounded-xl bg-zinc-50 p-4 text-sm text-zinc-600">Hanya admin yang dapat melihat live monitoring pengguna lain.</div>
@@ -78,11 +77,12 @@
  async function start(){
    if(!window.isSecureContext||!navigator.mediaDevices?.getUserMedia)return say('Browser hanya dapat meminta izin kamera melalui HTTPS atau localhost. Buka ERP memakai https://, bukan http://alamat-IP.',true);
    try{screenStream=await navigator.mediaDevices.getDisplayMedia({video:true,audio:false});cameraStream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});let data=await post(url('start'),{consent:true});session=data.session.id;show(screen,'screen-empty',screenStream);show(camera,'camera-empty',cameraStream);screenStream.getVideoTracks()[0].onended=()=>end(true);document.getElementById('start-live').classList.add('hidden');document.getElementById('stop-live').classList.remove('hidden');status.textContent='Live monitoring aktif';status.className='rounded-full bg-red-50 px-3 py-2 text-xs font-semibold text-red-700';say('Streaming aktif. Menunggu admin terhubung.');beginPoll()}catch(e){say('Izin layar atau kamera tidak diberikan.',true)}}
- async function join(){try{const button=document.getElementById('join-live');if(button)button.disabled=true;await post(url('join',session));let c=peer(false);let offer=await c.createOffer();await c.setLocalDescription(offer);await send('offer',c.localDescription);status.textContent='Menghubungkan live stream...';beginPoll()}catch(e){alert(e.message)}}
- async function findLive(){if(isTarget||session||!canView)return;try{let data=await fetch('{{ url('monitoring/users') }}/'+targetId+'/active-session',{headers:{Accept:'application/json'}}).then(r=>r.json());if(!data.session)return;session=data.session.id;status.textContent='Target sedang online';status.className='rounded-full bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700';const actions=document.getElementById('viewer-actions');actions.innerHTML='<button id="join-live" class="rounded-lg bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white">Lihat live monitoring</button>';document.getElementById('join-live').addEventListener('click',join)}catch(e){}}
+ async function join(){try{await post(url('join',session));let c=peer(false);let offer=await c.createOffer();await c.setLocalDescription(offer);await send('offer',c.localDescription);status.textContent='Menghubungkan live stream...';beginPoll()}catch(e){status.textContent='Koneksi live gagal'}}
+ async function findLive(){if(isTarget||session||!canView)return;try{let data=await fetch('{{ url('monitoring/users') }}/'+targetId+'/active-session',{headers:{Accept:'application/json'}}).then(r=>r.json());if(!data.session)return;session=data.session.id;status.textContent='Menghubungkan live stream...';status.className='rounded-full bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700';document.getElementById('viewer-actions').innerHTML='<div class="rounded-xl bg-zinc-50 p-4 text-sm text-zinc-600">Menghubungkan live monitoring...</div>';join()}catch(e){}}
  async function end(notify){clearInterval(poller);if(pc){pc.close();pc=null}if(isTarget&&session&&notify)try{await post(url('stop',session))}catch(e){};[screenStream,cameraStream].forEach(s=>s&&s.getTracks().forEach(t=>t.stop()));session=null;if(isTarget){document.getElementById('start-live').classList.remove('hidden');document.getElementById('stop-live').classList.add('hidden');say('Monitoring dihentikan.')}status.textContent='Sesi berakhir';}
- document.getElementById('start-live')?.addEventListener('click',start);document.getElementById('stop-live')?.addEventListener('click',()=>end(true));document.getElementById('join-live')?.addEventListener('click',join);
+ document.getElementById('start-live')?.addEventListener('click',start);document.getElementById('stop-live')?.addEventListener('click',()=>end(true));
  if(isTarget&&session){status.textContent='Monitoring masih aktif';beginPoll()}
+ if(canView&&session)join();
  if(canView&&!session)setInterval(findLive,2000);
 })();
 </script>

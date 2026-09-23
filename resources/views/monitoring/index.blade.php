@@ -40,9 +40,17 @@
                 <div class="mt-6 rounded-xl bg-zinc-50 p-4 text-sm text-zinc-600">Hanya admin yang dapat melihat live monitoring pengguna lain.</div>
             @endif
 
-            <div id="video-grid" class="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)]">
-                <div><p class="mb-2 text-xs font-semibold text-zinc-500">PREVIEW KERJA</p><video id="screen-video" autoplay playsinline muted class="hidden aspect-video w-full rounded-xl bg-zinc-950 object-contain"></video><div id="screen-empty" class="grid aspect-video place-items-center rounded-xl bg-zinc-100 text-sm text-zinc-500">Preview kerja akan muncul di sini.</div></div>
-                <div><div class="mb-2 flex items-center justify-between gap-2"><p class="text-xs font-semibold text-zinc-500">KAMERA</p><button id="toggle-camera-blur" type="button" class="hidden rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-100">Aktifkan blur</button></div><video id="camera-video" autoplay playsinline muted class="hidden aspect-video w-full rounded-xl bg-zinc-950 object-cover"></video><div id="camera-empty" class="grid aspect-video place-items-center rounded-xl bg-zinc-100 text-sm text-zinc-500">Kamera belum aktif.</div></div>
+            <div id="video-grid" class="mt-6">
+                <div class="relative aspect-video overflow-hidden rounded-2xl bg-zinc-950 shadow-sm ring-1 ring-zinc-900/10">
+                    <div class="absolute left-4 top-4 z-10 rounded-lg bg-zinc-950/80 px-3 py-1.5 text-[10px] font-bold tracking-[.14em] text-white backdrop-blur">SHARE SCREEN</div>
+                    <video id="screen-video" autoplay playsinline muted class="hidden h-full w-full object-contain"></video>
+                    <div id="screen-empty" class="grid h-full place-items-center bg-zinc-100 text-sm text-zinc-500">Preview kerja akan muncul di sini.</div>
+                    <div class="absolute bottom-4 right-4 z-10 w-[31%] min-w-40 max-w-80 overflow-hidden rounded-xl border border-white/25 bg-zinc-900 shadow-2xl ring-1 ring-black/20 sm:bottom-5 sm:right-5">
+                        <div class="flex items-center justify-between gap-2 bg-zinc-950/90 px-3 py-2"><p class="text-[10px] font-bold tracking-[.14em] text-white">KAMERA</p><button id="toggle-camera-blur" type="button" class="hidden rounded-md bg-white/15 px-2 py-1 text-[10px] font-semibold text-white hover:bg-white/25">Blur latar</button></div>
+                        <video id="camera-video" autoplay playsinline muted class="hidden aspect-video w-full bg-zinc-950 object-cover"></video>
+                        <div id="camera-empty" class="grid aspect-video place-items-center bg-zinc-800 px-3 text-center text-xs text-zinc-400">Kamera belum aktif.</div>
+                    </div>
+                </div>
             </div>
         </section>
     </div>
@@ -52,12 +60,14 @@
 @endsection
 
 @push('script')
+<script src="{{ asset('vendor-local/mediapipe/selfie_segmentation.js') }}"></script>
 <script>
 (() => {
  const csrf='{{ csrf_token() }}', isTarget={{ $canStart ? 'true':'false' }}, canView={{ $canView ? 'true':'false' }}, sessionId={{ $activeSession?->id ?? 'null' }}, targetId={{ $target->id }};
  const screen=document.getElementById('screen-video'), camera=document.getElementById('camera-video'), notice=document.getElementById('notice'), status=document.getElementById('live-status');
- let session=sessionId, pc, targetPeers=new Map(), screenStream, cameraStream, cameraPublishedStream, cameraSourceVideo, cameraCanvas, cameraFrame, cameraBlurred=false, poller, pendingCandidates=new Map(), pollDelay=300, iceServers=[], iceRequest;
+ let session=sessionId, pc, targetPeers=new Map(), screenStream, cameraStream, cameraPublishedStream, cameraSourceVideo, cameraCanvas, cameraFrame, cameraBlurred=false, selfieSegmenter, segmentationBusy=false, lastSegmentationAt=0, poller, pendingCandidates=new Map(), pollDelay=300, iceServers=[], iceRequest;
  const url=(name,id)=>({start:'{{ route('monitoring.sessions.start') }}',join:'{{ url('monitoring/sessions') }}/'+id+'/join',ice:'{{ url('monitoring/sessions') }}/'+id+'/ice-servers',signal:'{{ url('monitoring/sessions') }}/'+id+'/signal',signals:'{{ url('monitoring/sessions') }}/'+id+'/signals',stop:'{{ url('monitoring/sessions') }}/'+id+'/stop'})[name];
+ const mediapipeBase='{{ asset('vendor-local/mediapipe') }}/';
  const say=(text,bad=false)=>{if(!notice)return;notice.textContent=text;notice.className='mt-3 text-xs font-semibold '+(bad?'text-red-700':'text-emerald-700')};
  const show=(video,empty,stream)=>{video.srcObject=stream;video.classList.remove('hidden');document.getElementById(empty).classList.add('hidden')};
  const waitForVideo=video=>new Promise((resolve,reject)=>{video.onloadedmetadata=resolve;video.onerror=reject;setTimeout(resolve,3000)});
@@ -128,7 +138,30 @@
    if(screenStream)return;
    if(!window.isSecureContext||!navigator.mediaDevices?.getUserMedia)return say('Browser hanya dapat meminta izin kamera melalui HTTPS atau localhost. Buka ERP memakai https://, bukan http://alamat-IP.',true);
    try{screenStream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:10,max:15},width:{ideal:1280,max:1280},height:{ideal:720,max:720},displaySurface:'window'},audio:false,preferCurrentTab:false,selfBrowserSurface:'exclude',surfaceSwitching:'include'});show(screen,'screen-empty',screenStream);screenStream.getVideoTracks()[0].onended=()=>end(true);document.getElementById('start-live').classList.add('hidden');document.getElementById('allow-camera').classList.remove('hidden');say('Window kerja sudah diizinkan. Lanjutkan dengan izin kamera.')}catch(e){say('Izin window tidak diberikan. Pilih window Chrome lalu klik Izinkan pada dialog browser.',true)}}
- function renderCamera(){if(!cameraCanvas||!cameraSourceVideo)return;const context=cameraCanvas.getContext('2d');context.filter='blur(12px)';context.drawImage(cameraSourceVideo,0,0,cameraCanvas.width,cameraCanvas.height);context.filter='none';cameraFrame=requestAnimationFrame(renderCamera)}
+ async function setupBackgroundBlur(){
+   if(selfieSegmenter)return;
+   if(!window.SelfieSegmentation)throw new Error('Mesin blur latar belum tersedia.');
+   selfieSegmenter=new SelfieSegmentation({locateFile:file=>mediapipeBase+file});
+   selfieSegmenter.setOptions({modelSelection:1});
+   selfieSegmenter.onResults(results=>{
+     if(!cameraCanvas)return;
+     const context=cameraCanvas.getContext('2d'),width=cameraCanvas.width,height=cameraCanvas.height;
+     context.save();context.clearRect(0,0,width,height);
+     context.drawImage(results.segmentationMask,0,0,width,height);
+     context.globalCompositeOperation='source-in';context.drawImage(results.image,0,0,width,height);
+     context.globalCompositeOperation='destination-over';context.filter='blur(14px)';context.drawImage(results.image,0,0,width,height);
+     context.restore();segmentationBusy=false;
+   });
+ }
+ function renderCamera(){
+   if(!cameraCanvas||!cameraSourceVideo||!cameraBlurred)return;
+   const now=performance.now();
+   if(!segmentationBusy&&cameraSourceVideo.readyState>=2&&now-lastSegmentationAt>66){
+     segmentationBusy=true;lastSegmentationAt=now;
+     selfieSegmenter.send({image:cameraSourceVideo}).catch(()=>{segmentationBusy=false});
+   }
+   cameraFrame=requestAnimationFrame(renderCamera);
+ }
  async function toggleCameraBlur(){
    if(!cameraStream)return;
    const button=document.getElementById('toggle-camera-blur');
@@ -139,7 +172,7 @@
        cameraSourceVideo=document.createElement('video');cameraSourceVideo.muted=true;cameraSourceVideo.playsInline=true;cameraSourceVideo.srcObject=cameraStream;
        cameraSourceVideo.style.cssText='position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none';document.body.appendChild(cameraSourceVideo);
        await cameraSourceVideo.play();await waitForVideo(cameraSourceVideo);
-       cameraCanvas=document.createElement('canvas');cameraCanvas.width=cameraSourceVideo.videoWidth||640;cameraCanvas.height=cameraSourceVideo.videoHeight||360;renderCamera();cameraPublishedStream=cameraCanvas.captureStream(15);
+       await setupBackgroundBlur();cameraCanvas=document.createElement('canvas');cameraCanvas.width=cameraSourceVideo.videoWidth||640;cameraCanvas.height=cameraSourceVideo.videoHeight||360;cameraBlurred=true;renderCamera();cameraPublishedStream=cameraCanvas.captureStream(15);
        await Promise.all(cameraSenders.map(sender=>sender.replaceTrack(cameraPublishedStream.getVideoTracks()[0])));show(camera,'camera-empty',cameraPublishedStream);cameraBlurred=true;button.textContent='Nonaktifkan blur';say('Blur kamera aktif. Tampilan admin juga dibuat blur.');
      }else{
        await Promise.all(cameraSenders.map(sender=>sender.replaceTrack(cameraStream.getVideoTracks()[0])));show(camera,'camera-empty',cameraStream);cameraPublishedStream?.getTracks().forEach(track=>track.stop());cancelAnimationFrame(cameraFrame);cameraSourceVideo?.remove();cameraSourceVideo=null;cameraCanvas=null;cameraPublishedStream=null;cameraBlurred=false;button.textContent='Aktifkan blur';say('Blur kamera dinonaktifkan.');

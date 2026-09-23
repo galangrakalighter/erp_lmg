@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LMG Privacy Monitoring</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <main>
+    <p class="eyebrow">Lighter Media Group</p>
+    <h1>Privacy Monitoring</h1>
+    <p class="intro">Hanya tab yang Anda pilih di sini yang dapat dibagikan. Desktop, window, dan tab lain tetap privat.</p>
+
+    <section class="current">
+      <p class="label">TAB SAAT INI</p>
+      <p id="current-tab" class="current-title">Memuat tab…</p>
+      <button id="add-current" class="button primary">Tambahkan tab ini</button>
+    </section>
+
+    <section>
+      <div class="section-heading"><p class="label">TAB YANG DIIZINKAN</p><button id="clear-tabs" class="text-button">Hapus semua</button></div>
+      <div id="selected-tabs" class="selected-tabs"><p class="empty">Belum ada tab yang dipilih.</p></div>
+    </section>
+
+    <button id="share" class="button primary">Bagikan tab terpilih ke ERP</button>
+    <p id="status" class="status" role="status"></p>
+    <p class="footnote">Buka setiap tab kerja lalu klik extension untuk menambahkannya. Terakhir, buka halaman Monitoring ERP dan gunakan tombol Bagikan.</p>
+  </main>
+  <script src="popup.js"></script>
+</body>
+</html>

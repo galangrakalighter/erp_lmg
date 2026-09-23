@@ -71,7 +71,7 @@ class MenuServiceProvider extends ServiceProvider
                 ->join('produk_client', 'produk_client.id', '=', 'client_division.client_id')
                 ->leftJoin('kategori_jasa', 'kategori_jasa.id', '=', 'produk_client.kategori_jasa_id')
                 ->whereIn('client_division.division_id', [1, 2, 3, 5, 7])
-                ->where('produk_client.status', 1)
+                ->where('client_division.status', 1)
                 ->whereRaw("LOWER(TRIM(produk_client.nama)) <> 'internal'")
                 ->where(fn ($query) => $query->whereNull('kategori_jasa.category')->orWhereRaw("LOWER(TRIM(kategori_jasa.category)) NOT LIKE 'internal%'"))
                 // Sidebar dan IDME menggunakan relasi client_division yang sama.
@@ -91,7 +91,6 @@ class MenuServiceProvider extends ServiceProvider
                 ->join('client_division', 'client_division.client_id', '=', 'produk_client.id')
                 ->join('divisions', 'divisions.id', '=', 'client_division.division_id')
                 ->leftJoin('kategori_jasa', 'kategori_jasa.id', '=', 'produk_client.kategori_jasa_id')
-                ->where('produk_client.status', 1)
                 ->whereRaw("LOWER(TRIM(divisions.name)) <> 'finance'")
                 ->whereRaw("LOWER(TRIM(produk_client.nama)) <> 'internal'")
                 ->where(fn ($query) => $query->whereNull('kategori_jasa.category')->orWhereRaw("LOWER(TRIM(kategori_jasa.category)) NOT LIKE 'internal%'"))

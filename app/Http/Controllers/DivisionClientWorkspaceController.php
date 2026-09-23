@@ -21,10 +21,10 @@ class DivisionClientWorkspaceController extends Controller
 
         $client = ProdukClient::query()->findOrFail($id_produk);
         abort_if($client->is_internal, 404);
-        abort_unless((int) $client->status === 1, 404);
         abort_unless(DB::table('client_division')
             ->where('client_id', $client->id)
             ->where('division_id', $config['id'])
+            ->where('status', 1)
             ->exists(), 404);
 
         $user = Auth::user();

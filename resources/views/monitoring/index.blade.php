@@ -28,8 +28,8 @@
             @if($canStart)
             <div class="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
                 <b>Mulai dari perangkat target</b>
-                <p class="mt-1 leading-6">Setujui izin layar dan kamera dari browser perangkat ini. Admin dapat melihat streaming, tetapi tidak dapat mengendalikan perangkat Anda.</p>
-                <div class="mt-4 flex flex-wrap gap-2"><button id="start-live" class="rounded-lg bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white">1. Izinkan layar</button><button id="allow-camera" class="hidden rounded-lg bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white">2. Izinkan kamera</button><button id="stop-live" class="hidden rounded-lg border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-700">Hentikan</button></div>
+                <p class="mt-1 leading-6">Pilih satu window kerja yang ingin dibagikan. Admin hanya dapat melihat, bukan mengendalikan perangkat Anda.</p>
+                <div class="mt-4 flex flex-wrap gap-2"><button id="start-live" class="rounded-lg bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white">1. Izinkan window kerja</button><button id="allow-camera" class="hidden rounded-lg bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white">2. Izinkan kamera</button><button id="stop-live" class="hidden rounded-lg border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-700">Hentikan</button></div>
                 <p id="notice" class="mt-3 hidden text-xs font-semibold"></p>
             </div>
             @elseif($canView)
@@ -40,14 +40,15 @@
                 <div class="mt-6 rounded-xl bg-zinc-50 p-4 text-sm text-zinc-600">Hanya admin yang dapat melihat live monitoring pengguna lain.</div>
             @endif
 
-            <div id="video-grid" class="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
-                <div><p class="mb-2 text-xs font-semibold text-zinc-500">LAYAR</p><video id="screen-video" autoplay playsinline muted class="hidden aspect-video w-full rounded-xl bg-zinc-950 object-contain"></video><div id="screen-empty" class="grid aspect-video place-items-center rounded-xl bg-zinc-100 text-sm text-zinc-500">Tampilan layar akan muncul di sini.</div></div>
-                <div><p class="mb-2 text-xs font-semibold text-zinc-500">KAMERA</p><video id="camera-video" autoplay playsinline muted class="hidden aspect-video w-full rounded-xl bg-zinc-950 object-cover"></video><div id="camera-empty" class="grid aspect-video place-items-center rounded-xl bg-zinc-100 text-sm text-zinc-500">Kamera belum aktif.</div></div>
+            <div id="video-grid" class="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)]">
+                <div><p class="mb-2 text-xs font-semibold text-zinc-500">PREVIEW KERJA</p><video id="screen-video" autoplay playsinline muted class="hidden aspect-video w-full rounded-xl bg-zinc-950 object-contain"></video><div id="screen-empty" class="grid aspect-video place-items-center rounded-xl bg-zinc-100 text-sm text-zinc-500">Preview kerja akan muncul di sini.</div></div>
+                <div><div class="mb-2 flex items-center justify-between gap-2"><p class="text-xs font-semibold text-zinc-500">KAMERA</p><button id="toggle-camera-blur" type="button" class="hidden rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-100">Aktifkan blur</button></div><video id="camera-video" autoplay playsinline muted class="hidden aspect-video w-full rounded-xl bg-zinc-950 object-cover"></video><div id="camera-empty" class="grid aspect-video place-items-center rounded-xl bg-zinc-100 text-sm text-zinc-500">Kamera belum aktif.</div></div>
             </div>
         </section>
     </div>
 
 </div>
+
 @endsection
 
 @push('script')
@@ -55,10 +56,11 @@
 (() => {
  const csrf='{{ csrf_token() }}', isTarget={{ $canStart ? 'true':'false' }}, canView={{ $canView ? 'true':'false' }}, sessionId={{ $activeSession?->id ?? 'null' }}, targetId={{ $target->id }};
  const screen=document.getElementById('screen-video'), camera=document.getElementById('camera-video'), notice=document.getElementById('notice'), status=document.getElementById('live-status');
- let session=sessionId, pc, screenStream, cameraStream, poller, pendingCandidates=[], pollDelay=300, iceServers=[], iceRequest;
+ let session=sessionId, pc, screenStream, cameraStream, cameraPublishedStream, cameraSourceVideo, cameraCanvas, cameraFrame, cameraBlurred=false, poller, pendingCandidates=[], pollDelay=300, iceServers=[], iceRequest;
  const url=(name,id)=>({start:'{{ route('monitoring.sessions.start') }}',join:'{{ url('monitoring/sessions') }}/'+id+'/join',ice:'{{ url('monitoring/sessions') }}/'+id+'/ice-servers',signal:'{{ url('monitoring/sessions') }}/'+id+'/signal',signals:'{{ url('monitoring/sessions') }}/'+id+'/signals',stop:'{{ url('monitoring/sessions') }}/'+id+'/stop'})[name];
  const say=(text,bad=false)=>{if(!notice)return;notice.textContent=text;notice.className='mt-3 text-xs font-semibold '+(bad?'text-red-700':'text-emerald-700')};
  const show=(video,empty,stream)=>{video.srcObject=stream;video.classList.remove('hidden');document.getElementById(empty).classList.add('hidden')};
+ const waitForVideo=video=>new Promise((resolve,reject)=>{video.onloadedmetadata=resolve;video.onerror=reject;setTimeout(resolve,3000)});
  const post=async(u,body={})=>{let r=await fetch(u,{method:'POST',headers:{'X-CSRF-TOKEN':csrf,'Accept':'application/json','Content-Type':'application/json'},body:JSON.stringify(body)});if(!r.ok)throw new Error((await r.json().catch(()=>({}))).message||'Permintaan gagal.');return r.json()};
  const send=(type,payload)=>post(url('signal',session),{type,payload});
  async function loadIceServers(){
@@ -93,9 +95,7 @@
      }
    };
    if(!target){
-     // The target always publishes screen first and camera second.  Reserve
-     // both receiving transceivers before accepting its offer so Chrome can
-     // generate a compatible answer for the two video m-lines.
+     // The target publishes one work preview and one camera stream.
      pc.addTransceiver('video',{direction:'recvonly'});
      pc.addTransceiver('video',{direction:'recvonly'});
      pc.ontrack=e=>{
@@ -109,20 +109,24 @@
  async function flushCandidates(){if(!pc||!pc.remoteDescription)return;while(pendingCandidates.length){try{await pc.addIceCandidate(pendingCandidates.shift())}catch(e){}}}
  async function handleSignals(){
    if(!session)return; try{let response=await fetch(url('signals',session),{headers:{Accept:'application/json'}});if(!response.ok)throw new Error('Sinyal monitoring tidak dapat dimuat.');let data=await response.json();if(data.status!=='active')return end(false);
-   for(const signal of data.signals){let p=signal.payload||{}; if(signal.type==='ready'&&isTarget){let c=peer(true);let offer=await c.createOffer();await c.setLocalDescription(offer);await send('offer',c.localDescription)}
+   for(const signal of data.signals){let p=signal.payload||{}; if(signal.type==='ready'&&isTarget){await negotiate()}
    else if(signal.type==='offer'&&!isTarget){let c=peer(false);await c.setRemoteDescription(description(p));await flushCandidates();let answer=await c.createAnswer();await c.setLocalDescription(answer);await send('answer',c.localDescription)}
    else if(signal.type==='answer'&&isTarget){await peer(true).setRemoteDescription(description(p));await flushCandidates()}
    else if(signal.type==='candidate'){if(!pc||!pc.remoteDescription)pendingCandidates.push(p);else{try{await pc.addIceCandidate(p)}catch(e){}}}}}catch(e){console.error('Monitoring WebRTC error:',e);if(isTarget)say('Koneksi live gagal: '+(e.message||'periksa koneksi browser'),true);else{status.textContent='Koneksi live gagal';const target=document.getElementById('viewer-actions');if(target)target.innerHTML='<div class="rounded-xl bg-red-50 p-4 text-sm text-red-700">Koneksi live gagal. '+(e.message||'Silakan mulai ulang share layar target.')+'</div>'}}}
  function beginPoll(){clearInterval(poller);poller=setInterval(handleSignals,pollDelay);handleSignals()}
+ async function negotiate(){const c=peer(true);if(c.signalingState!=='stable')throw new Error('Menunggu koneksi sebelumnya selesai.');const offer=await c.createOffer();await c.setLocalDescription(offer);await send('offer',c.localDescription)}
  async function start(){
    if(!window.isSecureContext||!navigator.mediaDevices?.getUserMedia)return say('Browser hanya dapat meminta izin kamera melalui HTTPS atau localhost. Buka ERP memakai https://, bukan http://alamat-IP.',true);
-   try{screenStream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:10,max:15},width:{ideal:1280,max:1280},height:{ideal:720,max:720}},audio:false});show(screen,'screen-empty',screenStream);screenStream.getVideoTracks()[0].onended=()=>end(true);document.getElementById('start-live').classList.add('hidden');document.getElementById('allow-camera').classList.remove('hidden');say('Layar sudah diizinkan. Lanjutkan dengan izin kamera.')}catch(e){say('Izin layar tidak diberikan. Pilih layar lalu klik Izinkan pada dialog browser.',true)}}
+   try{screenStream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:10,max:15},width:{ideal:1280,max:1280},height:{ideal:720,max:720},displaySurface:'window'},audio:false,preferCurrentTab:false,selfBrowserSurface:'exclude',surfaceSwitching:'include'});show(screen,'screen-empty',screenStream);screenStream.getVideoTracks()[0].onended=()=>end(true);document.getElementById('start-live').classList.add('hidden');document.getElementById('allow-camera').classList.remove('hidden');say('Window kerja sudah diizinkan. Lanjutkan dengan izin kamera.')}catch(e){say('Izin window tidak diberikan. Pilih window Chrome lalu klik Izinkan pada dialog browser.',true)}}
+ function renderCamera(){if(!cameraCanvas||!cameraSourceVideo)return;const context=cameraCanvas.getContext('2d');context.filter=cameraBlurred?'blur(12px)':'none';context.drawImage(cameraSourceVideo,0,0,cameraCanvas.width,cameraCanvas.height);context.filter='none';cameraFrame=requestAnimationFrame(renderCamera)}
+ function toggleCameraBlur(){if(!cameraStream)return;cameraBlurred=!cameraBlurred;document.getElementById('toggle-camera-blur').textContent=cameraBlurred?'Nonaktifkan blur':'Aktifkan blur';say(cameraBlurred?'Blur kamera aktif. Tampilan admin juga dibuat blur.':'Blur kamera dinonaktifkan.')}
  async function allowCamera(){
-   try{cameraStream=await navigator.mediaDevices.getUserMedia({video:{frameRate:{ideal:10,max:15},width:{ideal:640,max:640},height:{ideal:360,max:360}},audio:false});show(camera,'camera-empty',cameraStream);let data=await post(url('start'),{consent:true});session=data.session.id;await loadIceServers();let c=peer(true);screenStream.getVideoTracks().forEach(track=>c.addTrack(track,screenStream));cameraStream.getVideoTracks().forEach(track=>c.addTrack(track,cameraStream));document.getElementById('allow-camera').classList.add('hidden');document.getElementById('stop-live').classList.remove('hidden');status.textContent='Live monitoring aktif';status.className='rounded-full bg-red-50 px-3 py-2 text-xs font-semibold text-red-700';say('Streaming aktif. Menunggu admin terhubung.');beginPoll()}catch(e){say('Live monitoring tidak dapat dimulai: '+(e.message||'periksa izin kamera dan konfigurasi TURN.'),true)}}
+   try{cameraStream=await navigator.mediaDevices.getUserMedia({video:{frameRate:{ideal:10,max:15},width:{ideal:640,max:640},height:{ideal:360,max:360}},audio:false});cameraSourceVideo=document.createElement('video');cameraSourceVideo.muted=true;cameraSourceVideo.playsInline=true;cameraSourceVideo.srcObject=cameraStream;await cameraSourceVideo.play();await waitForVideo(cameraSourceVideo);cameraCanvas=document.createElement('canvas');cameraCanvas.width=cameraSourceVideo.videoWidth||640;cameraCanvas.height=cameraSourceVideo.videoHeight||360;renderCamera();cameraPublishedStream=cameraCanvas.captureStream(15);show(camera,'camera-empty',cameraPublishedStream);let data=await post(url('start'),{consent:true});session=data.session.id;await loadIceServers();let c=peer(true);screenStream.getVideoTracks().forEach(track=>c.addTrack(track,screenStream));cameraPublishedStream.getVideoTracks().forEach(track=>c.addTrack(track,cameraPublishedStream));document.getElementById('allow-camera').classList.add('hidden');document.getElementById('stop-live').classList.remove('hidden');document.getElementById('toggle-camera-blur').classList.remove('hidden');status.textContent='Live monitoring aktif';status.className='rounded-full bg-red-50 px-3 py-2 text-xs font-semibold text-red-700';say('Streaming aktif. Menunggu admin terhubung.')}catch(e){say('Live monitoring tidak dapat dimulai: '+(e.message||'periksa izin kamera dan konfigurasi TURN.'),true)}}
  async function join(){try{await post(url('join',session));await loadIceServers();peer(false);status.textContent='Menghubungkan live stream...';beginPoll()}catch(e){status.textContent='Koneksi live gagal';const target=document.getElementById('viewer-actions');if(target)target.innerHTML='<div class="rounded-xl bg-red-50 p-4 text-sm text-red-700">'+(e.message||'Cloudflare TURN belum dapat dihubungkan.')+'</div>'}}
  async function findLive(){if(isTarget||session||!canView)return;try{let data=await fetch('{{ url('monitoring/users') }}/'+targetId+'/active-session',{headers:{Accept:'application/json'}}).then(r=>r.json());if(!data.session)return;session=data.session.id;status.textContent='Menghubungkan live stream...';status.className='rounded-full bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700';document.getElementById('viewer-actions').innerHTML='<div class="rounded-xl bg-zinc-50 p-4 text-sm text-zinc-600">Menghubungkan live monitoring...</div>';join()}catch(e){}}
- async function end(notify){clearInterval(poller);if(pc){pc.close();pc=null}if(isTarget&&session&&notify)try{await post(url('stop',session))}catch(e){};[screenStream,cameraStream].forEach(s=>s&&s.getTracks().forEach(t=>t.stop()));screenStream=null;cameraStream=null;session=null;if(isTarget){document.getElementById('start-live').classList.remove('hidden');document.getElementById('allow-camera').classList.add('hidden');document.getElementById('stop-live').classList.add('hidden');say('Monitoring dihentikan.')}status.textContent='Sesi berakhir';}
+ async function end(notify){clearInterval(poller);if(pc){pc.close();pc=null}if(isTarget&&session&&notify)try{await post(url('stop',session))}catch(e){};[screenStream,cameraStream,cameraPublishedStream].forEach(s=>s&&s.getTracks().forEach(t=>t.stop()));cancelAnimationFrame(cameraFrame);cameraSourceVideo=null;cameraCanvas=null;screenStream=null;cameraStream=null;cameraPublishedStream=null;session=null;if(isTarget){document.getElementById('start-live').classList.remove('hidden');document.getElementById('allow-camera').classList.add('hidden');document.getElementById('stop-live').classList.add('hidden');document.getElementById('toggle-camera-blur').classList.add('hidden');cameraBlurred=false;say('Monitoring dihentikan.')}status.textContent='Sesi berakhir';}
  document.getElementById('start-live')?.addEventListener('click',start);document.getElementById('allow-camera')?.addEventListener('click',allowCamera);document.getElementById('stop-live')?.addEventListener('click',()=>end(true));
+ document.getElementById('toggle-camera-blur')?.addEventListener('click',toggleCameraBlur);
  window.addEventListener('beforeunload',event=>{
    if(session&&(isTarget||canView)){
      event.preventDefault();

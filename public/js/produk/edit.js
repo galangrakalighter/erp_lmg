@@ -139,9 +139,10 @@ function buildEditModalHtml(res){
                 <div class="col-md-12">
                     <div class="form-group">
                         <label class="text-dark font-weight-bold small">Status <span class="text-danger">*</span></label>
+                        <input type="hidden" name="divisi" value="${res.division_id || ''}">
                         <select name="status" class="form-control custom-select" required>
-                            <option value="1" ${p.status == 1 ? 'selected' : ''}>Ditampilkan</option>
-                            <option value="2" ${p.status == 2 ? 'selected' : ''}>Disembunyikan</option>
+                            <option value="1" ${res.division_status == 1 ? 'selected' : ''}>Ditampilkan</option>
+                            <option value="2" ${res.division_status != 1 ? 'selected' : ''}>Disembunyikan</option>
                         </select>
                     </div>
                 </div>

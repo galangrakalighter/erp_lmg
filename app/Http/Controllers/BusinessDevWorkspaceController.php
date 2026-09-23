@@ -16,9 +16,10 @@ class BusinessDevWorkspaceController extends Controller
         $isBusinessDevClient = DB::table('client_division')
             ->where('client_id', $client->id)
             ->where('division_id', 2)
+            ->where('status', 1)
             ->exists();
 
-        abort_unless($isBusinessDevClient && (int) $client->status === 1, 404);
+        abort_unless($isBusinessDevClient, 404);
 
         $user = Auth::user();
         $user->loadMissing(['userDivisions.division', 'userDivisions.role', 'userClients']);

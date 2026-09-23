@@ -16,9 +16,10 @@ class DigitalMarketingWorkspaceController extends Controller
         $isWorkspaceClient = DB::table('client_division')
             ->where('client_id', $client->id)
             ->where('division_id', 1)
+            ->where('status', 1)
             ->exists();
 
-        abort_unless($isWorkspaceClient && (int) $client->status === 1, 404);
+        abort_unless($isWorkspaceClient, 404);
 
         $user = Auth::user();
         $user->loadMissing(['userDivisions.division', 'userDivisions.role', 'userClients']);

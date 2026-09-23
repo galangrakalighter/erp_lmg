@@ -221,7 +221,7 @@ class DashboardController extends Controller
                 $client = $produk->join('user_client', 'user_client.client_id', '=', 'produk_client.id')
                 ->where('user_client.user_id', $user->id);
             }
-            $client = $produk->where('produk_client.status', 1)->select('produk_client.id as id_client', 'produk_client.nama as nama_client')
+            $client = $produk->where('client_division.status', 1)->select('produk_client.id as id_client', 'produk_client.nama as nama_client')
             ->get();
             $internalProjects = ProdukClient::query()->internal()->where('status', 1)
                 ->select('id as id_client', 'nama as nama_client')->get();

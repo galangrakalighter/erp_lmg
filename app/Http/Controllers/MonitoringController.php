@@ -37,7 +37,10 @@ class MonitoringController extends Controller
             'users' => $users,
             'target' => $target,
             'activeSession' => $activeSession,
-            'canStart' => (int) $viewer->id === (int) $target->id,
+            // Admin only observes other users. Starting a browser capture,
+            // downloading the helper extension, and its setup guide belong to
+            // non-admin target users on their own device.
+            'canStart' => ! $viewer->isAdmin && (int) $viewer->id === (int) $target->id,
             'canView' => $viewer->isAdmin && (int) $viewer->id !== (int) $target->id,
         ]);
     }

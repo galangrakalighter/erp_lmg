@@ -29,7 +29,7 @@ class ProdukController extends Controller
                 ->external()
                 ->join('client_division', 'client_division.client_id', '=', 'produk_client.id')
                 ->leftJoin('kategori_jasa', 'kategori_jasa.id', '=', 'produk_client.kategori_jasa_id')
-                ->select('produk_client.*', 'kategori_jasa.category')
+                ->select('produk_client.*', 'kategori_jasa.category', 'client_division.status as division_status')
                 ->where('client_division.division_id', $divisiId)
                 // Keanggotaan client di CMS mengikuti client_division, sama seperti sidebar.
                 // PIC boleh belum diatur; client tetap harus terlihat untuk divisinya.
@@ -41,7 +41,7 @@ class ProdukController extends Controller
                         'id'       => $client->id,
                         'nama'     => $client->nama,
                         'category' => $client->category,
-                        'status'   => $client->status,
+                        'status'   => $client->division_status,
                         // Filter berdasarkan ID Role yang benar
                         'buh'      => $teams->filter(fn($u) => $u->userDivisions->first()?->role_id == 1)->pluck('email'),
                         'ads'       => $teams->filter(fn($u) => $u->userDivisions->first()?->role_id == 4)->pluck('email'),
@@ -124,9 +124,20 @@ class ProdukController extends Controller
                 }),
             ];
 
+            $divisionId = match ($folderName) {
+                'cms_LGTR' => 1,
+                'cms_BD' => 2,
+                default => null,
+            };
+            $divisionStatus = $divisionId
+                ? DB::table('client_division')->where('client_id', $produk->id)->where('division_id', $divisionId)->value('status')
+                : $produk->status;
+
             return response()->json([
                 'status'        => 'success',
                 'produk'        => $produk,
+                'division_id'   => $divisionId,
+                'division_status' => $divisionStatus ?? 1,
                 'current_teams' => $currentTeamIds,
                 'options'       => $options,
                 'is_admin'      => $isUserAdmin,
@@ -174,10 +185,7 @@ class ProdukController extends Controller
                     (array) $request->input('access', [])
                 );
 
-                $produk->update([
-                    'status' => (int) $request->status,
-                    'access_token' => $mergedTokens,
-                ]);
+                $produk->update(['access_token' => $mergedTokens]);
             }
 
             // 2. Kumpulkan semua ID user dari form
@@ -240,12 +248,10 @@ class ProdukController extends Controller
                 );
             }
 
-            DB::table('client_division')->insertOrIgnore([
-                'client_id'   => (int) $produk->id,
-                'division_id' => (int) $request->divisi,
-                'created_at'   => now(),
-                'updated_at'   => now(),
-            ]);
+            DB::table('client_division')->updateOrInsert(
+                ['client_id' => (int) $produk->id, 'division_id' => (int) $request->divisi],
+                ['status' => (int) $request->status, 'created_at' => now(), 'updated_at' => now()]
+            );
 
             $this->ensureDefaultClientDocuments($produk, (int) $request->divisi);
 
@@ -284,7 +290,6 @@ class ProdukController extends Controller
             $produk->update([
                 'kategori_jasa_id' => (int) $request->kategori_jasa_id,
                 'nama'              => $request->nama,
-                'status'            => (int) $request->status,
                 'access_token'      => $accessTokenArray,
             ]);
 
@@ -389,12 +394,10 @@ class ProdukController extends Controller
                 );
             }
 
-            DB::table('client_division')->insertOrIgnore([
-                'client_id' => (int) $produk->id,
-                'division_id' => $divisionId,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            DB::table('client_division')->updateOrInsert(
+                ['client_id' => (int) $produk->id, 'division_id' => $divisionId],
+                ['status' => (int) $request->status, 'created_at' => now(), 'updated_at' => now()]
+            );
 
             DB::commit();
 
@@ -569,7 +572,7 @@ class ProdukController extends Controller
             ->external()
             ->join('client_division', 'client_division.client_id', '=', 'produk_client.id')
             ->where('client_division.division_id', $divisi)
-            ->select('produk_client.*');
+            ->select('produk_client.*', 'client_division.status as division_status');
 
         // Gunakan client_division sebagai sumber daftar client seluruh CMS divisi.
         // Relasi tim/PIC hanya untuk informasi penanggung jawab, bukan syarat tampil.
@@ -582,7 +585,7 @@ class ProdukController extends Controller
                 'id'       => $client->id,
                 'nama'     => $client->nama,
                 'category' => $client->category,
-                'status'   => $client->status,
+                'status'   => $client->division_status,
 
                 // Business Unit Head
                 'buh' => $teams
@@ -634,8 +637,6 @@ class ProdukController extends Controller
                     'status' => (int) $validated['status'],
                     'access_token' => null,
                 ]);
-            } else {
-                $produk->update(['status' => (int) $validated['status']]);
             }
 
             $allUserIds = collect($request->input('buh', []))
@@ -653,12 +654,10 @@ class ProdukController extends Controller
                 );
             }
 
-            DB::table('client_division')->insertOrIgnore([
-                'client_id' => $produk->id,
-                'division_id' => (int) $divisi,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            DB::table('client_division')->updateOrInsert(
+                ['client_id' => $produk->id, 'division_id' => (int) $divisi],
+                ['status' => (int) $validated['status'], 'created_at' => now(), 'updated_at' => now()]
+            );
 
             $this->ensureDefaultClientDocuments($produk, (int) $divisi);
 
@@ -747,10 +746,7 @@ class ProdukController extends Controller
             $produk = ProdukClient::findOrFail($id);
 
             // Update data client
-            $produk->update([
-                'nama'   => $request->client,
-                'status' => $request->status,
-            ]);
+            $produk->update(['nama' => $request->client]);
 
             // Gabungkan seluruh user yang dipilih
             $allId = array_merge(
@@ -787,12 +783,10 @@ class ProdukController extends Controller
                 );
             }
 
-            DB::table('client_division')->insertOrIgnore([
-                'client_id' => $produk->id,
-                'division_id' => (int) $validated['division_id'],
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            DB::table('client_division')->updateOrInsert(
+                ['client_id' => $produk->id, 'division_id' => (int) $validated['division_id']],
+                ['status' => (int) $validated['status'], 'created_at' => now(), 'updated_at' => now()]
+            );
 
             DB::commit();
 
@@ -823,10 +817,14 @@ class ProdukController extends Controller
                 ->contains(fn ($membership) => (int) optional($membership->role)->division_id === $divisionId));
         }
 
+        $divisionStatus = $request->filled('division_id')
+            ? DB::table('client_division')->where('client_id', $produk->id)->where('division_id', (int) $request->integer('division_id'))->value('status')
+            : $produk->status;
+
         return response()->json([
             'id'        => $produk->id,
             'client_id' => $produk->nama,
-            'status'    => $produk->status,
+            'status'    => $divisionStatus ?? 1,
 
             'buh' => $teams
                 ->filter(fn($u) => $u->userDivisions->first()?->role?->level == 1)

@@ -79,4 +79,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(AccountMasterFile::class, 'owner_user_id');
     }
+
+    public function monitoringSessions()
+    {
+        return $this->hasMany(MonitoringSession::class, 'target_user_id');
+    }
 }

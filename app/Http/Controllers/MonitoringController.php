@@ -13,6 +13,17 @@ class MonitoringController extends Controller
     public function index(Request $request): View
     {
         $viewer = $request->user();
+
+        if ($viewer->isAdmin && ! $request->filled('user')) {
+            $users = User::query()
+                ->with(['userDivisions.division', 'userDivisions.role'])
+                ->withCount(['monitoringSessions as active_monitoring_count' => fn ($query) => $query->where('status', 'active')])
+                ->orderBy('email')
+                ->get(['id', 'name', 'email', 'photo_profile']);
+
+            return view('monitoring.directory', compact('users'));
+        }
+
         $users = $viewer->isAdmin
             ? User::query()->orderBy('email')->get(['id', 'name', 'email', 'photo_profile'])
             : collect([$viewer]);

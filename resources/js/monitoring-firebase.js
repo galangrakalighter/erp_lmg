@@ -10,6 +10,19 @@ function appFor(config) {
     return firebaseApp;
 }
 
+// Firestore accepts plain JSON only. RTCSessionDescription is a browser
+// object, therefore copy its serialisable fields before writing a signal.
+function serialiseSignalPayload(payload) {
+    if (payload && typeof payload === 'object' && 'type' in payload && 'sdp' in payload) {
+        return {
+            type: payload.type,
+            sdp: payload.sdp,
+        };
+    }
+
+    return payload;
+}
+
 /**
  * Real-time WebRTC signalling for Monitoring. Firebase only carries offers,
  * answers and ICE candidates; the screen and camera continue browser-to-browser
@@ -24,6 +37,12 @@ async function connect({ config, token, sessionId, onSignal }) {
     const signals = collection(db, 'monitoring_sessions', String(sessionId), 'signals');
     const processed = new Set();
     let isInitialSnapshot = true;
+    let resolveReady;
+    let rejectReady;
+    const listenerReady = new Promise((resolve, reject) => {
+        resolveReady = resolve;
+        rejectReady = reject;
+    });
 
     const unsubscribe = onSnapshot(
         query(signals, where('recipient_uid', '==', uid)),
@@ -35,17 +54,27 @@ async function connect({ config, token, sessionId, onSignal }) {
             if (isInitialSnapshot) {
                 changes.forEach(change => processed.add(change.doc.id));
                 isInitialSnapshot = false;
+                // Do not let a viewer send "ready" until the target listener
+                // is actually subscribed. This removes the lost-first-signal
+                // race that made a new admin connection wait unnecessarily.
+                resolveReady();
                 return;
             }
 
             changes.forEach(change => {
                 if (change.type !== 'added' || processed.has(change.doc.id)) return;
                 processed.add(change.doc.id);
-                onSignal({ id: change.doc.id, ...change.doc.data() });
+                Promise.resolve(onSignal({ id: change.doc.id, ...change.doc.data() }))
+                    .catch(error => console.error('Firebase monitoring signal error:', error));
             });
         },
-        error => console.error('Firebase monitoring listener error:', error),
+        error => {
+            console.error('Firebase monitoring listener error:', error);
+            if (isInitialSnapshot) rejectReady(error);
+        },
     );
+
+    await listenerReady;
 
     return {
         send(type, payload, recipientUserId) {
@@ -54,7 +83,7 @@ async function connect({ config, token, sessionId, onSignal }) {
                 sender_user_id: Number(config.__erpUserId),
                 recipient_uid: `erp_${recipientUserId}`,
                 type,
-                payload,
+                payload: serialiseSignalPayload(payload),
                 created_at_ms: Date.now(),
             });
         },

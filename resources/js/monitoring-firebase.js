@@ -32,6 +32,10 @@ async function connect({ config, token, sessionId, onSignal }) {
     const app = appFor(config);
     const auth = getAuth(app);
     const credential = await signInWithCustomToken(auth, token);
+    // A different target can grant a different viewer permission. Force a
+    // fresh ID token so Firestore Rules immediately receive the custom claim
+    // issued for this exact ERP monitoring session.
+    await credential.user.getIdToken(true);
     const db = getFirestore(app);
     const uid = credential.user.uid;
     const signals = collection(db, 'monitoring_sessions', String(sessionId), 'signals');

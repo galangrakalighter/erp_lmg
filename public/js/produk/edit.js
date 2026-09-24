@@ -161,6 +161,7 @@ function buildEditModalHtml(res){
                                 <select name="platform[]" class="form-control col-md-4">
                                     <option value="Instagram" ${item.platform == 'Instagram' ? 'selected' : ''}>Instagram</option>
                                     <option value="Facebook" ${item.platform == 'Facebook' ? 'selected' : ''}>Facebook</option>
+                                    <option value="Threads" ${item.platform == 'Threads' ? 'selected' : ''}>Threads</option>
                                     <option value="Tiktok" ${item.platform == 'Tiktok' ? 'selected' : ''}>Tiktok</option>
                                 </select>
                                 <input type="text" name="access[]" class="form-control" value="${item.access || ''}" placeholder="Input Access Token">
@@ -178,6 +179,7 @@ function buildEditModalHtml(res){
                                 <select name="platform[]" class="form-control col-md-4">
                                     <option value="Instagram">Instagram</option>
                                     <option value="Facebook">Facebook</option>
+                                    <option value="Threads">Threads</option>
                                     <option value="Tiktok">Tiktok</option>
                                 </select>
                                 <input type="text" name="access[]" class="form-control" placeholder="Input Access Token">
@@ -570,6 +572,7 @@ function setupEditPlatform(){
                             <option value="">-- Pilih Platform --</option>
                             <option value="Instagram">Instagram</option>
                             <option value="Facebook">Facebook</option>
+                            <option value="Threads">Threads</option>
                             <option value="Tiktok">Tiktok</option>
                         </select>
 

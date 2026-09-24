@@ -89,6 +89,7 @@ function initPlatform(){
 
                         <option value="Instagram">Instagram</option>
                         <option value="Facebook">Facebook</option>
+                        <option value="Threads">Threads</option>
                         <option value="Tiktok">Tiktok</option>
 
                     </select>

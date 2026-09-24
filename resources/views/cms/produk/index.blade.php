@@ -204,6 +204,7 @@
                                             <option value="">-- Pilih Platform --</option>
                                             <option value="Instagram">Instagram</option>
                                             <option value="Facebook">Facebook</option>
+                                            <option value="Threads">Threads</option>
                                             <option value="Tiktok">Tiktok</option>
                                         </select>
                                         <input type="text" name="access[]" class="form-control" placeholder="Input Access Token">

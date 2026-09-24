@@ -65,6 +65,7 @@ class MonitoringController extends Controller
             'target_uid' => 'erp_'.$user->id,
             'status' => 'active',
             'started_at' => now(),
+            'viewer_uids' => [],
         ]);
 
         return response()->json(['session' => ['id' => $session->id]]);
@@ -83,6 +84,18 @@ class MonitoringController extends Controller
             'recipient_user_id' => $session->target_user_id,
             'type' => 'ready',
             'payload' => [],
+        ]);
+        $firestore = app(FirestoreService::class);
+        $liveRoom = $firestore->get('monitoring_sessions', (string) $session->id);
+        $viewerUids = array_values(array_unique(array_merge(
+            $liveRoom['data']['viewer_uids'] ?? [],
+            ['erp_'.$request->user()->id],
+        )));
+        $firestore->set('monitoring_sessions', (string) $session->id, [
+            'target_uid' => 'erp_'.$session->target_user_id,
+            'status' => 'active',
+            'started_at' => $session->started_at,
+            'viewer_uids' => $viewerUids,
         ]);
 
         return response()->json(['session' => ['id' => $session->id]]);
@@ -211,6 +224,7 @@ class MonitoringController extends Controller
             'target_uid' => 'erp_'.$session->target_user_id,
             'status' => 'ended',
             'ended_at' => now(),
+            'viewer_uids' => [],
         ]);
 
         return response()->json(['ok' => true]);

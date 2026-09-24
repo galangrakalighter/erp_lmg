@@ -155,7 +155,7 @@
                 </span>
             </a>
 
-            @unless($isSuperAdmin)
+            {{-- @unless($isSuperAdmin)
                 <a
                     href="{{ route('monitoring.index') }}"
                     class="group mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition
@@ -169,7 +169,7 @@
                     </svg>
                     <span class="font-medium">Monitoring</span>
                 </a>
-            @endunless
+            @endunless --}}
 
             {{-- Daily Work pribadi --}}
             <a

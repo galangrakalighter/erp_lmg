@@ -7,10 +7,15 @@
             <div><p class="text-[11px] font-bold uppercase tracking-[.24em] text-lime-300">Lighter Media Group · Monitoring</p>
                 <h1 class="mt-3 text-3xl font-semibold tracking-tight">Live Monitoring</h1>
                 <p class="mt-2 max-w-2xl text-sm text-zinc-400">Buka pengguna untuk melihat layar dan kamera yang sedang dibagikan secara langsung.</p></div>
-            <a href="{{ route('monitoring.access.index') }}" class="rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200">Kelola Akses</a>
+            <div class="flex flex-wrap gap-2">
+                @if($canShareOwnScreen)<a href="{{ route('monitoring.index', ['user' => $currentUser->id]) }}" class="rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200">Bagikan layar saya</a>@endif
+                @if($canManage)<a href="{{ route('monitoring.access.index') }}" class="rounded-xl border border-white/25 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-white/10">Kelola Akses</a>@endif
+            </div>
         </header>
 
-        <div><p class="text-xs font-bold uppercase tracking-[.18em] text-zinc-400">Direktori pengguna</p><h2 class="mt-1 text-xl font-semibold text-zinc-950">Pilih pengguna untuk membuka monitoring</h2></div>
+        @if($canShareOwnScreen)<div class="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900"><b>Saat membagikan layar:</b> biarkan tab ini tetap terbuka selama monitoring berlangsung. Menutup atau me-refresh tab akan menghentikan share layar dan kamera.</div>@endif
+
+        <div><p class="text-xs font-bold uppercase tracking-[.18em] text-zinc-400">Direktori pengguna</p><h2 class="mt-1 text-xl font-semibold text-zinc-950">Pilih pengguna untuk membuka monitoring</h2><p class="mt-1 text-sm text-zinc-500">Hanya pengguna yang telah diberi akses oleh administrator yang ditampilkan.</p></div>
 
         <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             @foreach($users as $user)

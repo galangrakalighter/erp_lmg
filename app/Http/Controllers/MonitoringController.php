@@ -19,19 +19,30 @@ class MonitoringController extends Controller
     {
         $viewer = $request->user();
 
-        if ($viewer->isAdmin && ! $request->filled('user')) {
-            $users = User::query()
+        $availableTargets = $viewer->isAdmin
+            ? collect()
+            : $viewer->monitoringTargets()
                 ->with(['userDivisions.division', 'userDivisions.role'])
                 ->withCount(['monitoringSessions as active_monitoring_count' => fn ($query) => $query->where('status', 'active')])
                 ->orderBy('email')
-                ->get(['id', 'name', 'email', 'photo_profile']);
+                ->get(['users.id', 'name', 'email', 'photo_profile']);
 
-            return view('monitoring.directory', compact('users'));
+        if (! $request->filled('user') && ($viewer->isAdmin || $availableTargets->isNotEmpty())) {
+            $users = $viewer->isAdmin
+                ? User::query()
+                    ->with(['userDivisions.division', 'userDivisions.role'])
+                    ->withCount(['monitoringSessions as active_monitoring_count' => fn ($query) => $query->where('status', 'active')])
+                    ->orderBy('email')
+                    ->get(['id', 'name', 'email', 'photo_profile'])
+                : $availableTargets;
+
+            return view('monitoring.directory', [
+                'users' => $users,
+                'canManage' => (bool) $viewer->isAdmin,
+                'canShareOwnScreen' => $this->canShare($viewer),
+                'currentUser' => $viewer,
+            ]);
         }
-
-        $availableTargets = $viewer->isAdmin
-            ? collect()
-            : $viewer->monitoringTargets()->orderBy('email')->get(['users.id', 'name', 'email', 'photo_profile']);
         $requestedTargetId = $request->integer('user');
         $target = $requestedTargetId ? User::query()->findOrFail($requestedTargetId) : $viewer;
         $isSelf = (int) $target->id === (int) $viewer->id;

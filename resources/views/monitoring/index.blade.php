@@ -38,7 +38,7 @@
             @if($canStart)
             <div class="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
                 <b>Mulai dari perangkat target</b>
-                <p class="mt-1 leading-6">Pilih satu window kerja yang ingin dibagikan. Admin hanya dapat melihat, bukan mengendalikan perangkat Anda.</p>
+                <p class="mt-1 leading-6">Pilih satu window kerja yang ingin dibagikan. Pemantau hanya dapat melihat, bukan mengendalikan perangkat Anda. <b>Jangan tutup atau refresh tab ini selama share layar berlangsung</b>, karena monitoring akan langsung berhenti.</p>
                 <div class="mt-4 flex flex-wrap gap-2"><button id="start-live" class="rounded-lg bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white">1. Izinkan window kerja</button><button id="allow-camera" class="hidden rounded-lg bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white">2. Izinkan kamera</button><button id="stop-live" class="hidden rounded-lg border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-700">Hentikan</button></div>
                 <p id="notice" class="mt-3 hidden text-xs font-semibold"></p>
             </div>

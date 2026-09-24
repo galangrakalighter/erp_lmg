@@ -18,8 +18,12 @@ Route::middleware('auth')->group(function () {
         ->name('monitoring.index');
     Route::get('monitoring/access', [App\Http\Controllers\MonitoringController::class, 'accessIndex'])
         ->name('monitoring.access.index');
-    Route::put('monitoring/access/{user}', [App\Http\Controllers\MonitoringController::class, 'updateAccess'])
+    Route::post('monitoring/access', [App\Http\Controllers\MonitoringController::class, 'storeAccess'])
+        ->name('monitoring.access.store');
+    Route::put('monitoring/access/{access}', [App\Http\Controllers\MonitoringController::class, 'updateAccess'])
         ->name('monitoring.access.update');
+    Route::delete('monitoring/access/{access}', [App\Http\Controllers\MonitoringController::class, 'destroyAccess'])
+        ->name('monitoring.access.destroy');
     Route::post('monitoring/sessions', [App\Http\Controllers\MonitoringController::class, 'start'])->name('monitoring.sessions.start');
     Route::get('monitoring/users/{user}/active-session', [App\Http\Controllers\MonitoringController::class, 'active'])->name('monitoring.users.active');
     Route::post('monitoring/sessions/{session}/join', [App\Http\Controllers\MonitoringController::class, 'join'])->name('monitoring.sessions.join');

@@ -11,6 +11,7 @@ use App\Services\FirestoreService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class MonitoringController extends Controller
@@ -45,7 +46,7 @@ class MonitoringController extends Controller
             'availableTargets' => $availableTargets,
             'target' => $target,
             'activeSession' => $activeSession,
-            'canStart' => $isSelf && (bool) $viewer->monitoring_share_enabled,
+            'canStart' => $isSelf && $this->canShare($viewer),
             'canView' => ! $isSelf && $canViewTarget,
             'firebaseWebConfig' => array_filter(config('firestore.web', [])),
         ]);
@@ -55,7 +56,7 @@ class MonitoringController extends Controller
     {
         $request->validate(['consent' => ['accepted']]);
         $user = $request->user();
-        abort_unless($user->monitoring_share_enabled, 403, 'Akses untuk membagikan layar belum diizinkan oleh administrator.');
+        abort_unless($this->canShare($user), 403, 'Akses untuk membagikan layar belum diizinkan oleh administrator.');
         MonitoringSession::query()->where('target_user_id', $user->id)->where('status', 'active')->update(['status' => 'ended', 'ended_at' => now()]);
         $session = MonitoringSession::create(['target_user_id' => $user->id, 'status' => 'active', 'consented_at' => now(), 'started_at' => now()]);
 
@@ -221,31 +222,41 @@ class MonitoringController extends Controller
         abort_unless($request->user()->isAdmin, 403);
 
         $users = User::query()
-            ->with('monitoringViewers:id,name,email')
             ->orderBy('name')
             ->orderBy('email')
-            ->get(['id', 'name', 'email', 'photo_profile', 'monitoring_share_enabled']);
+            ->get(['id', 'name', 'email', 'photo_profile']);
+        $accesses = MonitoringAccess::query()
+            ->with(['viewer:id,name,email', 'target:id,name,email'])
+            ->orderByDesc('id')
+            ->get();
 
-        return view('monitoring.access', compact('users'));
+        return view('monitoring.access', compact('users', 'accesses'));
     }
 
-    public function updateAccess(Request $request, User $user)
+    public function storeAccess(Request $request)
     {
         abort_unless($request->user()->isAdmin, 403);
-        $data = $request->validate([
-            'monitoring_share_enabled' => ['nullable', 'boolean'],
-            'viewer_ids' => ['nullable', 'array'],
-            'viewer_ids.*' => ['integer', 'distinct', 'exists:users,id'],
-        ]);
-        $viewerIds = collect($data['viewer_ids'] ?? [])
-            ->map(fn ($id) => (int) $id)
-            ->reject(fn ($id) => $id === (int) $user->id)
-            ->values();
+        $data = $this->validatedAccess($request);
+        MonitoringAccess::create($data);
 
-        $user->update(['monitoring_share_enabled' => $request->boolean('monitoring_share_enabled')]);
-        $user->monitoringViewers()->sync($viewerIds);
+        return back()->with('success', 'Akses monitoring berhasil ditambahkan.');
+    }
+
+    public function updateAccess(Request $request, MonitoringAccess $access)
+    {
+        abort_unless($request->user()->isAdmin, 403);
+        $data = $this->validatedAccess($request, $access);
+        $access->update($data);
 
         return back()->with('success', 'Akses monitoring berhasil diperbarui.');
+    }
+
+    public function destroyAccess(Request $request, MonitoringAccess $access)
+    {
+        abort_unless($request->user()->isAdmin, 403);
+        $access->delete();
+
+        return back()->with('success', 'Akses monitoring berhasil dihapus.');
     }
 
     private function authorizeParticipant(User $user, MonitoringSession $session): void
@@ -262,5 +273,29 @@ class MonitoringController extends Controller
                 ->where('viewer_user_id', $user->id)
                 ->where('target_user_id', $session->target_user_id)
                 ->exists());
+    }
+
+    private function canShare(User $user): bool
+    {
+        return (bool) $user->isAdmin || MonitoringAccess::query()
+            ->where('target_user_id', $user->id)
+            ->exists();
+    }
+
+    private function validatedAccess(Request $request, ?MonitoringAccess $ignore = null): array
+    {
+        $data = $request->validate([
+            'target_user_id' => ['required', 'integer', 'exists:users,id'],
+            'viewer_user_id' => ['required', 'integer', 'different:target_user_id', 'exists:users,id'],
+        ]);
+        $unique = Rule::unique('monitoring_accesses')
+            ->where(fn ($query) => $query
+                ->where('viewer_user_id', $data['viewer_user_id'])
+                ->where('target_user_id', $data['target_user_id']));
+        if ($ignore) $unique->ignore($ignore->id);
+
+        validator($data, ['viewer_user_id' => [$unique]])->validate();
+
+        return $data;
     }
 }

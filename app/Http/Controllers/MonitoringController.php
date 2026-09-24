@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\MonitoringSession;
 use App\Models\MonitoringSignal;
+use App\Models\MonitoringAccess;
 use App\Models\User;
 use App\Services\FirebaseCustomTokenService;
 use App\Services\FirestoreService;
@@ -28,22 +29,24 @@ class MonitoringController extends Controller
             return view('monitoring.directory', compact('users'));
         }
 
-        $users = $viewer->isAdmin
-            ? User::query()->orderBy('email')->get(['id', 'name', 'email', 'photo_profile'])
-            : collect([$viewer]);
-        $target = $users->firstWhere('id', $viewer->isAdmin ? $request->integer('user') : $viewer->id) ?? $viewer;
+        $availableTargets = $viewer->isAdmin
+            ? collect()
+            : $viewer->monitoringTargets()->orderBy('email')->get(['users.id', 'name', 'email', 'photo_profile']);
+        $requestedTargetId = $request->integer('user');
+        $target = $requestedTargetId ? User::query()->findOrFail($requestedTargetId) : $viewer;
+        $isSelf = (int) $target->id === (int) $viewer->id;
+        $canViewTarget = (bool) $viewer->isAdmin || $availableTargets->contains('id', $target->id);
+        abort_unless($isSelf || $canViewTarget, 403, 'Anda tidak memiliki akses untuk memantau pengguna ini.');
         $activeSession = MonitoringSession::query()->where('target_user_id', $target->id)->where('status', 'active')->latest('started_at')->first();
 
         return view('monitoring.index', [
             'title' => 'Monitoring',
-            'users' => $users,
+            'users' => $availableTargets,
+            'availableTargets' => $availableTargets,
             'target' => $target,
             'activeSession' => $activeSession,
-            // Admin only observes other users. Starting a browser capture,
-            // downloading the helper extension, and its setup guide belong to
-            // non-admin target users on their own device.
-            'canStart' => ! $viewer->isAdmin && (int) $viewer->id === (int) $target->id,
-            'canView' => $viewer->isAdmin && (int) $viewer->id !== (int) $target->id,
+            'canStart' => $isSelf && (bool) $viewer->monitoring_share_enabled,
+            'canView' => ! $isSelf && $canViewTarget,
             'firebaseWebConfig' => array_filter(config('firestore.web', [])),
         ]);
     }
@@ -52,6 +55,7 @@ class MonitoringController extends Controller
     {
         $request->validate(['consent' => ['accepted']]);
         $user = $request->user();
+        abort_unless($user->monitoring_share_enabled, 403, 'Akses untuk membagikan layar belum diizinkan oleh administrator.');
         MonitoringSession::query()->where('target_user_id', $user->id)->where('status', 'active')->update(['status' => 'ended', 'ended_at' => now()]);
         $session = MonitoringSession::create(['target_user_id' => $user->id, 'status' => 'active', 'consented_at' => now(), 'started_at' => now()]);
 
@@ -68,7 +72,7 @@ class MonitoringController extends Controller
 
     public function join(Request $request, MonitoringSession $session)
     {
-        abort_unless($request->user()->isAdmin, 403);
+        abort_unless($this->canView($request->user(), $session), 403);
         abort_unless($session->status === 'active', 409, 'Sesi monitoring sudah berakhir.');
         abort_if((int) $session->target_user_id === (int) $request->user()->id, 422);
         // A target may be observed by more than one admin. Every admin has a
@@ -86,7 +90,7 @@ class MonitoringController extends Controller
 
     public function active(Request $request, User $user)
     {
-        abort_unless($request->user()->isAdmin, 403);
+        abort_unless($request->user()->isAdmin || $request->user()->monitoringTargets()->whereKey($user->id)->exists(), 403);
 
         $session = MonitoringSession::query()
             ->where('target_user_id', $user->id)
@@ -106,7 +110,7 @@ class MonitoringController extends Controller
         abort_unless($session->status === 'active', 409, 'Sesi monitoring sudah berakhir.');
 
         return response()->json([
-            'token' => $tokens->forUser((int) $request->user()->id, (bool) $request->user()->isAdmin),
+            'token' => $tokens->forUser((int) $request->user()->id, (bool) $request->user()->isAdmin, 'erp_'.$session->target_user_id),
         ]);
     }
 
@@ -166,7 +170,7 @@ class MonitoringController extends Controller
             : (int) $session->target_user_id;
         if ((int) $sender->id === (int) $session->target_user_id) {
             abort_unless(
-                $recipientId > 0 && User::query()->whereKey($recipientId)->where('isAdmin', true)->exists(),
+                $recipientId > 0 && $this->canView(User::query()->findOrFail($recipientId), $session),
                 422,
                 'Tujuan pemantau tidak valid.'
             );
@@ -212,10 +216,51 @@ class MonitoringController extends Controller
         return response()->json(['ok' => true]);
     }
 
+    public function accessIndex(Request $request): View
+    {
+        abort_unless($request->user()->isAdmin, 403);
+
+        $users = User::query()
+            ->with('monitoringViewers:id,name,email')
+            ->orderBy('name')
+            ->orderBy('email')
+            ->get(['id', 'name', 'email', 'photo_profile', 'monitoring_share_enabled']);
+
+        return view('monitoring.access', compact('users'));
+    }
+
+    public function updateAccess(Request $request, User $user)
+    {
+        abort_unless($request->user()->isAdmin, 403);
+        $data = $request->validate([
+            'monitoring_share_enabled' => ['nullable', 'boolean'],
+            'viewer_ids' => ['nullable', 'array'],
+            'viewer_ids.*' => ['integer', 'distinct', 'exists:users,id'],
+        ]);
+        $viewerIds = collect($data['viewer_ids'] ?? [])
+            ->map(fn ($id) => (int) $id)
+            ->reject(fn ($id) => $id === (int) $user->id)
+            ->values();
+
+        $user->update(['monitoring_share_enabled' => $request->boolean('monitoring_share_enabled')]);
+        $user->monitoringViewers()->sync($viewerIds);
+
+        return back()->with('success', 'Akses monitoring berhasil diperbarui.');
+    }
+
     private function authorizeParticipant(User $user, MonitoringSession $session): void
     {
         $isTarget = (int) $user->id === (int) $session->target_user_id;
-        $isViewer = (bool) $user->isAdmin && (int) $user->id !== (int) $session->target_user_id;
+        $isViewer = $this->canView($user, $session);
         abort_unless($isTarget || $isViewer, 403);
+    }
+
+    private function canView(User $user, MonitoringSession $session): bool
+    {
+        return (int) $user->id !== (int) $session->target_user_id
+            && ((bool) $user->isAdmin || MonitoringAccess::query()
+                ->where('viewer_user_id', $user->id)
+                ->where('target_user_id', $session->target_user_id)
+                ->exists());
     }
 }

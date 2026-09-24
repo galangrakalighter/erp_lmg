@@ -29,7 +29,8 @@ class User extends Authenticatable
         'jabatan',
         'photo_profile',
         'phone',
-        'is_locked'
+        'is_locked',
+        'monitoring_share_enabled',
     ];
 
     /**
@@ -54,6 +55,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'isAdmin' => 'boolean',
             'is_locked' => 'boolean',
+            'monitoring_share_enabled' => 'boolean',
         ];
     }
 
@@ -83,5 +85,15 @@ class User extends Authenticatable
     public function monitoringSessions()
     {
         return $this->hasMany(MonitoringSession::class, 'target_user_id');
+    }
+
+    public function monitoringTargets()
+    {
+        return $this->belongsToMany(User::class, 'monitoring_accesses', 'viewer_user_id', 'target_user_id')->withTimestamps();
+    }
+
+    public function monitoringViewers()
+    {
+        return $this->belongsToMany(User::class, 'monitoring_accesses', 'target_user_id', 'viewer_user_id')->withTimestamps();
     }
 }

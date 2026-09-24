@@ -3,10 +3,11 @@
 @section('content')
 <main class="min-h-screen bg-[#f5f5f3] px-4 py-5 sm:px-6 lg:px-8">
     <div class="mx-auto max-w-[1600px] space-y-5">
-        <header class="rounded-[28px] bg-zinc-950 px-6 py-8 text-white shadow-xl shadow-zinc-950/10 sm:px-9">
-            <p class="text-[11px] font-bold uppercase tracking-[.24em] text-lime-300">Lighter Media Group · Monitoring</p>
-            <h1 class="mt-3 text-3xl font-semibold tracking-tight">Live Monitoring</h1>
-            <p class="mt-2 max-w-2xl text-sm text-zinc-400">Buka pengguna untuk melihat layar dan kamera yang sedang dibagikan secara langsung.</p>
+        <header class="flex flex-wrap items-end justify-between gap-5 rounded-[28px] bg-zinc-950 px-6 py-8 text-white shadow-xl shadow-zinc-950/10 sm:px-9">
+            <div><p class="text-[11px] font-bold uppercase tracking-[.24em] text-lime-300">Lighter Media Group · Monitoring</p>
+                <h1 class="mt-3 text-3xl font-semibold tracking-tight">Live Monitoring</h1>
+                <p class="mt-2 max-w-2xl text-sm text-zinc-400">Buka pengguna untuk melihat layar dan kamera yang sedang dibagikan secara langsung.</p></div>
+            <a href="{{ route('monitoring.access.index') }}" class="rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200">Kelola Akses</a>
         </header>
 
         <div><p class="text-xs font-bold uppercase tracking-[.18em] text-zinc-400">Direktori pengguna</p><h2 class="mt-1 text-xl font-semibold text-zinc-950">Pilih pengguna untuk membuka monitoring</h2></div>

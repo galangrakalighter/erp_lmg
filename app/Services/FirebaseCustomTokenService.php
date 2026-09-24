@@ -12,7 +12,7 @@ class FirebaseCustomTokenService
      * Mint a short-lived Firebase custom token for the authenticated ERP user.
      * The service-account private key never leaves this server.
      */
-    public function forUser(int $userId, bool $isAdmin): string
+    public function forUser(int $userId, bool $isAdmin, ?string $monitoringTargetUid = null): string
     {
         $credentials = $this->credentials();
         $now = time();
@@ -27,6 +27,9 @@ class FirebaseCustomTokenService
             'claims' => [
                 'erp_user_id' => $userId,
                 'erp_is_admin' => $isAdmin,
+                // Allows Firestore Rules to validate a non-admin viewer only
+                // for the target selected by the server-side ERP permission.
+                'erp_monitoring_target_uid' => $monitoringTargetUid,
             ],
         ], $credentials['private_key'], 'RS256');
     }

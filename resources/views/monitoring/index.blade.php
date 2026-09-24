@@ -7,6 +7,16 @@
         <h1 class="mt-2 text-3xl font-semibold">Live Monitoring</h1>
         <p class="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">Streaming layar dan kamera berlangsung langsung dari browser target. Tidak ada kontrol perangkat dan target harus menyetujui izin pada setiap sesi.</p>
     </div>
+    @if($availableTargets->isNotEmpty())
+        <section class="mb-6 rounded-2xl border border-zinc-200 bg-white p-5">
+            <p class="text-xs font-bold uppercase tracking-[.16em] text-zinc-500">Akses pemantauan saya</p>
+            <div class="mt-3 flex flex-wrap gap-2">
+                @foreach($availableTargets as $availableTarget)
+                    <a href="{{ route('monitoring.index', ['user' => $availableTarget->id]) }}" class="rounded-xl border border-zinc-200 px-3 py-2 text-sm font-semibold text-zinc-800 transition hover:border-zinc-950 hover:bg-zinc-950 hover:text-white">{{ $availableTarget->name ?: $availableTarget->email }}</a>
+                @endforeach
+            </div>
+        </section>
+    @endif
     <div class="grid gap-6 xl:grid-cols-[330px_minmax(0,1fr)]">
         <aside id="monitoring-user-picker" class="hidden rounded-2xl border border-zinc-200 bg-white p-4">
             <h2 class="font-semibold text-zinc-950">Pengguna</h2>

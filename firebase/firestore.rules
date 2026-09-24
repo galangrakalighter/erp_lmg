@@ -18,9 +18,14 @@ service cloud.firestore {
       return signedIn() && room(sessionId).data.target_uid == request.auth.uid;
     }
 
+    function isPermittedViewer(sessionId) {
+      return signedIn()
+        && request.auth.token.erp_monitoring_target_uid == room(sessionId).data.target_uid;
+    }
+
     match /monitoring_sessions/{sessionId} {
       // Session state is written only by Laravel using its service account.
-      allow get, list: if isAdmin() || isTarget(sessionId);
+      allow get, list: if isAdmin() || isTarget(sessionId) || isPermittedViewer(sessionId);
       allow create, update, delete: if false;
 
       match /signals/{signalId} {
@@ -34,7 +39,7 @@ service cloud.firestore {
           && request.resource.data.sender_uid == request.auth.uid
           && (
             isTarget(sessionId)
-            || (isAdmin() && request.resource.data.recipient_uid == room(sessionId).data.target_uid)
+            || ((isAdmin() || isPermittedViewer(sessionId)) && request.resource.data.recipient_uid == room(sessionId).data.target_uid)
           );
         allow update, delete: if false;
       }

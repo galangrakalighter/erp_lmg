@@ -11,7 +11,6 @@ use App\Services\FirestoreService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class MonitoringController extends Controller
@@ -225,9 +224,11 @@ class MonitoringController extends Controller
             ->orderBy('name')
             ->orderBy('email')
             ->get(['id', 'name', 'email', 'photo_profile']);
-        $accesses = MonitoringAccess::query()
-            ->with(['viewer:id,name,email', 'target:id,name,email'])
-            ->orderByDesc('id')
+        $accesses = User::query()
+            ->with('monitoringViewers:id,name,email')
+            ->whereHas('monitoringViewers')
+            ->orderBy('name')
+            ->orderBy('email')
             ->get();
 
         return view('monitoring.access', compact('users', 'accesses'));
@@ -237,24 +238,31 @@ class MonitoringController extends Controller
     {
         abort_unless($request->user()->isAdmin, 403);
         $data = $this->validatedAccess($request);
-        MonitoringAccess::create($data);
+        User::query()->findOrFail($data['target_user_id'])
+            ->monitoringViewers()
+            ->sync($data['viewer_ids']);
 
         return back()->with('success', 'Akses monitoring berhasil ditambahkan.');
     }
 
-    public function updateAccess(Request $request, MonitoringAccess $access)
+    public function updateAccess(Request $request, User $access)
     {
         abort_unless($request->user()->isAdmin, 403);
-        $data = $this->validatedAccess($request, $access);
-        $access->update($data);
+        $data = $this->validatedAccess($request);
+        if ((int) $access->id !== (int) $data['target_user_id']) {
+            $access->monitoringViewers()->sync([]);
+        }
+        User::query()->findOrFail($data['target_user_id'])
+            ->monitoringViewers()
+            ->sync($data['viewer_ids']);
 
         return back()->with('success', 'Akses monitoring berhasil diperbarui.');
     }
 
-    public function destroyAccess(Request $request, MonitoringAccess $access)
+    public function destroyAccess(Request $request, User $access)
     {
         abort_unless($request->user()->isAdmin, 403);
-        $access->delete();
+        $access->monitoringViewers()->sync([]);
 
         return back()->with('success', 'Akses monitoring berhasil dihapus.');
     }
@@ -282,19 +290,14 @@ class MonitoringController extends Controller
             ->exists();
     }
 
-    private function validatedAccess(Request $request, ?MonitoringAccess $ignore = null): array
+    private function validatedAccess(Request $request): array
     {
         $data = $request->validate([
             'target_user_id' => ['required', 'integer', 'exists:users,id'],
-            'viewer_user_id' => ['required', 'integer', 'different:target_user_id', 'exists:users,id'],
+            'viewer_ids' => ['required', 'array', 'min:1'],
+            'viewer_ids.*' => ['integer', 'distinct', 'exists:users,id'],
         ]);
-        $unique = Rule::unique('monitoring_accesses')
-            ->where(fn ($query) => $query
-                ->where('viewer_user_id', $data['viewer_user_id'])
-                ->where('target_user_id', $data['target_user_id']));
-        if ($ignore) $unique->ignore($ignore->id);
-
-        validator($data, ['viewer_user_id' => [$unique]])->validate();
+        abort_if(in_array((int) $data['target_user_id'], array_map('intval', $data['viewer_ids']), true), 422, 'Pengguna target tidak dapat memantau dirinya sendiri.');
 
         return $data;
     }

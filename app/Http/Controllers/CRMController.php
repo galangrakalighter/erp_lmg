@@ -2278,11 +2278,15 @@ class CRMController extends Controller
                     */
                     $response = Http::acceptJson()
                         ->asJson()
-                        ->connectTimeout(10)
-                        ->timeout(30)
+                        // Do not let a slow/offline n8n workflow occupy a
+                        // PHP worker until Cloudflare returns a generic 502.
+                        // History remains responsive and the UI receives a
+                        // clear API error that can be retried by the user.
+                        ->connectTimeout(5)
+                        ->timeout(12)
                         ->retry(
-                            2,
-                            500,
+                            1,
+                            250,
                             function (
                                 \Throwable $exception
                             ) {

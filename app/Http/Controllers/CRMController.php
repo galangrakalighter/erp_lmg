@@ -2174,7 +2174,7 @@ class CRMController extends Controller
             'https://waha-tvdqpz621wfz.cgk-hero.sumopod.my.id';
 
         private const HUMAN_HISTORY_WEBHOOK =
-            'https://bmglbl3.n8n.bocindonesia.com/webhook/get-data-history';
+            'https://bmglbl3.n8n.bocindonesia.com/webhook-test/get-data-history';
 
         private const WAHA_API_KEY =
             'i6cpQScyiUj7qE0kOkDayJbxi5zD6REo';
@@ -2352,8 +2352,11 @@ class CRMController extends Controller
                         return response()->json([
                             'success' => false,
                             'message' =>
-                                'Webhook n8n gagal memberikan history.',
-                        ], 502);
+                                'Server history n8n sedang tidak tersedia (HTTP '
+                                . $response->status()
+                                . ').',
+                            'n8n_status' => $response->status(),
+                        ], 424);
                     }
 
                     /*
@@ -2385,7 +2388,7 @@ class CRMController extends Controller
                             'success' => false,
                             'message' =>
                                 'Webhook n8n tidak mengirimkan response. Pastikan Webhook memakai "Using Respond to Webhook Node".',
-                        ], 502);
+                        ], 424);
                     }
 
                     /*
@@ -2423,7 +2426,7 @@ class CRMController extends Controller
                             'success' => false,
                             'message' =>
                                 'Response webhook n8n bukan JSON yang valid.',
-                        ], 502);
+                        ], 424);
                     }
 
                     /*

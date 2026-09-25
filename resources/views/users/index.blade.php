@@ -2734,22 +2734,12 @@
             form.submit();
         };
 
-        if (typeof Swal !== 'undefined') {
-            Swal.fire({
-                title: isLocked ? 'Buka kunci akun?' : 'Kunci akun?',
-                text: `${name} ${isLocked ? 'akan dapat login kembali.' : 'tidak akan dapat login sampai kuncinya dibuka.'}`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: isLocked ? 'Buka Kunci' : 'Kunci Akun',
-                cancelButtonText: 'Batal',
-                confirmButtonColor: '#161616'
-            }).then(function (result) {
-                if (result.isConfirmed) submit();
-            });
-            return;
-        }
-
-        if (window.confirm(`Yakin ingin ${actionLabel} akun ${name}?`)) submit();
+        // Native confirmation opens immediately and avoids waiting for the
+        // large SweetAlert runtime/animation on the user management page.
+        const description = isLocked
+            ? `${name} akan dapat login kembali.`
+            : `${name} tidak akan dapat login sampai kuncinya dibuka.`;
+        if (window.confirm(`Yakin ingin ${actionLabel} akun ${name}?\n\n${description}`)) submit();
     }
 
 

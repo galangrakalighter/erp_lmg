@@ -2174,7 +2174,7 @@ class CRMController extends Controller
             'https://waha-tvdqpz621wfz.cgk-hero.sumopod.my.id';
 
         private const HUMAN_HISTORY_WEBHOOK =
-            'https://bmglbl3.n8n.bocindonesia.com/webhook-test/get-data-history';
+            'https://bmglbl3.n8n.bocindonesia.com/webhook/get-data-history';
 
         private const WAHA_API_KEY =
             'i6cpQScyiUj7qE0kOkDayJbxi5zD6REo';

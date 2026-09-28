@@ -69,7 +69,7 @@ class FacebookService
             foreach ($data as $key) {
                 $url_result = "https://graph.facebook.com/{$version}/{$key['id_post']}/insights";
                 $params_result = [
-                    'metric' => "post_video_views,post_impressions_unique,post_impressions_paid_unique",
+                    'metric' => 'post_media_view,post_total_media_view_unique',
                     'period' => 'lifetime',
                     'access_token' => $token,
                 ];
@@ -95,14 +95,13 @@ class FacebookService
                 // Looping untuk memasukkan data ke variabel yang tepat berdasarkan NAMA metrik
                 foreach ($dataGabung as $item) {
                     switch ($item['name']) {
-                        case 'post_video_views':
-                            $reachValue = $item['values'][0]['value'] ?? 0;
-                            break;
-                        case 'post_impressions_unique':
+                        case 'post_media_view':
+                        case 'post_impressions':
                             $impresiValue = $item['values'][0]['value'] ?? 0;
                             break;
-                        case 'post_impressions_paid_unique':
-                            $pemirsaValue = $item['values'][0]['value'] ?? 0;
+                        case 'post_total_media_view_unique':
+                        case 'post_impressions_unique':
+                            $reachValue = $item['values'][0]['value'] ?? 0;
                             break;
                     }
                 }
@@ -121,7 +120,7 @@ class FacebookService
                 $engagement = $reaction_count + $comment_count + $shares_count;
 
                 $post['data'][] = [
-                    'reach' => $jumlah_reach == 0 ? $impresiValue : $jumlah_reach,
+                    'reach' => $reachValue ?: $jumlah_reach,
                     'judul' => $key['judul'],
                     'pemirsa' => $pemirsaValue,
                     'tanggal_posting' => date('d M Y', strtotime($key['tanggal_posting'])),

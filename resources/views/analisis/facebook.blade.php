@@ -424,7 +424,7 @@
 
         // Render Chart
         function renderChart(data) {
-            console.log(data);
+            if (!ctx || typeof Chart === 'undefined') return;
             if (myChart) myChart.destroy();
             myChart = new Chart(ctx, {
                 type: 'bar',
@@ -438,6 +438,17 @@
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
             });
         }
+
+        window.addEventListener('analysis:tab-changed', function(event) {
+            if (event.detail?.active !== 'metrics') return;
+            requestAnimationFrame(function() {
+                if (myChart) {
+                    myChart.resize();
+                } else {
+                    renderChart(allPosts);
+                }
+            });
+        });
 
         // 3. Flatpickr
         const startP = flatpickr("#startDate", { dateFormat: "d M Y" });
@@ -458,6 +469,8 @@
             window.location.href = window.location.pathname;
         });
 
-        renderChart(allPosts);
+        if (!document.querySelector('[data-analysis-panel="metrics"]')?.classList.contains('hidden')) {
+            renderChart(allPosts);
+        }
     });
 </script>

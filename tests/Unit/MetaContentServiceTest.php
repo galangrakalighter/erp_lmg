@@ -41,4 +41,46 @@ class MetaContentServiceTest extends TestCase
         $this->assertSame([], $result['data']);
         Http::assertSent(fn (Request $request) => str_contains($request->url(), '/page-123/feed'));
     }
+
+    public function test_facebook_uses_media_view_as_impressions_and_unique_viewers_as_reach(): void
+    {
+        Http::fake(function (Request $request) {
+            if (str_contains($request->url(), '/page-123/feed')) {
+                return Http::response(['data' => [[
+                    'id' => 'post-1',
+                    'message' => 'Konten uji',
+                    'created_time' => now()->toIso8601String(),
+                    'permalink_url' => 'https://facebook.com/post-1',
+                ]]]);
+            }
+
+            if (str_contains($request->url(), '/post-1/insights')) {
+                return Http::response(['data' => [
+                    ['name' => 'post_media_view', 'values' => [['value' => 120]]],
+                    ['name' => 'post_total_media_view_unique', 'values' => [['value' => 75]]],
+                ]]);
+            }
+
+            if (str_contains($request->url(), '/post-1')) {
+                return Http::response([
+                    'reactions' => ['summary' => ['total_count' => 4]],
+                    'comments' => ['summary' => ['total_count' => 2]],
+                    'shares' => ['count' => 1],
+                ]);
+            }
+
+            if (str_contains($request->url(), '/page-123')) {
+                return Http::response(['followers_count' => 10]);
+            }
+
+            return Http::response([]);
+        });
+
+        $result = app(FacebookService::class)->getPost(null, null, 'page-token', false, 'page-123');
+
+        $this->assertSame(120, $result['data'][0]['impresi']);
+        $this->assertSame(75, $result['data'][0]['reach']);
+        $this->assertSame(7, $result['data'][0]['engagement']);
+        Http::assertSent(fn (Request $request) => str_contains((string) data_get($request->data(), 'metric'), 'post_media_view'));
+    }
 }

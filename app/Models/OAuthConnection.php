@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class OAuthConnection extends Model
 {
+    protected $table = 'oauth_connections';
+
     protected $fillable = [
         'client_id', 'connected_by', 'provider', 'access_token', 'token_type',
         'expires_at', 'provider_user_id', 'provider_user_name', 'scopes',

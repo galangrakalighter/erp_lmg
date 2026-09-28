@@ -111,6 +111,12 @@ class MetaOAuthController extends Controller
             if (! collect($pages)->contains('id', $selected['page_id'] ?? null)) {
                 $selected['page_id'] = Arr::get($pages, '0.id');
             }
+            $instagramAccounts = collect($pages)
+                ->pluck('instagram_business_account')
+                ->filter(fn ($account) => filled($account['id'] ?? null));
+            if (! $instagramAccounts->contains('id', $selected['instagram_account_id'] ?? null)) {
+                $selected['instagram_account_id'] = $instagramAccounts->first()['id'] ?? null;
+            }
             if (! collect($adAccounts)->contains('id', $selected['ad_account_id'] ?? null)) {
                 $selected['ad_account_id'] = Arr::get($adAccounts, '0.id');
             }
@@ -163,12 +169,19 @@ class MetaOAuthController extends Controller
         $connection = $client->oauthConnections()->where('provider', 'meta')->firstOrFail();
         $data = $request->validate([
             'page_id' => ['nullable', 'string', 'max:255'],
+            'instagram_account_id' => ['nullable', 'string', 'max:255'],
             'ad_account_id' => ['nullable', 'string', 'max:255'],
         ]);
         $assets = $connection->assets ?? [];
+        $instagramAccounts = collect($assets['pages'] ?? [])
+            ->pluck('instagram_business_account')
+            ->filter(fn ($account) => filled($account['id'] ?? null));
 
         if (filled($data['page_id'] ?? null) && ! collect($assets['pages'] ?? [])->contains('id', $data['page_id'])) {
             throw ValidationException::withMessages(['page_id' => 'Facebook Page tidak tersedia pada koneksi ini.']);
+        }
+        if (filled($data['instagram_account_id'] ?? null) && ! $instagramAccounts->contains('id', $data['instagram_account_id'])) {
+            throw ValidationException::withMessages(['instagram_account_id' => 'Instagram Page tidak tersedia pada koneksi ini.']);
         }
         if (filled($data['ad_account_id'] ?? null) && ! collect($assets['ad_accounts'] ?? [])->contains('id', $data['ad_account_id'])) {
             throw ValidationException::withMessages(['ad_account_id' => 'Akun iklan tidak tersedia pada koneksi ini.']);

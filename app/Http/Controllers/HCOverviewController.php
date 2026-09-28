@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
-use App\Models\UserDivision;
+use App\Models\userDivision as UserDivision;
 use App\Models\Role;
 use App\Models\Division;
 use App\Models\KPI;

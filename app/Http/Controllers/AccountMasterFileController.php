@@ -6,7 +6,7 @@ use App\Models\AccountMasterFile;
 use App\Models\Division;
 use App\Models\Role;
 use App\Models\User;
-use App\Models\userDivision;
+use App\Models\userDivision as UserDivision;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -174,7 +174,7 @@ class AccountMasterFileController extends Controller
             return User::pluck('id')->map(fn ($id) => (int) $id)->all();
         }
 
-        $rows = userDivision::with('role')->get();
+        $rows = UserDivision::with('role')->get();
         $visible = [(int) $viewer->id => true];
         foreach ($rows->where('user_id', $viewer->id) as $root) {
             $rootLevel = (int) ($root->role?->level ?? 0);

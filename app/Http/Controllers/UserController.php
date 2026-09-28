@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Division;
 use App\Models\Role;
-use App\Models\userDivision;
+use App\Models\userDivision as UserDivision;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -150,7 +150,7 @@ class UserController extends Controller
         $parents = [$userId];
 
         while ($parents !== []) {
-            $children = userDivision::query()
+            $children = UserDivision::query()
                 ->whereIn('parent_id', $parents)
                 ->pluck('user_id')
                 ->map(fn ($id) => (int) $id)
@@ -238,7 +238,7 @@ class UserController extends Controller
                 foreach ($request->subordinate_ids as $subordinateId) {
                     $subordinate = User::unlocked()->find($subordinateId);
                     if ($subordinate) {
-                        userDivision::where('user_id', $subordinateId)
+                        UserDivision::where('user_id', $subordinateId)
                             ->where('division_id', (int) $request->divisi_id)
                             ->whereHas('role', fn ($query) => $query->where('level', '>', $role->level))
                             ->update(['parent_id' => $newUser->id]);
@@ -397,7 +397,7 @@ class UserController extends Controller
             ]);
         }
 
-        $isValidParent = userDivision::query()
+        $isValidParent = UserDivision::query()
             ->where('user_id', $request->integer('parent_id'))
             ->where('division_id', $request->integer('divisi_id'))
             ->whereHas('role', fn ($query) => $query->where('level', '<', $role->level))

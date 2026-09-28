@@ -104,9 +104,12 @@ class ProdukClient extends Model
         }
 
         $assets = $connection->assets ?? [];
-        $selectedPageId = $connection->selected_assets['page_id'] ?? null;
-        $page = collect($assets['pages'] ?? [])->firstWhere('id', $selectedPageId)
-            ?? collect($assets['pages'] ?? [])->first();
+        $selectedAssets = $connection->selected_assets ?? [];
+        $pages = collect($assets['pages'] ?? []);
+        $page = strtolower($platform) === 'instagram'
+            ? $pages->first(fn ($item) => data_get($item, 'instagram_business_account.id') === ($selectedAssets['instagram_account_id'] ?? null))
+            : $pages->firstWhere('id', $selectedAssets['page_id'] ?? null);
+        $page ??= $pages->first();
 
         return $page['access_token'] ?? $connection->access_token;
     }
@@ -119,13 +122,15 @@ class ProdukClient extends Model
         }
 
         $assets = $connection->assets ?? [];
-        $selectedPageId = $connection->selected_assets['page_id'] ?? null;
-        $page = collect($assets['pages'] ?? [])->firstWhere('id', $selectedPageId)
-            ?? collect($assets['pages'] ?? [])->first();
+        $selectedAssets = $connection->selected_assets ?? [];
+        $pages = collect($assets['pages'] ?? []);
 
         if (strtolower($platform) === 'instagram') {
-            return data_get($page, 'instagram_business_account.id');
+            return $selectedAssets['instagram_account_id']
+                ?? data_get($pages->first(fn ($item) => filled(data_get($item, 'instagram_business_account.id'))), 'instagram_business_account.id');
         }
+
+        $page = $pages->firstWhere('id', $selectedAssets['page_id'] ?? null) ?? $pages->first();
 
         return $page['id'] ?? null;
     }

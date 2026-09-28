@@ -29,45 +29,21 @@ function initHierarchy(){
 
             $('#select-ads').prop('disabled',false);
 
-            $('#select-ccm').prop('disabled',false);
-
             filterOptions('select-dm',ids);
 
             filterOptions('select-ads',ids);
-
-            filterOptions('select-ccm',ids);
 
         }else{
 
             resetSelect([
                 'select-dm',
-                'select-ads',
-                'select-ccm',
-                'select-cc'
+                'select-ads'
             ]);
 
         }
 
     });
 
-
-    $('#select-ccm').change(function(){
-
-        let ids=$(this).val();
-
-        if(ids && ids.length){
-
-            $('#select-cc').prop('disabled',false);
-
-            filterOptions('select-cc',ids);
-
-        }else{
-
-            resetSelect(['select-cc']);
-
-        }
-
-    });
 
 }
 

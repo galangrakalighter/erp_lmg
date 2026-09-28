@@ -114,7 +114,7 @@ class KPIController extends Controller
         if ($user->isAdmin) {
             $allowedUserIds = \App\Models\User::unlocked()->where('isAdmin', false)->pluck('id')->toArray();
         } else {
-            $allowedUserIds = \App\Models\UserDivision::where('parent_id', $user->id)
+            $allowedUserIds = \App\Models\userDivision::where('parent_id', $user->id)
                 ->orWhere('user_id', $user->id)
                 ->pluck('user_id')
                 ->toArray();

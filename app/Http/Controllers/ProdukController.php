@@ -6,7 +6,7 @@ use App\Models\ProdukClient;
 use App\Models\OAuthConnection;
 use App\Models\KategoriJasa;
 use App\Models\UserClient;
-use App\Models\UserDivision;
+use App\Models\userDivision as UserDivision;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -172,10 +172,19 @@ class ProdukController extends Controller
                     $pages = collect($assets['pages'] ?? []);
                     $selectedPageId = $connection->selected_assets['page_id'] ?? null;
                     $selectedPage = $pages->firstWhere('id', $selectedPageId) ?? $pages->first();
+                    $instagramAccounts = $pages
+                        ->filter(fn ($page) => filled(data_get($page, 'instagram_business_account.id')))
+                        ->map(fn ($page) => [
+                            'id' => data_get($page, 'instagram_business_account.id'),
+                            'username' => data_get($page, 'instagram_business_account.username'),
+                            'name' => data_get($page, 'instagram_business_account.name'),
+                            'page_id' => $page['id'] ?? null,
+                            'page_name' => $page['name'] ?? 'Facebook Page',
+                        ])->values();
                     return [$connection->provider => [
                         'connected' => filled($connection->access_token),
                         'ready' => filled($connection->access_token) && (bool) $selectedPage,
-                        'has_instagram' => filled(data_get($selectedPage, 'instagram_business_account.id')),
+                        'has_instagram' => $instagramAccounts->isNotEmpty(),
                         'provider_user_name' => $connection->provider_user_name,
                         'expires_at' => $connection->expires_at?->toIso8601String(),
                         'scopes' => $connection->scopes ?? [],
@@ -185,6 +194,7 @@ class ProdukController extends Controller
                             'name' => $page['name'] ?? 'Facebook Page',
                             'instagram' => $page['instagram_business_account'] ?? null,
                         ])->values(),
+                        'instagram_accounts' => $instagramAccounts,
                         'ad_accounts' => collect($assets['ad_accounts'] ?? [])->map(fn ($account) => [
                             'id' => $account['id'] ?? null,
                             'name' => $account['name'] ?? ($account['account_id'] ?? 'Akun iklan'),

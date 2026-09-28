@@ -31,14 +31,6 @@ function initClientTable() {
         {
             data: 'ads',
             render: data => renderBadges(data, 'badge-dark')
-        },
-        {
-            data: 'ccm',
-            render: data => renderBadges(data, 'badge-warning text-dark')
-        },
-        {
-            data: 'cc',
-            render: data => renderBadges(data, 'badge-warning text-dark')
         }
     ];
 

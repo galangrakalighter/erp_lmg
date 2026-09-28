@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use App\Models\Division;
-use App\Models\UserDivision;
+use App\Models\userDivision as UserDivision;
 use App\Models\ProdukClient;
 use App\Models\AuditTrail;
 use App\Services\TrialBalanceService;

@@ -193,11 +193,17 @@ function buildEditModalHtml(res){
                                 <div><p class="mb-0 text-sm font-bold text-emerald-900">Terhubung sebagai ${escapeProdukHtml(oauthConnections.meta.provider_user_name || 'Pengguna Meta')}</p><p class="mb-0 text-[11px] text-emerald-700">Pilih aset yang digunakan untuk client ini.</p></div>
                                 <button type="button" data-meta-disconnect data-client-id="${p.id}" class="rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-semibold text-rose-700">Putuskan</button>
                             </div>
-                            <div class="grid gap-3 md:grid-cols-2">
+                            <div class="grid gap-3 md:grid-cols-3">
                                 <label class="text-xs font-semibold text-zinc-700">Facebook Page
                                     <select data-meta-page class="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm">
                                         <option value="">Pilih Facebook Page</option>
                                         ${(oauthConnections.meta.pages || []).map(page => `<option value="${escapeProdukHtml(page.id)}" ${String(oauthConnections.meta.selected_assets?.page_id || '') === String(page.id) ? 'selected' : ''}>${escapeProdukHtml(page.name)}${page.instagram?.username ? ` · @${escapeProdukHtml(page.instagram.username)}` : ''}</option>`).join('')}
+                                    </select>
+                                </label>
+                                <label class="text-xs font-semibold text-zinc-700">Instagram Page
+                                    <select data-meta-instagram-account class="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm">
+                                        <option value="">Pilih Instagram Page</option>
+                                        ${(oauthConnections.meta.instagram_accounts || []).map(account => `<option value="${escapeProdukHtml(account.id)}" ${String(oauthConnections.meta.selected_assets?.instagram_account_id || '') === String(account.id) ? 'selected' : ''}>${account.username ? `@${escapeProdukHtml(account.username)}` : escapeProdukHtml(account.name || 'Instagram')}${account.page_name ? ` · ${escapeProdukHtml(account.page_name)}` : ''}</option>`).join('')}
                                     </select>
                                 </label>
                                 <label class="text-xs font-semibold text-zinc-700">Akun Iklan
@@ -241,24 +247,6 @@ function buildEditModalHtml(res){
                     <label class="font-weight-bold small text-dark">Advertising (ADS)</label>
                     <select name="ads_ids[]" id="edit-select-ads" class="form-control select2-multiple" multiple data-placeholder="Pilih ADS">
                         ${(opt.ads || []).map(u => {
-                            const isSelected = currentTeams.some(t => (t.id || t) == u.id);
-                            return `<option value="${u.id}" data-parent="${u.parent != null ? u.parent : ''}" ${isSelected ? 'selected' : ''}>${u.name}</option>`;
-                        }).join('')}
-                    </select>
-                </div>
-                <div class="col-md-6 form-group">
-                    <label class="font-weight-bold small text-warning">Content Creator Manager (CCM)</label>
-                    <select name="ccm_ids[]" id="edit-select-ccm" class="form-control select2-multiple" multiple data-placeholder="Pilih CCM">
-                        ${(opt.ccm || []).map(u => {
-                            const isSelected = currentTeams.some(t => (t.id || t) == u.id);
-                            return `<option value="${u.id}" data-parent="${u.parent != null ? u.parent : ''}" ${isSelected ? 'selected' : ''}>${u.name}</option>`;
-                        }).join('')}
-                    </select>
-                </div>
-                <div class="col-md-6 form-group">
-                    <label class="font-weight-bold small text-warning">Content Creator (CC)</label>
-                    <select name="cc_ids[]" id="edit-select-cc" class="form-control select2-multiple" multiple data-placeholder="Pilih CC">
-                        ${(opt.cc || []).map(u => {
                             const isSelected = currentTeams.some(t => (t.id || t) == u.id);
                             return `<option value="${u.id}" data-parent="${u.parent != null ? u.parent : ''}" ${isSelected ? 'selected' : ''}>${u.name}</option>`;
                         }).join('')}
@@ -482,8 +470,6 @@ function setupEditHierarchy() {
     const $buh = $('#edit-select-buh');
     const $dm = $('#edit-select-dm');
     const $ads = $('#edit-select-ads');
-    const $ccm = $('#edit-select-ccm');
-    const $cc = $('#edit-select-cc');
 
     const normalizeIds = function (ids) {
         return (ids || [])
@@ -533,47 +519,25 @@ function setupEditHierarchy() {
         refreshSelect2($select);
     };
 
-    const refreshFromCcm = function () {
-        const ccmIds = normalizeIds($ccm.val());
-
-        if (ccmIds.length === 0) {
-            disableAndClear($cc);
-            return;
-        }
-
-        $cc.prop('disabled', false);
-        filterByParent($cc, ccmIds);
-    };
-
     const refreshFromBuh = function () {
         const buhIds = normalizeIds($buh.val());
 
         if (buhIds.length === 0) {
             disableAndClear($dm);
             disableAndClear($ads);
-            disableAndClear($ccm);
-            disableAndClear($cc);
             return;
         }
 
         $dm.prop('disabled', false);
         $ads.prop('disabled', false);
-        $ccm.prop('disabled', false);
 
         filterByParent($dm, buhIds);
         filterByParent($ads, buhIds);
-        filterByParent($ccm, buhIds);
-
-        refreshFromCcm();
     };
 
     $buh
         .off('change.editHierarchy')
         .on('change.editHierarchy', refreshFromBuh);
-
-    $ccm
-        .off('change.editHierarchy')
-        .on('change.editHierarchy', refreshFromCcm);
 
     // Terapkan kondisi awal berdasarkan data selected dari API.
     refreshFromBuh();
@@ -655,8 +619,6 @@ function restoreEditSelectedValue(){
     $('#edit-select-buh').trigger('change.select2');
     $('#edit-select-dm').trigger('change.select2');
     $('#edit-select-ads').trigger('change.select2');
-    $('#edit-select-ccm').trigger('change.select2');
-    $('#edit-select-cc').trigger('change.select2');
 
 }
 

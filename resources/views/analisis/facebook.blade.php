@@ -4,19 +4,25 @@
 @include('partials.client_native_tables')
 @include('partials.analysis_workspace_theme')
 <style>
-    body.lmg-analysis-page .row:has(#dataTable tbody:empty) > .col-lg-6:first-child,
-    body.lmg-analysis-page .row:has(#dataTable tbody:empty) > .col-lg-3 { display: none; }
-    body.lmg-analysis-page .row:has(#dataTable tbody:empty) > .col-lg-6:last-child,
-    body.lmg-analysis-page .row:has(#dataTable tbody:empty) > .col-lg-9 { flex: 0 0 100%; max-width: 100%; }
     .stat-card { border-left: 4px solid #161616 !important; }
     .stat-card:hover { transform: translateY(-2px) !important; }
     .stat-card .text-primary, .stat-card .text-success,
     .stat-card .text-info, .stat-card .text-warning { color: #161616 !important; }
     .chart-container { min-height: 320px; }
     .card-body canvas { max-width: 100%; }
+    .facebook-analysis-header .analysis-filter-actions { display: flex; align-items: center; gap: 10px; }
+    .facebook-analysis-section-title { margin-bottom: 14px; }
+    .facebook-analysis-section-title h5 { margin: 0; color: #18181b; font-size: 15px; font-weight: 750; }
+    .facebook-analysis-section-title p { margin: 4px 0 0; color: #a1a1aa; font-size: 12px; }
+    .facebook-analysis-table-card .card-body { padding: 0 !important; }
+    .facebook-analysis-table-card .facebook-analysis-section-title { margin: 0; padding: 18px 18px 14px; border-bottom: 1px solid #e4e4e7; }
+    .facebook-analysis-table-card .table-responsive { border: 0 !important; border-radius: 0 !important; }
+    .facebook-analysis-chart-card .card-body { padding-top: 10px !important; }
     @media (max-width: 767px) {
         .filter-group { align-items: stretch !important; }
         .filter-group > * { width: 100%; }
+        .facebook-analysis-header .analysis-filter-actions { width: 100%; flex-direction: column; align-items: stretch; }
+        .facebook-analysis-header .date-range-pill { margin-right: 0 !important; }
     }
 </style>
 <style>
@@ -126,13 +132,13 @@
         transition: all 0.2s ease;
     }
 </style>
-    <div class="row mb-4">
+    <div class="row mb-4 facebook-analysis-header">
         <div class="col-12">
             <div class="card border-0 shadow-sm p-3">
                 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
                     <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-filter-left me-2 text-primary"></i>Analisis Platform Facebook</h5>
                     <!-- Pencarian Independen di Sebelah Kanan -->
-                    <div class="d-flex align-items-center gap-2 ms-md-auto">
+                    <div class="analysis-filter-actions ms-md-auto">
                         <div class="date-range-pill me-2">
                             <i class="bi bi-calendar3 text-primary"></i>
                             <input type="text" id="startDate" class="date-input-independent" placeholder="Mulai" value="{{ request('start_date') ?? '' }}" readonly>
@@ -158,7 +164,7 @@
     ])
     <div data-analysis-panel="metrics" class="hidden">
     <div class="row g-4 mb-4">
-        <div class="col-md-3">
+        <div class="col-sm-6 col-xl-3">
             <div class="card stat-card border-0 shadow-sm p-3">
                 <div class="d-flex align-items-center">
                     <div>
@@ -168,7 +174,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-sm-6 col-xl-3">
             <div class="card stat-card border-0 shadow-sm p-3">
                 <div class="d-flex align-items-center">
                     <div>
@@ -178,7 +184,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-sm-6 col-xl-3">
             <div class="card stat-card border-0 shadow-sm p-3">
                 <div class="d-flex align-items-center">
                     <div>
@@ -188,7 +194,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-sm-6 col-xl-3">
             <div class="card stat-card border-0 shadow-sm p-3">
                 <div class="d-flex align-items-center">
                     <div>
@@ -199,46 +205,15 @@
             </div>
         </div>
     </div>
-    <!-- Baris 2: Tabel Transaksi & Grafik Penjualan (Bersebelahan) -->
+    <!-- Grafik performa konten -->
     <div class="row g-4 mb-4">
-        <!-- Bagian Tabel -->
-        <div class="col-lg-6">
-            <div class="card h-100">
-                <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0 fw-bold text-dark">Daftar Konten</h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0 dataTable" id="dataTable">
-                            <thead class="text-nowrap">
-                                <tr>
-                                    <th class="ps-4">No</th>
-                                    <th class="ps-4">Link</th>
-                                    <th class="text-center">Tanggal (Y-M-D)</th>
-                                    <th class="text-end pe-4">Type</th>
-                                    <th class="text-end pe-4">Strategy</th>
-                                    <th class="text-end pe-4">Pilar</th>
-                                    <th class="text-end pe-4">Hook</th>
-                                    <th class="text-end pe-4">Komposisi</th>
-                                </tr>
-                            </thead>
-                            <tbody style="font-size: 0.875rem;">
-                                
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Bagian Grafik -->
-        <div class="col-lg-6">
-            <div class="card h-100">
+        <div class="col-12">
+            <div class="card facebook-analysis-chart-card">
                 <div class="card-header py-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h5 class="mb-0 fw-bold text-dark">Reach vs Impresi</h5>
-                            <p class="text-muted small mb-0">Statistik</p>
+                            <h5 class="mb-0 fw-bold text-dark">Performa Konten Facebook</h5>
+                            <p class="text-muted small mb-0">Perbandingan reach dan impresi berdasarkan tanggal publikasi</p>
                         </div>
                     </div>
                 </div>
@@ -251,10 +226,15 @@
         </div>
     </div>
 
-    <!-- Baris 3: Tabel Detail Informasi Pengiriman -->
+    <!-- Detail jangkauan dan interaksi -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card card-body shadow-sm border-0">
+            <div class="card facebook-analysis-table-card shadow-sm border-0">
+                <div class="facebook-analysis-section-title">
+                    <h5>Detail Jangkauan Konten</h5>
+                    <p>Ringkasan reach, impresi, reaction, komentar, dan share per posting.</p>
+                </div>
+                <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0" id="insight_1">
                         <thead class="bg-light">
@@ -339,13 +319,19 @@
                         </tbody>
                     </table>
                 </div>
+                </div>
             </div>
         </div>
     </div>
 
     <div class="row g-4 mb-4">
-        <div class="col-lg-9">
-            <div class="card card-body h-100">
+        <div class="col-12">
+            <div class="card facebook-analysis-table-card h-100">
+                <div class="facebook-analysis-section-title">
+                    <h5>Detail Engagement Konten</h5>
+                    <p>Perbandingan kontribusi reaction, share, komentar, dan total engagement.</p>
+                </div>
+                <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0" id="insight_2">
                         <thead class="bg-light text-nowrap">
@@ -393,20 +379,6 @@
                         </tbody>
                     </table>
                 </div>
-            </div>
-        </div>
-        <div class="col-lg-3">
-            <div class="card h-100">
-                <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0 fw-bold text-dark">Daftar Konten</h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0" id="dataTable">
-                            <tbody style="font-size: 0.875rem;">
-                            </tbody>
-                        </table>
-                    </div>
                 </div>
             </div>
         </div>

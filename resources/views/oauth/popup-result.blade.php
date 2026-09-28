@@ -10,12 +10,15 @@
 </head>
 <body>
 <main class="card"><div class="icon">{{ $success ? '✓' : '!' }}</div><h1>{{ $success ? 'Meta berhasil terhubung' : 'Koneksi Meta gagal' }}</h1><p>{{ $message }}</p></main>
-<script>
-    const payload = @json([
+@php
+    $popupPayload = [
         'type' => $success ? 'meta-oauth-success' : 'meta-oauth-error',
         'message' => $message,
         'connection' => $connection ?? null,
-    ]);
+    ];
+@endphp
+<script>
+    const payload = @json($popupPayload);
     if (window.opener) {
         window.opener.postMessage(payload, @json(url('/')));
         setTimeout(() => window.close(), 700);

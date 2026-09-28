@@ -147,6 +147,12 @@
             </div>
         </div>
     </div>
+    @include('analisis.partials.descriptive', [
+        'platform' => 'Instagram',
+        'analysisPosts' => $posts,
+        'followerMetric' => $insightsRaw[1]['Followers_sebulan'] ?? 0,
+    ])
+    <div data-analysis-panel="metrics" class="hidden">
     <div class="row g-4 mb-4">
         <div class="col-md-3">
             <div class="card stat-card border-0 shadow-sm p-3">
@@ -496,6 +502,7 @@
         </div>
     </div>
 
+    </div>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const allPosts = @json($posts);

@@ -151,6 +151,12 @@
             </div>
         </div>
     </div>
+    @include('analisis.partials.descriptive', [
+        'platform' => 'Facebook',
+        'analysisPosts' => $dataBaru,
+        'followerMetric' => $jumlah_follower,
+    ])
+    <div data-analysis-panel="metrics" class="hidden">
     <div class="row g-4 mb-4">
         <div class="col-md-3">
             <div class="card stat-card border-0 shadow-sm p-3">
@@ -404,6 +410,7 @@
                 </div>
             </div>
         </div>
+    </div>
     </div>
 <script>
     document.addEventListener('DOMContentLoaded', function() {

@@ -255,6 +255,16 @@ class HCDailyController extends Controller
         $today = Carbon::today();
         $formContext = $this->dailyWorkFormContext($currentUser);
         $selfOnly = str_starts_with((string) $request->query('scope'), 'self');
+
+        // Daily Work yang dibuka dari Dashboard adalah ruang kerja pribadi.
+        // Walaupun user memiliki bawahan, PIC form tetap hanya dirinya sendiri.
+        if ($selfOnly) {
+            $formContext['people'] = collect([[
+                'id' => (int) $currentUser->id,
+                'email' => $currentUser->email,
+            ]]);
+        }
+
         $visibleUserIds = collect([$currentUser->id]);
 
         if (! $selfOnly && $currentUser->isAdmin) {

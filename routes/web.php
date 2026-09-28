@@ -7,8 +7,11 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/terms-privacy-policy', function () {
-    return view('privacy');
+    return redirect()->route('legal.privacy');
 });
+Route::view('/privacy-policy', 'legal.privacy')->name('legal.privacy');
+Route::view('/terms-of-service', 'legal.terms')->name('legal.terms');
+Route::view('/data-deletion', 'legal.data-deletion')->name('legal.data-deletion');
 Route::middleware('auth')->group(function () {
     Route::get('activity-logs', [ActivityLogController::class, 'index'])
         ->middleware(EnsureUserIsAdmin::class)

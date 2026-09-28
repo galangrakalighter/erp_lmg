@@ -150,45 +150,34 @@ function buildEditModalHtml(res){
 
             <div class="section-title mb-3 d-flex align-items-center mt-4">
                 <div class="bg-warning mr-2" style="width: 4px; height: 18px; border-radius: 2px;"></div>
-                <h6 class="text-warning font-weight-bold mb-0">Platform & Akses Token</h6>
+                <h6 class="text-warning font-weight-bold mb-0">Open Authorization (OAuth 2.0)</h6>
             </div>
 
             <div class="card border-0 shadow-sm rounded-lg mb-4">
-                <div class="card-body p-3" id="platform-container-edit">
-                    ${platformData.length > 0 ? platformData.map((item, index) => `
-                        <div class="platform-row mb-3">
-                            <div class="input-group">
-                                <select name="platform[]" class="form-control col-md-4">
-                                    <option value="Instagram" ${item.platform == 'Instagram' ? 'selected' : ''}>Instagram</option>
-                                    <option value="Facebook" ${item.platform == 'Facebook' ? 'selected' : ''}>Facebook</option>
-                                    <option value="Threads" ${item.platform == 'Threads' ? 'selected' : ''}>Threads</option>
-                                    <option value="Tiktok" ${item.platform == 'Tiktok' ? 'selected' : ''}>Tiktok</option>
-                                </select>
-                                <input type="text" name="access[]" class="form-control" value="${item.access || ''}" placeholder="Input Access Token">
-                                <div class="input-group-append">
-                                    ${index === 0 ? 
-                                        `<button type="button" class="btn btn-success add-platform-edit">+</button>` : 
-                                        `<button type="button" class="btn btn-danger remove-platform-edit">-</button>`
-                                    }
-                                </div>
-                            </div>
-                        </div>
-                    `).join('') : `
-                        <div class="platform-row mb-3">
-                            <div class="input-group">
-                                <select name="platform[]" class="form-control col-md-4">
-                                    <option value="Instagram">Instagram</option>
-                                    <option value="Facebook">Facebook</option>
-                                    <option value="Threads">Threads</option>
-                                    <option value="Tiktok">Tiktok</option>
-                                </select>
-                                <input type="text" name="access[]" class="form-control" placeholder="Input Access Token">
-                                <div class="input-group-append">
-                                    <button type="button" class="btn btn-success add-platform-edit">+</button>
-                                </div>
-                            </div>
-                        </div>
-                    `}
+                <div class="card-body p-4">
+                    <p class="mb-3 text-sm text-zinc-500">Hubungkan akun melalui persetujuan resmi platform. Access token dan refresh token dikelola otomatis oleh server.</p>
+                    <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+                        ${[
+                            { key: 'meta', name: 'Meta', detail: 'Facebook & Instagram', platforms: ['Facebook', 'Instagram'], icon: 'fab fa-facebook' },
+                            { key: 'threads', name: 'Threads', detail: 'Threads API', platforms: ['Threads'], icon: 'fas fa-at' },
+                            { key: 'tiktok', name: 'TikTok', detail: 'Login Kit & Display API', platforms: ['Tiktok', 'TikTok'], icon: 'fab fa-tiktok' },
+                            { key: 'google', name: 'Google', detail: 'Google & YouTube', platforms: ['Google', 'YouTube'], icon: 'fab fa-google' }
+                        ].map(provider => {
+                            const connected = platformData.some(item => provider.platforms.includes(item.platform) && item.access);
+                            return `
+                                <div class="flex items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-white p-3">
+                                    <div class="flex min-w-0 items-center gap-3">
+                                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-700"><i class="${provider.icon}"></i></span>
+                                        <div class="min-w-0">
+                                            <p class="mb-0 text-sm font-bold text-zinc-900">${provider.name}</p>
+                                            <p class="mb-0 text-[11px] text-zinc-500">${provider.detail}</p>
+                                            <span class="mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${connected ? 'bg-emerald-50 text-emerald-700' : 'bg-zinc-100 text-zinc-500'}">${connected ? 'Terhubung' : 'Belum terhubung'}</span>
+                                        </div>
+                                    </div>
+                                    <button type="button" data-oauth-provider="${provider.key}" data-client-id="${p.id}" class="shrink-0 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 hover:border-zinc-950 hover:bg-zinc-950 hover:text-white">${connected ? 'Hubungkan ulang' : 'Hubungkan'}</button>
+                                </div>`;
+                        }).join('')}
+                    </div>
                 </div>
             </div>
 

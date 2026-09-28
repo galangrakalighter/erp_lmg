@@ -53,11 +53,34 @@
     ========================================================== --}}
     <div class="overflow-hidden rounded-2xl border border-zinc-200 bg-white">
 
+        {{-- =====================================================
+            ACCOUNT STATUS NAVIGATION
+        ====================================================== --}}
+        <div class="border-b border-zinc-200 bg-zinc-50/60 px-5 py-4 sm:px-6">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-400">Status Akun</p>
+                    <p class="mt-1 text-xs text-zinc-500">Pisahkan akun aktif dan akun yang sudah dikunci.</p>
+                </div>
+
+                <div id="accountStatusTabs" class="inline-flex w-full rounded-xl border border-zinc-200 bg-zinc-100 p-1 sm:w-auto" role="tablist">
+                    <button type="button" class="account-status-tab flex flex-1 items-center justify-center gap-2 rounded-lg bg-white px-4 py-2 text-xs font-semibold text-zinc-950 shadow-sm transition sm:flex-none" data-status="unlocked" role="tab" aria-selected="true">
+                        Akun Aktif
+                        <span data-status-count="unlocked" class="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">0</span>
+                    </button>
+                    <button type="button" class="account-status-tab flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold text-zinc-500 transition hover:text-zinc-950 sm:flex-none" data-status="locked" role="tab" aria-selected="false">
+                        Akun Terkunci
+                        <span data-status-count="locked" class="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">0</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
 
         {{-- =====================================================
             DIVISION NAVIGATION
         ====================================================== --}}
-        <div class="border-b border-zinc-200">
+        <div id="divisionNavigationSection" class="border-b border-zinc-200">
 
             <div class="flex flex-col">
 
@@ -162,7 +185,7 @@
         {{-- =====================================================
             TOOLBAR
         ====================================================== --}}
-        <div class="border-b border-zinc-200 bg-zinc-50/60 px-5 py-4 sm:px-6">
+        <div id="userToolbar" class="border-b border-zinc-200 bg-zinc-50/60 px-5 py-4 sm:px-6">
 
             <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
 
@@ -1071,6 +1094,7 @@
     let allUsers = [];
     let currentDivisionId = null;
     let currentDivisionName = null;
+    let currentAccountStatus = 'unlocked';
     const financeDivisionId = @json($divisions->firstWhere('name', 'Finance')?->id);
 
     function isExecutivePlacement(divisiId) {
@@ -1234,6 +1258,42 @@
                 $this
             );
 
+        });
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | ACCOUNT STATUS TABS
+        |--------------------------------------------------------------------------
+        */
+
+        $('.account-status-tab').on('click', function () {
+            currentAccountStatus = $(this).data('status');
+
+            $('.account-status-tab')
+                .removeClass('bg-white text-zinc-950 shadow-sm')
+                .addClass('text-zinc-500')
+                .attr('aria-selected', 'false');
+
+            $(this)
+                .removeClass('text-zinc-500')
+                .addClass('bg-white text-zinc-950 shadow-sm')
+                .attr('aria-selected', 'true');
+
+            $('#custom_search').val('');
+            $('#clearSearch').addClass('hidden').removeClass('flex');
+
+            const showingLockedAccounts = currentAccountStatus === 'locked';
+            $('#divisionNavigationSection').toggleClass('hidden', showingLockedAccounts);
+
+            if (showingLockedAccounts) {
+                $('#currentDivisionTitle').text('Semua Divisi');
+            } else {
+                $('#currentDivisionTitle').text(currentDivisionName ?? '-');
+            }
+
+            updateDivisionCounts();
+            renderUsers();
         });
 
 
@@ -1505,6 +1565,9 @@
         $('#activeDivisionLabel')
             .text(divisiName);
 
+        updateAccountStatusCounts();
+        updateDivisionCounts();
+
 
         /*
         | Reset search when changing division
@@ -1544,7 +1607,11 @@
             const count =
                 allUsers.filter(function (user) {
 
-                    return (user.user_divisions ?? [])
+                    const matchesStatus = currentAccountStatus === 'locked'
+                        ? Boolean(user.is_locked)
+                        : !user.is_locked;
+
+                    return matchesStatus && (user.user_divisions ?? [])
                         .some(function (division) {
 
                             return String(
@@ -1557,11 +1624,38 @@
 
 
             $(this).text(
-                `${count} ${count === 1 ? 'user' : 'users'}`
+                `${count} ${currentAccountStatus === 'locked' ? 'terkunci' : 'aktif'}`
             );
 
         });
 
+    }
+
+
+    function getCurrentDivisionUsersByStatus(status) {
+        return allUsers.filter(function (user) {
+            const matchesStatus = status === 'locked'
+                ? Boolean(user.is_locked)
+                : !user.is_locked;
+
+            if (status === 'locked') {
+                return matchesStatus;
+            }
+
+            if (!currentDivisionId) {
+                return false;
+            }
+
+            return matchesStatus && (user.user_divisions ?? []).some(function (division) {
+                return String(division.division_id) === String(currentDivisionId);
+            });
+        });
+    }
+
+
+    function updateAccountStatusCounts() {
+        $('[data-status-count="unlocked"]').text(allUsers.filter(user => !user.is_locked).length);
+        $('[data-status-count="locked"]').text(allUsers.filter(user => Boolean(user.is_locked)).length);
     }
 
 
@@ -1572,28 +1666,7 @@
     */
 
     function getCurrentDivisionUsers() {
-
-        if (!currentDivisionId) {
-            return [];
-        }
-
-
-        return allUsers.filter(function (user) {
-
-            if (user.is_locked) {
-                return false;
-            }
-
-            return (user.user_divisions ?? [])
-                .some(function (division) {
-
-                    return String(
-                        division.division_id
-                    ) === String(currentDivisionId);
-
-                });
-
-        });
+        return getCurrentDivisionUsersByStatus(currentAccountStatus);
 
     }
 
@@ -1608,6 +1681,13 @@
 
         const container =
             $('#table-container');
+
+        updateAccountStatusCounts();
+
+        if (currentAccountStatus === 'locked') {
+            renderLockedAccounts();
+            return;
+        }
 
 
         let users =
@@ -1732,7 +1812,9 @@
                         ${
                             search
                                 ? 'Coba gunakan kata kunci lain.'
-                                : `Belum ada user yang terdaftar pada divisi ${currentDivisionName}.`
+                                : currentAccountStatus === 'locked'
+                                    ? `Tidak ada akun terkunci pada divisi ${currentDivisionName}.`
+                                    : `Belum ada akun aktif pada divisi ${currentDivisionName}.`
                         }
                     </p>
 
@@ -1857,6 +1939,84 @@
         $('#userTableBody')
             .html(rows);
 
+    }
+
+
+    function renderLockedAccounts() {
+        const container = $('#table-container');
+        const search = $('#custom_search').val().toLowerCase().trim();
+        let users = allUsers.filter(user => Boolean(user.is_locked));
+
+        if (search) {
+            users = users.filter(function (user) {
+                const placements = (user.user_divisions ?? []).flatMap(function (division) {
+                    return [division.division?.name ?? '', division.role ?? ''];
+                });
+                return [user.name ?? '', user.email ?? '', ...placements]
+                    .join(' ')
+                    .toLowerCase()
+                    .includes(search);
+            });
+        }
+
+        const totalLocked = allUsers.filter(user => Boolean(user.is_locked)).length;
+        $('#currentDivisionCount').text(search ? `${users.length} dari ${totalLocked} akun` : `${totalLocked} akun terkunci`);
+
+        if (!users.length) {
+            container.html(`
+                <div class="flex min-h-[240px] flex-col items-center justify-center px-6 text-center">
+                    <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" class="h-6 w-6"><rect x="5" y="10" width="14" height="11" rx="2"></rect><path stroke-linecap="round" d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg>
+                    </div>
+                    <p class="text-sm font-semibold text-zinc-800">${search ? 'Akun tidak ditemukan' : 'Tidak ada akun terkunci'}</p>
+                    <p class="mt-1 text-xs text-zinc-400">${search ? 'Coba gunakan kata kunci lain.' : 'Semua akun saat ini dalam keadaan aktif.'}</p>
+                </div>
+            `);
+            return;
+        }
+
+        const rows = users.map(function (user, index) {
+            const placements = user.user_divisions ?? [];
+            const divisions = [...new Set(placements.map(item => item.division?.name).filter(Boolean))];
+            const roles = [...new Set(placements.map(item => item.role).filter(Boolean))];
+            const escapedName = escapeHtml(user.name ?? '-');
+            const escapedEmail = escapeHtml(user.email ?? '-');
+
+            return `
+                <tr class="group transition hover:bg-zinc-50">
+                    <td class="px-4 py-4 text-center text-[11px] font-medium text-zinc-300">${String(index + 1).padStart(2, '0')}</td>
+                    <td class="px-4 py-4">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-zinc-950 text-[10px] font-bold uppercase text-white">
+                                ${user.photo_profile_url ? `<img src="${escapeHtml(user.photo_profile_url)}" alt="Foto ${escapedName}" class="h-full w-full object-cover">` : getInitials(user.name)}
+                            </div>
+                            <div class="min-w-0"><div class="truncate font-semibold text-zinc-900">${escapedName}</div><div class="mt-0.5 truncate text-[11px] text-zinc-400">${escapedEmail}</div></div>
+                        </div>
+                    </td>
+                    <td class="px-4 py-4"><div class="flex flex-wrap gap-1">${divisions.length ? divisions.map(item => `<span class="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-1 text-[10px] font-semibold text-zinc-600">${escapeHtml(item)}</span>`).join('') : '<span class="text-zinc-300">—</span>'}</div></td>
+                    <td class="px-4 py-4"><div class="flex flex-wrap gap-1">${roles.length ? roles.map(item => `<span class="rounded-full bg-zinc-100 px-2 py-1 text-[10px] font-semibold text-zinc-600">${escapeHtml(item)}</span>`).join('') : '<span class="text-zinc-300">—</span>'}</div></td>
+                    <td class="px-4 py-4">
+                        <div class="flex items-center justify-center gap-1">
+                            <button type="button" onclick="toggleLockUser(${user.id}, '${escapeJs(user.name ?? '-')}', true)" title="Buka kunci akun" class="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2.5 text-[10px] font-semibold text-amber-700 transition hover:bg-amber-100">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-3.5 w-3.5"><rect x="5" y="10" width="14" height="11" rx="2"></rect><path stroke-linecap="round" d="M8 10V7a4 4 0 0 1 7.5-2"></path></svg> Buka Kunci
+                            </button>
+                            <button type="button" onclick="editUser(${user.id})" title="Edit" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-zinc-200 text-zinc-500 transition hover:border-zinc-950 hover:bg-zinc-950 hover:text-white"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-3.5 w-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="m14 6 4 4M5 19l3.5-.75L18.5 8.25a1.5 1.5 0 0 0-2.12-2.12L6.38 16.13 5 19Z"></path></svg></button>
+                            <button type="button" onclick="deleteUser(${user.id}, '${escapeJs(user.name ?? '-')}')" title="Hapus akun" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-zinc-200 text-zinc-500 transition hover:border-red-600 hover:bg-red-600 hover:text-white"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-3.5 w-3.5"><path stroke-linecap="round" d="M4 7h16M10 11v6M14 11v6M9 7l1-2h4l1 2M6 7l1 14h10l1-14"></path></svg></button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        container.html(`
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[760px] text-left text-xs">
+                    <thead class="border-b border-zinc-200 bg-zinc-50"><tr class="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500"><th class="w-12 px-4 py-3 text-center">No</th><th class="min-w-[240px] px-4 py-3">User</th><th class="min-w-[180px] px-4 py-3">Divisi</th><th class="min-w-[180px] px-4 py-3">Role</th><th class="w-48 px-4 py-3 text-center">Aksi</th></tr></thead>
+                    <tbody class="divide-y divide-zinc-100">${rows}</tbody>
+                </table>
+            </div>
+            <div class="border-t border-zinc-100 bg-zinc-50/50 px-4 py-3 text-[10px] uppercase tracking-[0.12em] text-zinc-400">${users.length} akun terkunci ditampilkan dari seluruh divisi</div>
+        `);
     }
 
 

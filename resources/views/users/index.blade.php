@@ -1670,6 +1670,18 @@
 
     }
 
+    function getActiveUsersForDivision(divisiId) {
+        if (!divisiId) {
+            return [];
+        }
+
+        return allUsers.filter(function (user) {
+            return !user.is_locked && (user.user_divisions ?? []).some(function (division) {
+                return String(division.division_id) === String(divisiId);
+            });
+        });
+    }
+
 
     /*
     |--------------------------------------------------------------------------
@@ -2617,7 +2629,7 @@
 
 
         const allData =
-            getCurrentDivisionUsers();
+            getActiveUsersForDivision(divisiId);
 
 
         let maxLevel = 0;
@@ -3081,7 +3093,7 @@
 
 
         const allData =
-            getCurrentDivisionUsers();
+            getActiveUsersForDivision(divisiId);
 
 
         let htmlParent =

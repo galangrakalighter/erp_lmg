@@ -173,8 +173,8 @@ class ProdukController extends Controller
                     $selectedPageId = $connection->selected_assets['page_id'] ?? null;
                     $selectedPage = $pages->firstWhere('id', $selectedPageId) ?? $pages->first();
                     return [$connection->provider => [
-                        'connected' => true,
-                        'ready' => (bool) $selectedPage,
+                        'connected' => filled($connection->access_token),
+                        'ready' => filled($connection->access_token) && (bool) $selectedPage,
                         'has_instagram' => filled(data_get($selectedPage, 'instagram_business_account.id')),
                         'provider_user_name' => $connection->provider_user_name,
                         'expires_at' => $connection->expires_at?->toIso8601String(),

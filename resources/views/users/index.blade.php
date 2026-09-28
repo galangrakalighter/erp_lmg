@@ -2623,7 +2623,7 @@
         $panel.removeClass('hidden');
 
         const isFinance = isFinancePlacement(divisiId);
-        const requiresParent = isFinance || !!parentRoleId;
+        const requiresParent = isFinance || selectedLevel > 1;
         $parentPanel.toggleClass('hidden', !requiresParent);
         $parentSelect.prop('disabled', !requiresParent);
 
@@ -2677,8 +2677,7 @@
 
                 return (
                     ud &&
-                    String(ud.role_id) ===
-                    String(parentRoleId)
+                    parseInt(ud.level) < selectedLevel
                 );
 
             });
@@ -2719,9 +2718,7 @@
 
                 return (
                     ud &&
-                    String(
-                        $('#modal_role option[value="' + ud.role_id + '"]').data('parent')
-                    ) === String(roleId)
+                    parseInt(ud.level) > selectedLevel
                 );
 
             });
@@ -3087,7 +3084,7 @@
         );
 
         const isFinance = isFinancePlacement(divisiId);
-        const requiresParent = isFinance || !!parentRoleId;
+        const requiresParent = isFinance || selectedLevel > 1;
         $parentPanel.toggleClass('hidden', !requiresParent);
         $parentSelect.prop('disabled', !requiresParent);
 
@@ -3116,7 +3113,7 @@
 
                 return (
                     ud &&
-                    String(ud.role_id) === String(parentRoleId) &&
+                    parseInt(ud.level) < selectedLevel &&
                     String(user.id) !==
                     String(currentUserId)
                 );
@@ -3167,9 +3164,7 @@
 
 
                 return (
-                    String(
-                        $('#edit_role option[value="' + ud.role_id + '"]').data('parent')
-                    ) === String(roleId) &&
+                    userLevel > selectedLevel &&
                     String(user.id) !==
                     String(currentUserId)
                 );

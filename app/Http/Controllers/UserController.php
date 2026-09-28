@@ -240,7 +240,7 @@ class UserController extends Controller
                     if ($subordinate) {
                         userDivision::where('user_id', $subordinateId)
                             ->where('division_id', (int) $request->divisi_id)
-                            ->whereHas('role', fn ($query) => $query->where('parent_id', $role->id))
+                            ->whereHas('role', fn ($query) => $query->where('level', '>', $role->level))
                             ->update(['parent_id' => $newUser->id]);
                     }
                 }
@@ -320,7 +320,7 @@ class UserController extends Controller
                     ->pluck('id');
                 UserDivision::whereIn('user_id', $unlockedSubordinateIds)
                     ->where('division_id', (int)$request->divisi_id)
-                    ->whereHas('role', fn ($query) => $query->where('parent_id', $level->id))
+                    ->whereHas('role', fn ($query) => $query->where('level', '>', $level->level))
                     ->update(['parent_id' => $id]);
             }
 
@@ -400,12 +400,12 @@ class UserController extends Controller
         $isValidParent = userDivision::query()
             ->where('user_id', $request->integer('parent_id'))
             ->where('division_id', $request->integer('divisi_id'))
-            ->where('role_id', $role->parent_id)
+            ->whereHas('role', fn ($query) => $query->where('level', '<', $role->level))
             ->exists();
 
         if (! $isValidParent) {
             throw ValidationException::withMessages([
-                'parent_id' => 'Atasan harus berasal dari divisi yang sama dengan role atasan yang sesuai.',
+                'parent_id' => 'Atasan harus berasal dari divisi yang sama dan memiliki level yang lebih tinggi.',
             ]);
         }
 

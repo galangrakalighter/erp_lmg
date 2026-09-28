@@ -78,4 +78,36 @@ class ProdukClient extends Model
     {
         return $this->hasMany(Invoice::class, 'customer_id', 'id');
     }
+
+    public function oauthConnections()
+    {
+        return $this->hasMany(OAuthConnection::class, 'client_id');
+    }
+
+    public function platformAccessToken(string $platform): ?string
+    {
+        $legacy = $this->access_token;
+        if (is_array($legacy) && isset($legacy['platform'], $legacy['access'])) {
+            $index = array_search($platform, $legacy['platform'], true);
+            if ($index !== false && filled($legacy['access'][$index] ?? null)) {
+                return $legacy['access'][$index];
+            }
+        }
+
+        if (! in_array(strtolower($platform), ['facebook', 'instagram'], true)) {
+            return null;
+        }
+
+        $connection = $this->oauthConnections()->where('provider', 'meta')->first();
+        if (! $connection) {
+            return null;
+        }
+
+        $assets = $connection->assets ?? [];
+        $selectedPageId = $connection->selected_assets['page_id'] ?? null;
+        $page = collect($assets['pages'] ?? [])->firstWhere('id', $selectedPageId)
+            ?? collect($assets['pages'] ?? [])->first();
+
+        return $page['access_token'] ?? $connection->access_token;
+    }
 }

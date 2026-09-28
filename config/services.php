@@ -35,6 +35,14 @@ return [
         ],
     ],
 
+    'meta' => [
+        'client_id' => env('META_CLIENT_ID'),
+        'client_secret' => env('META_CLIENT_SECRET'),
+        'config_id' => env('META_CONFIG_ID'),
+        'redirect_uri' => env('META_REDIRECT_URI'),
+        'graph_version' => env('META_GRAPH_VERSION', 'v23.0'),
+    ],
+
     'instagram' => [
         'token' => env('INSTAGRAM_ACCESS_TOKEN'),
     ],

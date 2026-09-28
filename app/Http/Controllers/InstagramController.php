@@ -47,10 +47,10 @@ class InstagramController extends Controller
             case 'Instagram':
                 $posts = [];
                 $maxFollowers = 0;
-                $index = array_search($platform, $produkBaru->access_token['platform']);
+                $token = $produkBaru->platformAccessToken($platform);
 
-                foreach ($this->instagram->getMedia($since, $until, $fetch, $produkBaru->access_token['access'][$index]) as $post) {
-                    $insightsRaw = $this->instagram->getInsights($post['id'], $since, $until, $fetch, $produkBaru->access_token['access'][$index]);
+                foreach ($this->instagram->getMedia($since, $until, $fetch, $token) as $post) {
+                    $insightsRaw = $this->instagram->getInsights($post['id'], $since, $until, $fetch, $token);
                     $frekuensi = ($post['reach_count'] > 0) ? round($post['impresi'] / $post['reach_count']) : 0;
                     // Data Untuk Chart
                     

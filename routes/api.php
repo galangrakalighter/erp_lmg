@@ -74,7 +74,8 @@ Route::post('/updateStatusChecked', [App\Http\Controllers\selectionController::c
 Route::get('/client-pics/{id}/{userId}', [App\Http\Controllers\HCDailyController::class, 'getPic']);
 Route::get('/hc-daily/get-data/{id}', [App\Http\Controllers\HCDailyController::class, 'getTasksById']);
 Route::get('users/json', [App\Http\Controllers\UserController::class, 'getUsersJson'])->name('users.json');
-Route::get('/produk/detail/{id}/{id_user}/{folderName}', [App\Http\Controllers\ProdukController::class, 'getDetail']);
+Route::middleware(['web', 'auth'])
+    ->get('/produk/detail/{id}/{id_user}/{folderName}', [App\Http\Controllers\ProdukController::class, 'getDetail']);
 Route::middleware(['web', 'auth'])
     ->get('/manajemen-konten/{produkId}/{platform}', [App\Http\Controllers\ManajemenKontenController::class, 'getApiData'])
     ->name('manajemen_konten.api_data');

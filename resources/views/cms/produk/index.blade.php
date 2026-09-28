@@ -54,6 +54,7 @@
                 <form action="{{ route('produk_create') }}" method="POST">
                     @csrf
                     <input type="hidden" name="divisi" value="{{ $divisi }}">
+                    <input type="hidden" name="oauth_draft_key" value="{{ old('oauth_draft_key', (string) Illuminate\Support\Str::uuid()) }}" data-oauth-draft-key>
                     
                     <div class="modal-header bg-primary text-white py-3">
                         <h5 class="modal-title font-weight-bold"><i class="fas fa-plus-circle mr-2"></i>Tambah Produk Jasa Baru</h5>
@@ -497,16 +498,106 @@
         }
     };
 
+    let activeMetaOAuthContext = null;
+
+    function openMetaOAuthPopup(url, context) {
+        const width = 620;
+        const height = 760;
+        const left = Math.max(0, window.screenX + (window.outerWidth - width) / 2);
+        const top = Math.max(0, window.screenY + (window.outerHeight - height) / 2);
+        const popup = window.open(url, 'meta-oauth', `popup=yes,width=${width},height=${height},left=${left},top=${top}`);
+        if (!popup) {
+            alert('Popup diblokir browser. Izinkan popup untuk ERP lalu coba kembali.');
+            return;
+        }
+        activeMetaOAuthContext = context;
+        popup.focus();
+    }
+
+    window.addEventListener('message', function (event) {
+        if (event.origin !== window.location.origin || !event.data?.type?.startsWith('meta-oauth-')) return;
+
+        if (event.data.type === 'meta-oauth-error') {
+            alert(event.data.message || 'Koneksi Meta gagal.');
+            activeMetaOAuthContext = null;
+            return;
+        }
+
+        if (activeMetaOAuthContext?.mode === 'edit' && activeMetaOAuthContext.clientId) {
+            editProduk(activeMetaOAuthContext.clientId);
+        } else {
+            const cardButton = document.querySelector('#tambahModal [data-oauth-provider="meta"]');
+            if (cardButton) {
+                cardButton.textContent = 'Terhubung';
+                cardButton.classList.remove('border-zinc-300', 'bg-white', 'text-zinc-700');
+                cardButton.classList.add('border-emerald-600', 'bg-emerald-600', 'text-white');
+            }
+            alert(`${event.data.message} Simpan client untuk menyelesaikan koneksi.`);
+        }
+        activeMetaOAuthContext = null;
+    });
+
     document.addEventListener('click', function (event) {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+        const disconnectButton = event.target.closest('[data-meta-disconnect]');
+        if (disconnectButton) {
+            if (!confirm('Putuskan koneksi Meta untuk client ini?')) return;
+            fetch(`/oauth/meta/${disconnectButton.dataset.clientId}`, {
+                method: 'DELETE',
+                headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken }
+            }).then(async response => {
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'Koneksi gagal diputus.');
+                alert(data.message);
+                $('#modalEditGlobal').modal('hide');
+            }).catch(error => alert(error.message));
+            return;
+        }
+
+        const saveAssetsButton = event.target.closest('[data-meta-save-assets]');
+        if (saveAssetsButton) {
+            const panel = saveAssetsButton.closest('[data-meta-assets-panel]');
+            fetch(`/oauth/meta/${saveAssetsButton.dataset.clientId}/assets`, {
+                method: 'PUT',
+                headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                body: JSON.stringify({
+                    page_id: panel.querySelector('[data-meta-page]')?.value || null,
+                    ad_account_id: panel.querySelector('[data-meta-ad-account]')?.value || null
+                })
+            }).then(async response => {
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'Pilihan aset gagal disimpan.');
+                alert(data.message);
+            }).catch(error => alert(error.message));
+            return;
+        }
+
         const button = event.target.closest('[data-oauth-provider]');
         if (!button) return;
 
         if (button.hasAttribute('data-oauth-new-client')) {
-            alert('Simpan client terlebih dahulu. Setelah itu buka kembali form edit untuk menghubungkan akun ' + button.dataset.oauthProvider + '.');
+            if (button.dataset.oauthProvider === 'meta') {
+                const draftKey = button.closest('form')?.querySelector('[data-oauth-draft-key]')?.value;
+                if (!draftKey) {
+                    alert('Kunci form client tidak ditemukan. Muat ulang halaman lalu coba kembali.');
+                    return;
+                }
+                openMetaOAuthPopup(`/oauth/meta/connect?draft_key=${encodeURIComponent(draftKey)}`, { mode: 'create' });
+                return;
+            }
+            alert('Koneksi ' + button.dataset.oauthProvider + ' belum diaktifkan pada backend server.');
             return;
         }
 
-        alert('Koneksi ' + button.dataset.oauthProvider + ' siap digunakan setelah Client ID dan Client Secret provider dipasang pada konfigurasi server.');
+        if (button.dataset.oauthProvider === 'meta') {
+            openMetaOAuthPopup(`/oauth/meta/${button.dataset.clientId}/redirect`, {
+                mode: 'edit',
+                clientId: button.dataset.clientId
+            });
+            return;
+        }
+
+        alert('Koneksi ' + button.dataset.oauthProvider + ' belum diaktifkan pada backend server.');
     });
 </script>
 @endsection

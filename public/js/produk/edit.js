@@ -1,3 +1,9 @@
+function escapeProdukHtml(value) {
+    return String(value ?? '').replace(/[&<>'"]/g, character => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;'
+    })[character]);
+}
+
 function editProduk(id) {
 
     const $modal = $('#modalEditGlobal');
@@ -80,6 +86,7 @@ function buildEditModalHtml(res){
     const p = res.produk;
     const opt = res.options;
     const currentTeams = res.current_teams || [];
+    const oauthConnections = res.oauth_connections || {};
 
     let rawPlatformData = p.access_token;
 
@@ -163,7 +170,8 @@ function buildEditModalHtml(res){
                             { key: 'tiktok', name: 'TikTok', detail: 'Login Kit & Display API', platforms: ['Tiktok', 'TikTok'], icon: 'fab fa-tiktok' },
                             { key: 'google', name: 'Google', detail: 'Google & YouTube', platforms: ['Google', 'YouTube'], icon: 'fab fa-google' }
                         ].map(provider => {
-                            const connected = platformData.some(item => provider.platforms.includes(item.platform) && item.access);
+                            const connection = oauthConnections[provider.key];
+                            const connected = Boolean(connection?.connected) || platformData.some(item => provider.platforms.includes(item.platform) && item.access);
                             return `
                                 <div class="flex items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-white p-3">
                                     <div class="flex min-w-0 items-center gap-3">
@@ -178,6 +186,29 @@ function buildEditModalHtml(res){
                                 </div>`;
                         }).join('')}
                     </div>
+                    ${oauthConnections.meta?.connected ? `
+                        <div class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4" data-meta-assets-panel>
+                            <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                                <div><p class="mb-0 text-sm font-bold text-emerald-900">Terhubung sebagai ${escapeProdukHtml(oauthConnections.meta.provider_user_name || 'Pengguna Meta')}</p><p class="mb-0 text-[11px] text-emerald-700">Pilih aset yang digunakan untuk client ini.</p></div>
+                                <button type="button" data-meta-disconnect data-client-id="${p.id}" class="rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-semibold text-rose-700">Putuskan</button>
+                            </div>
+                            <div class="grid gap-3 md:grid-cols-2">
+                                <label class="text-xs font-semibold text-zinc-700">Facebook Page
+                                    <select data-meta-page class="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm">
+                                        <option value="">Pilih Facebook Page</option>
+                                        ${(oauthConnections.meta.pages || []).map(page => `<option value="${escapeProdukHtml(page.id)}" ${String(oauthConnections.meta.selected_assets?.page_id || '') === String(page.id) ? 'selected' : ''}>${escapeProdukHtml(page.name)}${page.instagram?.username ? ` · @${escapeProdukHtml(page.instagram.username)}` : ''}</option>`).join('')}
+                                    </select>
+                                </label>
+                                <label class="text-xs font-semibold text-zinc-700">Akun Iklan
+                                    <select data-meta-ad-account class="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm">
+                                        <option value="">Pilih akun iklan</option>
+                                        ${(oauthConnections.meta.ad_accounts || []).map(account => `<option value="${escapeProdukHtml(account.id)}" ${String(oauthConnections.meta.selected_assets?.ad_account_id || '') === String(account.id) ? 'selected' : ''}>${escapeProdukHtml(account.name)}${account.account_id ? ` · ${escapeProdukHtml(account.account_id)}` : ''}</option>`).join('')}
+                                    </select>
+                                </label>
+                            </div>
+                            <button type="button" data-meta-save-assets data-client-id="${p.id}" class="mt-3 rounded-lg bg-zinc-950 px-4 py-2 text-xs font-semibold text-white">Simpan Pilihan Aset</button>
+                        </div>
+                    ` : ''}
                 </div>
             </div>
 

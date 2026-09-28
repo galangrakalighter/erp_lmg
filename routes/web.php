@@ -125,6 +125,12 @@ Route::middleware('auth')->group(function () {
     Route::post('cms/produk/edit/{id}', [App\Http\Controllers\ProdukController::class, 'update'])->name('produk_edit');
     Route::post('cms/produk/delete/{id}', [App\Http\Controllers\ProdukController::class, 'destroy'])->name('produk_delete');
 
+    Route::get('oauth/meta/{client}/redirect', [App\Http\Controllers\MetaOAuthController::class, 'redirect'])->name('oauth.meta.redirect');
+    Route::get('oauth/meta/connect', [App\Http\Controllers\MetaOAuthController::class, 'redirectDraft'])->name('oauth.meta.connect');
+    Route::get('oauth/meta/callback', [App\Http\Controllers\MetaOAuthController::class, 'callback'])->name('oauth.meta.callback');
+    Route::put('oauth/meta/{client}/assets', [App\Http\Controllers\MetaOAuthController::class, 'selectAssets'])->name('oauth.meta.assets');
+    Route::delete('oauth/meta/{client}', [App\Http\Controllers\MetaOAuthController::class, 'disconnect'])->name('oauth.meta.disconnect');
+
     Route::get('client/{division}', [App\Http\Controllers\ProdukController::class, 'indexDivision'])->name('client.produk_divisi');
     Route::resource('perusahaan', App\Http\Controllers\PerusahaanController::class);
 

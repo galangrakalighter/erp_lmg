@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ProdukClient;
+use App\Models\OAuthConnection;
 use App\Models\KategoriJasa;
 use App\Models\UserClient;
 use App\Models\UserDivision;
@@ -88,7 +89,7 @@ class ProdukController extends Controller
     public function getDetail($id, $id_user, $folderName)
     {
         try {
-            $produk = ProdukClient::findOrFail($id);
+            $produk = ProdukClient::with('oauthConnections')->findOrFail($id);
             $divisionId = match ($folderName) {
                 'cms_LGTR' => 1,
                 'cms_BD' => 2,
@@ -153,6 +154,8 @@ class ProdukController extends Controller
             $divisionStatus = $divisionId
                 ? DB::table('client_division')->where('client_id', $produk->id)->where('division_id', $divisionId)->value('status')
                 : $produk->status;
+            $oauthConnections = $produk->oauthConnections;
+            $produk->unsetRelation('oauthConnections');
 
             return response()->json([
                 'status'        => 'success',
@@ -163,7 +166,27 @@ class ProdukController extends Controller
                 'options'       => $options,
                 'is_admin'      => $isUserAdmin,
                 'kategori'      => $kategori,
-                'my_role'       => $roleName // Tambahan untuk debugging jika perlu
+                'my_role'       => $roleName,
+                'oauth_connections' => $oauthConnections->mapWithKeys(function ($connection) {
+                    $assets = $connection->assets ?? [];
+                    return [$connection->provider => [
+                        'connected' => true,
+                        'provider_user_name' => $connection->provider_user_name,
+                        'expires_at' => $connection->expires_at?->toIso8601String(),
+                        'scopes' => $connection->scopes ?? [],
+                        'selected_assets' => $connection->selected_assets ?? [],
+                        'pages' => collect($assets['pages'] ?? [])->map(fn ($page) => [
+                            'id' => $page['id'] ?? null,
+                            'name' => $page['name'] ?? 'Facebook Page',
+                            'instagram' => $page['instagram_business_account'] ?? null,
+                        ])->values(),
+                        'ad_accounts' => collect($assets['ad_accounts'] ?? [])->map(fn ($account) => [
+                            'id' => $account['id'] ?? null,
+                            'name' => $account['name'] ?? ($account['account_id'] ?? 'Akun iklan'),
+                            'account_id' => $account['account_id'] ?? null,
+                        ])->values(),
+                    ]];
+                }),
             ]);
         } catch (\Exception $e) {
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
@@ -177,6 +200,7 @@ class ProdukController extends Controller
             'client' => ['required', 'string', 'max:255'],
             'divisi' => ['required', 'integer', 'exists:divisions,id'],
             'status' => ['required', 'integer'],
+            'oauth_draft_key' => ['nullable', 'uuid'],
         ]);
 
         $accessTokenArray = [
@@ -276,7 +300,21 @@ class ProdukController extends Controller
 
             $this->ensureDefaultClientDocuments($produk, (int) $request->divisi);
 
+            $draftKey = $request->input('oauth_draft_key');
+            $pendingMeta = $draftKey ? $request->session()->get('meta_oauth_pending.'.$draftKey) : null;
+            if (is_array($pendingMeta)) {
+                OAuthConnection::updateOrCreate(
+                    ['client_id' => $produk->id, 'provider' => 'meta'],
+                    $pendingMeta
+                );
+                $this->ensureOAuthPlatformLabels($produk, $pendingMeta['assets']['pages'] ?? []);
+            }
+
             DB::commit();
+
+            if (is_array($pendingMeta) && $draftKey) {
+                $request->session()->forget('meta_oauth_pending.'.$draftKey);
+            }
 
             return redirect()
                 ->back()
@@ -290,6 +328,30 @@ class ProdukController extends Controller
                 ->back()
                 ->with('error', 'Terjadi kesalahan: '.$e->getMessage());
         }
+    }
+
+    private function ensureOAuthPlatformLabels(ProdukClient $client, array $pages): void
+    {
+        $current = is_array($client->access_token) ? $client->access_token : [];
+        $platforms = collect($current['platform'] ?? []);
+        $access = collect($current['access'] ?? []);
+
+        foreach (['Facebook', 'Instagram'] as $platform) {
+            if ($platform === 'Instagram' && ! collect($pages)->contains(
+                fn ($page) => filled(data_get($page, 'instagram_business_account.id'))
+            )) {
+                continue;
+            }
+            if (! $platforms->contains($platform)) {
+                $platforms->push($platform);
+                $access->push('');
+            }
+        }
+
+        $client->update(['access_token' => [
+            'platform' => $platforms->values()->all(),
+            'access' => $access->values()->all(),
+        ]]);
     }
 
     public function update($id, Request $request)

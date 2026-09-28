@@ -77,6 +77,8 @@ class AnalisisController extends Controller
             ->orderBy('data_jasa.tanggal_posting', 'asc')
             ->get();
         $index = array_search($platform, $produkBaru->access_token['platform']);
+        $platformToken = $produkBaru->platformAccessToken($platform)
+            ?? ($index !== false ? ($produkBaru->access_token['access'][$index] ?? null) : null);
 
         switch ($platform) {
             // PENGAMBILAN DATA DARI API GRAPH IG
@@ -84,8 +86,8 @@ class AnalisisController extends Controller
             case 'Instagram':
                 $posts = [];
                 $maxFollowers = 0;
-                foreach ($this->instagram->getMedia($since, $until, $fetch, $produkBaru->access_token['access'][$index]) as $post) {
-                    $insightsRaw = $this->instagram->getInsights($post['id'], $since, $until, $fetch, $produkBaru->access_token['access'][$index]);
+                foreach ($this->instagram->getMedia($since, $until, $fetch, $platformToken) as $post) {
+                    $insightsRaw = $this->instagram->getInsights($post['id'], $since, $until, $fetch, $platformToken);
                     $frekuensi = ($post['reach_count'] > 0) ? round($post['impresi'] / $post['reach_count']) : 0;
                     // Data Untuk Chart
                     $posts[] = [
@@ -171,7 +173,7 @@ class AnalisisController extends Controller
                 ));
                 break;
             case 'Facebook':
-                $data = $this->facebook->getPost($since, $until, $produkBaru->access_token['access'][$index], $fetch);
+                $data = $this->facebook->getPost($since, $until, $platformToken, $fetch);
                 $dataBaru = $data['data'];
                 $dataBaru = collect($dataBaru ?? [])->sortBy('timestamp')->values()->all();
                 $totalReach = array_sum(array_column($dataBaru, 'reach'));
@@ -203,7 +205,7 @@ class AnalisisController extends Controller
                 ));
                 break;
             case 'Youtube':
-                $this->youtube->getAnalyticsReport(null, null,$produkBaru->access_token['access'][$index]);
+                $this->youtube->getAnalyticsReport(null, null, $platformToken);
                 break;
             default:
                 # code...

@@ -221,6 +221,9 @@ class MetaOAuthController extends Controller
         $access = collect($current['access'] ?? []);
 
         foreach (['Facebook', 'Instagram'] as $platform) {
+            if ($platform === 'Facebook' && empty($pages)) {
+                continue;
+            }
             if ($platform === 'Instagram' && ! collect($pages)->contains(fn ($page) => filled(Arr::get($page, 'instagram_business_account.id')))) {
                 continue;
             }

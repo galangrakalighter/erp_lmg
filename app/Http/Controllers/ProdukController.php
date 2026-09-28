@@ -169,13 +169,18 @@ class ProdukController extends Controller
                 'my_role'       => $roleName,
                 'oauth_connections' => $oauthConnections->mapWithKeys(function ($connection) {
                     $assets = $connection->assets ?? [];
+                    $pages = collect($assets['pages'] ?? []);
+                    $selectedPageId = $connection->selected_assets['page_id'] ?? null;
+                    $selectedPage = $pages->firstWhere('id', $selectedPageId) ?? $pages->first();
                     return [$connection->provider => [
                         'connected' => true,
+                        'ready' => (bool) $selectedPage,
+                        'has_instagram' => filled(data_get($selectedPage, 'instagram_business_account.id')),
                         'provider_user_name' => $connection->provider_user_name,
                         'expires_at' => $connection->expires_at?->toIso8601String(),
                         'scopes' => $connection->scopes ?? [],
                         'selected_assets' => $connection->selected_assets ?? [],
-                        'pages' => collect($assets['pages'] ?? [])->map(fn ($page) => [
+                        'pages' => $pages->map(fn ($page) => [
                             'id' => $page['id'] ?? null,
                             'name' => $page['name'] ?? 'Facebook Page',
                             'instagram' => $page['instagram_business_account'] ?? null,
@@ -337,6 +342,9 @@ class ProdukController extends Controller
         $access = collect($current['access'] ?? []);
 
         foreach (['Facebook', 'Instagram'] as $platform) {
+            if ($platform === 'Facebook' && empty($pages)) {
+                continue;
+            }
             if ($platform === 'Instagram' && ! collect($pages)->contains(
                 fn ($page) => filled(data_get($page, 'instagram_business_account.id'))
             )) {

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 class FacebookService
 {
@@ -10,8 +11,14 @@ class FacebookService
     /**
      * Mengambil media dengan penambahan Timeout 120 detik
      */
-    public function getPost($since, $until, $token, $fetch = false){
-        $url = "https://graph.facebook.com/me/feed";
+    public function getPost($since, $until, $token, $fetch = false, $pageId = null){
+        if (! filled($token) || ! filled($pageId)) {
+            Log::warning('Facebook OAuth belum memiliki token atau Facebook Page ID.');
+            return ['data' => [], 'followers' => [0]];
+        }
+
+        $version = config('services.meta.graph_version', 'v23.0');
+        $url = "https://graph.facebook.com/{$version}/{$pageId}/feed";
         $params = [
             'fields' => 'id,message,created_time,permalink_url,attachments{target}',
             'access_token' => $token,
@@ -25,8 +32,6 @@ class FacebookService
         $response = Http::timeout(150)->withOptions(['verify' => false])->get($url, $params);
         if($response->successful()){
             $json = $response->json();
-            $id = $json['data'][0]['id'];
-            $page_id = explode('_', $id)[0];
             $allMedia = $json['data'] ?? [];
 
             if ($fetch) {
@@ -62,7 +67,7 @@ class FacebookService
             }
 
             foreach ($data as $key) {
-                $url_result = "https://graph.facebook.com/{$key['id_post']}/insights";
+                $url_result = "https://graph.facebook.com/{$version}/{$key['id_post']}/insights";
                 $params_result = [
                     'metric' => "post_video_views,post_impressions_unique,post_impressions_paid_unique",
                     'period' => 'lifetime',
@@ -71,7 +76,7 @@ class FacebookService
                 
                 $jumlah_reach = 0;
                 if($key['id_video'] != null){
-                    $url_reach = "https://graph.facebook.com/{$key['id_video']}";
+                    $url_reach = "https://graph.facebook.com/{$version}/{$key['id_video']}";
                     $params_reach = [
                         'fields' => "views",
                         'access_token' => $token,
@@ -102,7 +107,7 @@ class FacebookService
                     }
                 }
 
-                $url_insight = "https://graph.facebook.com/{$key['id_post']}";
+                $url_insight = "https://graph.facebook.com/{$version}/{$key['id_post']}";
                 $params_insights = [
                     'fields' => "reactions.summary(true), comments.summary(true), shares",
                     'period' => 'lifetime',
@@ -110,8 +115,8 @@ class FacebookService
                 ];
 
                 $insights = Http::timeout(120)->withOptions(['verify' => false])->get($url_insight, $params_insights);
-                $reaction_count = $insights->json()['reactions']['summary']['total_count'];
-                $comment_count = $insights->json()['comments']['summary']['total_count'];
+                $reaction_count = data_get($insights->json(), 'reactions.summary.total_count', 0);
+                $comment_count = data_get($insights->json(), 'comments.summary.total_count', 0);
                 $shares_count =  data_get($insights->json(), 'shares.count', 0);
                 $engagement = $reaction_count + $comment_count + $shares_count;
 
@@ -129,15 +134,20 @@ class FacebookService
                     'link' => $key['link']
                 ];
             }
-            $url_follower = "https://graph.facebook.com/{$page_id}";
+            $url_follower = "https://graph.facebook.com/{$version}/{$pageId}";
             $params_follower = [
                 'fields' => "followers_count",
                 'access_token' => $token,
             ];
 
             $follower_count = Http::timeout(120)->withOptions(['verify' => false])->get($url_follower, $params_follower);
-            $post['followers'][] = $follower_count->json()['followers_count'];
+            $post['followers'][] = $follower_count->json()['followers_count'] ?? 0;
+        } else {
+            Log::warning('Facebook Graph API menolak permintaan feed.', [
+                'status' => $response->status(),
+                'error' => $response->json('error.message'),
+            ]);
         }
-        return $post;
+        return array_merge(['data' => [], 'followers' => [0]], $post);
     }
 }

@@ -110,4 +110,23 @@ class ProdukClient extends Model
 
         return $page['access_token'] ?? $connection->access_token;
     }
+
+    public function platformAccountId(string $platform): ?string
+    {
+        $connection = $this->oauthConnections()->where('provider', 'meta')->first();
+        if (! $connection) {
+            return null;
+        }
+
+        $assets = $connection->assets ?? [];
+        $selectedPageId = $connection->selected_assets['page_id'] ?? null;
+        $page = collect($assets['pages'] ?? [])->firstWhere('id', $selectedPageId)
+            ?? collect($assets['pages'] ?? [])->first();
+
+        if (strtolower($platform) === 'instagram') {
+            return data_get($page, 'instagram_business_account.id');
+        }
+
+        return $page['id'] ?? null;
+    }
 }

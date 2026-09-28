@@ -79,15 +79,22 @@ class AnalisisController extends Controller
         $index = array_search($platform, $produkBaru->access_token['platform']);
         $platformToken = $produkBaru->platformAccessToken($platform)
             ?? ($index !== false ? ($produkBaru->access_token['access'][$index] ?? null) : null);
+        $platformAccountId = $produkBaru->platformAccountId($platform);
 
         switch ($platform) {
             // PENGAMBILAN DATA DARI API GRAPH IG
             // DATA DATA YANG YANG DIAMBIL ADA DI INSTAGRAM SERVICE
             case 'Instagram':
+                if (! $platformToken || ! $platformAccountId) {
+                    return response()->view('analisis.connection-error', [
+                        'platform' => 'Instagram',
+                        'message' => 'Koneksi Meta belum menemukan Instagram Business. Pastikan Instagram Professional terhubung ke Facebook Page, lalu hubungkan ulang Meta dan pilih Page tersebut.',
+                    ], 422);
+                }
                 $posts = [];
                 $maxFollowers = 0;
-                foreach ($this->instagram->getMedia($since, $until, $fetch, $platformToken) as $post) {
-                    $insightsRaw = $this->instagram->getInsights($post['id'], $since, $until, $fetch, $platformToken);
+                foreach ($this->instagram->getMedia($since, $until, $fetch, $platformToken, $platformAccountId) as $post) {
+                    $insightsRaw = $this->instagram->getInsights($post['id'], $since, $until, $fetch, $platformToken, $platformAccountId);
                     $frekuensi = ($post['reach_count'] > 0) ? round($post['impresi'] / $post['reach_count']) : 0;
                     // Data Untuk Chart
                     $posts[] = [
@@ -173,20 +180,26 @@ class AnalisisController extends Controller
                 ));
                 break;
             case 'Facebook':
-                $data = $this->facebook->getPost($since, $until, $platformToken, $fetch);
-                $dataBaru = $data['data'];
+                if (! $platformToken || ! $platformAccountId) {
+                    return response()->view('analisis.connection-error', [
+                        'platform' => 'Facebook',
+                        'message' => 'Belum ada Facebook Page yang dapat digunakan. Hubungkan ulang Meta dan pastikan izin Page diberikan.',
+                    ], 422);
+                }
+                $data = $this->facebook->getPost($since, $until, $platformToken, $fetch, $platformAccountId);
+                $dataBaru = $data['data'] ?? [];
                 $dataBaru = collect($dataBaru ?? [])->sortBy('timestamp')->values()->all();
                 $totalReach = array_sum(array_column($dataBaru, 'reach'));
                 $totalEngagement = array_sum(array_column($dataBaru, 'engagement'));
                 $totalReaction = array_sum(array_column($dataBaru, 'reaction'));
                 $totalImpressions = array_sum(array_column($dataBaru, 'impresi'));
-                $maxReach = max(array_column($dataBaru, 'reach'));
-                $maxViews = max(array_column($dataBaru, 'impresi'));
-                $maxLikes = max(array_column($dataBaru, 'reaction'));
-                $maxComment = max(array_column($dataBaru, 'comments'));
-                $maxShares = max(array_column($dataBaru, 'shares'));
-                $maxEngangement = max(array_column($dataBaru, 'engagement'));
-                $jumlah_follower = $data['followers'][0];
+                $maxReach = $dataBaru ? max(array_column($dataBaru, 'reach')) : 0;
+                $maxViews = $dataBaru ? max(array_column($dataBaru, 'impresi')) : 0;
+                $maxLikes = $dataBaru ? max(array_column($dataBaru, 'reaction')) : 0;
+                $maxComment = $dataBaru ? max(array_column($dataBaru, 'comments')) : 0;
+                $maxShares = $dataBaru ? max(array_column($dataBaru, 'shares')) : 0;
+                $maxEngangement = $dataBaru ? max(array_column($dataBaru, 'engagement')) : 0;
+                $jumlah_follower = $data['followers'][0] ?? 0;
                 return view('analisis.facebook', compact(
                     'title',
                     'data',

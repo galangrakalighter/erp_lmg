@@ -13,12 +13,18 @@ class InstagramService
     /**
      * Mengambil media dengan penambahan Timeout 120 detik
      */
-    public function getMedia($since = null, $until = null, bool $fetch = false, $token)
+    public function getMedia($since = null, $until = null, bool $fetch = false, $token = null, $accountId = null)
     {
+        if (! filled($token) || ! filled($accountId)) {
+            Log::warning('Instagram OAuth belum memiliki token atau Instagram Business Account ID.');
+            return [];
+        }
+
         $allMedia = [];
         $start = $since ?? strtotime("-1 year");
         $end = $until ?? time();
-        $url = 'https://graph.instagram.com/me/media';
+        $version = config('services.meta.graph_version', 'v23.0');
+        $url = "https://graph.facebook.com/{$version}/{$accountId}/media";
 
         $params = [
             'fields' => 'id,caption,permalink,timestamp,media_type,like_count,comments_count,insights.metric(reach,views,impressions,saved,shares)',
@@ -55,6 +61,11 @@ class InstagramService
                         } else { break; }
                     }
                 }
+            } else {
+                Log::warning('Instagram Graph API menolak permintaan media.', [
+                    'status' => $response->status(),
+                    'error' => $response->json('error.message'),
+                ]);
             }
 
             if ($since || $until) {
@@ -100,25 +111,22 @@ class InstagramService
     /**
      * Mengambil Insights dengan optimasi Timeout dan pengecekan Paging
      */
-    public function getInsights(string $mediaId, $since = null, $until = null, bool $fetch = false, $token)
+    public function getInsights(string $mediaId, $since = null, $until = null, bool $fetch = false, $token = null, $accountId = null)
     {   
+        if (! filled($token) || ! filled($accountId)) {
+            return [[], ['Followers_sebulan' => 0], []];
+        }
+
         try {
-            // 1. Ambil ID Owner dengan Timeout
-            $resOwner = Http::timeout(30)->withOptions(['verify' => false])
-                ->get("https://graph.instagram.com/v24.0/{$mediaId}", [
-                    'fields' => 'owner',
-                    'access_token' => $token,
-                ]);
-            
-            if (!$resOwner->successful()) return [[], ['Followers_sebulan' => 0], []];
-            $ownerId = $resOwner->json()['owner']['id'];
+            $version = config('services.meta.graph_version', 'v23.0');
+            $ownerId = $accountId;
             
             $start = $since ?? strtotime("-1 year");
             $end = $until ?? time();
 
             // 2. Ambil semua timestamp media
             $resMedia = Http::timeout(60)->withOptions(['verify' => false])
-                ->get("https://graph.instagram.com/v24.0/{$ownerId}/media", [
+                ->get("https://graph.facebook.com/{$version}/{$ownerId}/media", [
                     'fields' => 'timestamp',
                     'limit' => $fetch ? 100 : 15,
                     'since' => $start,
@@ -131,7 +139,7 @@ class InstagramService
 
             // 3. Ambil Data Follower dengan Timeout Panjang (Karena data 1 tahun berat)
             $allFollowerValues = [];
-            $urlFollower = "https://graph.instagram.com/v24.0/{$ownerId}/insights";
+            $urlFollower = "https://graph.facebook.com/{$version}/{$ownerId}/insights";
             $paramsFollower = [
                 'metric' => 'follower_count',
                 'period' => 'day',
@@ -175,7 +183,7 @@ class InstagramService
 
             // 5. Lokasi (Demographics)
             $resLoc = Http::timeout(30)->withOptions(['verify' => false])
-                ->get("https://graph.instagram.com/v24.0/{$ownerId}/insights", [
+                ->get("https://graph.facebook.com/{$version}/{$ownerId}/insights", [
                     'metric' => 'follower_demographics',
                     'period' => 'lifetime',
                     'breakdown' => 'city',

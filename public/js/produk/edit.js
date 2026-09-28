@@ -172,6 +172,7 @@ function buildEditModalHtml(res){
                         ].map(provider => {
                             const connection = oauthConnections[provider.key];
                             const connected = Boolean(connection?.connected) || platformData.some(item => provider.platforms.includes(item.platform) && item.access);
+                            const ready = provider.key !== 'meta' ? connected : Boolean(connection?.ready);
                             return `
                                 <div class="flex items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-white p-3">
                                     <div class="flex min-w-0 items-center gap-3">
@@ -179,7 +180,7 @@ function buildEditModalHtml(res){
                                         <div class="min-w-0">
                                             <p class="mb-0 text-sm font-bold text-zinc-900">${provider.name}</p>
                                             <p class="mb-0 text-[11px] text-zinc-500">${provider.detail}</p>
-                                            <span class="mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${connected ? 'bg-emerald-50 text-emerald-700' : 'bg-zinc-100 text-zinc-500'}">${connected ? 'Terhubung' : 'Belum terhubung'}</span>
+                                            <span class="mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${ready ? 'bg-emerald-50 text-emerald-700' : connected ? 'bg-amber-50 text-amber-700' : 'bg-zinc-100 text-zinc-500'}">${ready ? 'Siap mengambil data' : connected ? 'Terhubung, aset belum tersedia' : 'Belum terhubung'}</span>
                                         </div>
                                     </div>
                                     <button type="button" data-oauth-provider="${provider.key}" data-client-id="${p.id}" class="shrink-0 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 hover:border-zinc-950 hover:bg-zinc-950 hover:text-white">${connected ? 'Hubungkan ulang' : 'Hubungkan'}</button>

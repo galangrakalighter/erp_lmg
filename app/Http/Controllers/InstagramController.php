@@ -48,9 +48,10 @@ class InstagramController extends Controller
                 $posts = [];
                 $maxFollowers = 0;
                 $token = $produkBaru->platformAccessToken($platform);
+                $accountId = $produkBaru->platformAccountId($platform);
 
-                foreach ($this->instagram->getMedia($since, $until, $fetch, $token) as $post) {
-                    $insightsRaw = $this->instagram->getInsights($post['id'], $since, $until, $fetch, $token);
+                foreach ($this->instagram->getMedia($since, $until, $fetch, $token, $accountId) as $post) {
+                    $insightsRaw = $this->instagram->getInsights($post['id'], $since, $until, $fetch, $token, $accountId);
                     $frekuensi = ($post['reach_count'] > 0) ? round($post['impresi'] / $post['reach_count']) : 0;
                     // Data Untuk Chart
                     

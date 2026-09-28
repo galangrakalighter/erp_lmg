@@ -16,7 +16,7 @@ class AccountMasterFileController extends Controller
     public function index(Request $request)
     {
         $visibleIds = $this->visibleOwnerIds($request->user());
-        $users = User::with(['userDivisions.division', 'userDivisions.role'])
+        $users = User::unlocked()->with(['userDivisions.division', 'userDivisions.role'])
             ->withCount('accountMasterFiles')
             ->whereIn('id', $visibleIds)
             ->when($request->filled('division_id'), fn ($query) => $query->whereHas(
@@ -48,6 +48,7 @@ class AccountMasterFileController extends Controller
                 ->when($request->filled('uploaded_by'), fn ($query) => $query->where('uploaded_by', $request->integer('uploaded_by')))
                 ->latest()->get(),
             'uploaders' => User::query()
+                ->unlocked()
                 ->whereIn('id', $owner->accountMasterFiles()->whereNotNull('uploaded_by')->select('uploaded_by'))
                 ->orderBy('name')->get(['id', 'name', 'email']),
             'selectedUploaderId' => $request->integer('uploaded_by') ?: null,

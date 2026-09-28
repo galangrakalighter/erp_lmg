@@ -60,12 +60,24 @@ Route::middleware(['web', 'auth'])
         Route::get('/content-plan/{produk_id}/{platform}', [App\Http\Controllers\ManajemenKontenController::class, 'index'])->name('content-plan');
     });
 
+Route::middleware(['web', 'auth', 'multimedia.client'])
+    ->prefix('multimedia/workspace')
+    ->name('api.multimedia.')
+    ->group(function () {
+        Route::get('/market-research/{id}/{platform}', [App\Http\Controllers\marketResearchController::class, 'index'])->name('market-research');
+        Route::get('/branding/{id}/{platform}', [App\Http\Controllers\brandingController::class, 'index'])->name('branding');
+        Route::get('/analisis/{produk}/{platform}', [App\Http\Controllers\AnalisisController::class, 'index'])->name('analisis');
+        Route::get('/content-plan/{produk_id}/{platform}', [App\Http\Controllers\ManajemenKontenController::class, 'index'])->name('content-plan');
+    });
+
 Route::post('/updateStatusChecked', [App\Http\Controllers\selectionController::class, 'updateStatus'])->name('selection.updateStatus');
 Route::get('/client-pics/{id}/{userId}', [App\Http\Controllers\HCDailyController::class, 'getPic']);
 Route::get('/hc-daily/get-data/{id}', [App\Http\Controllers\HCDailyController::class, 'getTasksById']);
 Route::get('users/json', [App\Http\Controllers\UserController::class, 'getUsersJson'])->name('users.json');
 Route::get('/produk/detail/{id}/{id_user}/{folderName}', [App\Http\Controllers\ProdukController::class, 'getDetail']);
-Route::get('/manajemen-konten/{produkId}/{platform}', [App\Http\Controllers\ManajemenKontenController::class, 'getApiData'])->name('manajemen_konten.api_data');
+Route::middleware(['web', 'auth'])
+    ->get('/manajemen-konten/{produkId}/{platform}', [App\Http\Controllers\ManajemenKontenController::class, 'getApiData'])
+    ->name('manajemen_konten.api_data');
 Route::get('kpi-data/{id}/{id_user}', [App\Http\Controllers\HCOverviewController::class, 'getKPIData'])->name('kpi.data');
 Route::get('kpi-data-daily/{id}/{id_user}', [App\Http\Controllers\HCOverviewController::class, 'getKPIDataDaily'])->name('kpi.data-daily');
 Route::get('get-users/{id}/{id_user}', [App\Http\Controllers\HCOverviewController::class, 'getUsers'])->name('kpi.getUser');

@@ -14,6 +14,10 @@ class ManajemenKontenController extends Controller
 {
     public function index(Request $request, $produk_id, $platform) {
         $divisi = User::find(Auth::user()->id)->userDivisions;
+        $multimediaMode = $this->isMultimediaUser();
+        if ($multimediaMode) {
+            $this->authorizeMultimediaClient((int) $produk_id);
+        }
 
         $role = Auth::user()->isAdmin == false ? DB::table('roles')->where('id', $divisi[0]->role_id)->value('role_name') : "Super Admin";
         // 1. Ambil data Produk dan Kategori dengan cara yang lebih aman
@@ -43,12 +47,16 @@ class ManajemenKontenController extends Controller
 
         return view("manajemen.index", compact(
             'produk', 'option', 'title', 'kategory', 
-            'platform', 'halaman', 'RoleSekarang', 'role', 'divisi'
+            'platform', 'halaman', 'RoleSekarang', 'role', 'divisi', 'multimediaMode'
         ));
     }
 
     public function getApiData(Request $request, $produk_id, $platform)
     {
+        if ($this->isMultimediaUser()) {
+            $this->authorizeMultimediaClient((int) $produk_id);
+        }
+
         try {
             $query = DB::table("data_jasa")
                 ->leftJoin('type_produk', 'type_produk.id', '=', 'data_jasa.type_produk_id')
@@ -109,6 +117,7 @@ class ManajemenKontenController extends Controller
     }
 
     public function store($id, Request $request){
+        abort_if($this->isMultimediaUser(), 403, 'Multimedia hanya dapat mengubah link output Content Plan.');
         $id = (int)$id;
         // Request yang valuenya diambil dari table yang berbeda
         $arr = ['type', 'strategy', 'pilar', 'hooks',   'status', 'jenis_body', 'jenis_cta'];
@@ -257,6 +266,21 @@ class ManajemenKontenController extends Controller
 
     public function update($id, Request $request){
         $data = DB::table('data_jasa')->where('id', $id)->first();
+        abort_unless($data, 404);
+
+        if ($this->isMultimediaUser()) {
+            $this->authorizeMultimediaClient((int) $data->produk_client_id);
+            $validated = $request->validate([
+                'link' => ['nullable', 'url', 'max:2048'],
+            ]);
+
+            DB::table('data_jasa')->where('id', $id)->update([
+                'link' => $validated['link'] ?? null,
+                'updated_at' => now(),
+            ]);
+
+            return redirect()->back()->with('success', 'Link output berhasil diubah');
+        }
         $BATAS_HARIAN = (int)$request->pic == 39 ? 480 : 420;
         $otherJobs = DB::table('data_jasa')
                     ->where('pic', (int)$request->pic)
@@ -416,9 +440,33 @@ class ManajemenKontenController extends Controller
     }
 
     public function destroy($id) {
+        abort_if($this->isMultimediaUser(), 403, 'Multimedia tidak dapat menghapus Content Plan.');
         $id = (int)$id;
         DB::table("data_jasa")->delete($id);
         DB::table("task")->where('id_manajement_konten', $id)->delete();
         return redirect()->back()->with('success', 'Data Berhasil Di Hapus');
+    }
+
+    private function isMultimediaUser(): bool
+    {
+        $user = Auth::user();
+
+        return $user && ! $user->isAdmin && $user->userDivisions()
+            ->whereHas('division', fn ($query) => $query->whereRaw('LOWER(TRIM(name)) = ?', ['multimedia']))
+            ->exists();
+    }
+
+    private function authorizeMultimediaClient(int $clientId): void
+    {
+        $user = Auth::user();
+        $multimediaId = DB::table('divisions')
+            ->whereRaw('LOWER(TRIM(name)) = ?', ['multimedia'])
+            ->value('id');
+
+        $allowed = $multimediaId
+            && DB::table('client_division')->where('client_id', $clientId)->where('division_id', $multimediaId)->where('status', 1)->exists()
+            && DB::table('user_client')->where('user_id', $user->id)->where('client_id', $clientId)->exists();
+
+        abort_unless($allowed, 403);
     }
 }

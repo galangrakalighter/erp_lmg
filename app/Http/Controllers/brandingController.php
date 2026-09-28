@@ -78,6 +78,9 @@ class brandingController extends Controller
                 ->get();
 
         $halaman = "Branding";
+        $readOnly = ! Auth::user()->isAdmin && $divisi->contains(
+            fn ($row) => strtolower(trim((string) $row->division?->name)) === 'multimedia'
+        );
         return view('branding.index', compact(
                 "title", 
                 'produk',
@@ -92,7 +95,8 @@ class brandingController extends Controller
                 'alat',
                 'platform',
                 'halaman',
-                'role'
+                'role',
+                'readOnly'
         ));
     }
 }

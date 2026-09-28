@@ -123,7 +123,7 @@ class UserController extends Controller
         $currentUser = $request->user();
         $divisionId = $request->integer('division_id') ?: null;
 
-        $query = User::query()->orderBy('email');
+        $query = User::query()->unlocked()->orderBy('email');
 
         if (! $currentUser->isAdmin) {
             $query->whereIn('id', $this->visibleUserIds($currentUser->id));
@@ -236,7 +236,7 @@ class UserController extends Controller
 
             if (!$isLmg && ! $this->isFinanceDivision((int) $request->divisi_id) && $request->has('subordinate_ids') && is_array($request->subordinate_ids)) {
                 foreach ($request->subordinate_ids as $subordinateId) {
-                    $subordinate = User::find($subordinateId);
+                    $subordinate = User::unlocked()->find($subordinateId);
                     if ($subordinate) {
                         userDivision::where('user_id', $subordinateId)
                             ->where('division_id', (int) $request->divisi_id)
@@ -315,7 +315,10 @@ class UserController extends Controller
             // Langkah A: Lepas semua bawahan lama yang sebelumnya melapor ke user ini
             // Langkah B: Set bawahan baru berdasarkan pilihan di modal
             if (!$isLmg && ! $this->isFinanceDivision((int) $request->divisi_id) && $request->has('subordinate_ids') && is_array($request->subordinate_ids)) {
-                UserDivision::whereIn('user_id', $request->subordinate_ids)
+                $unlockedSubordinateIds = User::unlocked()
+                    ->whereIn('id', $request->subordinate_ids)
+                    ->pluck('id');
+                UserDivision::whereIn('user_id', $unlockedSubordinateIds)
                     ->where('division_id', (int)$request->divisi_id)
                     ->whereHas('role', fn ($query) => $query->where('parent_id', $level->id))
                     ->update(['parent_id' => $id]);
@@ -363,6 +366,7 @@ class UserController extends Controller
             ]);
 
             $isCfo = User::query()
+                ->unlocked()
                 ->whereKey($request->integer('parent_id'))
                 ->where('isAdmin', true)
                 ->whereRaw("LOWER(TRIM(COALESCE(jabatan, ''))) = 'cfo'")
@@ -386,6 +390,12 @@ class UserController extends Controller
         ], [
             'parent_id.required' => 'Atasan wajib dipilih untuk role ini.',
         ]);
+
+        if (! User::unlocked()->whereKey($request->integer('parent_id'))->exists()) {
+            throw ValidationException::withMessages([
+                'parent_id' => 'Akun atasan sedang terkunci dan tidak dapat dipilih.',
+            ]);
+        }
 
         $isValidParent = userDivision::query()
             ->where('user_id', $request->integer('parent_id'))
@@ -432,11 +442,11 @@ class UserController extends Controller
     public function getUserDivision(Request $request){
         $divisiId = $request->input('divisi_id');
         if($divisiId != 'all'){
-            $allUser = User::whereHas('userDivisions', function($user) use ($divisiId) {
+            $allUser = User::unlocked()->whereHas('userDivisions', function($user) use ($divisiId) {
                 $user->where('division_id', $divisiId);
             })->get();
         }else{
-            $allUser = User::where('isAdmin', false)->get();
+            $allUser = User::unlocked()->where('isAdmin', false)->get();
         }
 
         return response()->json($allUser);

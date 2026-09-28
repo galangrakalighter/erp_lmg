@@ -156,9 +156,9 @@ class HCDailyController extends Controller
         $subordinateTasks = $tugas_bawahan->whereNotNull('jam_mulai')->whereDate('task.tanggal_mulai', $today)->get();
 
         if($CurrentLevel == 0){
-            $bawahanIds = User::whereNot('users.isAdmin', true)->pluck('id');
+            $bawahanIds = User::unlocked()->whereNot('users.isAdmin', true)->pluck('id');
         }else{
-            $bawahanIds = User::join('user_division', 'user_division.user_id', '=', 'users.id')->where('user_division.parent_id', Auth::id())->pluck('users.id');
+            $bawahanIds = User::unlocked()->join('user_division', 'user_division.user_id', '=', 'users.id')->where('user_division.parent_id', Auth::id())->pluck('users.id');
         }
 
         $unscheduled_tasks = $all_tasks->filter(function ($task) use ($today, $bawahanIds) {
@@ -346,7 +346,7 @@ class HCDailyController extends Controller
                 return $formatted;
             });
 
-        $people = User::whereIn('id', $visibleUserIds)->select('id', 'email')
+        $people = User::unlocked()->whereIn('id', $visibleUserIds)->select('id', 'email')
             ->orderBy('email')->get()->map(fn ($user) => [
                 'id' => $user->id,
                 'email' => $user->email,
@@ -500,7 +500,7 @@ class HCDailyController extends Controller
 
         if (! $assignment) {
             $people = $user->isAdmin
-                ? User::select('id', 'email')->orderBy('email')->get()
+                ? User::unlocked()->select('id', 'email')->orderBy('email')->get()
                 : User::whereKey($user->id)->select('id', 'email')->get();
 
             return [

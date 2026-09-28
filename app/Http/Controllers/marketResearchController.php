@@ -27,6 +27,9 @@ class marketResearchController extends Controller
         }
         $produk = DB::table('produk_client')->where('id', $id)->first();
         $halaman = "Market Research";
-        return view('market.index', compact('data', 'title', 'produk', 'platform', 'halaman', 'role'));
+        $readOnly = ! Auth::user()->isAdmin && $divisi->contains(
+            fn ($row) => strtolower(trim((string) $row->division?->name)) === 'multimedia'
+        );
+        return view('market.index', compact('data', 'title', 'produk', 'platform', 'halaman', 'role', 'readOnly'));
     }
 }

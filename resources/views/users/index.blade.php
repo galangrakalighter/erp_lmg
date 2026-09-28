@@ -1028,7 +1028,11 @@
         "Digital Marketing": [
             { role: "Busines Unit Head", label: "Business Unit Head" },
             { role: "Digital Marketer", label: "Digital Marketer" },
-            { role: "Advertising", label: "Advertising" },
+            { role: "Advertising", label: "Advertising" }
+        ],
+
+        "Multimedia": [
+            { role: "Busines Unit Head", label: "Business Unit Head" },
             { role: "Content Creator Manager", label: "Content Creator Manager" },
             { role: "Content Creator", label: "Content Creator" }
         ],
@@ -1079,7 +1083,7 @@
 
     function cfoUsers(excludeUserId = null) {
         return allUsers.filter(function (user) {
-            return user.is_admin &&
+            return !user.is_locked && user.is_admin &&
                 String(user.jabatan ?? '').toLowerCase() === 'cfo' &&
                 String(user.id) !== String(excludeUserId ?? '');
         });
@@ -1575,6 +1579,10 @@
 
 
         return allUsers.filter(function (user) {
+
+            if (user.is_locked) {
+                return false;
+            }
 
             return (user.user_divisions ?? [])
                 .some(function (division) {

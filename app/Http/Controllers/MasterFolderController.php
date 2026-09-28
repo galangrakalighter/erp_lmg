@@ -47,6 +47,7 @@ class MasterFolderController extends Controller
             ));
 
         $creators = \App\Models\User::query()
+            ->unlocked()
             ->whereIn('id', MasterFolder::query()
                 ->where('is_personal', false)
                 ->when($selectedDivisionId, fn ($query) => $query->where('division_id', $selectedDivisionId))
@@ -168,6 +169,7 @@ class MasterFolderController extends Controller
 
         $folder->setRelation('files', $files);
         $uploaders = \App\Models\User::query()
+            ->unlocked()
             ->whereIn('id', $folder->files()->whereNotNull('uploaded_by')->select('uploaded_by'))
             ->orderBy('name')
             ->get(['id', 'name', 'email']);

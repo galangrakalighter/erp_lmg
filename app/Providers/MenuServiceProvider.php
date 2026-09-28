@@ -65,12 +65,16 @@ class MenuServiceProvider extends ServiceProvider
 
             // Data umum
             $mcnClient = DB::table('barang_client')->get();
+            $multimediaDivisionId = DB::table('divisions')
+                ->whereRaw('LOWER(TRIM(name)) = ?', ['multimedia'])
+                ->value('id');
+            $sidebarDivisionIds = array_values(array_filter([1, 2, 3, 5, 7, $multimediaDivisionId]));
             
             // Satu query untuk seluruh client sidebar, lalu kelompokkan di memori.
             $sidebarProducts = DB::table('client_division')
                 ->join('produk_client', 'produk_client.id', '=', 'client_division.client_id')
                 ->leftJoin('kategori_jasa', 'kategori_jasa.id', '=', 'produk_client.kategori_jasa_id')
-                ->whereIn('client_division.division_id', [1, 2, 3, 5, 7])
+                ->whereIn('client_division.division_id', $sidebarDivisionIds)
                 ->where('client_division.status', 1)
                 ->whereRaw("LOWER(TRIM(produk_client.nama)) <> 'internal'")
                 ->where(fn ($query) => $query->whereNull('kategori_jasa.category')->orWhereRaw("LOWER(TRIM(kategori_jasa.category)) NOT LIKE 'internal%'"))
@@ -87,6 +91,7 @@ class MenuServiceProvider extends ServiceProvider
             $mcnProduk = $sidebarProducts->get(3, collect());
             $techProduk = $sidebarProducts->get(5, collect());
             $ecommerceProduk = $sidebarProducts->get(7, collect());
+            $multimediaProduk = $sidebarProducts->get($multimediaDivisionId, collect());
             $idmeClients = DB::table('produk_client')
                 ->join('client_division', 'client_division.client_id', '=', 'produk_client.id')
                 ->join('divisions', 'divisions.id', '=', 'client_division.division_id')
@@ -125,6 +130,8 @@ class MenuServiceProvider extends ServiceProvider
                 'mcnProduk' => $mcnProduk,
                 'techProduk' => $techProduk,
                 'ecommerceProduk' => $ecommerceProduk,
+                'multimediaProduk' => $multimediaProduk,
+                'multimediaDivisionId' => $multimediaDivisionId,
                 'idmeClients' => $idmeClients,
                 'perusahaan' => $perusahaanFinance,
                 'canManageFinanceCompanies' => $canManageFinanceCompanies,

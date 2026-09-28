@@ -211,7 +211,7 @@ class DashboardController extends Controller
         $role = $user->isAdmin == false ? DB::table('roles')->where('id', $divisi[0]['role_id'])->value('role_name') : "Super Admin";
         $allUser = UserDivision::join('users', 'users.id', '=', 'user_division.user_id')->where('user_division.parent_id', $user->id)->orWhere('user_division.user_id', $user->id)->select('users.id', 'users.email')->get();
         if($user->isAdmin == true){
-            $allUser = User::where('isAdmin', false)->get();
+            $allUser = User::unlocked()->where('isAdmin', false)->get();
         }
         $divisiId = $user->isAdmin == false ? $divisi[0]->division_id : null;
         $produk =  DB::table('client_division')
@@ -251,7 +251,7 @@ class DashboardController extends Controller
         $role = $user->isAdmin == false ? DB::table('roles')->where('id', $divisi[0]['role_id'])->value('role_name') : "Super Admin";
         $listBawahan = UserDivision::join('users', 'users.id', '=', 'user_division.user_id')->where('user_division.parent_id', $user->id)->orWhere('user_division.user_id', $user->id)->select('users.id', 'users.email')->get();
         if($user->isAdmin == true){
-            $listBawahan = User::where('isAdmin', false)->get();
+            $listBawahan = User::unlocked()->where('isAdmin', false)->get();
         }
 
         if($role == 'Super Admin'){

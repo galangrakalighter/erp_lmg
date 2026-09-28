@@ -14,6 +14,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->appendToGroup('web', \App\Http\Middleware\EnsureAccountIsUnlocked::class);
         $middleware->appendToGroup('web', \App\Http\Middleware\LogPageVisit::class);
+        $middleware->appendToGroup('web', \App\Http\Middleware\ProtectMultimediaSharedModules::class);
+        $middleware->alias([
+            'multimedia.client' => \App\Http\Middleware\EnsureMultimediaClientAccess::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

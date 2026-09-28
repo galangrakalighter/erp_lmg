@@ -5,7 +5,7 @@
 <div class="card shadow">
     {{-- CARD HEADER --}}
     <div class="card-header d-flex justify-content-between align-items-center">
-        <h6 class="m-0 font-weight-bold text-primary">Manajemen Client Ecommerce</h6>
+        <h6 class="m-0 font-weight-bold text-primary">Manajemen Client {{ $divisionLabel ?? 'Ecommerce' }}</h6>
         {{-- <a href="{{ route('create_produk_jasa') }}" class="btn btn-sm btn-primary">
             <i class="fas fa-plus mr-1"></i> Tambah Client
         </a> --}}
@@ -83,7 +83,7 @@
 
                         <!-- Specialist Manager (Setengah lebar) -->
                         <div class="col-md-6 form-group">
-                            <label class="font-weight-bold text-primary">Project Manager</label>
+                            <label class="font-weight-bold text-primary">{{ $level2Label ?? 'Project Manager' }}</label>
                             <select id="bawahan2" class="form-control select2-multiple" multiple>
                                 @foreach($bawahan2 as $u)
                                     @php $parent = $u->userDivisions->first()->parent_id ?? 0; @endphp
@@ -94,7 +94,7 @@
 
                         <!-- Specialist (Setengah lebar) -->
                         <div class="col-md-6 form-group">
-                            <label class="font-weight-bold text-info">Developer</label>
+                            <label class="font-weight-bold text-info">{{ $level3Label ?? 'Developer' }}</label>
                             <select id="bawahan3" class="form-control select2-multiple" multiple>
                                 @foreach($bawahan3 as $u)
                                     @php $parent = $u->userDivisions->first()->parent_id ?? 0; @endphp

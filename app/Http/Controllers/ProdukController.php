@@ -15,6 +15,7 @@ use App\Models\FilePdf;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class ProdukController extends Controller
 {
@@ -34,8 +35,11 @@ class ProdukController extends Controller
                 // Keanggotaan client di CMS mengikuti client_division, sama seperti sidebar.
                 // PIC boleh belum diatur; client tetap harus terlihat untuk divisinya.
                 ->get()
-                ->map(function($client) {
-                    $teams = $client->teams;
+                ->map(function($client) use ($divisiId) {
+                    $teams = $client->teams->filter(fn ($team) => ! $team->is_locked
+                        && $team->userDivisions->contains(
+                            fn ($membership) => (int) $membership->division_id === (int) $divisiId
+                        ));
                     
                     return [
                         'id'       => $client->id,
@@ -56,7 +60,10 @@ class ProdukController extends Controller
         }
 
         // Ambil semua user yang masuk di divisi ini (Eager Load user_divisions)
-        $usersInDivisi = User::with('userDivisions')->get();
+        $usersInDivisi = User::unlocked()
+            ->with('userDivisions')
+            ->whereHas('userDivisions', fn ($query) => $query->where('division_id', $divisiId))
+            ->get();
         
         $kategori = KategoriJasa::where('id', $divisiId)->get();
         // dd($usersInDivisi->filter(fn($u) => $u->userDivisions->first()?->role_id == 1));
@@ -82,7 +89,18 @@ class ProdukController extends Controller
     {
         try {
             $produk = ProdukClient::findOrFail($id);
-            $currentTeamIds = $produk->teams()->pluck('users.id')->toArray();
+            $divisionId = match ($folderName) {
+                'cms_LGTR' => 1,
+                'cms_BD' => 2,
+                default => null,
+            };
+            $currentTeamIds = $produk->teams()
+                ->where('users.is_locked', false)
+                ->when($divisionId, fn ($query) => $query->whereHas(
+                    'userDivisions', fn ($memberships) => $memberships->where('division_id', $divisionId)
+                ))
+                ->pluck('users.id')
+                ->toArray();
 
             // Mengambil Role Sekarang sesuai logika Anda
             $user = User::find($id_user);
@@ -111,24 +129,27 @@ class ProdukController extends Controller
             // Tentukan hak akses (Bisa tambah role lain yang dianggap 'setara admin' di sini)
             $isUserAdmin = $user->isAdmin == true;
 
+            $usersForRole = function (string $roleName) use ($divisionId) {
+                return User::unlocked()
+                    ->with('userDivisions')
+                    ->whereHas('userDivisions', function ($memberships) use ($divisionId, $roleName) {
+                        $memberships->where('division_id', $divisionId)
+                            ->whereHas('role', fn ($roles) => $roles->where('role_name', $roleName));
+                    })
+                    ->get(['id', 'name']);
+            };
             $options = [
-                'buh' => User::whereHas('userDivisions.role', fn($q) => $q->where('role_name', 'Busines Unit Head'))->get(['id', 'name']),
-                'dm'  => User::with('userDivisions')->whereHas('userDivisions.role', fn($q) => $q->where('role_name', 'Digital Marketer'))->get()->map(function($u) {
-                    return ['id' => $u->id, 'name' => $u->name, 'parent' => $u->userDivisions->first()->parent_id ?? 0];
+                'buh' => $usersForRole('Busines Unit Head'),
+                'dm' => $usersForRole('Digital Marketer')->map(function ($u) use ($divisionId) {
+                    return ['id' => $u->id, 'name' => $u->name, 'parent' => $u->userDivisions->firstWhere('division_id', $divisionId)?->parent_id ?? 0];
                 }),
-                'ads' => User::with('userDivisions')->whereHas('userDivisions.role', fn($q) => $q->where('role_name', 'Advertising'))->get()->map(function($u) {
-                    return ['id' => $u->id, 'name' => $u->name, 'parent' => $u->userDivisions->first()->parent_id ?? 0];
+                'ads' => $usersForRole('Advertising')->map(function ($u) use ($divisionId) {
+                    return ['id' => $u->id, 'name' => $u->name, 'parent' => $u->userDivisions->firstWhere('division_id', $divisionId)?->parent_id ?? 0];
                 }),
-                'ccm'  => User::with('userDivisions')->whereHas('userDivisions.role', fn($q) => $q->where('role_name', 'Content Creator Manager'))->get()->map(function($u) {
-                    return ['id' => $u->id, 'name' => $u->name, 'parent' => $u->userDivisions->first()->parent_id ?? 0];
+                'ccm' => $usersForRole('Content Creator Manager')->map(function ($u) use ($divisionId) {
+                    return ['id' => $u->id, 'name' => $u->name, 'parent' => $u->userDivisions->firstWhere('division_id', $divisionId)?->parent_id ?? 0];
                 }),
             ];
-
-            $divisionId = match ($folderName) {
-                'cms_LGTR' => 1,
-                'cms_BD' => 2,
-                default => null,
-            };
             $divisionStatus = $divisionId
                 ? DB::table('client_division')->where('client_id', $produk->id)->where('division_id', $divisionId)->value('status')
                 : $produk->status;
@@ -527,7 +548,7 @@ class ProdukController extends Controller
         $user = Auth::user()->id;
         $divisiName = User::find(Auth::user()->id)->userDivisions;
         $RoleSekarang = Auth::user()->isAdmin == false ? DB::table('roles')->where('id', $divisiName[0]->role_id)->value('role_name') : "Super Admin";
-        $bawahanSemua = User::join('user_division', 'user_division.user_id', '=', 'users.id')
+        $bawahanSemua = User::unlocked()->join('user_division', 'user_division.user_id', '=', 'users.id')
             ->join('roles', 'roles.id', '=', 'user_division.role_id')
             ->where('user_division.division_id', $divisi)
             ->whereIn('roles.level', [1, 2, 3])
@@ -547,6 +568,15 @@ class ProdukController extends Controller
             'bawahan2' => $bawahan2,
             'bawahan3' => $bawahan3
         ];
+        $requestedDivisionName = strtolower(trim((string) DB::table('divisions')->where('id', $divisi)->value('name')));
+        if ($requestedDivisionName === 'multimedia') {
+            $return['divisionLabel'] = 'Multimedia';
+            $return['level2Label'] = 'Content Creator Manager';
+            $return['level3Label'] = 'Content Creator';
+
+            return view('cms.produk.division.ecommerce', $return);
+        }
+
         switch($divisi){
             case 3:
                 return view('cms.produk.division.mcn', $return);
@@ -558,6 +588,9 @@ class ProdukController extends Controller
                 return view('cms.produk.division.finance', $return);
                 break;
             case 7:
+                $return['divisionLabel'] = 'Ecommerce';
+                $return['level2Label'] = 'Project Manager';
+                $return['level3Label'] = 'Developer';
                 return view('cms.produk.division.ecommerce', $return);
                 break;
             default:
@@ -577,9 +610,13 @@ class ProdukController extends Controller
         // Gunakan client_division sebagai sumber daftar client seluruh CMS divisi.
         // Relasi tim/PIC hanya untuk informasi penanggung jawab, bukan syarat tampil.
 
-        $data = $query->get()->map(function ($client) {
+        $data = $query->get()->map(function ($client) use ($divisi) {
 
-            $teams = $client->teams;
+            $teams = $client->teams->filter(function ($team) use ($divisi) {
+                return ! $team->is_locked && $team->userDivisions->contains(
+                    fn ($membership) => (int) $membership->division_id === (int) $divisi
+                );
+            });
 
             return [
                 'id'       => $client->id,
@@ -589,19 +626,19 @@ class ProdukController extends Controller
 
                 // Business Unit Head
                 'buh' => $teams
-                    ->filter(fn($u) => optional($u->userDivisions->first())->role->level == 1)
+                    ->filter(fn($u) => $this->roleLevelInDivision($u, (int) $divisi) === 1)
                     ->pluck('email')
                     ->values(),
 
                 // MCN Specialist Manager
                 'bawahan2' => $teams
-                    ->filter(fn($u) => optional($u->userDivisions->first())->role->level == 2)
+                    ->filter(fn($u) => $this->roleLevelInDivision($u, (int) $divisi) === 2)
                     ->pluck('email')
                     ->values(),
 
                 // MCN Specialist
                 'bawahan3' => $teams
-                    ->filter(fn($u) => optional($u->userDivisions->first())->role->level == 3)
+                    ->filter(fn($u) => $this->roleLevelInDivision($u, (int) $divisi) === 3)
                     ->pluck('email')
                     ->values(),
 
@@ -622,8 +659,11 @@ class ProdukController extends Controller
             'client' => ['required', 'string', 'max:255'],
             'status' => ['required', 'integer'],
             'buh' => ['nullable', 'array'],
+            'buh.*' => ['integer', 'exists:users,id'],
             'mcn' => ['nullable', 'array'],
+            'mcn.*' => ['integer', 'exists:users,id'],
             'ms' => ['nullable', 'array'],
+            'ms.*' => ['integer', 'exists:users,id'],
         ]);
 
         return DB::transaction(function () use ($request, $validated, $divisi) {
@@ -646,6 +686,8 @@ class ProdukController extends Controller
                 ->map(fn ($userId) => (int) $userId)
                 ->filter(fn ($userId) => $userId > 0)
                 ->unique();
+
+            $allUserIds = $this->validateDivisionTeamIds($allUserIds, (int) $divisi);
 
             foreach ($allUserIds as $userId) {
                 UserClient::firstOrCreate(
@@ -736,8 +778,11 @@ class ProdukController extends Controller
             'status' => ['required', 'integer'],
             'division_id' => ['required', 'integer', 'exists:divisions,id'],
             'buh' => ['nullable', 'array'],
+            'buh.*' => ['integer', 'exists:users,id'],
             'mcn' => ['nullable', 'array'],
+            'mcn.*' => ['integer', 'exists:users,id'],
             'ms' => ['nullable', 'array'],
+            'ms.*' => ['integer', 'exists:users,id'],
         ]);
 
         DB::beginTransaction();
@@ -756,7 +801,10 @@ class ProdukController extends Controller
             );
 
             // Hilangkan ID yang sama jika ada
-            $allId = array_unique($allId);
+            $allId = $this->validateDivisionTeamIds(
+                collect(array_unique($allId))->map(fn ($userId) => (int) $userId),
+                (int) $validated['division_id']
+            )->all();
 
             // Hapus hanya penugasan user dari divisi yang sedang diedit.
             // Penugasan divisi lain pada client yang sama harus tetap dipertahankan.
@@ -813,8 +861,8 @@ class ProdukController extends Controller
         $teams = $produk->teams;
         if ($request->filled('division_id')) {
             $divisionId = (int) $request->integer('division_id');
-            $teams = $teams->filter(fn ($user) => $user->userDivisions
-                ->contains(fn ($membership) => (int) optional($membership->role)->division_id === $divisionId));
+            $teams = $teams->filter(fn ($user) => ! $user->is_locked && $user->userDivisions
+                ->contains(fn ($membership) => (int) $membership->division_id === $divisionId));
         }
 
         $divisionStatus = $request->filled('division_id')
@@ -827,20 +875,46 @@ class ProdukController extends Controller
             'status'    => $divisionStatus ?? 1,
 
             'buh' => $teams
-                ->filter(fn($u) => $u->userDivisions->first()?->role?->level == 1)
+                ->filter(fn($u) => $this->roleLevelInDivision($u, (int) $request->integer('division_id')) === 1)
                 ->pluck('id')
                 ->values(),
 
             'bawahan2' => $teams
-                ->filter(fn($u) => $u->userDivisions->first()?->role?->level == 2)
+                ->filter(fn($u) => $this->roleLevelInDivision($u, (int) $request->integer('division_id')) === 2)
                 ->pluck('id')
                 ->values(),
 
             'bawahan3' => $teams
-                ->filter(fn($u) => $u->userDivisions->first()?->role?->level == 3)
+                ->filter(fn($u) => $this->roleLevelInDivision($u, (int) $request->integer('division_id')) === 3)
                 ->pluck('id')
                 ->values(),
         ]);
+    }
+
+    private function roleLevelInDivision(User $user, int $divisionId): int
+    {
+        return (int) ($user->userDivisions
+            ->first(fn ($membership) => (int) $membership->division_id === $divisionId)
+            ?->role?->level ?? 0);
+    }
+
+    private function validateDivisionTeamIds(\Illuminate\Support\Collection $userIds, int $divisionId): \Illuminate\Support\Collection
+    {
+        $userIds = $userIds->map(fn ($id) => (int) $id)->filter()->unique()->values();
+        $validIds = User::unlocked()
+            ->whereIn('id', $userIds)
+            ->whereHas('userDivisions', fn ($query) => $query->where('division_id', $divisionId))
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->values();
+
+        if ($validIds->count() !== $userIds->count()) {
+            throw ValidationException::withMessages([
+                'team' => 'Tim hanya boleh berisi akun aktif dari divisi yang sedang dikelola.',
+            ]);
+        }
+
+        return $validIds;
     }
 
     public function hapusDataClient($id)

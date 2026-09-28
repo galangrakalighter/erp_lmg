@@ -22,7 +22,7 @@ class PayrollController extends Controller
     public function index($id){
         $title = 'Payroll';
 
-        $user = User::where('isAdmin', false)->get();
+        $user = User::unlocked()->where('isAdmin', false)->get();
 
         $account = ChartOfAccount::whereIn('category', ['kewajiban', 'beban'])->where('perusahaan', $id)->where('is_active', true)->get();
         $accountKewajiban = ChartOfAccount::where('category', 'kewajiban')->where('perusahaan', $id)->where('is_active', true)->get();

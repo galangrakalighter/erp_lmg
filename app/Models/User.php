@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\userDivision;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Builder;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
@@ -57,6 +58,12 @@ class User extends Authenticatable
             'is_locked' => 'boolean',
             'monitoring_share_enabled' => 'boolean',
         ];
+    }
+
+    /** Batasi daftar pilihan akun ke akun yang masih aktif. */
+    public function scopeUnlocked(Builder $query): Builder
+    {
+        return $query->where($query->getModel()->qualifyColumn('is_locked'), false);
     }
 
     public function userDivisions() {

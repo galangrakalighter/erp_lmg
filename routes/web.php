@@ -42,6 +42,8 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/digital-marketing/client/{id_produk}', [App\Http\Controllers\DigitalMarketingWorkspaceController::class, 'show'])
         ->name('digital-marketing.workspace');
+    Route::get('/multimedia/client/{id_produk}', [App\Http\Controllers\MultimediaWorkspaceController::class, 'show'])
+        ->name('multimedia.workspace');
     Route::get('/business-dev/client/{id_produk}', [App\Http\Controllers\BusinessDevWorkspaceController::class, 'show'])
         ->name('business-dev.workspace');
     Route::get('/idme/client/{id_produk}', [App\Http\Controllers\IdmeClientWorkspaceController::class, 'show'])

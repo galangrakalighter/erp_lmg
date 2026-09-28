@@ -23,7 +23,7 @@
     {{-- Legacy pages still use the existing Font Awesome icon classes. --}}
     <link rel="stylesheet" href="{{ asset('vendor/fontawesome-free/css/all.min.css') }}">
 
-    @if(request()->routeIs('market_research', 'branding', 'analisis', 'manajemen', 'PDF', 'api.digital-marketing.*', 'api.business-dev.*'))
+    @if(request()->routeIs('market_research', 'branding', 'analisis', 'manajemen', 'PDF', 'api.digital-marketing.*', 'api.business-dev.*', 'api.multimedia.*'))
         {{-- Keep the original Bootstrap/SB Admin component placement inside client tabs. --}}
         <link rel="stylesheet" href="{{ asset('css/sb-admin-2.min.css') }}">
     @endif
@@ -1404,7 +1404,7 @@
 </head>
 
 
-<body id="page-top" class="min-h-screen bg-[#f5f5f3] text-zinc-900 {{ request()->boolean('embed') ? 'lmg-embedded' : '' }} {{ request()->routeIs('market_research', 'branding', 'analisis', 'manajemen', 'PDF', 'api.digital-marketing.*', 'api.business-dev.*') ? 'lmg-client-tabs' : '' }} {{ request()->routeIs('analisis', 'api.digital-marketing.analisis', 'api.business-dev.analisis') ? 'lmg-analysis-page' : '' }}">
+<body id="page-top" class="min-h-screen bg-[#f5f5f3] text-zinc-900 {{ request()->boolean('embed') ? 'lmg-embedded' : '' }} {{ request()->routeIs('market_research', 'branding', 'analisis', 'manajemen', 'PDF', 'api.digital-marketing.*', 'api.business-dev.*', 'api.multimedia.*') ? 'lmg-client-tabs' : '' }} {{ request()->routeIs('analisis', 'api.digital-marketing.analisis', 'api.business-dev.analisis', 'api.multimedia.analisis') ? 'lmg-analysis-page' : '' }}">
 
     {{-- =========================================================
         LOADING OVERLAY

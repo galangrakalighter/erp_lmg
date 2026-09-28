@@ -52,7 +52,7 @@ class HCOverviewController extends Controller
         $currentLevel = (int) ($user->userDivisions->first()?->role?->level ?? 0);
         $canCreateTask = (bool) $user->isAdmin || ($currentLevel > 0 && $currentLevel < 3);
 
-         $handed_client = User::leftjoin('user_division', 'user_division.user_id', '=', 'users.id')
+         $handed_client = User::unlocked()->leftjoin('user_division', 'user_division.user_id', '=', 'users.id')
             ->select('users.id', 'users.name', 'users.email')
             ->distinct();
 
@@ -74,7 +74,7 @@ class HCOverviewController extends Controller
         abort_unless($actor->isAdmin || ($actorLevel > 0 && $actorLevel < 3), 403, 'Anda tidak memiliki akses untuk membuat KPI atau task.');
 
         $allowedPicIds = $actor->isAdmin
-            ? User::where('isAdmin', false)->pluck('id')->all()
+            ? User::unlocked()->where('isAdmin', false)->pluck('id')->all()
             : UserDivision::where('parent_id', $actor->id)->pluck('user_id')->all();
 
         $request->validate([
@@ -155,7 +155,7 @@ class HCOverviewController extends Controller
         $user = Auth::user();
         abort_unless((int) $id_user === (int) $user->id, 403);
         $user->loadMissing('userDivisions.role');
-        $userQuery = User::join('user_division', 'user_division.user_id', '=', 'users.id')
+        $userQuery = User::unlocked()->join('user_division', 'user_division.user_id', '=', 'users.id')
                     ->where('user_division.division_id', $id)
                     ->where('users.isAdmin', false)
                     ->select('users.id', 'users.email')
@@ -315,7 +315,7 @@ class HCOverviewController extends Controller
         abort_unless($actor->isAdmin || ($actorLevel > 0 && $actorLevel < 3), 403, 'Anda tidak memiliki akses untuk membuat task.');
 
         $allowedPicIds = $actor->isAdmin
-            ? User::where('isAdmin', false)->pluck('id')
+            ? User::unlocked()->where('isAdmin', false)->pluck('id')
             : UserDivision::where('parent_id', $actor->id)->pluck('user_id');
         abort_unless($allowedPicIds->map(fn ($id) => (int) $id)->contains((int) $request->pic), 403, 'PIC harus merupakan bawahan Anda.');
 

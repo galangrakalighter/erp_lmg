@@ -254,6 +254,7 @@
             $isMCNProduct = $mcnProduk->contains('client_id', $currentProduct);
             $techProdukList = $techProduk->contains('client_id', $currentProduct);
             $isEcommerceList = $ecommerceProduk->contains('client_id', $currentProduct);
+            $isMultimediaProduct = $multimediaProduk->contains('client_id', $currentProduct);
 
             $isBusinessDevWorkspace = Route::is('business-dev.workspace');
 
@@ -281,6 +282,7 @@
             $divisiActive =
                 $divisiOpen ||
                 ($isMarketingPage && $isDMProduct) ||
+                Route::is('multimedia.workspace') ||
                 Route::is('idme.workspace') ||
                 ($isMCNProduct && $isPdf) ||
                 ($techProdukList && $isPdf) ||
@@ -351,6 +353,8 @@
                     @include('partials.sidebar_idme')
 
                     @include('partials.sidebar_digital_marketing')
+
+                    @include('partials.sidebar_multimedia')
 
                     @include('partials.sidebar_mcn')
 

@@ -1,5 +1,10 @@
 @extends('layout.app')
 @section('content')
+    @if($readOnly ?? false)
+        <style>.multimedia-readonly [data-toggle="modal"], .multimedia-readonly form[action*="cms_market"] { display: none !important; }</style>
+        <div class="alert alert-info border-0 shadow-sm">Mode Multimedia: Market Research hanya dapat dilihat.</div>
+    @endif
+    <div class="{{ ($readOnly ?? false) ? 'multimedia-readonly' : '' }}">
     @include('partials.client_data_theme')
     @include('partials.client_native_tables')
     <div class="row g-4 mb-6">
@@ -324,4 +329,5 @@
 @include('cms_market.segmentasi.index')
 @include('cms_market.target_audience.index')
 @include('cms_market.positioning.index')
+    </div>
 @endsection

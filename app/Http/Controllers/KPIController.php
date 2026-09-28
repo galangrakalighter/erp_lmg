@@ -112,7 +112,7 @@ class KPIController extends Controller
         
         // 1. Logika penentuan akses user
         if ($user->isAdmin) {
-            $allowedUserIds = \App\Models\User::where('isAdmin', false)->pluck('id')->toArray();
+            $allowedUserIds = \App\Models\User::unlocked()->where('isAdmin', false)->pluck('id')->toArray();
         } else {
             $allowedUserIds = \App\Models\UserDivision::where('parent_id', $user->id)
                 ->orWhere('user_id', $user->id)

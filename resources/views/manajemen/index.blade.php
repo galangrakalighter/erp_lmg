@@ -9,7 +9,7 @@
             <h6 class="m-0 font-weight-bold text-primary">
                 <i class="fas fa-tasks mr-2"></i>Manajemen Konten {{ $produk->nama }}
             </h6>
-            @if($role == 'Content Creator Manager' || $role == 'Digital Marketer' || $role == 'Busines Unit Head' || $role == 'Super Admin')
+            @if(!$multimediaMode && ($role == 'Content Creator Manager' || $role == 'Digital Marketer' || $role == 'Busines Unit Head' || $role == 'Super Admin'))
             <button type="button" class="btn btn-primary btn-sm shadow-sm" data-toggle="modal" data-target="#tambahModal">
                 <i class="fas fa-plus fa-sm text-white-50 mr-1"></i> Tambah Konten
             </button>
@@ -680,6 +680,7 @@
     const produkId = "{{ $produk->id }}";
     const platform = "{{ $platform }}";
     const isContentCreator = {{ $RoleSekarang == 'Content Creator' ? 'true' : 'false' }};
+    const multimediaMode = {{ $multimediaMode ? 'true' : 'false' }};
 
     let contentPlanData = [];
     let contentPlanCurrentPage = 1;
@@ -714,8 +715,8 @@
                 <td>${row.tanggal_posting ? new Date(row.tanggal_posting).toLocaleDateString('id-ID') : '-'}</td>
                 <td>${row.link ? `<a href="${escapeContentPlan(row.link)}" target="_blank" rel="noopener"><i class="fas fa-link"></i></a>` : '-'}</td>
                 <td><span class="badge ${row.nama_status === 'Selesai' ? 'badge-dark' : 'badge-light'}">${escapeContentPlan(row.nama_status)}</span></td>
-                @if(Auth::user()->isAdmin || $divisi[0]->division_id == 1)
-                <td class="text-nowrap"><button class="btn btn-sm btn-warning" onclick="getDataEdit(${Number(row.id)})"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-danger" onclick="confirmDelete(${Number(row.id)})"><i class="fas fa-trash"></i></button></td>
+                @if(Auth::user()->isAdmin || $divisi[0]->division_id == 1 || $multimediaMode)
+                <td class="text-nowrap"><button class="btn btn-sm btn-warning" onclick="getDataEdit(${Number(row.id)})" title="{{ $multimediaMode ? 'Edit link output' : 'Edit' }}"><i class="fas fa-edit"></i></button>@if(!$multimediaMode) <button class="btn btn-sm btn-danger" onclick="confirmDelete(${Number(row.id)})"><i class="fas fa-trash"></i></button>@endif</td>
                 @endif
             </tr>`).join('') : '<tr><td colspan="17" class="py-4 text-center text-muted">Tidak ada data.</td></tr>';
 
@@ -745,6 +746,13 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
+        if (multimediaMode) {
+            document.querySelectorAll('#formEditKonten input, #formEditKonten select, #formEditKonten textarea').forEach(function (field) {
+                if (field.name !== 'link' && field.name !== '_token') {
+                    field.disabled = true;
+                }
+            });
+        }
         loadContentPlan().catch(() => {
             document.getElementById('contentPlanRows').innerHTML = '<tr><td colspan="17" class="py-4 text-center text-danger">Data gagal dimuat.</td></tr>';
         });

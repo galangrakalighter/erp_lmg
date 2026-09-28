@@ -20,6 +20,7 @@ class PerusahaanController extends Controller
         $user = Auth::user();
 
         $financeUsers = User::query()
+            ->unlocked()
             ->where('isAdmin', false)
             ->whereHas('userDivisions.division', fn ($query) => $query->whereRaw("LOWER(TRIM(name)) = 'finance'"))
             ->orderBy('email')
@@ -212,6 +213,7 @@ class PerusahaanController extends Controller
     private function syncCompanyUsers(int $companyId, array $userIds): void
     {
         $financeUserIds = User::query()
+            ->unlocked()
             ->where('isAdmin', false)
             ->whereHas('userDivisions.division', fn ($query) => $query->whereRaw("LOWER(TRIM(name)) = 'finance'"))
             ->whereIn('id', $userIds)

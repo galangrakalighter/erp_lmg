@@ -37,7 +37,7 @@ class ActivityLogController extends Controller
             : $this->visibleUserIds($currentUser->id);
         $allowedEmails = $visibleUserIds === null
             ? []
-            : User::query()
+            : User::query()->unlocked()
                 ->whereIn('id', $visibleUserIds)
                 ->pluck('email')
                 ->filter()
@@ -84,7 +84,7 @@ class ActivityLogController extends Controller
                     'error' => $firestoreException->getMessage(),
                 ]);
             }
-            $divisionUserQuery = User::query();
+            $divisionUserQuery = User::query()->unlocked();
 
             if ($visibleUserIds !== null) {
                 $divisionUserQuery->whereIn('id', $visibleUserIds);
@@ -135,7 +135,7 @@ class ActivityLogController extends Controller
             $error = 'Activity log belum dapat dimuat. Periksa koneksi Firestore pada server.';
         }
 
-        $emailQuery = User::query()->orderBy('email');
+        $emailQuery = User::query()->unlocked()->orderBy('email');
 
         if ($visibleUserIds !== null) {
             $emailQuery->whereIn('id', $visibleUserIds);

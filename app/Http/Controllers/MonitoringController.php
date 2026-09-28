@@ -22,6 +22,7 @@ class MonitoringController extends Controller
         $availableTargets = $viewer->isAdmin
             ? collect()
             : $viewer->monitoringTargets()
+                ->where('users.is_locked', false)
                 ->with(['userDivisions.division', 'userDivisions.role'])
                 ->withCount(['monitoringSessions as active_monitoring_count' => fn ($query) => $query->where('status', 'active')])
                 ->orderBy('email')
@@ -30,6 +31,7 @@ class MonitoringController extends Controller
         if (! $request->filled('user') && ($viewer->isAdmin || $availableTargets->isNotEmpty())) {
             $users = $viewer->isAdmin
                 ? User::query()
+                    ->unlocked()
                     ->with(['userDivisions.division', 'userDivisions.role'])
                     ->withCount(['monitoringSessions as active_monitoring_count' => fn ($query) => $query->where('status', 'active')])
                     ->orderBy('email')
@@ -246,6 +248,7 @@ class MonitoringController extends Controller
         abort_unless($request->user()->isAdmin, 403);
 
         $users = User::query()
+            ->unlocked()
             ->orderBy('name')
             ->orderBy('email')
             ->get(['id', 'name', 'email', 'photo_profile']);

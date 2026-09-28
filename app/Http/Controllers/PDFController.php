@@ -195,6 +195,7 @@ class PDFController extends Controller
             ->get();
 
         $uploaders = User::query()
+            ->unlocked()
             ->whereIn('id', FilePdf::where('client', $id)->where('division_id', $divisionId)->whereNotNull('uploaded_by')->select('uploaded_by'))
             ->orderBy('name')->get(['id', 'name', 'email']);
         $selectedUploaderId = $request->integer('uploaded_by') ?: null;
@@ -291,6 +292,8 @@ class PDFController extends Controller
 
     public function previewFile(FilePdf $file)
     {
+        $this->ensureFileAccessible($file);
+
         if ($file->is_generated_document && filled($file->editor_content)) {
             $client = ProdukClient::findOrFail($file->client);
             $documentName = trim(preg_replace('/\.pdf$/i', '', $file->nama_file));
@@ -315,11 +318,15 @@ class PDFController extends Controller
     /** Tampilan PDF halaman penuh, terpisah dari daftar dokumen. */
     public function viewFile(FilePdf $file)
     {
+        $this->ensureFileAccessible($file);
+
         return view('pdf.viewer', compact('file'));
     }
 
     public function previewVersion(FilePdf $file, FilePdfVersion $version)
     {
+        $this->ensureFileAccessible($file);
+
         abort_unless($file->is_pinned && (int) $version->file_pdf_id === (int) $file->id, 404);
         abort_unless(Storage::disk('public')->exists($version->location), 404, 'File versi tidak ditemukan.');
 
@@ -333,6 +340,7 @@ class PDFController extends Controller
     public function update(Request $request, $id)
     {
         $file = FilePDF::findOrFail($id);
+        $this->ensureFileAccessible($file);
 
         $request->validate([
             'nama_file' => 'required|string|max:255',
@@ -428,6 +436,7 @@ class PDFController extends Controller
     public function destroy($id)
     {
         $file = FilePDF::findOrFail($id);
+        $this->ensureFileAccessible($file);
         abort_if($file->is_system_template, 403, 'Dokumen bawaan client tidak dapat dihapus.');
 
         // Hapus file fisik
@@ -463,6 +472,37 @@ class PDFController extends Controller
             ->where('client_id', $clientId)
             ->where('division_id', $divisionId)
             ->exists(), 404, 'Client tidak tersedia pada divisi tersebut.');
+
+        $this->ensureMultimediaDocumentScope($clientId, $divisionId);
+    }
+
+    private function ensureFileAccessible(FilePdf $file): void
+    {
+        $this->ensureMultimediaDocumentScope((int) $file->client, (int) $file->division_id);
+    }
+
+    private function ensureMultimediaDocumentScope(int $clientId, int $divisionId): void
+    {
+        $user = Auth::user();
+        if (! $user || $user->isAdmin) {
+            return;
+        }
+
+        $multimediaId = DB::table('divisions')
+            ->whereRaw('LOWER(TRIM(name)) = ?', ['multimedia'])
+            ->value('id');
+        $isMultimediaUser = $multimediaId && $user->userDivisions()
+            ->where('division_id', $multimediaId)
+            ->exists();
+
+        if ($isMultimediaUser) {
+            $hasClientAccess = DB::table('user_client')
+                ->where('user_id', $user->id)
+                ->where('client_id', $clientId)
+                ->exists();
+
+            abort_unless((int) $multimediaId === $divisionId && $hasClientAccess, 403);
+        }
     }
 
     private function sanitizeDocumentHtml(string $html): string

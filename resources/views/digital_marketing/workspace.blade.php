@@ -40,13 +40,14 @@
                 @php
                     $firstPlatform = $platforms->first();
                     $apiNamespace = $workspaceApiNamespace ?? 'api.digital-marketing';
-                    $tabs = [
+                    $availableTabs = $workspaceTabs ?? ['market-research', 'branding', 'analisis', 'content-plan', 'dokumen'];
+                    $tabs = collect([
                         ['key' => 'market-research', 'label' => 'Market Research', 'url' => $firstPlatform ? route($apiNamespace.'.market-research', [$client->id, $firstPlatform]) : null, 'platform' => true],
                         ['key' => 'branding', 'label' => 'Branding', 'url' => $firstPlatform ? route($apiNamespace.'.branding', [$client->id, $firstPlatform]) : null, 'platform' => true],
-                        ['key' => 'analisis', 'label' => 'Analisis', 'url' => $firstPlatform ? route($apiNamespace.'.analisis', [$client->id, $firstPlatform]) : null, 'platform' => true],
+                        ['key' => 'analisis', 'label' => 'Analisis', 'url' => in_array('analisis', $availableTabs, true) && $firstPlatform ? route($apiNamespace.'.analisis', [$client->id, $firstPlatform]) : null, 'platform' => true],
                         ['key' => 'content-plan', 'label' => 'Content Plan', 'url' => $firstPlatform ? route($apiNamespace.'.content-plan', [$client->id, $firstPlatform]) : null, 'platform' => true],
                         ['key' => 'dokumen', 'label' => 'File Dokumen', 'url' => route('PDF', ['id_produk' => $client->id, 'division_id' => $workspaceDivisionId]), 'platform' => false],
-                    ];
+                    ])->whereIn('key', $availableTabs)->values();
                 @endphp
 
                 @foreach($tabs as $tab)

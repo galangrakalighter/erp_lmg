@@ -318,6 +318,7 @@ class ProdukController extends Controller
 
             $draftKey = $request->input('oauth_draft_key');
             $pendingMeta = $draftKey ? $request->session()->get('meta_oauth_pending.'.$draftKey) : null;
+            $pendingThreads = $draftKey ? $request->session()->get('threads_oauth_pending.'.$draftKey) : null;
             if (is_array($pendingMeta)) {
                 OAuthConnection::updateOrCreate(
                     ['client_id' => $produk->id, 'provider' => 'meta'],
@@ -325,11 +326,21 @@ class ProdukController extends Controller
                 );
                 $this->ensureOAuthPlatformLabels($produk, $pendingMeta['assets']['pages'] ?? []);
             }
+            if (is_array($pendingThreads)) {
+                OAuthConnection::updateOrCreate(
+                    ['client_id' => $produk->id, 'provider' => 'threads'],
+                    $pendingThreads
+                );
+                $this->ensureOAuthPlatformLabel($produk, 'Threads');
+            }
 
             DB::commit();
 
             if (is_array($pendingMeta) && $draftKey) {
                 $request->session()->forget('meta_oauth_pending.'.$draftKey);
+            }
+            if (is_array($pendingThreads) && $draftKey) {
+                $request->session()->forget('threads_oauth_pending.'.$draftKey);
             }
 
             return redirect()
@@ -371,6 +382,21 @@ class ProdukController extends Controller
             'platform' => $platforms->values()->all(),
             'access' => $access->values()->all(),
         ]]);
+    }
+
+    private function ensureOAuthPlatformLabel(ProdukClient $client, string $platform): void
+    {
+        $current = is_array($client->access_token) ? $client->access_token : [];
+        $platforms = collect($current['platform'] ?? []);
+        $access = collect($current['access'] ?? []);
+        if (! $platforms->contains($platform)) {
+            $platforms->push($platform);
+            $access->push('');
+            $client->update(['access_token' => [
+                'platform' => $platforms->values()->all(),
+                'access' => $access->values()->all(),
+            ]]);
+        }
     }
 
     public function update($id, Request $request)

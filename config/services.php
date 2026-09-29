@@ -43,6 +43,13 @@ return [
         'graph_version' => env('META_GRAPH_VERSION', 'v23.0'),
     ],
 
+    'threads' => [
+        'client_id' => env('THREADS_CLIENT_ID'),
+        'client_secret' => env('THREADS_CLIENT_SECRET'),
+        'redirect_uri' => env('THREADS_REDIRECT_URI'),
+        'graph_version' => env('THREADS_GRAPH_VERSION', 'v1.0'),
+    ],
+
     'instagram' => [
         'token' => env('INSTAGRAM_ACCESS_TOKEN'),
     ],

@@ -12,6 +12,8 @@ Route::get('/terms-privacy-policy', function () {
 Route::view('/privacy-policy', 'legal.privacy')->name('legal.privacy');
 Route::view('/terms-of-service', 'legal.terms')->name('legal.terms');
 Route::view('/data-deletion', 'legal.data-deletion')->name('legal.data-deletion');
+Route::post('oauth/threads/deauthorize', [App\Http\Controllers\ThreadsOAuthController::class, 'deauthorize'])->name('oauth.threads.deauthorize');
+Route::post('oauth/threads/data-deletion', [App\Http\Controllers\ThreadsOAuthController::class, 'dataDeletion'])->name('oauth.threads.data-deletion');
 Route::middleware('auth')->group(function () {
     Route::get('activity-logs', [ActivityLogController::class, 'index'])
         ->middleware(EnsureUserIsAdmin::class)
@@ -130,6 +132,11 @@ Route::middleware('auth')->group(function () {
     Route::get('oauth/meta/callback', [App\Http\Controllers\MetaOAuthController::class, 'callback'])->name('oauth.meta.callback');
     Route::put('oauth/meta/{client}/assets', [App\Http\Controllers\MetaOAuthController::class, 'selectAssets'])->name('oauth.meta.assets');
     Route::delete('oauth/meta/{client}', [App\Http\Controllers\MetaOAuthController::class, 'disconnect'])->name('oauth.meta.disconnect');
+
+    Route::get('oauth/threads/{client}/redirect', [App\Http\Controllers\ThreadsOAuthController::class, 'redirect'])->name('oauth.threads.redirect');
+    Route::get('oauth/threads/connect', [App\Http\Controllers\ThreadsOAuthController::class, 'redirectDraft'])->name('oauth.threads.connect');
+    Route::get('oauth/threads/callback', [App\Http\Controllers\ThreadsOAuthController::class, 'callback'])->name('oauth.threads.callback');
+    Route::delete('oauth/threads/{client}', [App\Http\Controllers\ThreadsOAuthController::class, 'disconnect'])->name('oauth.threads.disconnect');
 
     Route::get('client/{division}', [App\Http\Controllers\ProdukController::class, 'indexDivision'])->name('client.produk_divisi');
     Route::resource('perusahaan', App\Http\Controllers\PerusahaanController::class);

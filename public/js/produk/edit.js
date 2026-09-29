@@ -319,6 +319,15 @@ function buildEditModalHtml(res){
                             </div>
                         </div>
                     ` : ''}
+                    ${oauthConnections.threads?.connected ? `
+                        <div class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                            <div>
+                                <p class="mb-0 text-sm font-bold text-emerald-900">Threads terhubung sebagai @${escapeProdukHtml(oauthConnections.threads.provider_user_name || 'pengguna')}</p>
+                                <p class="mb-0 text-[11px] text-emerald-700">Akun siap digunakan untuk mengambil postingan dan insight Threads.</p>
+                            </div>
+                            <button type="button" data-threads-disconnect data-client-id="${p.id}" class="rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-semibold text-rose-700">Putuskan</button>
+                        </div>
+                    ` : ''}
                 </div>
             </div>
 

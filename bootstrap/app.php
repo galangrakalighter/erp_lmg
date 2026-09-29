@@ -12,6 +12,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->validateCsrfTokens(except: [
+            'oauth/threads/deauthorize',
+            'oauth/threads/data-deletion',
+        ]);
         $middleware->appendToGroup('web', \App\Http\Middleware\EnsureAccountIsUnlocked::class);
         $middleware->appendToGroup('web', \App\Http\Middleware\LogPageVisit::class);
         $middleware->appendToGroup('web', \App\Http\Middleware\ProtectMultimediaSharedModules::class);

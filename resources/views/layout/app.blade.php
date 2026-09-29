@@ -1767,7 +1767,7 @@
     <script src="{{ asset('js/native-client-table.js') }}?v={{ filemtime(public_path('js/native-client-table.js')) }}"></script>
     <script src="{{ asset('js/produk/datatable.js') }}"></script>
     <script src="{{ asset('js/produk/create.js') }}"></script>
-    <script src="{{ asset('js/produk/edit.js') }}"></script>
+    <script src="{{ asset('js/produk/edit.js') }}?v={{ filemtime(public_path('js/produk/edit.js')) }}"></script>
     <script src="{{ asset('js/produk/delete.js') }}"></script>
     <script src="{{ asset('js/produk/produk.js') }}"></script>
 

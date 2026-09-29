@@ -86,6 +86,13 @@ class ProdukClient extends Model
 
     public function platformAccessToken(string $platform): ?string
     {
+        if (strtolower($platform) === 'threads') {
+            $connection = $this->oauthConnections()->where('provider', 'threads')->first();
+            if ($connection && filled($connection->access_token)) {
+                return $connection->access_token;
+            }
+        }
+
         if (in_array(strtolower($platform), ['facebook', 'instagram'], true)) {
             $connection = $this->oauthConnections()->where('provider', 'meta')->first();
 
@@ -119,6 +126,12 @@ class ProdukClient extends Model
 
     public function platformAccountId(string $platform): ?string
     {
+        if (strtolower($platform) === 'threads') {
+            $connection = $this->oauthConnections()->where('provider', 'threads')->first();
+
+            return $connection?->provider_user_id;
+        }
+
         $connection = $this->oauthConnections()->where('provider', 'meta')->first();
         if (! $connection) {
             return null;

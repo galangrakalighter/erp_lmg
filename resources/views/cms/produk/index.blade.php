@@ -423,35 +423,37 @@
         }
     };
 
-    let activeMetaOAuthContext = null;
+    let activeOAuthContext = null;
 
-    function openMetaOAuthPopup(url, context) {
+    function openOAuthPopup(url, context) {
         const width = 620;
         const height = 760;
         const left = Math.max(0, window.screenX + (window.outerWidth - width) / 2);
         const top = Math.max(0, window.screenY + (window.outerHeight - height) / 2);
-        const popup = window.open(url, 'meta-oauth', `popup=yes,width=${width},height=${height},left=${left},top=${top}`);
+        const popup = window.open(url, `${context.provider}-oauth`, `popup=yes,width=${width},height=${height},left=${left},top=${top}`);
         if (!popup) {
             alert('Popup diblokir browser. Izinkan popup untuk ERP lalu coba kembali.');
             return;
         }
-        activeMetaOAuthContext = context;
+        activeOAuthContext = context;
         popup.focus();
     }
 
     window.addEventListener('message', function (event) {
-        if (event.origin !== window.location.origin || !event.data?.type?.startsWith('meta-oauth-')) return;
+        if (event.origin !== window.location.origin || !/^(meta|threads)-oauth-(success|error)$/.test(event.data?.type || '')) return;
 
-        if (event.data.type === 'meta-oauth-error') {
-            alert(event.data.message || 'Koneksi Meta gagal.');
-            activeMetaOAuthContext = null;
+        const provider = event.data.type.split('-')[0];
+
+        if (event.data.type.endsWith('-error')) {
+            alert(event.data.message || `Koneksi ${provider} gagal.`);
+            activeOAuthContext = null;
             return;
         }
 
-        if (activeMetaOAuthContext?.mode === 'edit' && activeMetaOAuthContext.clientId) {
-            editProduk(activeMetaOAuthContext.clientId);
+        if (activeOAuthContext?.mode === 'edit' && activeOAuthContext.clientId) {
+            editProduk(activeOAuthContext.clientId);
         } else {
-            const cardButton = document.querySelector('#tambahModal [data-oauth-provider="meta"]');
+            const cardButton = document.querySelector(`#tambahModal [data-oauth-provider="${provider}"]`);
             if (cardButton) {
                 cardButton.textContent = 'Terhubung';
                 cardButton.classList.remove('border-zinc-300', 'bg-white', 'text-zinc-700');
@@ -459,7 +461,7 @@
             }
             alert(`${event.data.message} Simpan client untuk menyelesaikan koneksi.`);
         }
-        activeMetaOAuthContext = null;
+        activeOAuthContext = null;
     });
 
     document.addEventListener('click', function (event) {
@@ -475,6 +477,21 @@
                 if (!response.ok) throw new Error(data.message || 'Koneksi gagal diputus.');
                 alert(data.message);
                 $('#modalEditGlobal').modal('hide');
+            }).catch(error => alert(error.message));
+            return;
+        }
+
+        const threadsDisconnectButton = event.target.closest('[data-threads-disconnect]');
+        if (threadsDisconnectButton) {
+            if (!confirm('Putuskan koneksi Threads untuk client ini?')) return;
+            fetch(`/oauth/threads/${threadsDisconnectButton.dataset.clientId}`, {
+                method: 'DELETE',
+                headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken }
+            }).then(async response => {
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'Koneksi Threads gagal diputus.');
+                alert(data.message);
+                editProduk(threadsDisconnectButton.dataset.clientId);
             }).catch(error => alert(error.message));
             return;
         }
@@ -502,23 +519,26 @@
         if (!button) return;
 
         if (button.hasAttribute('data-oauth-new-client')) {
-            if (button.dataset.oauthProvider === 'meta') {
+            if (['meta', 'threads'].includes(button.dataset.oauthProvider)) {
                 const draftKey = button.closest('form')?.querySelector('[data-oauth-draft-key]')?.value;
                 if (!draftKey) {
                     alert('Kunci form client tidak ditemukan. Muat ulang halaman lalu coba kembali.');
                     return;
                 }
-                openMetaOAuthPopup(`/oauth/meta/connect?draft_key=${encodeURIComponent(draftKey)}`, { mode: 'create' });
+                const provider = button.dataset.oauthProvider;
+                openOAuthPopup(`/oauth/${provider}/connect?draft_key=${encodeURIComponent(draftKey)}`, { mode: 'create', provider });
                 return;
             }
             alert('Koneksi ' + button.dataset.oauthProvider + ' belum diaktifkan pada backend server.');
             return;
         }
 
-        if (button.dataset.oauthProvider === 'meta') {
-            openMetaOAuthPopup(`/oauth/meta/${button.dataset.clientId}/redirect`, {
+        if (['meta', 'threads'].includes(button.dataset.oauthProvider)) {
+            const provider = button.dataset.oauthProvider;
+            openOAuthPopup(`/oauth/${provider}/${button.dataset.clientId}/redirect`, {
                 mode: 'edit',
-                clientId: button.dataset.clientId
+                clientId: button.dataset.clientId,
+                provider
             });
             return;
         }

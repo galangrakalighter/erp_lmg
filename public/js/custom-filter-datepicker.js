@@ -25,8 +25,16 @@
     };
 
     function isFilterDate(input) {
-        if (!(input instanceof HTMLInputElement) || input.type !== 'date') return false;
+        if (!(input instanceof HTMLInputElement)) return false;
         if (input.dataset.nativeDate === 'true' || input.closest('[data-native-date="true"]')) return false;
+
+        if (input.type !== 'date' && input.dataset.datePicker === undefined) return false;
+
+        return true;
+    }
+
+    function usesFilterDefault(input) {
+        if (input.type !== 'date') return false;
 
         const name = String(input.name || '').toLowerCase();
         const id = String(input.id || '').toLowerCase();
@@ -50,7 +58,7 @@
     }
 
     function applyDefault(input) {
-        if (input.value || input.dataset.noDefaultDate !== undefined) return;
+        if (!usesFilterDefault(input) || input.value || input.dataset.noDefaultDate !== undefined) return;
 
         const policy = document.body?.dataset.filterDateDefault || 'today';
         if (policy === 'none' || policy === 'yesterday-to-today') return;
@@ -63,14 +71,16 @@
 
         applyDefault(input);
 
+        const submitFormat = input.dataset.datePickerFormat || (input.type === 'date' ? 'Y-m-d' : 'd M Y');
+
         window.flatpickr(input, {
             altInput: true,
             altFormat: 'd/m/Y',
-            altInputClass: `${input.className} lmg-filter-date-picker`,
+            altInputClass: 'lmg-filter-date-picker',
             allowInput: false,
             animate: false,
             clickOpens: true,
-            dateFormat: 'Y-m-d',
+            dateFormat: submitFormat,
             defaultDate: input.value || null,
             disableMobile: true,
             locale: localeId,
@@ -79,13 +89,28 @@
                 instance.calendarContainer.classList.add('lmg-filter-calendar');
                 instance.altInput.setAttribute('autocomplete', 'off');
                 instance.altInput.setAttribute('aria-label', input.getAttribute('aria-label') || 'Pilih tanggal');
+                if (input.disabled) instance.altInput.disabled = true;
+                if (input.required) {
+                    instance.altInput.required = true;
+                    input.required = false;
+                }
+            },
+            onOpen: function (_selectedDates, _dateStr, instance) {
+                // Modal edit sering mengisi input asli lewat JavaScript. Sinkronkan
+                // nilainya tepat sebelum kalender dibuka agar tanggal tetap benar.
+                const selectedValue = instance.selectedDates[0]
+                    ? instance.formatDate(instance.selectedDates[0], submitFormat)
+                    : '';
+                if (input.value && input.value !== selectedValue) {
+                    instance.setDate(input.value, false, submitFormat);
+                }
             }
         });
     }
 
     function scan(root) {
         if (root instanceof HTMLInputElement) initialise(root);
-        root.querySelectorAll?.('input[type="date"]').forEach(initialise);
+        root.querySelectorAll?.('input[type="date"], input[data-date-picker]').forEach(initialise);
     }
 
     function boot() {

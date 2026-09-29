@@ -24,7 +24,7 @@
 .meta-field-picker{position:relative}.meta-field-menu{position:absolute;z-index:50;top:48px;right:0;width:280px;border:1px solid #e4e4e7;border-radius:12px;background:#fff;padding:12px;box-shadow:0 18px 45px rgba(24,24,27,.16)}.meta-field-menu[hidden]{display:none!important}.meta-field-menu h4{margin:0 0 9px;font-size:12px}.meta-field-options{display:grid;grid-template-columns:1fr 1fr;gap:5px}.meta-field-option{display:flex;align-items:center;gap:7px;border-radius:7px;padding:6px;font-size:10px}.meta-field-option:hover{background:#f4f4f5}.meta-field-option input{accent-color:#18181b}
 </style>
 <div class="meta-v2-shell">
-<header class="meta-v2-top"><div class="meta-v2-title"><h1 data-meta-analysis-title>Analisis Organik {{ $platform }}</h1><p>Pahami apa yang berhasil, mengapa berhasil, dan langkah berikutnya.</p></div><div class="meta-v2-controls"><div class="meta-v2-control"><strong style="font-size:11px">{{ $platform }}</strong><span style="color:#a1a1aa;font-size:11px">{{ $clientName ?? 'Client' }}</span></div><div class="meta-v2-control"><input type="text" id="startDate" placeholder="Mulai" value="{{ request('start_date', '') }}" readonly><span>–</span><input type="text" id="endDate" placeholder="Selesai" value="{{ request('end_date', '') }}" readonly></div><div class="meta-field-picker"><button type="button" class="meta-v2-btn" data-meta-field-toggle>Atur Field</button><div class="meta-field-menu" data-meta-field-menu hidden><h4>Field yang ditampilkan <span data-meta-field-count style="float:right;color:#71717a;font-weight:500"></span></h4><div class="meta-field-options">@foreach($metaMetricDefinitions as $fieldKey => $definition)<label class="meta-field-option"><input type="checkbox" value="{{ $fieldKey }}" data-meta-field-checkbox><span>{{ $definition[0] }}</span></label>@endforeach</div><p style="margin:9px 0 0;color:#a1a1aa;font-size:9px">Maksimal 9 field dapat ditampilkan.</p></div></div><button id="applyFilter" class="meta-v2-btn meta-v2-btn--dark">Terapkan</button><button id="resetAll" class="meta-v2-btn">Reset</button></div></header>
+<header class="meta-v2-top"><div class="meta-v2-title"><h1 data-meta-analysis-title>Analisis Organik {{ $platform }}</h1><p>Pahami apa yang berhasil, mengapa berhasil, dan langkah berikutnya.</p></div><div class="meta-v2-controls"><div class="meta-v2-control"><strong style="font-size:11px">{{ $platform }}</strong><span style="color:#a1a1aa;font-size:11px">{{ $clientName ?? 'Client' }}</span></div><div class="meta-v2-control"><input type="text" id="startDate" data-date-picker data-date-picker-format="d M Y" placeholder="Mulai" value="{{ request('start_date', '') }}" readonly><span>–</span><input type="text" id="endDate" data-date-picker data-date-picker-format="d M Y" placeholder="Selesai" value="{{ request('end_date', '') }}" readonly></div><div class="meta-field-picker"><button type="button" class="meta-v2-btn" data-meta-field-toggle>Atur Field</button><div class="meta-field-menu" data-meta-field-menu hidden><h4>Field yang ditampilkan <span data-meta-field-count style="float:right;color:#71717a;font-weight:500"></span></h4><div class="meta-field-options">@foreach($metaMetricDefinitions as $fieldKey => $definition)<label class="meta-field-option"><input type="checkbox" value="{{ $fieldKey }}" data-meta-field-checkbox><span>{{ $definition[0] }}</span></label>@endforeach</div><p style="margin:9px 0 0;color:#a1a1aa;font-size:9px">Maksimal 9 field dapat ditampilkan.</p></div></div><button id="applyFilter" class="meta-v2-btn meta-v2-btn--dark">Terapkan</button><button id="resetAll" class="meta-v2-btn">Reset</button></div></header>
 @include('analisis.partials.period-tabs')
 <div data-analysis-period-panel="realtime">@include('analisis.partials.source-tabs')
 <section data-analysis-source-panel="organic">
@@ -91,13 +91,11 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     render();
     window.addEventListener('analysis:source-changed', event => { if (event.detail?.active === 'organic') requestAnimationFrame(render); });
-    if (typeof flatpickr !== 'undefined') {
-        const startPicker = flatpickr('#startDate', { dateFormat: 'd M Y', animate: false, disableMobile: true });
-        const endPicker = flatpickr('#endDate', { dateFormat: 'd M Y', animate: false, disableMobile: true });
-        document.getElementById('applyFilter')?.addEventListener('click', () => {
-            if (startPicker.input.value && endPicker.input.value) location.href = `?start_date=${encodeURIComponent(startPicker.input.value)}&end_date=${encodeURIComponent(endPicker.input.value)}`;
-        });
-    }
+    document.getElementById('applyFilter')?.addEventListener('click', () => {
+        const startDate = document.getElementById('startDate')?.value;
+        const endDate = document.getElementById('endDate')?.value;
+        if (startDate && endDate) location.href = `?start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}`;
+    });
     document.getElementById('resetAll')?.addEventListener('click', () => location.href = location.pathname);
 });
 </script>

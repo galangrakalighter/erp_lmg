@@ -570,8 +570,8 @@
         });
 
         // 3. Flatpickr
-        const startP = flatpickr("#startDate", { dateFormat: "d M Y" });
-        const endP = flatpickr("#endDate", { dateFormat: "d M Y" });
+        const startP = flatpickr("#startDate", { dateFormat: "d M Y", animate: false, disableMobile: true });
+        const endP = flatpickr("#endDate", { dateFormat: "d M Y", animate: false, disableMobile: true });
 
         // 4. Tombol Terapkan & Reset dengan Loading
         document.getElementById('applyFilter').addEventListener('click', function() {

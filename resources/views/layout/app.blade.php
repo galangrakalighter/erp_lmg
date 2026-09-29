@@ -40,6 +40,7 @@
     <link rel="stylesheet" href="{{ asset('vendor-local/flatpickr/flatpickr.min.css') }}">
 
     <link rel="stylesheet" href="{{ asset('vendor-local/flatpickr/plugins/confirmDate/confirmDate.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/custom-filter-datepicker.css') }}">
 
     {{-- Choices --}}
     <link rel="stylesheet" href="{{ asset('vendor-local/choices/choices.min.css') }}">
@@ -1706,6 +1707,7 @@
 
     {{-- Flatpickr --}}
     <script src="{{ asset('vendor-local/flatpickr/flatpickr.min.js') }}"></script>
+    <script src="{{ asset('js/custom-filter-datepicker.js') }}"></script>
 
     {{-- DataTables Core --}}
     <script src="{{ asset('vendor/datatables/jquery.dataTables.min.js') }}"></script>

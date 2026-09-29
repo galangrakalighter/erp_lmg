@@ -32,9 +32,7 @@
                     {{ number_format($paidImpressions, 0, ',', '.') }} impresi, dan {{ number_format($paidClicks, 0, ',', '.') }} klik.
                 </p>
             </div>
-        </div>
 
-        <div data-paid-analysis-panel="metrics" hidden style="display:none;" class="space-y-4">
         <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
             @foreach([
                 ['label' => 'Iklan', 'value' => number_format($paidItems->count(), 0, ',', '.')],
@@ -81,12 +79,94 @@
             </div>
         </div>
         </div>
+
+        <div data-paid-analysis-panel="metrics" hidden style="display:none;" class="space-y-4">
+            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                @foreach([
+                    ['label' => 'Reach', 'value' => number_format($paidReach, 0, ',', '.')],
+                    ['label' => 'Impresi', 'value' => number_format($paidImpressions, 0, ',', '.')],
+                    ['label' => 'Klik', 'value' => number_format($paidClicks, 0, ',', '.')],
+                    ['label' => 'Spend', 'value' => ($paidCurrency ?? 'IDR').' '.number_format($paidSpend, 0, ',', '.')],
+                ] as $metric)
+                    <article class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-zinc-400">{{ $metric['label'] }}</p>
+                        <p class="mt-2 break-words text-2xl font-semibold text-zinc-950">{{ $metric['value'] }}</p>
+                    </article>
+                @endforeach
+            </div>
+
+            <div class="grid gap-4 xl:grid-cols-2">
+                <div class="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
+                    <div class="border-b border-zinc-200 px-5 py-4">
+                        <h3 class="text-base font-semibold text-zinc-950">Daftar iklan</h3>
+                        <p class="mt-1 text-xs text-zinc-500">Data iklan Paid {{ $platform }} pada periode terpilih.</p>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-[620px] w-full text-left text-xs">
+                            <thead class="bg-zinc-50 text-[10px] uppercase tracking-wider text-zinc-500">
+                                <tr><th class="px-5 py-3">Iklan</th><th class="px-4 py-3">Tanggal</th><th class="px-4 py-3 text-right">Reach</th><th class="px-5 py-3 text-right">Impresi</th></tr>
+                            </thead>
+                            <tbody class="divide-y divide-zinc-100">
+                                @forelse($paidItems as $item)
+                                    <tr class="text-zinc-700 hover:bg-zinc-50">
+                                        <td class="max-w-[250px] px-5 py-3 font-semibold text-zinc-950">{{ $item['judul'] }}</td>
+                                        <td class="whitespace-nowrap px-4 py-3">{{ $item['tanggal_posting'] }}</td>
+                                        <td class="px-4 py-3 text-right">{{ number_format($item['reach'], 0, ',', '.') }}</td>
+                                        <td class="px-5 py-3 text-right">{{ number_format($item['impressions'], 0, ',', '.') }}</td>
+                                    </tr>
+                                @empty
+                                    <tr><td colspan="4" class="px-5 py-14 text-center text-sm text-zinc-500">Belum ada data iklan.</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="rounded-2xl border border-zinc-200 bg-white shadow-sm">
+                    <div class="border-b border-zinc-200 px-5 py-4">
+                        <h3 class="text-base font-semibold text-zinc-950">Reach vs Impresi</h3>
+                        <p class="mt-1 text-xs text-zinc-500">Perbandingan performa setiap iklan Paid {{ $platform }}.</p>
+                    </div>
+                    <div class="relative p-5" style="height: 390px;">
+                        <canvas data-paid-metrics-chart></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
     @endif
 </section>
 
 <style>[data-paid-analysis-panel][hidden] { display: none !important; }</style>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    const paidChartData = @json($paidItems->values());
+    const paidChartCanvas = document.querySelector('[data-paid-metrics-chart]');
+    let paidMetricsChart = null;
+
+    function renderPaidMetricsChart() {
+        if (!paidChartCanvas || typeof Chart === 'undefined') return;
+        if (paidMetricsChart) {
+            paidMetricsChart.resize();
+            return;
+        }
+        paidMetricsChart = new Chart(paidChartCanvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: paidChartData.map(item => item.judul || item.tanggal_posting || 'Iklan'),
+                datasets: [
+                    { label: 'Reach', data: paidChartData.map(item => Number(item.reach || 0)), backgroundColor: '#4f46e5', borderRadius: 5, order: 2 },
+                    { label: 'Impresi', data: paidChartData.map(item => Number(item.impressions || 0)), type: 'line', borderColor: '#fb7185', backgroundColor: 'transparent', tension: .35, order: 1 }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true } },
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+    }
+
     function activatePaidAnalysis(active) {
         document.querySelectorAll('[data-paid-analysis-panel]').forEach(function (panel) {
             const selected = panel.dataset.paidAnalysisPanel === active;
@@ -100,6 +180,9 @@ document.addEventListener('DOMContentLoaded', function () {
             tab.classList.toggle('text-white', selected);
             tab.classList.toggle('text-zinc-500', !selected);
         });
+        if (active === 'metrics') {
+            requestAnimationFrame(renderPaidMetricsChart);
+        }
     }
 
     activatePaidAnalysis('descriptive');

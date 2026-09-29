@@ -35,8 +35,11 @@
     body.lmg-analysis-page [aria-label="Sumber konten analisis"] {
         border:1px solid #e4e4e7; border-radius:12px; background:#fff; padding:4px; box-shadow:0 1px 3px rgba(24,24,27,.04);
     }
-    body.lmg-analysis-page [aria-label="Sumber konten analisis"] > div { width:100%; }
-    body.lmg-analysis-page [data-analysis-source-tab] { width:50%; }
+    body.lmg-analysis-page [aria-label="Sumber konten analisis"] > div {
+        display:grid !important; width:100%; min-width:0 !important;
+        grid-template-columns:repeat(2,minmax(0,1fr)) !important; gap:4px !important;
+    }
+    body.lmg-analysis-page [data-analysis-source-tab] { width:100%; }
 
     body.lmg-analysis-page [data-analysis-panel="descriptive"] > div:first-child,
     body.lmg-analysis-page [data-paid-analysis-panel="descriptive"] > div:first-child {

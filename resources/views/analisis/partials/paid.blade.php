@@ -83,8 +83,8 @@
                     <tbody class="divide-y divide-zinc-100">
                         @forelse($paidItems as $item)
                             <tr class="text-zinc-700 hover:bg-zinc-50">
-                                <td class="max-w-[240px] px-5 py-3 font-semibold text-zinc-950">{{ $item['judul'] }}</td>
-                                <td class="max-w-[220px] px-4 py-3">{{ $item['campaign'] }}</td>
+                                <td class="max-w-[240px] px-5 py-3 font-semibold text-zinc-950" title="{{ $item['judul'] }}">{{ \Illuminate\Support\Str::limit($item['judul'], 55) }}</td>
+                                <td class="max-w-[220px] px-4 py-3" title="{{ $item['campaign'] }}">{{ \Illuminate\Support\Str::limit($item['campaign'], 45) }}</td>
                                 <td class="whitespace-nowrap px-4 py-3">{{ $item['tanggal_posting'] }}</td>
                                 <td class="px-4 py-3 text-right">{{ number_format($item['reach'], 0, ',', '.') }}</td>
                                 <td class="px-4 py-3 text-right">{{ number_format($item['impressions'], 0, ',', '.') }}</td>
@@ -125,7 +125,7 @@
                             <tbody class="divide-y divide-zinc-100">
                                 @forelse($paidItems as $item)
                                     <tr class="text-zinc-700 hover:bg-zinc-50">
-                                        <td class="max-w-[250px] px-5 py-3 font-semibold text-zinc-950">{{ $item['judul'] }}</td>
+                                        <td class="max-w-[250px] px-5 py-3 font-semibold text-zinc-950" title="{{ $item['judul'] }}">{{ \Illuminate\Support\Str::limit($item['judul'], 55) }}</td>
                                         <td class="whitespace-nowrap px-4 py-3">{{ $item['tanggal_posting'] }}</td>
                                         <td class="px-4 py-3 text-right">{{ number_format($item['reach'], 0, ',', '.') }}</td>
                                         <td class="px-5 py-3 text-right">{{ number_format($item['impressions'], 0, ',', '.') }}</td>
@@ -168,7 +168,10 @@ document.addEventListener('DOMContentLoaded', function () {
         paidMetricsChart = new Chart(paidChartCanvas.getContext('2d'), {
             type: 'bar',
             data: {
-                labels: paidChartData.map(item => item.judul || item.tanggal_posting || 'Iklan'),
+                labels: paidChartData.map(item => {
+                    const title = item.judul || item.tanggal_posting || 'Iklan';
+                    return title.length > 28 ? `${title.slice(0, 28)}…` : title;
+                }),
                 datasets: [
                     { label: 'Reach', data: paidChartData.map(item => Number(item.reach || 0)), backgroundColor: '#4f46e5', borderRadius: 5, order: 2 },
                     { label: 'Impresi', data: paidChartData.map(item => Number(item.impressions || 0)), type: 'line', borderColor: '#fb7185', backgroundColor: 'transparent', tension: .35, order: 1 }

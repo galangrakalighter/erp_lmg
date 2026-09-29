@@ -1405,7 +1405,34 @@
 </head>
 
 
-<body id="page-top" class="min-h-screen bg-[#f5f5f3] text-zinc-900 {{ request()->boolean('embed') ? 'lmg-embedded' : '' }} {{ request()->routeIs('market_research', 'branding', 'analisis', 'manajemen', 'PDF', 'api.digital-marketing.*', 'api.business-dev.*', 'api.multimedia.*') ? 'lmg-client-tabs' : '' }} {{ request()->routeIs('analisis', 'api.digital-marketing.analisis', 'api.business-dev.analisis', 'api.multimedia.analisis') ? 'lmg-analysis-page' : '' }}">
+@php
+    $filterDateDefault = 'today';
+
+    if (request()->routeIs('crm.*')) {
+        $filterDateDefault = 'yesterday-to-today';
+    } elseif (request()->routeIs(
+        'digital-marketing.*',
+        'multimedia.*',
+        'api.digital-marketing.*',
+        'api.multimedia.*',
+        'market_research',
+        'branding',
+        'analisis',
+        'manajemen',
+        'finance.*',
+        'finance_coa.*',
+        'general_journal.*',
+        'adjustment_journal.*',
+        'invoice.*',
+        'invoices.*',
+        'payroll.*',
+        'ledger.*',
+        'audit.*'
+    )) {
+        $filterDateDefault = 'none';
+    }
+@endphp
+<body id="page-top" data-filter-date-default="{{ $filterDateDefault }}" class="min-h-screen bg-[#f5f5f3] text-zinc-900 {{ request()->boolean('embed') ? 'lmg-embedded' : '' }} {{ request()->routeIs('market_research', 'branding', 'analisis', 'manajemen', 'PDF', 'api.digital-marketing.*', 'api.business-dev.*', 'api.multimedia.*') ? 'lmg-client-tabs' : '' }} {{ request()->routeIs('analisis', 'api.digital-marketing.analisis', 'api.business-dev.analisis', 'api.multimedia.analisis') ? 'lmg-analysis-page' : '' }}">
 
     {{-- =========================================================
         LOADING OVERLAY

@@ -191,7 +191,12 @@ class MetaOAuthController extends Controller
             'ad_account_id' => ['nullable', 'string', 'max:255'],
         ]);
         $connection->saveSelectedMetaAssets($data);
-        return response()->json(['message' => 'Aset Meta berhasil dipilih.']);
+        $connection->refresh();
+
+        return response()->json([
+            'message' => 'Aset Meta berhasil dipilih.',
+            'selected_assets' => $connection->selected_assets ?? [],
+        ]);
     }
 
     public function disconnect(ProdukClient $client)

@@ -72,6 +72,8 @@ function setupMetaAdAccountFilter() {
     const pageSelect = panel.querySelector('[data-meta-page]');
     const instagramSelect = panel.querySelector('[data-meta-instagram-account]');
     const adAccountSelect = panel.querySelector('[data-meta-ad-account]');
+    const saveButton = panel.querySelector('[data-meta-save-assets]');
+    const saveStatus = panel.querySelector('[data-meta-save-status]');
     if (!adAccountSelect) return;
 
     let accounts = [];
@@ -114,6 +116,52 @@ function setupMetaAdAccountFilter() {
     pageSelect?.addEventListener('change', refreshAccounts);
     instagramSelect?.addEventListener('change', refreshAccounts);
     refreshAccounts();
+
+    adAccountSelect.addEventListener('change', async () => {
+        if (!saveButton?.dataset.clientId) return;
+
+        if (saveStatus) {
+            saveStatus.textContent = 'Menyimpan akun iklan...';
+            saveStatus.className = 'ml-2 text-[11px] font-semibold text-amber-700';
+        }
+
+        try {
+            const response = await fetch(`/oauth/meta/${saveButton.dataset.clientId}/assets`, {
+                method: 'PUT',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                },
+                body: JSON.stringify({
+                    page_id: pageSelect?.value || null,
+                    instagram_account_id: instagramSelect?.value || null,
+                    ad_account_id: adAccountSelect.value || null
+                })
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                const validationMessage = Object.values(data.errors || {}).flat()[0];
+                throw new Error(validationMessage || data.message || 'Akun iklan gagal disimpan.');
+            }
+
+            const storedId = String(data.selected_assets?.ad_account_id || '');
+            adAccountSelect.dataset.selected = storedId;
+            if (storedId !== String(adAccountSelect.value || '')) {
+                throw new Error('Akun iklan yang tersimpan tidak sesuai dengan pilihan. Silakan muat ulang halaman.');
+            }
+
+            if (saveStatus) {
+                saveStatus.textContent = 'Akun iklan tersimpan';
+                saveStatus.className = 'ml-2 text-[11px] font-semibold text-emerald-700';
+            }
+        } catch (error) {
+            if (saveStatus) {
+                saveStatus.textContent = error.message;
+                saveStatus.className = 'ml-2 text-[11px] font-semibold text-rose-700';
+            }
+        }
+    });
 }
 
 
@@ -265,7 +313,10 @@ function buildEditModalHtml(res){
                                     </select>
                                 </label>
                             </div>
-                            <button type="button" data-meta-save-assets data-client-id="${p.id}" class="mt-3 rounded-lg bg-zinc-950 px-4 py-2 text-xs font-semibold text-white">Simpan Pilihan Aset</button>
+                            <div class="mt-3 flex flex-wrap items-center">
+                                <button type="button" data-meta-save-assets data-client-id="${p.id}" class="rounded-lg bg-zinc-950 px-4 py-2 text-xs font-semibold text-white">Simpan Pilihan Aset</button>
+                                <span data-meta-save-status class="ml-2 text-[11px] font-semibold text-zinc-500"></span>
+                            </div>
                         </div>
                     ` : ''}
                 </div>

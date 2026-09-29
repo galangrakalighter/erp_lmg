@@ -7,9 +7,22 @@
 
 <style>
     [data-analysis-source-panel][hidden] { display: none !important; }
+    #wrapper:has([data-analysis-source-panel]),
+    #content-wrapper:has([data-analysis-source-panel]) { min-height: 0 !important; }
+    #content:has([data-analysis-source-panel]) {
+        flex: 0 0 auto !important;
+        min-height: 0 !important;
+        height: auto !important;
+    }
+    main.lmg-content:has([data-analysis-source-panel]) {
+        flex: none !important;
+        min-height: 0 !important;
+        height: auto !important;
+    }
 </style>
 
 <script>
+document.body.classList.add('lmg-analysis-page');
 document.addEventListener('DOMContentLoaded', function () {
     function activateAnalysisSource(active) {
         document.querySelectorAll('[data-analysis-source-panel]').forEach(function (panel) {

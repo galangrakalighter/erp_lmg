@@ -10,6 +10,7 @@ use App\Models\ProdukClient;
 use App\Services\YoutubeService as Youtube;
 use App\Services\FacebookService as Facebook;
 use App\Services\MetaAdsService;
+use App\Services\AnalysisSnapshotService;
 
 class AnalisisController extends Controller
 {
@@ -17,12 +18,14 @@ class AnalisisController extends Controller
     protected $facebook;
     protected $youtube;
     protected $metaAds;
-    public function __construct(ServicesInstagramService $instagram, Facebook $facebook, Youtube $youtube, MetaAdsService $metaAds)
+    protected $analysisSnapshots;
+    public function __construct(ServicesInstagramService $instagram, Facebook $facebook, Youtube $youtube, MetaAdsService $metaAds, AnalysisSnapshotService $analysisSnapshots)
     {
         $this->instagram = $instagram;
         $this->facebook = $facebook;
         $this->youtube = $youtube;
         $this->metaAds = $metaAds;
+        $this->analysisSnapshots = $analysisSnapshots;
     }
     public function index($produk, $platform, Request $request)
     {
@@ -181,6 +184,15 @@ class AnalisisController extends Controller
                     $insightsRaw[0][0]['followers_gained'] = 0;
                     $insightsRaw[1]['Followers_sebulan'] = 0;
                 }
+                $trendComparisons = $this->captureTrends($produkBaru->id, 'Instagram', [
+                    'posts' => count($posts),
+                    'reach' => $totalReach,
+                    'impressions' => $totalImpressions,
+                    'engagement' => $totalEngagement,
+                    'likes' => $totalLikes,
+                    'comments' => $totalComments,
+                    'shares' => array_sum(array_column($posts, 'shares')),
+                ], $paidPosts, $paidError, ! $fetch);
                 return view('analisis.instagram', compact(
                     'posts', 
                     'data', 
@@ -203,7 +215,8 @@ class AnalisisController extends Controller
                     'title',
                     'paidPosts',
                     'paidError',
-                    'paidCurrency'
+                    'paidCurrency',
+                    'trendComparisons'
                 ));
                 break;
             case 'Facebook':
@@ -227,6 +240,15 @@ class AnalisisController extends Controller
                 $maxShares = $dataBaru ? max(array_column($dataBaru, 'shares')) : 0;
                 $maxEngangement = $dataBaru ? max(array_column($dataBaru, 'engagement')) : 0;
                 $jumlah_follower = $data['followers'][0] ?? 0;
+                $trendComparisons = $this->captureTrends($produkBaru->id, 'Facebook', [
+                    'posts' => count($dataBaru),
+                    'reach' => $totalReach,
+                    'impressions' => $totalImpressions,
+                    'engagement' => $totalEngagement,
+                    'likes' => $totalReaction,
+                    'comments' => array_sum(array_column($dataBaru, 'comments')),
+                    'shares' => array_sum(array_column($dataBaru, 'shares')),
+                ], $paidPosts, $paidError, ! $fetch);
                 return view('analisis.facebook', compact(
                     'title',
                     'data',
@@ -245,6 +267,7 @@ class AnalisisController extends Controller
                     'paidPosts',
                     'paidError',
                     'paidCurrency',
+                    'trendComparisons',
                 ));
                 break;
             case 'Youtube':
@@ -254,5 +277,38 @@ class AnalisisController extends Controller
                 # code...
                 break;
         }
+    }
+
+    private function captureTrends(int $clientId, string $platform, array $organicMetrics, array $paidPosts, ?string $paidError, bool $capture): array
+    {
+        $unavailable = fn (int $days) => ['available' => false, 'days' => $days, 'previous_date' => null, 'metrics' => []];
+        $trends = ['organic' => $capture
+            ? $this->analysisSnapshots->captureAndCompare($clientId, $platform, 'organic', $organicMetrics)
+            : $this->analysisSnapshots->latestComparisons($clientId, $platform, 'organic')];
+
+        if ($paidError) {
+            $trends['paid'] = [
+                'current' => [],
+                'three_days' => $unavailable(3),
+                'seven_days' => $unavailable(7),
+            ];
+
+            return $trends;
+        }
+
+        $paidItems = collect($paidPosts);
+        $paidMetrics = [
+            'posts' => $paidItems->count(),
+            'reach' => $paidItems->sum('reach'),
+            'impressions' => $paidItems->sum('impressions'),
+            'engagement' => $paidItems->sum('engagement'),
+            'clicks' => $paidItems->sum('clicks'),
+            'spend' => $paidItems->sum('spend'),
+        ];
+        $trends['paid'] = $capture
+            ? $this->analysisSnapshots->captureAndCompare($clientId, $platform, 'paid', $paidMetrics)
+            : $this->analysisSnapshots->latestComparisons($clientId, $platform, 'paid');
+
+        return $trends;
     }
 }

@@ -147,6 +147,8 @@
             </div>
         </div>
     </div>
+    @include('analisis.partials.source-tabs')
+    <section data-analysis-source-panel="organic">
     @include('analisis.partials.descriptive', [
         'platform' => 'Instagram',
         'analysisPosts' => $posts,
@@ -503,6 +505,8 @@
     </div>
 
     </div>
+    </section>
+    @include('analisis.partials.paid', ['platform' => 'Instagram'])
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const allPosts = @json($posts);

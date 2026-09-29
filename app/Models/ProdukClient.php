@@ -134,4 +134,27 @@ class ProdukClient extends Model
 
         return $page['id'] ?? null;
     }
+
+    public function metaAdsConnection(): ?array
+    {
+        $connection = $this->oauthConnections()->where('provider', 'meta')->first();
+        if (! $connection || blank($connection->access_token)) {
+            return null;
+        }
+
+        $selectedAssets = $connection->selected_assets ?? [];
+        $assets = $connection->assets ?? [];
+        $account = collect($assets['ad_accounts'] ?? [])->firstWhere('id', $selectedAssets['ad_account_id'] ?? null);
+
+        if (! $account) {
+            return null;
+        }
+
+        return [
+            'id' => $account['id'] ?? null,
+            'currency' => $account['currency'] ?? null,
+            'access_token' => $connection->access_token,
+            'scopes' => $connection->scopes ?? [],
+        ];
+    }
 }

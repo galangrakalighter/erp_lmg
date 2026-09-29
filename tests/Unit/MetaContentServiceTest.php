@@ -4,6 +4,8 @@ namespace Tests\Unit;
 
 use App\Services\FacebookService;
 use App\Services\InstagramService;
+use App\Services\MetaAdsService;
+use Carbon\Carbon;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -82,5 +84,36 @@ class MetaContentServiceTest extends TestCase
         $this->assertSame(75, $result['data'][0]['reach']);
         $this->assertSame(7, $result['data'][0]['engagement']);
         Http::assertSent(fn (Request $request) => str_contains((string) data_get($request->data(), 'metric'), 'post_media_view'));
+    }
+
+    public function test_paid_posts_are_filtered_by_meta_publisher_platform(): void
+    {
+        Http::fake(['graph.facebook.com/*/act_123/insights*' => Http::response(['data' => [
+            [
+                'ad_id' => 'ad-facebook', 'ad_name' => 'Facebook Ad', 'campaign_name' => 'Campaign A',
+                'publisher_platform' => 'facebook', 'reach' => '80', 'impressions' => '120',
+                'clicks' => '9', 'spend' => '15000', 'date_start' => '2026-09-01',
+                'actions' => [['action_type' => 'post_engagement', 'value' => '14']],
+            ],
+            [
+                'ad_id' => 'ad-instagram', 'ad_name' => 'Instagram Ad', 'campaign_name' => 'Campaign A',
+                'publisher_platform' => 'instagram', 'reach' => '70', 'impressions' => '100',
+                'clicks' => '7', 'spend' => '12000', 'date_start' => '2026-09-01',
+            ],
+        ]])]);
+
+        $result = app(MetaAdsService::class)->getPaidPosts(
+            'act_123',
+            'ads-token',
+            'Instagram',
+            Carbon::parse('2026-09-01'),
+            Carbon::parse('2026-09-02'),
+        );
+
+        $this->assertNull($result['error']);
+        $this->assertCount(1, $result['data']);
+        $this->assertSame('ad-instagram', $result['data'][0]['id']);
+        $this->assertSame(100, $result['data'][0]['impressions']);
+        Http::assertSent(fn (Request $request) => data_get($request->data(), 'breakdowns') === 'publisher_platform');
     }
 }

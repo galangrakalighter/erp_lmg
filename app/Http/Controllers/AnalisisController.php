@@ -9,17 +9,20 @@ use Carbon\Carbon;
 use App\Models\ProdukClient;
 use App\Services\YoutubeService as Youtube;
 use App\Services\FacebookService as Facebook;
+use App\Services\MetaAdsService;
 
 class AnalisisController extends Controller
 {
     protected $instagram;
     protected $facebook;
     protected $youtube;
-    public function __construct(ServicesInstagramService $instagram, Facebook $facebook, Youtube $youtube)
+    protected $metaAds;
+    public function __construct(ServicesInstagramService $instagram, Facebook $facebook, Youtube $youtube, MetaAdsService $metaAds)
     {
         $this->instagram = $instagram;
         $this->facebook = $facebook;
         $this->youtube = $youtube;
+        $this->metaAds = $metaAds;
     }
     public function index($produk, $platform, Request $request)
     {
@@ -80,6 +83,26 @@ class AnalisisController extends Controller
         $platformToken = $produkBaru->platformAccessToken($platform)
             ?? ($index !== false ? ($produkBaru->access_token['access'][$index] ?? null) : null);
         $platformAccountId = $produkBaru->platformAccountId($platform);
+        $paidPosts = [];
+        $paidError = null;
+        $paidCurrency = 'IDR';
+        $adsConnection = $produkBaru->metaAdsConnection();
+        if (! $adsConnection) {
+            $paidError = 'Pilih akun iklan Meta pada Edit Client untuk menampilkan konten Paid.';
+        } elseif (! in_array('ads_read', $adsConnection['scopes'] ?? [], true)) {
+            $paidError = 'Koneksi Meta belum memiliki izin ads_read. Hubungkan ulang Meta setelah izin tersebut ditambahkan.';
+        } else {
+            $paidResult = $this->metaAds->getPaidPosts(
+                $adsConnection['id'],
+                $adsConnection['access_token'],
+                $platform,
+                $sinceDate,
+                $untilDate,
+            );
+            $paidPosts = $paidResult['data'] ?? [];
+            $paidError = $paidResult['error'] ?? null;
+            $paidCurrency = $adsConnection['currency'] ?: 'IDR';
+        }
 
         switch ($platform) {
             // PENGAMBILAN DATA DARI API GRAPH IG
@@ -176,7 +199,10 @@ class AnalisisController extends Controller
                     'insightsRaw', 
                     'totalLikes', 
                     'totalComments',
-                    'title'
+                    'title',
+                    'paidPosts',
+                    'paidError',
+                    'paidCurrency'
                 ));
                 break;
             case 'Facebook':
@@ -215,6 +241,9 @@ class AnalisisController extends Controller
                     'maxComment', 
                     'maxShares', 
                     'maxEngangement',
+                    'paidPosts',
+                    'paidError',
+                    'paidCurrency',
                 ));
                 break;
             case 'Youtube':

@@ -1,5 +1,7 @@
 <style>
     body.lmg-analysis-page { background: #f5f5f3 !important; }
+    body.lmg-analysis-page #content-wrapper { min-height: 0 !important; }
+    body.lmg-analysis-page #content { flex: 0 0 auto !important; min-height: 0 !important; }
     body.lmg-analysis-page .lmg-content { padding: 20px !important; }
     body.lmg-analysis-page .lmg-content > .row { margin-right: -8px; margin-left: -8px; }
     body.lmg-analysis-page .lmg-content > .row.g-4 { gap: 0 !important; }

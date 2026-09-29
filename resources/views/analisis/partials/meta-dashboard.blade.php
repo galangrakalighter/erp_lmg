@@ -25,7 +25,7 @@
 .meta-v2-btn.is-loading{display:inline-flex;align-items:center;gap:7px;cursor:wait;opacity:.82}.meta-v2-btn.is-loading::before{width:13px;height:13px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:999px;content:"";animation:meta-filter-spin .7s linear infinite}@keyframes meta-filter-spin{to{transform:rotate(360deg)}}
 </style>
 <div class="meta-v2-shell">
-<header class="meta-v2-top"><div class="meta-v2-title"><h1 data-meta-analysis-title>Analisis Organik {{ $platform }}</h1><p>Pahami apa yang berhasil, mengapa berhasil, dan langkah berikutnya.</p></div><div class="meta-v2-controls"><div class="meta-v2-control"><strong style="font-size:11px">{{ $platform }}</strong><span style="color:#a1a1aa;font-size:11px">{{ $clientName ?? 'Client' }}</span></div><div class="meta-v2-control"><input type="text" id="startDate" data-date-picker data-date-picker-format="Y-m-d" placeholder="Mulai" value="{{ request('start_date', '') }}" readonly><span>–</span><input type="text" id="endDate" data-date-picker data-date-picker-format="Y-m-d" placeholder="Selesai" value="{{ request('end_date', '') }}" readonly></div><div class="meta-field-picker"><button type="button" class="meta-v2-btn" data-meta-field-toggle>Atur Field</button><div class="meta-field-menu" data-meta-field-menu hidden><h4>Field yang ditampilkan <span data-meta-field-count style="float:right;color:#71717a;font-weight:500"></span></h4><div class="meta-field-options">@foreach($metaMetricDefinitions as $fieldKey => $definition)<label class="meta-field-option"><input type="checkbox" value="{{ $fieldKey }}" data-meta-field-checkbox><span>{{ $definition[0] }}</span></label>@endforeach</div><p style="margin:9px 0 0;color:#a1a1aa;font-size:9px">Maksimal 9 field dapat ditampilkan.</p></div></div><button id="applyFilter" class="meta-v2-btn meta-v2-btn--dark">Terapkan</button><button id="resetAll" class="meta-v2-btn">Reset</button></div></header>
+<header class="meta-v2-top"><div class="meta-v2-title"><h1 data-meta-analysis-title>Analisis Organik {{ $platform }}</h1><p>Pahami apa yang berhasil, mengapa berhasil, dan langkah berikutnya.</p></div><form id="metaAnalysisFilter" class="meta-v2-controls" action="{{ request()->url() }}" method="GET">@foreach(request()->except(['start_date', 'end_date']) as $queryKey => $queryValue)@if(is_scalar($queryValue))<input type="hidden" name="{{ $queryKey }}" value="{{ $queryValue }}">@endif @endforeach<div class="meta-v2-control"><strong style="font-size:11px">{{ $platform }}</strong><span style="color:#a1a1aa;font-size:11px">{{ $clientName ?? 'Client' }}</span></div><div class="meta-v2-control"><input type="text" name="start_date" id="startDate" data-date-picker data-date-picker-format="Y-m-d" placeholder="Mulai" value="{{ request('start_date', '') }}" required readonly><span>–</span><input type="text" name="end_date" id="endDate" data-date-picker data-date-picker-format="Y-m-d" placeholder="Selesai" value="{{ request('end_date', '') }}" required readonly></div><div class="meta-field-picker"><button type="button" class="meta-v2-btn" data-meta-field-toggle>Atur Field</button><div class="meta-field-menu" data-meta-field-menu hidden><h4>Field yang ditampilkan <span data-meta-field-count style="float:right;color:#71717a;font-weight:500"></span></h4><div class="meta-field-options">@foreach($metaMetricDefinitions as $fieldKey => $definition)<label class="meta-field-option"><input type="checkbox" value="{{ $fieldKey }}" data-meta-field-checkbox><span>{{ $definition[0] }}</span></label>@endforeach</div><p style="margin:9px 0 0;color:#a1a1aa;font-size:9px">Maksimal 9 field dapat ditampilkan.</p></div></div><button id="applyFilter" type="submit" class="meta-v2-btn meta-v2-btn--dark">Terapkan</button><button id="resetAll" type="button" class="meta-v2-btn">Reset</button></form></header>
 @include('analisis.partials.period-tabs')
 <div data-analysis-period-panel="realtime">@include('analisis.partials.source-tabs')
 <section data-analysis-source-panel="organic">
@@ -92,25 +92,24 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     render();
     window.addEventListener('analysis:source-changed', event => { if (event.detail?.active === 'organic') requestAnimationFrame(render); });
-    document.getElementById('applyFilter')?.addEventListener('click', event => {
+    document.getElementById('metaAnalysisFilter')?.addEventListener('submit', event => {
         const startDate = document.getElementById('startDate')?.value;
         const endDate = document.getElementById('endDate')?.value;
-        if (!startDate || !endDate) return;
+        if (!startDate || !endDate) {
+            event.preventDefault();
+            return;
+        }
         if (startDate > endDate) {
+            event.preventDefault();
             window.alert('Tanggal mulai tidak boleh melewati tanggal selesai.');
             return;
         }
 
-        const button = event.currentTarget;
+        const button = document.getElementById('applyFilter');
         button.disabled = true;
         button.classList.add('is-loading');
         button.textContent = 'Memfilter';
         window.showLoadingNow?.('Memfilter data analisis');
-
-        const destination = new URL(window.location.href);
-        destination.searchParams.set('start_date', startDate);
-        destination.searchParams.set('end_date', endDate);
-        window.location.assign(destination.toString());
     });
     document.getElementById('resetAll')?.addEventListener('click', () => location.href = location.pathname);
 });

@@ -8,7 +8,8 @@ RUN apt-get update && apt-get install -y \
     zip \
     unzip \
     git \
-    curl
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install ekstensi PHP untuk PostgreSQL dan GD (untuk gambar)
 RUN docker-php-ext-install pdo pdo_pgsql pgsql gd
@@ -23,4 +24,5 @@ WORKDIR /var/www
 COPY . .
 
 # Berikan izin akses folder storage dan cache agar tidak error di Linux
-RUN chown -R www-data:www-data storage bootstrap/cache  
+RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache

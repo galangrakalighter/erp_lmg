@@ -79,9 +79,10 @@ class AnalisisController extends Controller
             )
             ->orderBy('data_jasa.tanggal_posting', 'asc')
             ->get();
-        $index = array_search($platform, $produkBaru->access_token['platform']);
+        $legacyAccess = is_array($produkBaru->access_token) ? $produkBaru->access_token : [];
+        $index = array_search($platform, $legacyAccess['platform'] ?? [], true);
         $platformToken = $produkBaru->platformAccessToken($platform)
-            ?? ($index !== false ? ($produkBaru->access_token['access'][$index] ?? null) : null);
+            ?? ($index !== false ? ($legacyAccess['access'][$index] ?? null) : null);
         $platformAccountId = $produkBaru->platformAccountId($platform);
         $paidPosts = [];
         $paidError = null;

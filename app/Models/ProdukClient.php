@@ -86,6 +86,26 @@ class ProdukClient extends Model
 
     public function platformAccessToken(string $platform): ?string
     {
+        if (in_array(strtolower($platform), ['facebook', 'instagram'], true)) {
+            $connection = $this->oauthConnections()->where('provider', 'meta')->first();
+
+            if ($connection) {
+                $assets = $connection->assets ?? [];
+                $selectedAssets = $connection->selected_assets ?? [];
+                $pages = collect($assets['pages'] ?? []);
+                $page = strtolower($platform) === 'instagram'
+                    ? $pages->first(fn ($item) => data_get($item, 'instagram_business_account.id') === ($selectedAssets['instagram_account_id'] ?? null))
+                    : $pages->firstWhere('id', $selectedAssets['page_id'] ?? null);
+                $page ??= $pages->first();
+
+                $oauthToken = $page['access_token'] ?? $connection->access_token;
+                if (filled($oauthToken)) {
+                    return $oauthToken;
+                }
+            }
+        }
+
+        // Kompatibilitas untuk client lama yang belum menggunakan OAuth.
         $legacy = $this->access_token;
         if (is_array($legacy) && isset($legacy['platform'], $legacy['access'])) {
             $index = array_search($platform, $legacy['platform'], true);
@@ -94,24 +114,7 @@ class ProdukClient extends Model
             }
         }
 
-        if (! in_array(strtolower($platform), ['facebook', 'instagram'], true)) {
-            return null;
-        }
-
-        $connection = $this->oauthConnections()->where('provider', 'meta')->first();
-        if (! $connection) {
-            return null;
-        }
-
-        $assets = $connection->assets ?? [];
-        $selectedAssets = $connection->selected_assets ?? [];
-        $pages = collect($assets['pages'] ?? []);
-        $page = strtolower($platform) === 'instagram'
-            ? $pages->first(fn ($item) => data_get($item, 'instagram_business_account.id') === ($selectedAssets['instagram_account_id'] ?? null))
-            : $pages->firstWhere('id', $selectedAssets['page_id'] ?? null);
-        $page ??= $pages->first();
-
-        return $page['access_token'] ?? $connection->access_token;
+        return null;
     }
 
     public function platformAccountId(string $platform): ?string

@@ -61,6 +61,59 @@ function initializeEditModal() {
 
     setupEditPlatform();
 
+    setupMetaAdAccountFilter();
+
+}
+
+function setupMetaAdAccountFilter() {
+    const panel = document.querySelector('#modalEditGlobal [data-meta-assets-panel]');
+    if (!panel) return;
+
+    const pageSelect = panel.querySelector('[data-meta-page]');
+    const instagramSelect = panel.querySelector('[data-meta-instagram-account]');
+    const adAccountSelect = panel.querySelector('[data-meta-ad-account]');
+    if (!adAccountSelect) return;
+
+    let accounts = [];
+    try {
+        accounts = JSON.parse(decodeURIComponent(adAccountSelect.dataset.accounts || '%5B%5D'));
+    } catch (error) {
+        accounts = [];
+    }
+
+    const initiallySelected = String(adAccountSelect.dataset.selected || '');
+    const refreshAccounts = () => {
+        const selectedPageIds = new Set();
+        if (pageSelect?.value) selectedPageIds.add(String(pageSelect.value));
+
+        const instagramOption = instagramSelect?.selectedOptions?.[0];
+        if (instagramSelect?.value && instagramOption?.dataset.pageId) {
+            selectedPageIds.add(String(instagramOption.dataset.pageId));
+        }
+
+        const currentValue = String(adAccountSelect.value || initiallySelected);
+        const eligibleAccounts = accounts.filter(account =>
+            (account.page_ids || []).some(pageId => selectedPageIds.has(String(pageId)))
+        );
+
+        adAccountSelect.replaceChildren(new Option(
+            selectedPageIds.size ? 'Pilih akun iklan' : 'Pilih Facebook/Instagram Page dahulu',
+            ''
+        ));
+
+        eligibleAccounts.forEach(account => {
+            const label = `${account.name || 'Akun iklan'}${account.account_id ? ` · ${account.account_id}` : ''}`;
+            adAccountSelect.add(new Option(label, account.id, false, String(account.id) === currentValue));
+        });
+
+        if (eligibleAccounts.length === 0 && selectedPageIds.size) {
+            adAccountSelect.options[0].textContent = 'Tidak ada akun iklan untuk Page ini';
+        }
+    };
+
+    pageSelect?.addEventListener('change', refreshAccounts);
+    instagramSelect?.addEventListener('change', refreshAccounts);
+    refreshAccounts();
 }
 
 
@@ -195,21 +248,20 @@ function buildEditModalHtml(res){
                             </div>
                             <div class="grid gap-3 md:grid-cols-3">
                                 <label class="text-xs font-semibold text-zinc-700">Facebook Page
-                                    <select data-meta-page class="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm">
+                                    <select name="meta_page_id" data-meta-page class="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm">
                                         <option value="">Pilih Facebook Page</option>
                                         ${(oauthConnections.meta.pages || []).map(page => `<option value="${escapeProdukHtml(page.id)}" ${String(oauthConnections.meta.selected_assets?.page_id || '') === String(page.id) ? 'selected' : ''}>${escapeProdukHtml(page.name)}${page.instagram?.username ? ` · @${escapeProdukHtml(page.instagram.username)}` : ''}</option>`).join('')}
                                     </select>
                                 </label>
                                 <label class="text-xs font-semibold text-zinc-700">Instagram Page
-                                    <select data-meta-instagram-account class="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm">
+                                    <select name="meta_instagram_account_id" data-meta-instagram-account class="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm">
                                         <option value="">Pilih Instagram Page</option>
-                                        ${(oauthConnections.meta.instagram_accounts || []).map(account => `<option value="${escapeProdukHtml(account.id)}" ${String(oauthConnections.meta.selected_assets?.instagram_account_id || '') === String(account.id) ? 'selected' : ''}>${account.username ? `@${escapeProdukHtml(account.username)}` : escapeProdukHtml(account.name || 'Instagram')}${account.page_name ? ` · ${escapeProdukHtml(account.page_name)}` : ''}</option>`).join('')}
+                                        ${(oauthConnections.meta.instagram_accounts || []).map(account => `<option value="${escapeProdukHtml(account.id)}" data-page-id="${escapeProdukHtml(account.page_id || '')}" ${String(oauthConnections.meta.selected_assets?.instagram_account_id || '') === String(account.id) ? 'selected' : ''}>${account.username ? `@${escapeProdukHtml(account.username)}` : escapeProdukHtml(account.name || 'Instagram')}${account.page_name ? ` · ${escapeProdukHtml(account.page_name)}` : ''}</option>`).join('')}
                                     </select>
                                 </label>
                                 <label class="text-xs font-semibold text-zinc-700">Akun Iklan
-                                    <select data-meta-ad-account class="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm">
-                                        <option value="">Pilih akun iklan</option>
-                                        ${(oauthConnections.meta.ad_accounts || []).map(account => `<option value="${escapeProdukHtml(account.id)}" ${String(oauthConnections.meta.selected_assets?.ad_account_id || '') === String(account.id) ? 'selected' : ''}>${escapeProdukHtml(account.name)}${account.account_id ? ` · ${escapeProdukHtml(account.account_id)}` : ''}</option>`).join('')}
+                                    <select name="meta_ad_account_id" data-meta-ad-account data-selected="${escapeProdukHtml(oauthConnections.meta.selected_assets?.ad_account_id || '')}" data-accounts="${escapeProdukHtml(encodeURIComponent(JSON.stringify(oauthConnections.meta.ad_accounts || [])))}" class="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm">
+                                        <option value="">Memuat akun iklan...</option>
                                     </select>
                                 </label>
                             </div>

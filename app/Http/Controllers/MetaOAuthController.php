@@ -103,6 +103,16 @@ class MetaOAuthController extends Controller
                 'fields' => 'id,account_id,name,account_status,currency,timezone_name',
                 'limit' => 100,
             ], false)['data'] ?? [];
+            $adAccounts = collect($adAccounts)->map(function ($account) use ($accessToken) {
+                $promotablePages = $this->graph(($account['id'] ?? '').'/promote_pages', $accessToken, [
+                    'fields' => 'id,name',
+                    'limit' => 100,
+                ], false)['data'] ?? [];
+                $account['page_ids'] = collect($promotablePages)
+                    ->pluck('id')->filter()->map(fn ($id) => (string) $id)->values()->all();
+
+                return $account;
+            })->values()->all();
             $permissions = collect($this->graph('me/permissions', $accessToken, [], false)['data'] ?? [])
                 ->where('status', 'granted')->pluck('permission')->values()->all();
 
@@ -117,8 +127,16 @@ class MetaOAuthController extends Controller
             if (! $instagramAccounts->contains('id', $selected['instagram_account_id'] ?? null)) {
                 $selected['instagram_account_id'] = $instagramAccounts->first()['id'] ?? null;
             }
-            if (! collect($adAccounts)->contains('id', $selected['ad_account_id'] ?? null)) {
-                $selected['ad_account_id'] = Arr::get($adAccounts, '0.id');
+            $selectedPageIds = collect([$selected['page_id'] ?? null])
+                ->merge(collect($pages)
+                    ->filter(fn ($page) => (string) Arr::get($page, 'instagram_business_account.id') === (string) ($selected['instagram_account_id'] ?? ''))
+                    ->pluck('id'))
+                ->filter()->map(fn ($id) => (string) $id)->unique();
+            $eligibleAdAccounts = collect($adAccounts)->filter(fn ($account) =>
+                collect($account['page_ids'] ?? [])->map(fn ($id) => (string) $id)->intersect($selectedPageIds)->isNotEmpty()
+            );
+            if (! $eligibleAdAccounts->contains('id', $selected['ad_account_id'] ?? null)) {
+                $selected['ad_account_id'] = $eligibleAdAccounts->first()['id'] ?? null;
             }
 
             $connectionData = [
@@ -172,22 +190,7 @@ class MetaOAuthController extends Controller
             'instagram_account_id' => ['nullable', 'string', 'max:255'],
             'ad_account_id' => ['nullable', 'string', 'max:255'],
         ]);
-        $assets = $connection->assets ?? [];
-        $instagramAccounts = collect($assets['pages'] ?? [])
-            ->pluck('instagram_business_account')
-            ->filter(fn ($account) => filled($account['id'] ?? null));
-
-        if (filled($data['page_id'] ?? null) && ! collect($assets['pages'] ?? [])->contains('id', $data['page_id'])) {
-            throw ValidationException::withMessages(['page_id' => 'Facebook Page tidak tersedia pada koneksi ini.']);
-        }
-        if (filled($data['instagram_account_id'] ?? null) && ! $instagramAccounts->contains('id', $data['instagram_account_id'])) {
-            throw ValidationException::withMessages(['instagram_account_id' => 'Instagram Page tidak tersedia pada koneksi ini.']);
-        }
-        if (filled($data['ad_account_id'] ?? null) && ! collect($assets['ad_accounts'] ?? [])->contains('id', $data['ad_account_id'])) {
-            throw ValidationException::withMessages(['ad_account_id' => 'Akun iklan tidak tersedia pada koneksi ini.']);
-        }
-
-        $connection->update(['selected_assets' => $data]);
+        $connection->saveSelectedMetaAssets($data);
         return response()->json(['message' => 'Aset Meta berhasil dipilih.']);
     }
 

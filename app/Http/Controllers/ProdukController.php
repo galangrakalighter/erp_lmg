@@ -199,6 +199,7 @@ class ProdukController extends Controller
                             'id' => $account['id'] ?? null,
                             'name' => $account['name'] ?? ($account['account_id'] ?? 'Akun iklan'),
                             'account_id' => $account['account_id'] ?? null,
+                            'page_ids' => $account['page_ids'] ?? [],
                         ])->values(),
                     ]];
                 }),
@@ -393,6 +394,15 @@ class ProdukController extends Controller
                 'nama'              => $request->nama,
                 'access_token'      => $accessTokenArray,
             ]);
+
+            $metaConnection = $produk->oauthConnections()->where('provider', 'meta')->first();
+            if ($metaConnection && $request->hasAny(['meta_page_id', 'meta_instagram_account_id', 'meta_ad_account_id'])) {
+                $metaConnection->saveSelectedMetaAssets([
+                    'page_id' => $request->input('meta_page_id'),
+                    'instagram_account_id' => $request->input('meta_instagram_account_id'),
+                    'ad_account_id' => $request->input('meta_ad_account_id'),
+                ]);
+            }
 
             // 2. Kumpulkan semua ID user dari form edit
             $allUserIds = collect()

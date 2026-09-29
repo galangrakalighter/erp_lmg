@@ -29,18 +29,10 @@
 @if($paidError)
     <div class="meta-panel"><div class="meta-empty"><strong>Data Paid belum tersedia</strong><br>{{ $paidError }}</div></div>
 @else
-    <div class="mb-4 flex justify-end"><div class="meta-field-picker">
-        <button type="button" class="meta-v2-btn" data-paid-field-toggle>Atur Field Paid</button>
-        <div class="meta-field-menu paid-field-menu" data-paid-field-menu hidden><h4>Seluruh field Meta <span data-paid-field-count style="float:right;color:#71717a;font-weight:500"></span></h4>
-            <div class="meta-field-options paid-field-options">@foreach($paidMetricDefinitions as $fieldKey => $definition)<label class="meta-field-option"><input type="checkbox" value="{{ $fieldKey }}" data-paid-field-checkbox><span>{{ $definition[0] }}</span></label>@endforeach</div>
-            <p style="margin:9px 0 0;color:#71717a;font-size:9px">Pilih minimal 1 dan maksimal 9 field. Field aktif juga ditampilkan pada chart.</p>
-        </div>
-    </div></div>
-
     <div class="meta-kpi-grid">@foreach($paidMetricDefinitions as $fieldKey => $metric)<article class="meta-kpi" data-paid-field="{{ $fieldKey }}"><label>{{ $metric[0] }}</label><strong>{{ $metric[1] }}</strong><small>Data Paid Meta</small><svg viewBox="0 0 62 25" fill="none"><path d="M1 20L10 16L18 18L28 9L38 13L49 6L61 2" stroke="#52525b" stroke-width="1.5"/><path d="M1 24H61" stroke="#e4e4e7"/></svg></article>@endforeach</div>
 
     <div class="meta-board-grid">
-        <div class="meta-panel"><div class="meta-panel-head"><div><h3>Performance Trend Paid</h3><p>Field pada chart mengikuti pilihan Atur Field Paid.</p></div></div><div class="meta-chart-body"><canvas data-paid-metrics-chart></canvas></div></div>
+        <div class="meta-panel meta-chart-panel"><div class="meta-panel-head"><div><h3>Performance Trend Paid</h3><p>Pergerakan metrik iklan yang dipilih.</p></div><div class="meta-field-picker"><button type="button" class="meta-v2-btn" data-paid-field-toggle>Atur Field Chart</button><div class="meta-field-menu paid-field-menu" data-paid-field-menu hidden><h4>Seluruh field Meta <span data-paid-field-count style="float:right;color:#71717a;font-weight:500"></span></h4><div class="meta-field-options paid-field-options">@foreach($paidMetricDefinitions as $fieldKey => $definition)<label class="meta-field-option"><input type="checkbox" value="{{ $fieldKey }}" data-paid-field-checkbox><span>{{ $definition[0] }}</span></label>@endforeach</div><p style="margin:9px 0 0;color:#71717a;font-size:9px">Pilih minimal 1 dan maksimal 9 metrik untuk kartu dan line chart.</p></div></div></div><div class="meta-chart-body"><canvas data-paid-metrics-chart></canvas></div></div>
         <aside class="meta-panel"><div class="meta-panel-head"><div><h3>Insights &amp; Recommendation</h3><p>Temuan utama performa iklan.</p></div></div><div class="meta-insights">
             <div class="meta-insight"><span class="meta-insight-dot">01</span><div><strong>Iklan terbaik</strong><p title="{{ data_get($topPaidItem,'judul','Belum ada iklan') }}">{{ \Illuminate\Support\Str::limit(data_get($topPaidItem,'judul','Belum ada iklan'),70) }} memiliki engagement tertinggi.</p></div></div>
             <div class="meta-insight"><span class="meta-insight-dot">02</span><div><strong>Efisiensi klik</strong><p>CTR {{ $percent($ratio($paidClicks,$paidImpressions,100)) }} dengan CPC {{ $money($ratio($paidSpend,$paidClicks)) }}.</p></div></div>

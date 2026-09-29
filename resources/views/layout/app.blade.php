@@ -1907,6 +1907,7 @@
             }
 
             window.startEnhancedLoading = startEnhancedLoading;
+            window.showLoadingNow = showLoadingNow;
             window.stopEnhancedLoading = stopEnhancedLoading;
 
             // pageshow dijalankan kembali ketika halaman berasal dari BFCache.

@@ -32,13 +32,8 @@ class AnalisisController extends Controller
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
 
-        $sinceDate = $startDate
-            ? Carbon::createFromFormat('d M Y', $startDate)->startOfDay()
-            : null;
-
-        $untilDate = $endDate
-            ? Carbon::createFromFormat('d M Y', $endDate)->endOfDay()
-            : null;
+        $sinceDate = $this->parseFilterDate($startDate)?->startOfDay();
+        $untilDate = $this->parseFilterDate($endDate)?->endOfDay();
 
         // Unix timestamp khusus pemanggilan API
         $since = $sinceDate?->timestamp;
@@ -277,6 +272,23 @@ class AnalisisController extends Controller
                 # code...
                 break;
         }
+    }
+
+    private function parseFilterDate(?string $value): ?Carbon
+    {
+        if (! filled($value)) {
+            return null;
+        }
+
+        foreach (['Y-m-d', 'd M Y'] as $format) {
+            try {
+                return Carbon::createFromFormat($format, $value);
+            } catch (\Throwable) {
+                // Tetap menerima format filter lama saat tautan tersimpan dibuka kembali.
+            }
+        }
+
+        return null;
     }
 
     private function captureTrends(int $clientId, string $platform, array $organicMetrics, array $paidPosts, ?string $paidError, bool $capture): array

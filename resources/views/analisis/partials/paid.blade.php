@@ -5,6 +5,22 @@
     $paidClicks = $paidItems->sum('clicks');
     $paidEngagement = $paidItems->sum('engagement');
     $paidSpend = $paidItems->sum('spend');
+    $paidCtr = $paidImpressions > 0 ? ($paidClicks / $paidImpressions) * 100 : 0;
+    $paidCpm = $paidImpressions > 0 ? ($paidSpend / $paidImpressions) * 1000 : 0;
+    $paidCpc = $paidClicks > 0 ? $paidSpend / $paidClicks : 0;
+    $paidFrequency = $paidReach > 0 ? $paidImpressions / $paidReach : 0;
+    $paidMetricDefinitions = [
+        'ads' => ['Jumlah Iklan', number_format($paidItems->count(), 0, ',', '.')],
+        'reach' => ['Reach', number_format($paidReach, 0, ',', '.')],
+        'impressions' => ['Impresi', number_format($paidImpressions, 0, ',', '.')],
+        'clicks' => ['Klik', number_format($paidClicks, 0, ',', '.')],
+        'engagement' => ['Engagement', number_format($paidEngagement, 0, ',', '.')],
+        'spend' => ['Spend', ($paidCurrency ?? 'IDR').' '.number_format($paidSpend, 0, ',', '.')],
+        'ctr' => ['CTR', number_format($paidCtr, 2, ',', '.').'%'],
+        'cpm' => ['CPM', ($paidCurrency ?? 'IDR').' '.number_format($paidCpm, 0, ',', '.')],
+        'cpc' => ['CPC', ($paidCurrency ?? 'IDR').' '.number_format($paidCpc, 0, ',', '.')],
+        'frequency' => ['Frekuensi', number_format($paidFrequency, 2, ',', '.').'x'],
+    ];
 @endphp
 
 <section data-analysis-source-panel="paid" class="hidden space-y-4" hidden style="display: none;">
@@ -15,10 +31,22 @@
             <p class="mt-2 max-w-3xl text-sm leading-6 text-amber-800">{{ $paidError }}</p>
         </div>
     @else
-        <div class="rounded-xl border border-zinc-200 bg-white p-1 shadow-sm" role="tablist" aria-label="Jenis tampilan analisis Paid">
+        <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-zinc-200 bg-white p-1 shadow-sm" role="tablist" aria-label="Jenis tampilan analisis Paid">
             <div class="flex flex-wrap gap-1">
                 <button type="button" data-paid-analysis-tab="descriptive" aria-selected="true" class="rounded-lg bg-zinc-950 px-4 py-2.5 text-xs font-bold text-white">Deskriptif</button>
                 <button type="button" data-paid-analysis-tab="metrics" aria-selected="false" class="rounded-lg px-4 py-2.5 text-xs font-bold text-zinc-500">Metrik &amp; Tabel</button>
+            </div>
+            <div class="meta-field-picker mr-1">
+                <button type="button" class="meta-v2-btn" data-paid-field-toggle>Atur Field Paid</button>
+                <div class="meta-field-menu" data-paid-field-menu hidden>
+                    <h4>Field Paid <span data-paid-field-count style="float:right;color:#71717a;font-weight:500"></span></h4>
+                    <div class="meta-field-options">
+                        @foreach($paidMetricDefinitions as $fieldKey => $definition)
+                            <label class="meta-field-option"><input type="checkbox" value="{{ $fieldKey }}" data-paid-field-checkbox><span>{{ $definition[0] }}</span></label>
+                        @endforeach
+                    </div>
+                    <p style="margin:9px 0 0;color:#a1a1aa;font-size:9px">Maksimal 9 field dapat ditampilkan.</p>
+                </div>
             </div>
         </div>
 
@@ -34,17 +62,10 @@
             </div>
 
         <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-            @foreach([
-                ['label' => 'Iklan', 'value' => number_format($paidItems->count(), 0, ',', '.')],
-                ['label' => 'Reach', 'value' => number_format($paidReach, 0, ',', '.')],
-                ['label' => 'Impresi', 'value' => number_format($paidImpressions, 0, ',', '.')],
-                ['label' => 'Klik', 'value' => number_format($paidClicks, 0, ',', '.')],
-                ['label' => 'Engagement', 'value' => number_format($paidEngagement, 0, ',', '.')],
-                ['label' => 'Spend', 'value' => ($paidCurrency ?? 'IDR').' '.number_format($paidSpend, 0, ',', '.')],
-            ] as $metric)
-                <article class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-                    <p class="text-[10px] font-bold uppercase tracking-wider text-zinc-400">{{ $metric['label'] }}</p>
-                    <p class="mt-2 break-words text-xl font-semibold text-zinc-950">{{ $metric['value'] }}</p>
+            @foreach($paidMetricDefinitions as $fieldKey => $metric)
+                <article data-paid-field="{{ $fieldKey }}" class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-zinc-400">{{ $metric[0] }}</p>
+                    <p class="mt-2 break-words text-xl font-semibold text-zinc-950">{{ $metric[1] }}</p>
                 </article>
             @endforeach
         </div>
@@ -82,15 +103,10 @@
 
         <div data-paid-analysis-panel="metrics" hidden style="display:none;" class="space-y-4">
             <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                @foreach([
-                    ['label' => 'Reach', 'value' => number_format($paidReach, 0, ',', '.')],
-                    ['label' => 'Impresi', 'value' => number_format($paidImpressions, 0, ',', '.')],
-                    ['label' => 'Klik', 'value' => number_format($paidClicks, 0, ',', '.')],
-                    ['label' => 'Spend', 'value' => ($paidCurrency ?? 'IDR').' '.number_format($paidSpend, 0, ',', '.')],
-                ] as $metric)
-                    <article class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-                        <p class="text-[10px] font-bold uppercase tracking-wider text-zinc-400">{{ $metric['label'] }}</p>
-                        <p class="mt-2 break-words text-2xl font-semibold text-zinc-950">{{ $metric['value'] }}</p>
+                @foreach($paidMetricDefinitions as $fieldKey => $metric)
+                    <article data-paid-field="{{ $fieldKey }}" class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-zinc-400">{{ $metric[0] }}</p>
+                        <p class="mt-2 break-words text-2xl font-semibold text-zinc-950">{{ $metric[1] }}</p>
                     </article>
                 @endforeach
             </div>
@@ -136,7 +152,7 @@
     @endif
 </section>
 
-<style>[data-paid-analysis-panel][hidden] { display: none !important; }</style>
+<style>[data-paid-analysis-panel][hidden], [data-paid-field][hidden] { display: none !important; }</style>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const paidChartData = @json($paidItems->values());
@@ -192,5 +208,47 @@ document.addEventListener('DOMContentLoaded', function () {
             window.dispatchEvent(new Event('resize'));
         });
     });
+
+    const maxPaidFields = 9;
+    const paidStorageKey = 'meta-analysis-paid-fields-{{ strtolower($platform) }}';
+    const paidDefaults = ['ads', 'reach', 'impressions', 'clicks', 'engagement', 'spend'];
+    const paidCards = [...document.querySelectorAll('[data-paid-field]')];
+    const paidChecks = [...document.querySelectorAll('[data-paid-field-checkbox]')];
+    const paidMenu = document.querySelector('[data-paid-field-menu]');
+    const paidToggle = document.querySelector('[data-paid-field-toggle]');
+    const paidCount = document.querySelector('[data-paid-field-count]');
+    let selectedPaidFields;
+    try { selectedPaidFields = JSON.parse(localStorage.getItem(paidStorageKey)); } catch (error) { selectedPaidFields = null; }
+    if (!Array.isArray(selectedPaidFields) || !selectedPaidFields.length) selectedPaidFields = paidDefaults;
+    selectedPaidFields = selectedPaidFields.slice(0, maxPaidFields);
+
+    function applyPaidFields() {
+        paidCards.forEach(card => card.hidden = !selectedPaidFields.includes(card.dataset.paidField));
+        paidChecks.forEach(check => {
+            check.checked = selectedPaidFields.includes(check.value);
+            check.disabled = !check.checked && selectedPaidFields.length >= maxPaidFields;
+        });
+        if (paidCount) paidCount.textContent = `${selectedPaidFields.length}/${maxPaidFields}`;
+    }
+
+    paidToggle?.addEventListener('click', function (event) {
+        event.stopPropagation();
+        paidMenu.hidden = !paidMenu.hidden;
+    });
+    paidChecks.forEach(check => check.addEventListener('change', function () {
+        const next = paidChecks.filter(item => item.checked).map(item => item.value);
+        if (!next.length || next.length > maxPaidFields) {
+            check.checked = !check.checked;
+            return;
+        }
+        selectedPaidFields = next;
+        localStorage.setItem(paidStorageKey, JSON.stringify(selectedPaidFields));
+        applyPaidFields();
+    }));
+    document.addEventListener('click', function (event) {
+        if (paidMenu && !event.target.closest('[data-paid-field-toggle]') && !event.target.closest('[data-paid-field-menu]')) paidMenu.hidden = true;
+    });
+    localStorage.setItem(paidStorageKey, JSON.stringify(selectedPaidFields));
+    applyPaidFields();
 });
 </script>

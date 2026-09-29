@@ -7,6 +7,7 @@ use App\Services\InstagramService;
 use App\Services\MetaAdsService;
 use Carbon\Carbon;
 use Illuminate\Http\Client\Request;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -115,5 +116,18 @@ class MetaContentServiceTest extends TestCase
         $this->assertSame('ad-instagram', $result['data'][0]['id']);
         $this->assertSame(100, $result['data'][0]['impressions']);
         Http::assertSent(fn (Request $request) => data_get($request->data(), 'breakdowns') === 'publisher_platform');
+        Http::assertSent(fn (Request $request) => $request->hasHeader('Authorization', 'Bearer ads-token'));
+        Http::assertSent(fn (Request $request) => ! str_contains($request->url(), 'access_token='));
+    }
+
+    public function test_paid_posts_return_safe_error_when_meta_dns_times_out(): void
+    {
+        Http::fake(fn () => throw new ConnectionException('Resolving timed out: access_token=secret'));
+
+        $result = app(MetaAdsService::class)->getPaidPosts('act_123', 'secret-token', 'Facebook');
+
+        $this->assertSame([], $result['data']);
+        $this->assertStringContainsString('DNS server', $result['error']);
+        $this->assertStringNotContainsString('secret-token', $result['error']);
     }
 }

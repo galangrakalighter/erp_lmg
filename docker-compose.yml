@@ -2,6 +2,9 @@ services:
   app:
     build: .
     container_name: laravel_app
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     volumes:
       - .:/var/www
     networks:

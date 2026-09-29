@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Carbon\Carbon;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -22,7 +23,6 @@ class MetaAdsService
             'fields' => 'ad_id,ad_name,campaign_name,reach,impressions,spend,clicks,actions,date_start,date_stop',
             'breakdowns' => 'publisher_platform',
             'limit' => 500,
-            'access_token' => $accessToken,
         ];
 
         if ($since || $until) {
@@ -34,9 +34,24 @@ class MetaAdsService
             $query['date_preset'] = 'last_30d';
         }
 
-        $response = Http::timeout(120)
-            ->withOptions(['verify' => false])
-            ->get("https://graph.facebook.com/{$version}/{$accountId}/insights", $query);
+        try {
+            $response = Http::connectTimeout(15)
+                ->timeout(120)
+                ->retry(2, 600, throw: false)
+                ->withToken($accessToken)
+                ->withOptions(['verify' => false])
+                ->get("https://graph.facebook.com/{$version}/{$accountId}/insights", $query);
+        } catch (ConnectionException) {
+            Log::warning('Meta Ads Insights gagal terhubung karena gangguan jaringan.', [
+                'account_id' => $accountId,
+                'platform' => $platform,
+            ]);
+
+            return [
+                'data' => [],
+                'error' => 'Server belum dapat terhubung ke Meta Ads. Periksa koneksi internet atau DNS server, lalu coba muat ulang halaman.',
+            ];
+        }
 
         if (! $response->successful()) {
             $message = $response->json('error.message') ?: 'Meta Ads tidak dapat mengembalikan data.';

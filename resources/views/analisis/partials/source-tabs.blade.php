@@ -5,21 +5,34 @@
     </div>
 </div>
 
+<style>
+    [data-analysis-source-panel][hidden] { display: none !important; }
+</style>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    function activateAnalysisSource(active) {
+        document.querySelectorAll('[data-analysis-source-panel]').forEach(function (panel) {
+            const selected = panel.dataset.analysisSourcePanel === active;
+            panel.hidden = !selected;
+            panel.style.display = selected ? '' : 'none';
+            panel.classList.toggle('hidden', !selected);
+        });
+        document.querySelectorAll('[data-analysis-source-tab]').forEach(function (tab) {
+            const selected = tab.dataset.analysisSourceTab === active;
+            tab.setAttribute('aria-selected', selected ? 'true' : 'false');
+            tab.classList.toggle('bg-zinc-950', selected);
+            tab.classList.toggle('text-white', selected);
+            tab.classList.toggle('text-zinc-500', !selected);
+        });
+    }
+
+    activateAnalysisSource('organic');
+
     document.querySelectorAll('[data-analysis-source-tab]').forEach(function (button) {
         button.addEventListener('click', function () {
             const active = button.dataset.analysisSourceTab;
-            document.querySelectorAll('[data-analysis-source-panel]').forEach(function (panel) {
-                panel.classList.toggle('hidden', panel.dataset.analysisSourcePanel !== active);
-            });
-            document.querySelectorAll('[data-analysis-source-tab]').forEach(function (tab) {
-                const selected = tab.dataset.analysisSourceTab === active;
-                tab.setAttribute('aria-selected', selected ? 'true' : 'false');
-                tab.classList.toggle('bg-zinc-950', selected);
-                tab.classList.toggle('text-white', selected);
-                tab.classList.toggle('text-zinc-500', !selected);
-            });
+            activateAnalysisSource(active);
             requestAnimationFrame(function () {
                 window.dispatchEvent(new CustomEvent('analysis:source-changed', { detail: { active } }));
                 window.dispatchEvent(new Event('resize'));

@@ -7,7 +7,7 @@
     $paidSpend = $paidItems->sum('spend');
 @endphp
 
-<section data-analysis-source-panel="paid" class="hidden space-y-4">
+<section data-analysis-source-panel="paid" class="hidden space-y-4" hidden style="display: none;">
     @if($paidError)
         <div class="rounded-2xl border border-amber-200 bg-amber-50 p-6">
             <p class="text-[10px] font-bold uppercase tracking-[.16em] text-amber-700">Data Paid belum tersedia</p>

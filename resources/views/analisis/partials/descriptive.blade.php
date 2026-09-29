@@ -33,6 +33,10 @@
     </div>
 </div>
 
+<style>
+    [data-analysis-panel][hidden] { display: none !important; }
+</style>
+
 <section data-analysis-panel="descriptive" class="mb-4 space-y-4">
     <div class="rounded-2xl border border-zinc-200 bg-zinc-950 p-6 text-white shadow-sm">
         <p class="text-[10px] font-bold uppercase tracking-[.2em] text-lime-300">Ringkasan {{ $platform }}</p>
@@ -98,16 +102,27 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    function activateAnalysisView(active) {
+        document.querySelectorAll('[data-analysis-panel]').forEach(function (panel) {
+            const selected = panel.dataset.analysisPanel === active;
+            panel.hidden = !selected;
+            panel.style.display = selected ? '' : 'none';
+            panel.classList.toggle('hidden', !selected);
+        });
+        document.querySelectorAll('[data-analysis-tab]').forEach(function (tab) {
+            const selected = tab.dataset.analysisTab === active;
+            tab.classList.toggle('bg-zinc-950', selected);
+            tab.classList.toggle('text-white', selected);
+            tab.classList.toggle('text-zinc-500', !selected);
+        });
+    }
+
+    activateAnalysisView('descriptive');
+
     document.querySelectorAll('[data-analysis-tab]').forEach(function (button) {
         button.addEventListener('click', function () {
             const active = button.dataset.analysisTab;
-            document.querySelectorAll('[data-analysis-panel]').forEach(panel => panel.classList.toggle('hidden', panel.dataset.analysisPanel !== active));
-            document.querySelectorAll('[data-analysis-tab]').forEach(tab => {
-                const selected = tab.dataset.analysisTab === active;
-                tab.classList.toggle('bg-zinc-950', selected);
-                tab.classList.toggle('text-white', selected);
-                tab.classList.toggle('text-zinc-500', !selected);
-            });
+            activateAnalysisView(active);
             requestAnimationFrame(function () {
                 window.dispatchEvent(new CustomEvent('analysis:tab-changed', { detail: { active } }));
                 window.dispatchEvent(new Event('resize'));

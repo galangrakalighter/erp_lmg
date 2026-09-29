@@ -164,7 +164,7 @@
         'analysisPosts' => $dataBaru,
         'followerMetric' => $jumlah_follower,
     ])
-    <div data-analysis-panel="metrics" class="hidden">
+    <div data-analysis-panel="metrics" class="hidden" hidden style="display: none;">
     <div class="row g-4 mb-4">
         <div class="col-sm-6 col-xl-3">
             <div class="card stat-card border-0 shadow-sm p-3">

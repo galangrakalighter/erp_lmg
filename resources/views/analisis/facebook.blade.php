@@ -9,6 +9,7 @@
         'tanggal_posting' => $item['tanggal_posting'] ?? '-', 'reach' => (int) ($item['reach'] ?? 0),
         'impressions' => (int) ($item['impresi'] ?? 0), 'engagement' => (int) ($item['engagement'] ?? 0),
         'saved' => 0, 'shares' => (int) ($item['shares'] ?? 0),
+        'likes' => (int) ($item['reaction'] ?? 0), 'comments' => (int) ($item['comments'] ?? 0),
     ])->values();
 @endphp
 @include('analisis.partials.meta-dashboard')

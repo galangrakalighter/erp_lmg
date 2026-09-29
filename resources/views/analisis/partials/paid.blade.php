@@ -15,22 +15,33 @@
             <p class="mt-2 max-w-3xl text-sm leading-6 text-amber-800">{{ $paidError }}</p>
         </div>
     @else
-        <div class="rounded-2xl border border-zinc-200 bg-zinc-950 p-6 text-white shadow-sm">
-            <p class="text-[10px] font-bold uppercase tracking-[.2em] text-lime-300">Paid {{ $platform }}</p>
-            <h2 class="mt-2 text-xl font-semibold">Performa konten berbayar</h2>
-            <p class="mt-3 max-w-4xl text-sm leading-7 text-zinc-300">
-                Terdapat <strong class="text-white">{{ number_format($paidItems->count(), 0, ',', '.') }} iklan</strong>
-                pada placement {{ $platform }} dengan total reach {{ number_format($paidReach, 0, ',', '.') }},
-                {{ number_format($paidImpressions, 0, ',', '.') }} impresi, dan {{ number_format($paidClicks, 0, ',', '.') }} klik.
-            </p>
+        <div class="rounded-xl border border-zinc-200 bg-white p-1 shadow-sm" role="tablist" aria-label="Jenis tampilan analisis Paid">
+            <div class="flex flex-wrap gap-1">
+                <button type="button" data-paid-analysis-tab="descriptive" aria-selected="true" class="rounded-lg bg-zinc-950 px-4 py-2.5 text-xs font-bold text-white">Deskriptif</button>
+                <button type="button" data-paid-analysis-tab="metrics" aria-selected="false" class="rounded-lg px-4 py-2.5 text-xs font-bold text-zinc-500">Metrik &amp; Tabel</button>
+            </div>
         </div>
 
-        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <div data-paid-analysis-panel="descriptive">
+            <div class="rounded-2xl border border-zinc-200 bg-zinc-950 p-6 text-white shadow-sm">
+                <p class="text-[10px] font-bold uppercase tracking-[.2em] text-lime-300">Paid {{ $platform }}</p>
+                <h2 class="mt-2 text-xl font-semibold">Performa konten berbayar</h2>
+                <p class="mt-3 max-w-4xl text-sm leading-7 text-zinc-300">
+                    Terdapat <strong class="text-white">{{ number_format($paidItems->count(), 0, ',', '.') }} iklan</strong>
+                    pada placement {{ $platform }} dengan total reach {{ number_format($paidReach, 0, ',', '.') }},
+                    {{ number_format($paidImpressions, 0, ',', '.') }} impresi, dan {{ number_format($paidClicks, 0, ',', '.') }} klik.
+                </p>
+            </div>
+        </div>
+
+        <div data-paid-analysis-panel="metrics" hidden style="display:none;" class="space-y-4">
+        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
             @foreach([
                 ['label' => 'Iklan', 'value' => number_format($paidItems->count(), 0, ',', '.')],
                 ['label' => 'Reach', 'value' => number_format($paidReach, 0, ',', '.')],
                 ['label' => 'Impresi', 'value' => number_format($paidImpressions, 0, ',', '.')],
                 ['label' => 'Klik', 'value' => number_format($paidClicks, 0, ',', '.')],
+                ['label' => 'Engagement', 'value' => number_format($paidEngagement, 0, ',', '.')],
                 ['label' => 'Spend', 'value' => ($paidCurrency ?? 'IDR').' '.number_format($paidSpend, 0, ',', '.')],
             ] as $metric)
                 <article class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
@@ -69,5 +80,34 @@
                 </table>
             </div>
         </div>
+        </div>
     @endif
 </section>
+
+<style>[data-paid-analysis-panel][hidden] { display: none !important; }</style>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    function activatePaidAnalysis(active) {
+        document.querySelectorAll('[data-paid-analysis-panel]').forEach(function (panel) {
+            const selected = panel.dataset.paidAnalysisPanel === active;
+            panel.hidden = !selected;
+            panel.style.display = selected ? '' : 'none';
+        });
+        document.querySelectorAll('[data-paid-analysis-tab]').forEach(function (tab) {
+            const selected = tab.dataset.paidAnalysisTab === active;
+            tab.setAttribute('aria-selected', selected ? 'true' : 'false');
+            tab.classList.toggle('bg-zinc-950', selected);
+            tab.classList.toggle('text-white', selected);
+            tab.classList.toggle('text-zinc-500', !selected);
+        });
+    }
+
+    activatePaidAnalysis('descriptive');
+    document.querySelectorAll('[data-paid-analysis-tab]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            activatePaidAnalysis(button.dataset.paidAnalysisTab);
+            window.dispatchEvent(new Event('resize'));
+        });
+    });
+});
+</script>

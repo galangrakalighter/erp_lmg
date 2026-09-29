@@ -33,5 +33,72 @@
 <div class="meta-panel meta-table-panel"><div class="meta-panel-head"><div><h3>Content Performance &amp; Analysis</h3><p>Data performa organik {{ $platform }}.</p></div></div><div class="meta-table-wrap"><table class="meta-table"><thead><tr><th>No</th><th>Tanggal</th><th>Judul</th><th>Jenis</th><th>Reach</th><th>Impresi</th><th>ER</th><th>Save</th><th>Share</th><th>Aksi</th></tr></thead><tbody>@forelse($metaItems as $item)<tr><td>{{ $loop->iteration }}</td><td>{{ $item['tanggal_posting'] }}</td><td class="title">{{ $item['judul'] ?: 'Konten tanpa judul' }}</td><td>{{ $item['jenis'] ?? '-' }}</td><td>{{ number_format($item['reach'],0,',','.') }}</td><td>{{ number_format($item['impressions'],0,',','.') }}</td><td>{{ $item['reach'] > 0 ? number_format(($item['engagement']/$item['reach'])*100,2,',','.') : '0,00' }}%</td><td>{{ number_format($item['saved'],0,',','.') }}</td><td>{{ number_format($item['shares'],0,',','.') }}</td><td><a href="{{ $item['link'] }}" target="_blank" rel="noopener">Lihat</a></td></tr>@empty<tr><td colspan="10" class="meta-empty">Belum ada data konten.</td></tr>@endforelse</tbody></table></div></div></section>
 @include('analisis.partials.paid', ['platform' => $platform])</div>
 @include('analisis.partials.trend-panels', ['platform' => $platform])</div>
-<script>document.addEventListener('DOMContentLoaded',function(){const items=@json($metaItems->values());let chart=null;const canvas=document.getElementById('metaOrganicTrendChart');function render(){if(!canvas||typeof Chart==='undefined')return;if(chart){chart.resize();return}chart=new Chart(canvas.getContext('2d'),{type:'line',data:{labels:items.map(i=>i.tanggal_posting),datasets:[{label:'Reach',data:items.map(i=>Number(i.reach||0)),borderColor:'#18181b',backgroundColor:'rgba(24,24,27,.05)',fill:true,tension:.35,pointRadius:3},{label:'Impresi',data:items.map(i=>Number(i.impressions||0)),borderColor:'#94a3b8',tension:.35,pointRadius:2}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,grid:{color:'#f1f5f9'}},x:{grid:{display:false}}}}})}render();window.addEventListener('analysis:source-changed',e=>{if(e.detail?.active==='organic')requestAnimationFrame(render)});if(typeof flatpickr!=='undefined'){const s=flatpickr('#startDate',{dateFormat:'d M Y',animate:false,disableMobile:true});const e=flatpickr('#endDate',{dateFormat:'d M Y',animate:false,disableMobile:true});document.getElementById('applyFilter')?.addEventListener('click',()=>{if(s.input.value&&e.input.value)location.href=`?start_date=${encodeURIComponent(s.input.value)}&end_date=${encodeURIComponent(e.input.value)}`})}document.getElementById('resetAll')?.addEventListener('click',()=>location.href=location.pathname)});</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const rawItems = @json($metaItems->values());
+    const dateFormatter = new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+    const dailyMap = new Map();
+    rawItems.forEach(item => {
+        const date = new Date(item.tanggal_posting);
+        if (Number.isNaN(date.getTime())) return;
+        const key = date.toISOString().slice(0, 10);
+        const current = dailyMap.get(key) || { date, reach: 0, impressions: 0 };
+        current.reach += Number(item.reach || 0);
+        current.impressions += Number(item.impressions || 0);
+        dailyMap.set(key, current);
+    });
+    const dailyItems = [...dailyMap.values()].sort((a, b) => a.date - b.date);
+    const items = [];
+    const bucketSize = dailyItems.length > 10 ? 3 : 1;
+    for (let index = 0; index < dailyItems.length; index += bucketSize) {
+        const bucket = dailyItems.slice(index, index + bucketSize);
+        const first = bucket[0];
+        const last = bucket[bucket.length - 1];
+        items.push({
+            tanggal_posting: bucket.length === 1
+                ? dateFormatter.format(first.date)
+                : `${dateFormatter.format(first.date)} – ${dateFormatter.format(last.date)}`,
+            reach: bucket.reduce((total, item) => total + item.reach, 0),
+            impressions: bucket.reduce((total, item) => total + item.impressions, 0),
+        });
+    }
+
+    let chart = null;
+    const canvas = document.getElementById('metaOrganicTrendChart');
+    function render() {
+        if (!canvas || typeof Chart === 'undefined') return;
+        if (chart) { chart.resize(); return; }
+        chart = new Chart(canvas.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: items.map(item => item.tanggal_posting),
+                datasets: [
+                    { label: 'Reach', data: items.map(item => item.reach), borderColor: '#18181b', backgroundColor: 'rgba(24,24,27,.05)', fill: true, tension: .35, pointRadius: 3 },
+                    { label: 'Impresi', data: items.map(item => item.impressions), borderColor: '#94a3b8', tension: .35, pointRadius: 2 }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: { legend: { position: 'bottom' } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                    x: { grid: { display: false }, ticks: { minRotation: 0, maxRotation: 0, autoSkip: true, maxTicksLimit: 10 } }
+                }
+            }
+        });
+    }
+    render();
+    window.addEventListener('analysis:source-changed', event => { if (event.detail?.active === 'organic') requestAnimationFrame(render); });
+    if (typeof flatpickr !== 'undefined') {
+        const startPicker = flatpickr('#startDate', { dateFormat: 'd M Y', animate: false, disableMobile: true });
+        const endPicker = flatpickr('#endDate', { dateFormat: 'd M Y', animate: false, disableMobile: true });
+        document.getElementById('applyFilter')?.addEventListener('click', () => {
+            if (startPicker.input.value && endPicker.input.value) location.href = `?start_date=${encodeURIComponent(startPicker.input.value)}&end_date=${encodeURIComponent(endPicker.input.value)}`;
+        });
+    }
+    document.getElementById('resetAll')?.addEventListener('click', () => location.href = location.pathname);
+});
+</script>
 <script>document.addEventListener('DOMContentLoaded',function(){const maxFields=9;const storageKey='meta-analysis-fields-{{ strtolower($platform) }}';const defaults=['reach','engagement_rate','impressions','saved','shares','followers'];const cards=[...document.querySelectorAll('[data-meta-field]')];const checks=[...document.querySelectorAll('[data-meta-field-checkbox]')];const menu=document.querySelector('[data-meta-field-menu]');const toggle=document.querySelector('[data-meta-field-toggle]');const count=document.querySelector('[data-meta-field-count]');let selected;try{selected=JSON.parse(localStorage.getItem(storageKey))}catch(e){selected=null}if(!Array.isArray(selected)||!selected.length)selected=defaults;selected=selected.slice(0,maxFields);function apply(){cards.forEach(card=>card.hidden=!selected.includes(card.dataset.metaField));checks.forEach(check=>{check.checked=selected.includes(check.value);check.disabled=!check.checked&&selected.length>=maxFields});if(count)count.textContent=`${selected.length}/${maxFields}`;}toggle?.addEventListener('click',e=>{e.stopPropagation();menu.hidden=!menu.hidden});checks.forEach(check=>check.addEventListener('change',()=>{const next=checks.filter(item=>item.checked).map(item=>item.value);if(!next.length||next.length>maxFields){check.checked=!check.checked;return}selected=next;localStorage.setItem(storageKey,JSON.stringify(selected));apply()}));document.addEventListener('click',e=>{if(menu&&!e.target.closest('.meta-field-picker'))menu.hidden=true});localStorage.setItem(storageKey,JSON.stringify(selected));apply()});</script>

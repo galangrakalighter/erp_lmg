@@ -3,6 +3,7 @@
 @include('partials.client_data_theme')
 @include('partials.client_native_tables')
 @include('partials.analysis_workspace_theme')
+@include('partials.meta_analysis_dashboard_theme')
 <style>
     .stat-card { border-left: 4px solid #161616 !important; }
     .stat-card:hover { transform: translateY(-2px) !important; }
@@ -136,7 +137,7 @@
         <div class="col-12">
             <div class="card border-0 shadow-sm p-3">
                 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-                    <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-filter-left me-2 text-primary"></i>Analisis Platform Facebook</h5>
+                    <div class="meta-analysis-heading"><h5 data-meta-analysis-title>Analisis Organik Facebook</h5><p>Pahami performa konten, pola pertumbuhan, dan langkah berikutnya.</p></div>
                     <!-- Pencarian Independen di Sebelah Kanan -->
                     <div class="analysis-filter-actions ms-md-auto">
                         <div class="date-range-pill me-2">

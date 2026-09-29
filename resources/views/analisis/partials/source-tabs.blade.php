@@ -38,6 +38,11 @@ document.addEventListener('DOMContentLoaded', function () {
             tab.classList.toggle('text-white', selected);
             tab.classList.toggle('text-zinc-500', !selected);
         });
+        const heading = document.querySelector('[data-meta-analysis-title]');
+        if (heading) {
+            const platform = heading.textContent.includes('Facebook') ? 'Facebook' : 'Instagram';
+            heading.textContent = `Analisis ${active === 'paid' ? 'Paid' : 'Organik'} ${platform}`;
+        }
     }
 
     activateAnalysisSource('organic');

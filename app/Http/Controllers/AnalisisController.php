@@ -46,13 +46,16 @@ class AnalisisController extends Controller
         
 
         
-        $data = DB::table('data_jasa')
+        $contentPlanItems = DB::table('data_jasa')
             ->join('type_produk', 'type_produk.id', '=', 'data_jasa.type_produk_id')
             ->join('strategy', 'strategy.id', '=', 'data_jasa.strategy_id')
             ->join('status', 'status.id', '=', 'data_jasa.status_id')
             ->join('pilar', 'pilar.id', '=', 'data_jasa.pilar_id')
             ->join('hooks', 'hooks.id', '=', 'data_jasa.hooks_id')
+            ->leftJoin('jenis_body', 'jenis_body.id', '=', 'data_jasa.body_id')
+            ->leftJoin('jenis_cta', 'jenis_cta.id', '=', 'data_jasa.cta_id')
             ->where('data_jasa.produk_client_id', $produk)
+            ->whereRaw('LOWER(data_jasa.platform) = ?', [strtolower($platform)])
             ->when($sinceDate, function ($query) use ($sinceDate) {
                 $query->where(
                     'data_jasa.tanggal_posting',
@@ -73,7 +76,9 @@ class AnalisisController extends Controller
                 'strategy.strategy',
                 'status.nama_status',
                 'pilar.pilar',
-                'hooks.hooks'
+                'hooks.hooks',
+                'jenis_body.nama_body as body',
+                'jenis_cta.nama_cta as cta'
             )
             ->orderBy('data_jasa.tanggal_posting', 'asc')
             ->get();
@@ -190,7 +195,7 @@ class AnalisisController extends Controller
                 ], $paidPosts, $paidError, ! $fetch);
                 return view('analisis.instagram', compact(
                     'posts', 
-                    'data', 
+                    'contentPlanItems',
                     'views', 
                     'reach', 
                     'date', 
@@ -263,6 +268,7 @@ class AnalisisController extends Controller
                     'paidError',
                     'paidCurrency',
                     'trendComparisons',
+                    'contentPlanItems',
                 ));
                 break;
             case 'Youtube':

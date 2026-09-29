@@ -20,7 +20,15 @@ class MetaAdsService
         $accountId = str_starts_with($adAccountId, 'act_') ? $adAccountId : 'act_'.$adAccountId;
         $query = [
             'level' => 'ad',
-            'fields' => 'ad_id,ad_name,campaign_name,reach,impressions,spend,clicks,actions,date_start,date_stop',
+            'fields' => implode(',', [
+                'ad_id', 'ad_name', 'campaign_name', 'reach', 'impressions', 'frequency',
+                'spend', 'social_spend', 'clicks', 'unique_clicks', 'ctr', 'unique_ctr',
+                'cpc', 'cpm', 'cpp', 'inline_link_clicks', 'inline_link_click_ctr',
+                'inline_post_engagement', 'outbound_clicks', 'conversions', 'conversion_values',
+                'actions', 'video_play_actions', 'video_thruplay_watched_actions',
+                'video_p25_watched_actions', 'video_p50_watched_actions',
+                'video_p75_watched_actions', 'video_p100_watched_actions', 'date_start', 'date_stop',
+            ]),
             'breakdowns' => 'publisher_platform',
             'limit' => 500,
         ];
@@ -69,6 +77,9 @@ class MetaAdsService
         $rows = collect($response->json('data', []))
             ->filter(fn ($row) => strtolower((string) ($row['publisher_platform'] ?? '')) === $platformKey)
             ->map(function ($row) use ($platformKey) {
+                $sumValues = static fn ($values): float => collect($values ?? [])->sum(
+                    fn ($value) => (float) ($value['value'] ?? 0)
+                );
                 $actions = collect($row['actions'] ?? [])->mapWithKeys(
                     fn ($action) => [(string) ($action['action_type'] ?? '') => (int) round((float) ($action['value'] ?? 0))]
                 );
@@ -87,8 +98,28 @@ class MetaAdsService
                     'reach' => (int) round((float) ($row['reach'] ?? 0)),
                     'impressions' => (int) round((float) ($row['impressions'] ?? 0)),
                     'clicks' => (int) round((float) ($row['clicks'] ?? 0)),
+                    'unique_clicks' => (int) round((float) ($row['unique_clicks'] ?? 0)),
                     'engagement' => $engagement,
                     'spend' => (float) ($row['spend'] ?? 0),
+                    'social_spend' => (float) ($row['social_spend'] ?? 0),
+                    'frequency' => (float) ($row['frequency'] ?? 0),
+                    'ctr' => (float) ($row['ctr'] ?? 0),
+                    'unique_ctr' => (float) ($row['unique_ctr'] ?? 0),
+                    'cpc' => (float) ($row['cpc'] ?? 0),
+                    'cpm' => (float) ($row['cpm'] ?? 0),
+                    'cpp' => (float) ($row['cpp'] ?? 0),
+                    'inline_link_clicks' => (int) round((float) ($row['inline_link_clicks'] ?? 0)),
+                    'inline_link_click_ctr' => (float) ($row['inline_link_click_ctr'] ?? 0),
+                    'inline_post_engagement' => (int) round((float) ($row['inline_post_engagement'] ?? 0)),
+                    'outbound_clicks' => (int) round($sumValues($row['outbound_clicks'] ?? [])),
+                    'conversions' => $sumValues($row['conversions'] ?? []),
+                    'conversion_values' => $sumValues($row['conversion_values'] ?? []),
+                    'video_plays' => (int) round($sumValues($row['video_play_actions'] ?? [])),
+                    'video_thruplays' => (int) round($sumValues($row['video_thruplay_watched_actions'] ?? [])),
+                    'video_p25' => (int) round($sumValues($row['video_p25_watched_actions'] ?? [])),
+                    'video_p50' => (int) round($sumValues($row['video_p50_watched_actions'] ?? [])),
+                    'video_p75' => (int) round($sumValues($row['video_p75_watched_actions'] ?? [])),
+                    'video_p100' => (int) round($sumValues($row['video_p100_watched_actions'] ?? [])),
                 ];
             })
             ->sortBy('timestamp')

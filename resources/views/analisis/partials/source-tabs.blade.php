@@ -43,6 +43,8 @@ document.addEventListener('DOMContentLoaded', function () {
             const platform = heading.textContent.includes('Facebook') ? 'Facebook' : 'Instagram';
             heading.textContent = `Analisis ${active === 'paid' ? 'Paid' : 'Organik'} ${platform}`;
         }
+        const organicFieldPicker = document.querySelector('[data-organic-field-picker]');
+        if (organicFieldPicker) organicFieldPicker.hidden = active !== 'organic';
     }
 
     activateAnalysisSource('organic');

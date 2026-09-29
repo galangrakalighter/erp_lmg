@@ -1,257 +1,68 @@
 @php
     $paidItems = collect($paidPosts ?? []);
-    $paidReach = $paidItems->sum('reach');
-    $paidImpressions = $paidItems->sum('impressions');
-    $paidClicks = $paidItems->sum('clicks');
-    $paidEngagement = $paidItems->sum('engagement');
-    $paidSpend = $paidItems->sum('spend');
-    $paidCtr = $paidImpressions > 0 ? ($paidClicks / $paidImpressions) * 100 : 0;
-    $paidCpm = $paidImpressions > 0 ? ($paidSpend / $paidImpressions) * 1000 : 0;
-    $paidCpc = $paidClicks > 0 ? $paidSpend / $paidClicks : 0;
-    $paidFrequency = $paidReach > 0 ? $paidImpressions / $paidReach : 0;
+    $sum = fn (string $key) => (float) $paidItems->sum($key);
+    $paidReach = $sum('reach'); $paidImpressions = $sum('impressions'); $paidClicks = $sum('clicks');
+    $paidUniqueClicks = $sum('unique_clicks'); $paidSpend = $sum('spend'); $paidCurrencyLabel = $paidCurrency ?? 'IDR';
+    $number = fn ($value, int $decimals = 0) => number_format($value, $decimals, ',', '.');
+    $money = fn ($value) => $paidCurrencyLabel.' '.$number($value, 0);
+    $percent = fn ($value) => $number($value, 2).'%';
+    $ratio = fn ($top, $bottom, $multiplier = 1) => $bottom > 0 ? ($top / $bottom) * $multiplier : 0;
     $paidMetricDefinitions = [
-        'ads' => ['Jumlah Iklan', number_format($paidItems->count(), 0, ',', '.')],
-        'reach' => ['Reach', number_format($paidReach, 0, ',', '.')],
-        'impressions' => ['Impresi', number_format($paidImpressions, 0, ',', '.')],
-        'clicks' => ['Klik', number_format($paidClicks, 0, ',', '.')],
-        'engagement' => ['Engagement', number_format($paidEngagement, 0, ',', '.')],
-        'spend' => ['Spend', ($paidCurrency ?? 'IDR').' '.number_format($paidSpend, 0, ',', '.')],
-        'ctr' => ['CTR', number_format($paidCtr, 2, ',', '.').'%'],
-        'cpm' => ['CPM', ($paidCurrency ?? 'IDR').' '.number_format($paidCpm, 0, ',', '.')],
-        'cpc' => ['CPC', ($paidCurrency ?? 'IDR').' '.number_format($paidCpc, 0, ',', '.')],
-        'frequency' => ['Frekuensi', number_format($paidFrequency, 2, ',', '.').'x'],
+        'ads' => ['Jumlah Iklan', $number($paidItems->count()), 'number'], 'reach' => ['Reach', $number($paidReach), 'number'],
+        'impressions' => ['Impresi', $number($paidImpressions), 'number'], 'frequency' => ['Frekuensi', $number($ratio($paidImpressions,$paidReach),2).'x', 'number'],
+        'clicks' => ['Klik', $number($paidClicks), 'number'], 'unique_clicks' => ['Klik Unik', $number($paidUniqueClicks), 'number'],
+        'ctr' => ['CTR', $percent($ratio($paidClicks,$paidImpressions,100)), 'percent'], 'unique_ctr' => ['Unique CTR', $percent($ratio($paidUniqueClicks,$paidReach,100)), 'percent'],
+        'cpc' => ['CPC', $money($ratio($paidSpend,$paidClicks)), 'currency'], 'cpm' => ['CPM', $money($ratio($paidSpend,$paidImpressions,1000)), 'currency'],
+        'cpp' => ['CPP', $money($ratio($paidSpend,$paidReach,1000)), 'currency'], 'spend' => ['Spend', $money($paidSpend), 'currency'],
+        'social_spend' => ['Social Spend', $money($sum('social_spend')), 'currency'], 'engagement' => ['Engagement', $number($sum('engagement')), 'number'],
+        'inline_post_engagement' => ['Post Engagement', $number($sum('inline_post_engagement')), 'number'], 'inline_link_clicks' => ['Link Click', $number($sum('inline_link_clicks')), 'number'],
+        'inline_link_click_ctr' => ['Link CTR', $percent($ratio($sum('inline_link_clicks'),$paidImpressions,100)), 'percent'], 'outbound_clicks' => ['Outbound Click', $number($sum('outbound_clicks')), 'number'],
+        'conversions' => ['Conversion', $number($sum('conversions'),2), 'number'], 'conversion_values' => ['Conversion Value', $money($sum('conversion_values')), 'currency'],
+        'video_plays' => ['Video Play', $number($sum('video_plays')), 'number'], 'video_thruplays' => ['ThruPlay', $number($sum('video_thruplays')), 'number'],
+        'video_p25' => ['Video 25%', $number($sum('video_p25')), 'number'], 'video_p50' => ['Video 50%', $number($sum('video_p50')), 'number'],
+        'video_p75' => ['Video 75%', $number($sum('video_p75')), 'number'], 'video_p100' => ['Video 100%', $number($sum('video_p100')), 'number'],
     ];
+    $topPaidItem = $paidItems->sortByDesc('engagement')->first();
 @endphp
 
-<section data-analysis-source-panel="paid" class="hidden space-y-4" hidden style="display: none;">
-    @if($paidError)
-        <div class="rounded-2xl border border-amber-200 bg-amber-50 p-6">
-            <p class="text-[10px] font-bold uppercase tracking-[.16em] text-amber-700">Data Paid belum tersedia</p>
-            <h2 class="mt-2 text-lg font-semibold text-amber-950">Periksa koneksi Meta Ads</h2>
-            <p class="mt-2 max-w-3xl text-sm leading-6 text-amber-800">{{ $paidError }}</p>
+<section data-analysis-source-panel="paid" class="hidden" hidden style="display:none">
+@if($paidError)
+    <div class="meta-panel"><div class="meta-empty"><strong>Data Paid belum tersedia</strong><br>{{ $paidError }}</div></div>
+@else
+    <div class="mb-4 flex justify-end"><div class="meta-field-picker">
+        <button type="button" class="meta-v2-btn" data-paid-field-toggle>Atur Field Paid</button>
+        <div class="meta-field-menu paid-field-menu" data-paid-field-menu hidden><h4>Seluruh field Meta <span data-paid-field-count style="float:right;color:#71717a;font-weight:500"></span></h4>
+            <div class="meta-field-options paid-field-options">@foreach($paidMetricDefinitions as $fieldKey => $definition)<label class="meta-field-option"><input type="checkbox" value="{{ $fieldKey }}" data-paid-field-checkbox><span>{{ $definition[0] }}</span></label>@endforeach</div>
+            <p style="margin:9px 0 0;color:#71717a;font-size:9px">Pilih minimal 1 dan maksimal 9 field. Field aktif juga ditampilkan pada chart.</p>
         </div>
-    @else
-        <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-zinc-200 bg-white p-1 shadow-sm" role="tablist" aria-label="Jenis tampilan analisis Paid">
-            <div class="flex flex-wrap gap-1">
-                <button type="button" data-paid-analysis-tab="descriptive" aria-selected="true" class="rounded-lg bg-zinc-950 px-4 py-2.5 text-xs font-bold text-white">Deskriptif</button>
-                <button type="button" data-paid-analysis-tab="metrics" aria-selected="false" class="rounded-lg px-4 py-2.5 text-xs font-bold text-zinc-500">Metrik &amp; Tabel</button>
-            </div>
-            <div class="meta-field-picker mr-1">
-                <button type="button" class="meta-v2-btn" data-paid-field-toggle>Atur Field Paid</button>
-                <div class="meta-field-menu" data-paid-field-menu hidden>
-                    <h4>Field Paid <span data-paid-field-count style="float:right;color:#71717a;font-weight:500"></span></h4>
-                    <div class="meta-field-options">
-                        @foreach($paidMetricDefinitions as $fieldKey => $definition)
-                            <label class="meta-field-option"><input type="checkbox" value="{{ $fieldKey }}" data-paid-field-checkbox><span>{{ $definition[0] }}</span></label>
-                        @endforeach
-                    </div>
-                    <p style="margin:9px 0 0;color:#a1a1aa;font-size:9px">Maksimal 9 field dapat ditampilkan.</p>
-                </div>
-            </div>
-        </div>
+    </div></div>
 
-        <div data-paid-analysis-panel="descriptive">
-            <div class="rounded-2xl border border-zinc-200 bg-zinc-950 p-6 text-white shadow-sm">
-                <p class="text-[10px] font-bold uppercase tracking-[.2em] text-lime-300">Paid {{ $platform }}</p>
-                <h2 class="mt-2 text-xl font-semibold">Performa konten berbayar</h2>
-                <p class="mt-3 max-w-4xl text-sm leading-7 text-zinc-300">
-                    Terdapat <strong class="text-white">{{ number_format($paidItems->count(), 0, ',', '.') }} iklan</strong>
-                    pada placement {{ $platform }} dengan total reach {{ number_format($paidReach, 0, ',', '.') }},
-                    {{ number_format($paidImpressions, 0, ',', '.') }} impresi, dan {{ number_format($paidClicks, 0, ',', '.') }} klik.
-                </p>
-            </div>
+    <div class="meta-kpi-grid">@foreach($paidMetricDefinitions as $fieldKey => $metric)<article class="meta-kpi" data-paid-field="{{ $fieldKey }}"><label>{{ $metric[0] }}</label><strong>{{ $metric[1] }}</strong><small>Data Paid Meta</small><svg viewBox="0 0 62 25" fill="none"><path d="M1 20L10 16L18 18L28 9L38 13L49 6L61 2" stroke="#52525b" stroke-width="1.5"/><path d="M1 24H61" stroke="#e4e4e7"/></svg></article>@endforeach</div>
 
-        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-            @foreach($paidMetricDefinitions as $fieldKey => $metric)
-                <article data-paid-field="{{ $fieldKey }}" class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-                    <p class="text-[10px] font-bold uppercase tracking-wider text-zinc-400">{{ $metric[0] }}</p>
-                    <p class="mt-2 break-words text-xl font-semibold text-zinc-950">{{ $metric[1] }}</p>
-                </article>
-            @endforeach
-        </div>
+    <div class="meta-board-grid">
+        <div class="meta-panel"><div class="meta-panel-head"><div><h3>Performance Trend Paid</h3><p>Field pada chart mengikuti pilihan Atur Field Paid.</p></div></div><div class="meta-chart-body"><canvas data-paid-metrics-chart></canvas></div></div>
+        <aside class="meta-panel"><div class="meta-panel-head"><div><h3>Insights &amp; Recommendation</h3><p>Temuan utama performa iklan.</p></div></div><div class="meta-insights">
+            <div class="meta-insight"><span class="meta-insight-dot">01</span><div><strong>Iklan terbaik</strong><p title="{{ data_get($topPaidItem,'judul','Belum ada iklan') }}">{{ \Illuminate\Support\Str::limit(data_get($topPaidItem,'judul','Belum ada iklan'),70) }} memiliki engagement tertinggi.</p></div></div>
+            <div class="meta-insight"><span class="meta-insight-dot">02</span><div><strong>Efisiensi klik</strong><p>CTR {{ $percent($ratio($paidClicks,$paidImpressions,100)) }} dengan CPC {{ $money($ratio($paidSpend,$paidClicks)) }}.</p></div></div>
+            <div class="meta-insight"><span class="meta-insight-dot">03</span><div><strong>Distribusi</strong><p>{{ $number($paidItems->count()) }} iklan menjangkau {{ $number($paidReach) }} akun.</p></div></div>
+            <div class="meta-insight"><span class="meta-insight-dot">04</span><div><strong>Belanja iklan</strong><p>Total spend {{ $money($paidSpend) }} pada periode terpilih.</p></div></div>
+        </div></aside>
+    </div>
 
-        <div class="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
-            <div class="border-b border-zinc-200 px-5 py-4">
-                <h3 class="text-base font-semibold text-zinc-950">Daftar konten Paid {{ $platform }}</h3>
-                <p class="mt-1 text-xs text-zinc-500">Data dikelompokkan berdasarkan iklan dan placement publisher platform.</p>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="min-w-[920px] w-full text-left text-xs">
-                    <thead class="bg-zinc-50 text-[10px] uppercase tracking-wider text-zinc-500">
-                        <tr><th class="px-5 py-3">Iklan</th><th class="px-4 py-3">Campaign</th><th class="px-4 py-3">Tanggal</th><th class="px-4 py-3 text-right">Reach</th><th class="px-4 py-3 text-right">Impresi</th><th class="px-4 py-3 text-right">Klik</th><th class="px-4 py-3 text-right">Engagement</th><th class="px-5 py-3 text-right">Spend</th></tr>
-                    </thead>
-                    <tbody class="divide-y divide-zinc-100">
-                        @forelse($paidItems as $item)
-                            <tr class="text-zinc-700 hover:bg-zinc-50">
-                                <td class="max-w-[240px] px-5 py-3 font-semibold text-zinc-950" title="{{ $item['judul'] }}">{{ \Illuminate\Support\Str::limit($item['judul'], 55) }}</td>
-                                <td class="max-w-[220px] px-4 py-3" title="{{ $item['campaign'] }}">{{ \Illuminate\Support\Str::limit($item['campaign'], 45) }}</td>
-                                <td class="whitespace-nowrap px-4 py-3">{{ $item['tanggal_posting'] }}</td>
-                                <td class="px-4 py-3 text-right">{{ number_format($item['reach'], 0, ',', '.') }}</td>
-                                <td class="px-4 py-3 text-right">{{ number_format($item['impressions'], 0, ',', '.') }}</td>
-                                <td class="px-4 py-3 text-right">{{ number_format($item['clicks'], 0, ',', '.') }}</td>
-                                <td class="px-4 py-3 text-right">{{ number_format($item['engagement'], 0, ',', '.') }}</td>
-                                <td class="whitespace-nowrap px-5 py-3 text-right">{{ ($paidCurrency ?? 'IDR').' '.number_format($item['spend'], 0, ',', '.') }}</td>
-                            </tr>
-                        @empty
-                            <tr><td colspan="8" class="px-5 py-14 text-center text-sm text-zinc-500">Belum ada iklan {{ $platform }} pada periode yang dipilih.</td></tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        </div>
-
-        <div data-paid-analysis-panel="metrics" hidden style="display:none;" class="space-y-4">
-            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                @foreach($paidMetricDefinitions as $fieldKey => $metric)
-                    <article data-paid-field="{{ $fieldKey }}" class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-                        <p class="text-[10px] font-bold uppercase tracking-wider text-zinc-400">{{ $metric[0] }}</p>
-                        <p class="mt-2 break-words text-2xl font-semibold text-zinc-950">{{ $metric[1] }}</p>
-                    </article>
-                @endforeach
-            </div>
-
-            <div class="grid gap-4 xl:grid-cols-2">
-                <div class="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
-                    <div class="border-b border-zinc-200 px-5 py-4">
-                        <h3 class="text-base font-semibold text-zinc-950">Daftar iklan</h3>
-                        <p class="mt-1 text-xs text-zinc-500">Data iklan Paid {{ $platform }} pada periode terpilih.</p>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-[620px] w-full text-left text-xs">
-                            <thead class="bg-zinc-50 text-[10px] uppercase tracking-wider text-zinc-500">
-                                <tr><th class="px-5 py-3">Iklan</th><th class="px-4 py-3">Tanggal</th><th class="px-4 py-3 text-right">Reach</th><th class="px-5 py-3 text-right">Impresi</th></tr>
-                            </thead>
-                            <tbody class="divide-y divide-zinc-100">
-                                @forelse($paidItems as $item)
-                                    <tr class="text-zinc-700 hover:bg-zinc-50">
-                                        <td class="max-w-[250px] px-5 py-3 font-semibold text-zinc-950" title="{{ $item['judul'] }}">{{ \Illuminate\Support\Str::limit($item['judul'], 55) }}</td>
-                                        <td class="whitespace-nowrap px-4 py-3">{{ $item['tanggal_posting'] }}</td>
-                                        <td class="px-4 py-3 text-right">{{ number_format($item['reach'], 0, ',', '.') }}</td>
-                                        <td class="px-5 py-3 text-right">{{ number_format($item['impressions'], 0, ',', '.') }}</td>
-                                    </tr>
-                                @empty
-                                    <tr><td colspan="4" class="px-5 py-14 text-center text-sm text-zinc-500">Belum ada data iklan.</td></tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="rounded-2xl border border-zinc-200 bg-white shadow-sm">
-                    <div class="border-b border-zinc-200 px-5 py-4">
-                        <h3 class="text-base font-semibold text-zinc-950">Reach vs Impresi</h3>
-                        <p class="mt-1 text-xs text-zinc-500">Perbandingan performa setiap iklan Paid {{ $platform }}.</p>
-                    </div>
-                    <div class="relative p-5" style="height: 390px;">
-                        <canvas data-paid-metrics-chart></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-    @endif
+    <div class="meta-panel meta-table-panel"><div class="meta-panel-head"><div><h3>Content Performance &amp; Analysis</h3><p>Data performa Paid {{ $platform }}.</p></div></div><div class="meta-table-wrap"><table class="meta-table"><thead><tr><th>No</th><th>Iklan</th><th>Campaign</th><th>Tanggal</th><th>Reach</th><th>Impresi</th><th>Klik</th><th>Engagement</th><th>Spend</th></tr></thead><tbody>
+    @forelse($paidItems as $item)<tr><td>{{ $loop->iteration }}</td><td class="title" title="{{ $item['judul'] }}">{{ \Illuminate\Support\Str::limit($item['judul'],60) }}</td><td title="{{ $item['campaign'] }}">{{ \Illuminate\Support\Str::limit($item['campaign'],45) }}</td><td>{{ $item['tanggal_posting'] }}</td><td>{{ $number($item['reach']) }}</td><td>{{ $number($item['impressions']) }}</td><td>{{ $number($item['clicks']) }}</td><td>{{ $number($item['engagement']) }}</td><td>{{ $money($item['spend']) }}</td></tr>@empty<tr><td colspan="9" class="meta-empty">Belum ada iklan {{ $platform }} pada periode yang dipilih.</td></tr>@endforelse
+    </tbody></table></div></div>
+@endif
 </section>
 
-<style>[data-paid-analysis-panel][hidden], [data-paid-field][hidden] { display: none !important; }</style>
+<style>[data-paid-field][hidden]{display:none!important}.paid-field-menu{width:430px;max-width:min(430px,calc(100vw - 32px))}.paid-field-options{max-height:330px;grid-template-columns:repeat(2,minmax(0,1fr));overflow-y:auto;padding-right:4px}</style>
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const paidChartData = @json($paidItems->values());
-    const paidChartCanvas = document.querySelector('[data-paid-metrics-chart]');
-    let paidMetricsChart = null;
-
-    function renderPaidMetricsChart() {
-        if (!paidChartCanvas || typeof Chart === 'undefined') return;
-        if (paidMetricsChart) {
-            paidMetricsChart.resize();
-            return;
-        }
-        paidMetricsChart = new Chart(paidChartCanvas.getContext('2d'), {
-            type: 'bar',
-            data: {
-                labels: paidChartData.map(item => {
-                    const title = item.judul || item.tanggal_posting || 'Iklan';
-                    return title.length > 28 ? `${title.slice(0, 28)}…` : title;
-                }),
-                datasets: [
-                    { label: 'Reach', data: paidChartData.map(item => Number(item.reach || 0)), backgroundColor: '#4f46e5', borderRadius: 5, order: 2 },
-                    { label: 'Impresi', data: paidChartData.map(item => Number(item.impressions || 0)), type: 'line', borderColor: '#fb7185', backgroundColor: 'transparent', tension: .35, order: 1 }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: { y: { beginAtZero: true } },
-                plugins: { legend: { position: 'bottom' } }
-            }
-        });
-    }
-
-    function activatePaidAnalysis(active) {
-        document.querySelectorAll('[data-paid-analysis-panel]').forEach(function (panel) {
-            const selected = panel.dataset.paidAnalysisPanel === active;
-            panel.hidden = !selected;
-            panel.style.display = selected ? '' : 'none';
-        });
-        document.querySelectorAll('[data-paid-analysis-tab]').forEach(function (tab) {
-            const selected = tab.dataset.paidAnalysisTab === active;
-            tab.setAttribute('aria-selected', selected ? 'true' : 'false');
-            tab.classList.toggle('bg-zinc-950', selected);
-            tab.classList.toggle('text-white', selected);
-            tab.classList.toggle('text-zinc-500', !selected);
-        });
-        if (active === 'metrics') {
-            requestAnimationFrame(renderPaidMetricsChart);
-        }
-    }
-
-    activatePaidAnalysis('descriptive');
-    document.querySelectorAll('[data-paid-analysis-tab]').forEach(function (button) {
-        button.addEventListener('click', function () {
-            activatePaidAnalysis(button.dataset.paidAnalysisTab);
-            window.dispatchEvent(new Event('resize'));
-        });
-    });
-
-    const maxPaidFields = 9;
-    const paidStorageKey = 'meta-analysis-paid-fields-{{ strtolower($platform) }}';
-    const paidDefaults = ['ads', 'reach', 'impressions', 'clicks', 'engagement', 'spend'];
-    const paidCards = [...document.querySelectorAll('[data-paid-field]')];
-    const paidChecks = [...document.querySelectorAll('[data-paid-field-checkbox]')];
-    const paidMenu = document.querySelector('[data-paid-field-menu]');
-    const paidToggle = document.querySelector('[data-paid-field-toggle]');
-    const paidCount = document.querySelector('[data-paid-field-count]');
-    let selectedPaidFields;
-    try { selectedPaidFields = JSON.parse(localStorage.getItem(paidStorageKey)); } catch (error) { selectedPaidFields = null; }
-    if (!Array.isArray(selectedPaidFields) || !selectedPaidFields.length) selectedPaidFields = paidDefaults;
-    selectedPaidFields = selectedPaidFields.slice(0, maxPaidFields);
-
-    function applyPaidFields() {
-        paidCards.forEach(card => card.hidden = !selectedPaidFields.includes(card.dataset.paidField));
-        paidChecks.forEach(check => {
-            check.checked = selectedPaidFields.includes(check.value);
-            check.disabled = !check.checked && selectedPaidFields.length >= maxPaidFields;
-        });
-        if (paidCount) paidCount.textContent = `${selectedPaidFields.length}/${maxPaidFields}`;
-    }
-
-    paidToggle?.addEventListener('click', function (event) {
-        event.stopPropagation();
-        paidMenu.hidden = !paidMenu.hidden;
-    });
-    paidChecks.forEach(check => check.addEventListener('change', function () {
-        const next = paidChecks.filter(item => item.checked).map(item => item.value);
-        if (!next.length || next.length > maxPaidFields) {
-            check.checked = !check.checked;
-            return;
-        }
-        selectedPaidFields = next;
-        localStorage.setItem(paidStorageKey, JSON.stringify(selectedPaidFields));
-        applyPaidFields();
-    }));
-    document.addEventListener('click', function (event) {
-        if (paidMenu && !event.target.closest('[data-paid-field-toggle]') && !event.target.closest('[data-paid-field-menu]')) paidMenu.hidden = true;
-    });
-    localStorage.setItem(paidStorageKey, JSON.stringify(selectedPaidFields));
-    applyPaidFields();
+document.addEventListener('DOMContentLoaded',function(){
+const raw=@json($paidItems->values()),definitions=@json(collect($paidMetricDefinitions)->map(fn($metric)=>['label'=>$metric[0],'unit'=>$metric[2]])),max=9,key='meta-analysis-paid-fields-{{ strtolower($platform) }}-v2',defaults=['ads','reach','impressions','clicks','ctr','cpc','engagement','spend'],cards=[...document.querySelectorAll('[data-paid-field]')],checks=[...document.querySelectorAll('[data-paid-field-checkbox]')],menu=document.querySelector('[data-paid-field-menu]'),toggle=document.querySelector('[data-paid-field-toggle]'),count=document.querySelector('[data-paid-field-count]'),canvas=document.querySelector('[data-paid-metrics-chart]'),colors=['#18181b','#64748b','#4f46e5','#0f766e','#ea580c','#be123c','#7e22ce','#0369a1','#65a30d'];let chart,selected;try{selected=JSON.parse(localStorage.getItem(key))}catch(e){selected=null}if(!Array.isArray(selected)||!selected.length)selected=defaults;selected=selected.filter(field=>definitions[field]).slice(0,max);
+function value(item,field){if(field==='ads')return 1;if(field==='ctr')return Number(item.impressions)>0?Number(item.clicks||0)/Number(item.impressions)*100:0;if(field==='unique_ctr')return Number(item.reach)>0?Number(item.unique_clicks||0)/Number(item.reach)*100:0;if(field==='inline_link_click_ctr')return Number(item.impressions)>0?Number(item.inline_link_clicks||0)/Number(item.impressions)*100:0;return Number(item[field]||0)}
+function datasets(){return selected.map((field,index)=>({label:definitions[field].label,data:raw.map(item=>value(item,field)),borderColor:colors[index],backgroundColor:index===0?'rgba(24,24,27,.08)':'transparent',fill:index===0,tension:.35,pointRadius:2,yAxisID:definitions[field].unit==='currency'?'yCurrency':definitions[field].unit==='percent'?'yPercent':'y'}))}
+function render(){if(!canvas||typeof Chart==='undefined')return;const labels=raw.map(item=>{const title=item.judul||item.tanggal_posting||'Iklan';return title.length>22?`${title.slice(0,22)}…`:title});if(chart){chart.data.labels=labels;chart.data.datasets=datasets();chart.update();chart.resize();return}chart=new Chart(canvas.getContext('2d'),{type:'line',data:{labels,datasets:datasets()},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'bottom'}},scales:{x:{grid:{display:false},ticks:{minRotation:0,maxRotation:0,autoSkip:true,maxTicksLimit:10}},y:{beginAtZero:true,position:'left',grid:{color:'#f1f5f9'}},yCurrency:{beginAtZero:true,position:'right',grid:{drawOnChartArea:false},display:'auto'},yPercent:{beginAtZero:true,position:'right',grid:{drawOnChartArea:false},display:'auto'}}}})}
+function apply(){cards.forEach(card=>card.hidden=!selected.includes(card.dataset.paidField));checks.forEach(check=>{check.checked=selected.includes(check.value);check.disabled=!check.checked&&selected.length>=max});if(count)count.textContent=`${selected.length}/${max}`;render()}
+toggle?.addEventListener('click',event=>{event.stopPropagation();menu.hidden=!menu.hidden});checks.forEach(check=>check.addEventListener('change',()=>{const next=checks.filter(item=>item.checked).map(item=>item.value);if(!next.length||next.length>max){check.checked=!check.checked;return}selected=next;localStorage.setItem(key,JSON.stringify(selected));apply()}));document.addEventListener('click',event=>{if(menu&&!event.target.closest('[data-paid-field-menu]')&&!event.target.closest('[data-paid-field-toggle]'))menu.hidden=true});window.addEventListener('analysis:source-changed',event=>{if(event.detail?.active==='paid')requestAnimationFrame(render)});localStorage.setItem(key,JSON.stringify(selected));apply();
 });
 </script>

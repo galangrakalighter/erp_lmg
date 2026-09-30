@@ -306,12 +306,13 @@ class HCDailyController extends Controller
                         ->whereDate('task.tanggal_deadline', $today);
                 });
 
-                // Pemilik tetap perlu melihat pekerjaan pribadi yang sudah
-                // lewat deadline, termasuk yang sebelumnya telah memiliki jam.
+                // Status 7 = overdue yang belum dikirim. Pemilik tetap
+                // melihatnya di Task Pool, termasuk jika sebelumnya memiliki
+                // jam kerja.
                 if ($isViewingOwnWorkspace) {
                     $query->orWhere(function ($overdue) use ($today) {
                         $overdue->whereDate('task.tanggal_deadline', '<', $today)
-                            ->whereNotIn('task.status', [4, 5]);
+                            ->where('task.status', 7);
                     });
                 }
             })
@@ -366,15 +367,9 @@ class HCDailyController extends Controller
             ->when($request->filled('user_id'), function ($query) use ($selectedUserId) {
                 $query->where('task.pic', $selectedUserId);
             })
-            ->where(function ($query) use ($today) {
-                $query->whereIn('task.status', [3, 9])
-                    // Overdue bawahan tetap terlihat oleh atasannya di tab
-                    // Approval, walaupun belum dikirim untuk approval.
-                    ->orWhere(function ($overdue) use ($today) {
-                        $overdue->whereDate('task.tanggal_deadline', '<', $today)
-                            ->whereNotIn('task.status', [4, 5]);
-                    });
-            })
+            // Status 9 = overdue yang sudah dikirim dan menunggu approval.
+            // Status 7 tidak masuk ke sini karena bukti belum dikirim.
+            ->whereIn('task.status', [3, 9])
             ->select('task.*', 'users.email as pic_email',
                 'produk_client.nama as project_name', 'kpi.nama_kpi as kpi_name')
             ->orderBy('task.tanggal_mulai')
@@ -415,11 +410,11 @@ class HCDailyController extends Controller
             'tasks' => $tasks,
             'approval_tasks' => $approvalTasks,
             'summary' => [
-                'scheduled' => $tasks->filter(fn (array $task) => $task['start_time'] && ! $task['is_overdue'])->count(),
-                'pool' => $tasks->filter(fn (array $task) => ! $task['start_time'] || $task['is_overdue'])->count(),
+                'scheduled' => $tasks->filter(fn (array $task) => $task['start_time'] && (int) $task['status'] !== 7)->count(),
+                'pool' => $tasks->filter(fn (array $task) => ! $task['start_time'] || (int) $task['status'] === 7)->count(),
                 'running' => $tasks->where('status', 1)->count(),
                 'approval' => $approvalTasks->count(),
-                'pool_minutes' => $tasks->filter(fn (array $task) => ! $task['start_time'] || $task['is_overdue'])->sum('minutes'),
+                'pool_minutes' => $tasks->filter(fn (array $task) => ! $task['start_time'] || (int) $task['status'] === 7)->sum('minutes'),
             ],
         ]);
     }

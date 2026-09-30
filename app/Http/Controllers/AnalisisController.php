@@ -11,6 +11,7 @@ use App\Services\YoutubeService as Youtube;
 use App\Services\FacebookService as Facebook;
 use App\Services\MetaAdsService;
 use App\Services\AnalysisSnapshotService;
+use App\Services\ThreadsService;
 
 class AnalisisController extends Controller
 {
@@ -19,13 +20,15 @@ class AnalisisController extends Controller
     protected $youtube;
     protected $metaAds;
     protected $analysisSnapshots;
-    public function __construct(ServicesInstagramService $instagram, Facebook $facebook, Youtube $youtube, MetaAdsService $metaAds, AnalysisSnapshotService $analysisSnapshots)
+    protected $threads;
+    public function __construct(ServicesInstagramService $instagram, Facebook $facebook, Youtube $youtube, MetaAdsService $metaAds, AnalysisSnapshotService $analysisSnapshots, ThreadsService $threads)
     {
         $this->instagram = $instagram;
         $this->facebook = $facebook;
         $this->youtube = $youtube;
         $this->metaAds = $metaAds;
         $this->analysisSnapshots = $analysisSnapshots;
+        $this->threads = $threads;
     }
     public function index($produk, $platform, Request $request)
     {
@@ -90,8 +93,10 @@ class AnalisisController extends Controller
         $paidPosts = [];
         $paidError = null;
         $paidCurrency = 'IDR';
-        $adsConnection = $produkBaru->metaAdsConnection();
-        if (! $adsConnection) {
+        $adsConnection = strtolower($platform) === 'threads' ? null : $produkBaru->metaAdsConnection();
+        if (strtolower($platform) === 'threads') {
+            $paidError = 'Analisis Paid tidak tersedia untuk Threads.';
+        } elseif (! $adsConnection) {
             $paidError = 'Pilih akun iklan Meta pada Edit Client untuk menampilkan konten Paid.';
         } elseif (! in_array('ads_read', $adsConnection['scopes'] ?? [], true)) {
             $paidError = 'Koneksi Meta belum memiliki izin ads_read. Hubungkan ulang Meta setelah izin tersebut ditambahkan.';
@@ -269,6 +274,51 @@ class AnalisisController extends Controller
                     'paidCurrency',
                     'trendComparisons',
                     'contentPlanItems',
+                ));
+                break;
+            case 'Threads':
+                if (! $platformToken || ! $platformAccountId) {
+                    return response()->view('analisis.connection-error', [
+                        'platform' => 'Threads',
+                        'message' => 'Akun Threads belum terhubung. Buka Dashboard CMS → Client → Edit, lalu hubungkan akun Threads.',
+                    ], 422);
+                }
+
+                $threadsResult = $this->threads->getAnalysis(
+                    $platformToken,
+                    $platformAccountId,
+                    $since,
+                    $until,
+                    $fetch,
+                );
+                $posts = $threadsResult['data'] ?? [];
+                $threadsFollowers = $threadsResult['followers'] ?? 0;
+                $threadsError = $threadsResult['error'] ?? null;
+                $threadsItems = collect($posts);
+                $threadsEngagement = $threadsItems->sum(fn ($item) =>
+                    ($item['likes'] ?? 0) + ($item['replies'] ?? 0) + ($item['reposts'] ?? 0)
+                    + ($item['quotes'] ?? 0) + ($item['shares'] ?? 0)
+                );
+                $trendComparisons = $this->captureTrends($produkBaru->id, 'Threads', [
+                    'posts' => $threadsItems->count(),
+                    'reach' => $threadsItems->sum('views'),
+                    'impressions' => $threadsItems->sum('views'),
+                    'engagement' => $threadsEngagement,
+                    'likes' => $threadsItems->sum('likes'),
+                    'comments' => $threadsItems->sum('replies'),
+                    'shares' => $threadsItems->sum('shares'),
+                ], [], $paidError, ! $fetch);
+
+                return view('analisis.threads', compact(
+                    'title',
+                    'posts',
+                    'threadsFollowers',
+                    'threadsError',
+                    'contentPlanItems',
+                    'paidPosts',
+                    'paidError',
+                    'paidCurrency',
+                    'trendComparisons',
                 ));
                 break;
             case 'Youtube':

@@ -281,6 +281,12 @@ class HCDailyController extends Controller
             $selectedUserId = (int) $currentUser->id;
         }
 
+        // Task overdue hanya kembali ke Task Pool untuk pemiliknya sendiri.
+        // Saat atasan memilih anggota tim, task overdue anggota tersebut
+        // ditampilkan melalui Approval Task agar tidak tercampur dengan
+        // backlog pribadi atasan.
+        $isViewingOwnWorkspace = $selectedUserId === (int) $currentUser->id;
+
         $selectedDivisionName = DB::table('user_division')
             ->join('roles', 'roles.id', '=', 'user_division.role_id')
             ->join('divisions', 'divisions.id', '=', 'roles.division_id')
@@ -294,11 +300,21 @@ class HCDailyController extends Controller
             ->leftJoin('produk_client', 'produk_client.id', '=', 'task.project')
             ->leftJoin('kpi', 'kpi.id', '=', 'task.id_kpi')
             ->where('task.pic', $selectedUserId)
-            // Workspace Hari Ini hanya berisi pekerjaan harian yang seluruh
-            // rentangnya berada pada hari ini. Task dari hari sebelumnya yang
-            // belum selesai ditangani melalui tab Approval, bukan kanban hari ini.
-            ->whereDate('task.tanggal_mulai', $today)
-            ->whereDate('task.tanggal_deadline', $today)
+            ->where(function ($query) use ($today, $isViewingOwnWorkspace) {
+                $query->where(function ($todayTask) use ($today) {
+                    $todayTask->whereDate('task.tanggal_mulai', $today)
+                        ->whereDate('task.tanggal_deadline', $today);
+                });
+
+                // Pemilik tetap perlu melihat pekerjaan pribadi yang sudah
+                // lewat deadline, termasuk yang sebelumnya telah memiliki jam.
+                if ($isViewingOwnWorkspace) {
+                    $query->orWhere(function ($overdue) use ($today) {
+                        $overdue->whereDate('task.tanggal_deadline', '<', $today)
+                            ->whereNotIn('task.status', [4, 5]);
+                    });
+                }
+            })
             ->where(function ($query) use ($today) {
                 $query->where(function ($scheduled) use ($today) {
                     $scheduled->whereNotNull('task.jam_mulai')
@@ -334,6 +350,12 @@ class HCDailyController extends Controller
                     ->where('parent_id', $currentUser->id)
                     ->pluck('user_id'));
 
+        // Task sendiri tidak pernah menjadi item Approval, termasuk untuk
+        // admin. Task overdue pribadi tetap hanya berada di Task Pool.
+        $approvalUserIds = $approvalUserIds
+            ->reject(fn ($userId) => (int) $userId === (int) $currentUser->id)
+            ->values();
+
         $approvalTasks = Task::query()
             ->leftJoin('users', 'users.id', '=', 'task.pic')
             ->leftJoin('produk_client', 'produk_client.id', '=', 'task.project')
@@ -344,7 +366,15 @@ class HCDailyController extends Controller
             ->when($request->filled('user_id'), function ($query) use ($selectedUserId) {
                 $query->where('task.pic', $selectedUserId);
             })
-            ->whereIn('task.status', [3, 9])
+            ->where(function ($query) use ($today) {
+                $query->whereIn('task.status', [3, 9])
+                    // Overdue bawahan tetap terlihat oleh atasannya di tab
+                    // Approval, walaupun belum dikirim untuk approval.
+                    ->orWhere(function ($overdue) use ($today) {
+                        $overdue->whereDate('task.tanggal_deadline', '<', $today)
+                            ->whereNotIn('task.status', [4, 5]);
+                    });
+            })
             ->select('task.*', 'users.email as pic_email',
                 'produk_client.nama as project_name', 'kpi.nama_kpi as kpi_name')
             ->orderBy('task.tanggal_mulai')
@@ -352,7 +382,7 @@ class HCDailyController extends Controller
             ->get()
             ->map(function ($task) use ($today) {
                 $formatted = $this->formatDailyTask($task, $today);
-                $formatted['can_review'] = true;
+                $formatted['can_review'] = in_array((int) $task->status, [3, 9], true);
                 return $formatted;
             });
 
@@ -385,11 +415,11 @@ class HCDailyController extends Controller
             'tasks' => $tasks,
             'approval_tasks' => $approvalTasks,
             'summary' => [
-                'scheduled' => $tasks->whereNotNull('start_time')->count(),
-                'pool' => $tasks->whereNull('start_time')->count(),
+                'scheduled' => $tasks->filter(fn (array $task) => $task['start_time'] && ! $task['is_overdue'])->count(),
+                'pool' => $tasks->filter(fn (array $task) => ! $task['start_time'] || $task['is_overdue'])->count(),
                 'running' => $tasks->where('status', 1)->count(),
                 'approval' => $approvalTasks->count(),
-                'pool_minutes' => $tasks->whereNull('start_time')->sum('minutes'),
+                'pool_minutes' => $tasks->filter(fn (array $task) => ! $task['start_time'] || $task['is_overdue'])->sum('minutes'),
             ],
         ]);
     }

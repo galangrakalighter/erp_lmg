@@ -189,6 +189,13 @@ class AnalisisController extends Controller
                     $insightsRaw[0][0]['followers_gained'] = 0;
                     $insightsRaw[1]['Followers_sebulan'] = 0;
                 }
+                $audienceBreakdowns = $this->instagram->getAudienceBreakdowns($platformToken, $platformAccountId);
+                $audienceBreakdowns['engagement_type'] = [
+                    'Likes' => $totalLikes,
+                    'Comments' => $totalComments,
+                    'Saves' => array_sum(array_column($posts, 'saved')),
+                    'Shares' => array_sum(array_column($posts, 'shares')),
+                ];
                 $trendComparisons = $this->captureTrends($produkBaru->id, 'Instagram', [
                     'posts' => count($posts),
                     'reach' => $totalReach,
@@ -222,6 +229,7 @@ class AnalisisController extends Controller
                     'paidError',
                     'paidCurrency',
                     'trendComparisons'
+                    ,'audienceBreakdowns'
                 ));
                 break;
             case 'Facebook':
@@ -245,6 +253,10 @@ class AnalisisController extends Controller
                 $maxShares = $dataBaru ? max(array_column($dataBaru, 'shares')) : 0;
                 $maxEngangement = $dataBaru ? max(array_column($dataBaru, 'engagement')) : 0;
                 $jumlah_follower = $data['followers'][0] ?? 0;
+                $audienceBreakdowns = $this->facebook->getAudienceBreakdowns($platformToken, $platformAccountId, $since, $until);
+                if (empty($audienceBreakdowns['reaction_type'])) {
+                    $audienceBreakdowns['reaction_type'] = ['Reactions' => $totalReaction];
+                }
                 $trendComparisons = $this->captureTrends($produkBaru->id, 'Facebook', [
                     'posts' => count($dataBaru),
                     'reach' => $totalReach,
@@ -274,6 +286,7 @@ class AnalisisController extends Controller
                     'paidCurrency',
                     'trendComparisons',
                     'contentPlanItems',
+                    'audienceBreakdowns',
                 ));
                 break;
             case 'Threads':

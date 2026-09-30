@@ -8,6 +8,66 @@ class FacebookService
 {
     protected string $token;
 
+    public function getAudienceBreakdowns($token, $pageId, $since = null, $until = null): array
+    {
+        $result = ['gender' => [], 'age' => [], 'country' => [], 'city' => [], 'reaction_type' => []];
+        if (! filled($token) || ! filled($pageId)) {
+            return $result;
+        }
+
+        $version = config('services.meta.graph_version', 'v23.0');
+        $url = "https://graph.facebook.com/{$version}/{$pageId}/insights";
+        foreach (['gender_age' => 'page_fans_gender_age', 'country' => 'page_fans_country', 'city' => 'page_fans_city'] as $key => $metric) {
+            try {
+                $response = Http::timeout(45)->withOptions(['verify' => false])->get($url, [
+                    'metric' => $metric,
+                    'period' => 'lifetime',
+                    'access_token' => $token,
+                ]);
+                if (! $response->successful()) {
+                    Log::info('Breakdown audiens Facebook tidak tersedia.', ['metric' => $metric, 'error' => $response->json('error.message')]);
+                    continue;
+                }
+                $values = (array) data_get($response->json(), 'data.0.values.0.value', []);
+                if ($key === 'gender_age') {
+                    foreach ($values as $label => $value) {
+                        [$gender, $age] = array_pad(explode('.', (string) $label, 2), 2, 'Tidak diketahui');
+                        $result['gender'][$gender] = ($result['gender'][$gender] ?? 0) + (float) $value;
+                        $result['age'][$age] = ($result['age'][$age] ?? 0) + (float) $value;
+                    }
+                } else {
+                    $values = array_map(fn ($value) => (float) $value, $values);
+                    arsort($values);
+                    $result[$key] = array_slice($values, 0, 10, true);
+                }
+            } catch (\Throwable $exception) {
+                Log::info('Breakdown audiens Facebook gagal dimuat.', ['metric' => $metric, 'message' => $exception->getMessage()]);
+            }
+        }
+
+        try {
+            $response = Http::timeout(45)->withOptions(['verify' => false])->get($url, array_filter([
+                'metric' => 'page_actions_post_reactions_total',
+                'period' => 'day',
+                'since' => $since,
+                'until' => $until,
+                'access_token' => $token,
+            ], fn ($value) => $value !== null));
+            foreach ($response->successful() ? $response->json('data.0.values', []) : [] as $day) {
+                foreach ((array) ($day['value'] ?? []) as $type => $value) {
+                    $result['reaction_type'][$type] = ($result['reaction_type'][$type] ?? 0) + (float) $value;
+                }
+            }
+        } catch (\Throwable $exception) {
+            Log::info('Reaction Type Facebook gagal dimuat.', ['message' => $exception->getMessage()]);
+        }
+
+        arsort($result['gender']);
+        arsort($result['age']);
+        arsort($result['reaction_type']);
+        return $result;
+    }
+
     /**
      * Mengambil media dengan penambahan Timeout 120 detik
      */

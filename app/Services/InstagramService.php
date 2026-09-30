@@ -10,6 +10,61 @@ class InstagramService
 {
     protected string $token;
 
+    public function getAudienceBreakdowns($token = null, $accountId = null): array
+    {
+        $empty = ['gender' => [], 'age' => [], 'country' => [], 'city' => []];
+        if (! filled($token) || ! filled($accountId)) {
+            return $empty;
+        }
+
+        $version = config('services.meta.graph_version', 'v23.0');
+        $url = "https://graph.facebook.com/{$version}/{$accountId}/insights";
+        $result = $empty;
+
+        foreach (array_keys($empty) as $breakdown) {
+            try {
+                $response = Http::timeout(45)->withOptions(['verify' => false])->get($url, [
+                    'metric' => 'follower_demographics',
+                    'period' => 'lifetime',
+                    'metric_type' => 'total_value',
+                    'breakdown' => $breakdown,
+                    'access_token' => $token,
+                ]);
+                if ($response->successful()) {
+                    $result[$breakdown] = $this->parseDemographicBreakdown($response->json('data.0', []));
+                } else {
+                    Log::info('Breakdown audiens Instagram tidak tersedia.', ['breakdown' => $breakdown, 'error' => $response->json('error.message')]);
+                }
+            } catch (\Throwable $exception) {
+                Log::info('Breakdown audiens Instagram gagal dimuat.', ['breakdown' => $breakdown, 'message' => $exception->getMessage()]);
+            }
+        }
+
+        return $result;
+    }
+
+    private function parseDemographicBreakdown(array $metric): array
+    {
+        $output = [];
+        foreach (data_get($metric, 'total_value.breakdowns.0.results', []) as $row) {
+            $label = implode(' / ', array_filter((array) ($row['dimension_values'] ?? []), 'strlen'));
+            if ($label !== '') {
+                $output[$label] = (float) ($row['value'] ?? 0);
+            }
+        }
+
+        if ($output === []) {
+            foreach ((array) data_get($metric, 'values.0.value', []) as $label => $value) {
+                if (is_numeric($value)) {
+                    $output[(string) $label] = (float) $value;
+                }
+            }
+        }
+
+        arsort($output);
+        return array_slice($output, 0, 10, true);
+    }
+
     /**
      * Mengambil media dengan penambahan Timeout 120 detik
      */

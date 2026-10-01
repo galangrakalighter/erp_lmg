@@ -32,7 +32,11 @@ class TikTokService
             $profile = data_get($profilePayload, 'data.user', []);
 
             if (! $scopes->contains('video.list')) {
-                return ['data' => [], 'profile' => $profile, 'error' => 'Scope video.list belum diberikan. Hubungkan ulang TikTok setelah scope tersebut aktif.'];
+                return [
+                    'data' => [],
+                    'profile' => $profile,
+                    'error' => 'Izin video.list belum diberikan pada token ini. Tambahkan scope video.list pada produk TikTok API di Developer Portal, lalu putuskan dan hubungkan ulang akun TikTok.',
+                ];
             }
 
             $videos = [];

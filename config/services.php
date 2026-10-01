@@ -60,7 +60,7 @@ return [
         'client_key' => env('TIKTOK_CLIENT_KEY'),
         'client_secret' => env('TIKTOK_CLIENT_SECRET'),
         'redirect_uri' => env('TIKTOK_REDIRECT_URI'),
-        'scopes' => env('TIKTOK_SCOPES', 'user.info.basic,user.info.profile,user.info.stats,video.list'),
+        'scopes' => env('TIKTOK_SCOPES', 'user.info.basic,video.list'),
     ],
 
     'instagram' => [

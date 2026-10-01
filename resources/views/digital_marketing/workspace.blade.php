@@ -2,8 +2,17 @@
 
 @section('content')
 <style>
-    .workspace-tab.bg-zinc-950 {
+    .workspace-tab.is-active,
+    .workspace-tab.is-active:hover,
+    .workspace-tab.is-active:focus,
+    .workspace-tab.is-active:focus-visible {
+        background: #18181b !important;
         color: #ffffff !important;
+        opacity: 1 !important;
+    }
+    .workspace-tab:not(.is-active):hover {
+        background: #f4f4f5 !important;
+        color: #18181b !important;
     }
 </style>
 <main class="min-h-screen bg-[#f5f5f3] px-4 py-5 sm:px-6 lg:px-8">
@@ -119,8 +128,12 @@ document.addEventListener('DOMContentLoaded', function () {
         const platform = button.dataset.needsPlatform === '1' ? (platformSelect?.value || '') : 'global';
         const cacheKey = `${button.dataset.workspaceTab}:${platform}`;
 
-        tabs.forEach(tab => tab.classList.remove('bg-zinc-950', 'text-white'));
-        button.classList.add('bg-zinc-950', 'text-white');
+        tabs.forEach(tab => {
+            tab.classList.remove('is-active', 'bg-zinc-950', 'text-white');
+            tab.setAttribute('aria-selected', 'false');
+        });
+        button.classList.add('is-active', 'bg-zinc-950', 'text-white');
+        button.setAttribute('aria-selected', 'true');
         panelCache.forEach(panel => panel.classList.add('hidden'));
         empty.classList.add('hidden');
 

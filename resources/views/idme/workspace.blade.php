@@ -2,7 +2,10 @@
 
 @section('content')
 <style>
-    .idme-division-tab.is-active,.idme-content-tab.is-active{background:#161616!important;color:#fff!important}
+    .idme-division-tab.is-active,.idme-content-tab.is-active,
+    .idme-division-tab.is-active:hover,.idme-content-tab.is-active:hover,
+    .idme-division-tab.is-active:focus-visible,.idme-content-tab.is-active:focus-visible{background:#161616!important;color:#fff!important}
+    .idme-division-tab:not(.is-active):hover,.idme-content-tab:not(.is-active):hover{background:#f4f4f5!important;color:#18181b!important}
 </style>
 <main class="min-h-screen bg-[#f5f5f3] px-4 py-5 sm:px-6 lg:px-8">
     <div class="mx-auto max-w-[1800px] space-y-5">

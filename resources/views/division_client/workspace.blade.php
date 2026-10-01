@@ -1,7 +1,12 @@
 @extends('layout.app')
 
 @section('content')
-<style>.division-workspace-tab.is-active{background:#161616!important;color:#fff!important}</style>
+<style>
+.division-workspace-tab.is-active,
+.division-workspace-tab.is-active:hover,
+.division-workspace-tab.is-active:focus-visible{background:#161616!important;color:#fff!important}
+.division-workspace-tab:not(.is-active):hover{background:#f4f4f5!important;color:#18181b!important}
+</style>
 <main class="min-h-screen bg-[#f5f5f3] px-4 py-5 sm:px-6 lg:px-8">
     <div class="mx-auto max-w-[1800px] space-y-5">
         <header class="rounded-[28px] bg-zinc-950 px-6 py-7 text-white shadow-xl shadow-zinc-950/10 sm:px-8">

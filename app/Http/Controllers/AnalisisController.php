@@ -12,6 +12,7 @@ use App\Services\FacebookService as Facebook;
 use App\Services\MetaAdsService;
 use App\Services\AnalysisSnapshotService;
 use App\Services\ThreadsService;
+use App\Services\TikTokService;
 
 class AnalisisController extends Controller
 {
@@ -21,7 +22,8 @@ class AnalisisController extends Controller
     protected $metaAds;
     protected $analysisSnapshots;
     protected $threads;
-    public function __construct(ServicesInstagramService $instagram, Facebook $facebook, Youtube $youtube, MetaAdsService $metaAds, AnalysisSnapshotService $analysisSnapshots, ThreadsService $threads)
+    protected $tiktok;
+    public function __construct(ServicesInstagramService $instagram, Facebook $facebook, Youtube $youtube, MetaAdsService $metaAds, AnalysisSnapshotService $analysisSnapshots, ThreadsService $threads, TikTokService $tiktok)
     {
         $this->instagram = $instagram;
         $this->facebook = $facebook;
@@ -29,6 +31,7 @@ class AnalisisController extends Controller
         $this->metaAds = $metaAds;
         $this->analysisSnapshots = $analysisSnapshots;
         $this->threads = $threads;
+        $this->tiktok = $tiktok;
     }
     public function index($produk, $platform, Request $request)
     {
@@ -93,9 +96,10 @@ class AnalisisController extends Controller
         $paidPosts = [];
         $paidError = null;
         $paidCurrency = 'IDR';
-        $adsConnection = strtolower($platform) === 'threads' ? null : $produkBaru->metaAdsConnection();
-        if (strtolower($platform) === 'threads') {
-            $paidError = 'Analisis Paid tidak tersedia untuk Threads.';
+        $organicOnlyPlatforms = ['threads', 'tiktok'];
+        $adsConnection = in_array(strtolower($platform), $organicOnlyPlatforms, true) ? null : $produkBaru->metaAdsConnection();
+        if (in_array(strtolower($platform), $organicOnlyPlatforms, true)) {
+            $paidError = 'Analisis Paid tidak tersedia untuk '.$platform.'.';
         } elseif (! $adsConnection) {
             $paidError = 'Pilih akun iklan Meta pada Edit Client untuk menampilkan konten Paid.';
         } elseif (! in_array('ads_read', $adsConnection['scopes'] ?? [], true)) {
@@ -332,6 +336,36 @@ class AnalisisController extends Controller
                     'paidError',
                     'paidCurrency',
                     'trendComparisons',
+                ));
+                break;
+            case 'TikTok':
+            case 'Tiktok':
+                $tiktokConnection = $produkBaru->oauthConnections()->where('provider', 'tiktok')->first();
+                if (! $tiktokConnection || blank($tiktokConnection->access_token)) {
+                    return response()->view('analisis.connection-error', [
+                        'platform' => 'TikTok',
+                        'message' => 'Akun TikTok belum terhubung. Buka Dashboard CMS → Client → Edit, lalu hubungkan akun TikTok.',
+                    ], 422);
+                }
+
+                $tiktokResult = $this->tiktok->getAnalysis($tiktokConnection, $since, $until, $fetch);
+                $posts = $tiktokResult['data'] ?? [];
+                $tiktokProfile = $tiktokResult['profile'] ?? [];
+                $tiktokError = $tiktokResult['error'] ?? null;
+                $tiktokItems = collect($posts);
+                $trendComparisons = $this->captureTrends($produkBaru->id, 'TikTok', [
+                    'posts' => $tiktokItems->count(),
+                    'reach' => $tiktokItems->sum('views'),
+                    'impressions' => $tiktokItems->sum('views'),
+                    'engagement' => $tiktokItems->sum('engagement'),
+                    'likes' => $tiktokItems->sum('likes'),
+                    'comments' => $tiktokItems->sum('comments'),
+                    'shares' => $tiktokItems->sum('shares'),
+                ], [], $paidError, ! $fetch);
+
+                return view('analisis.tiktok', compact(
+                    'title', 'posts', 'tiktokProfile', 'tiktokError', 'contentPlanItems',
+                    'paidPosts', 'paidError', 'paidCurrency', 'trendComparisons'
                 ));
                 break;
             case 'Youtube':

@@ -24,6 +24,11 @@
 <script>
 document.body.classList.add('lmg-analysis-page');
 document.addEventListener('DOMContentLoaded', function () {
+    const analysisHeading = document.querySelector('[data-meta-analysis-title]');
+    const analysisPlatform = analysisHeading
+        ? analysisHeading.textContent.replace(/^Analisis\s+(?:Organik|Paid)\s+/i, '').trim()
+        : 'Platform';
+
     function activateAnalysisSource(active) {
         document.querySelectorAll('[data-analysis-source-panel]').forEach(function (panel) {
             const selected = panel.dataset.analysisSourcePanel === active;
@@ -40,8 +45,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         const heading = document.querySelector('[data-meta-analysis-title]');
         if (heading) {
-            const platform = heading.textContent.includes('Facebook') ? 'Facebook' : 'Instagram';
-            heading.textContent = `Analisis ${active === 'paid' ? 'Paid' : 'Organik'} ${platform}`;
+            heading.textContent = `Analisis ${active === 'paid' ? 'Paid' : 'Organik'} ${analysisPlatform}`;
         }
         const organicFieldPicker = document.querySelector('[data-organic-field-picker]');
         if (organicFieldPicker) organicFieldPicker.hidden = active !== 'organic';

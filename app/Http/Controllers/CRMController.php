@@ -396,6 +396,11 @@ class CRMController extends Controller
                         'layanan' =>
                             $lead->layanan,
 
+                        'price' =>
+                            $lead->price !== null
+                                ? (float) $lead->price
+                                : null,
+
                         'kebutuhan' =>
                             $lead->kebutuhan,
 
@@ -1369,6 +1374,11 @@ class CRMController extends Controller
                 ], 404);
             }
 
+            $originalHumanPrice =
+                $type === 'human'
+                    ? $lead->price
+                    : null;
+
             $data =
                 $this->validateCrmData(
                     $request,
@@ -1454,6 +1464,19 @@ class CRMController extends Controller
             }
 
             $lead->refresh();
+
+            if (
+                $type === 'human'
+                && $lead instanceof CRM_HUMAN
+                && $this->humanPurchasePriceChanged(
+                    $lead,
+                    $originalHumanPrice
+                )
+            ) {
+                $this->sendHumanPurchaseWebhook(
+                    $lead
+                );
+            }
 
             \Log::info(
                 'Data CRM berhasil diperbarui',
@@ -1604,6 +1627,11 @@ class CRMController extends Controller
             'layanan' =>
                 $lead->layanan,
 
+            'price' =>
+                $lead->price !== null
+                    ? (float) $lead->price
+                    : null,
+
             'chanelling' =>
                 $lead->chanelling,
 
@@ -1647,6 +1675,144 @@ class CRMController extends Controller
                     $lead->created_at
                 ),
         ];
+    }
+
+    private function humanPurchasePriceChanged(
+        CRM_HUMAN $lead,
+        $originalPrice
+    ): bool {
+        if (!$this->humanPurchaseHasPrice($lead)) {
+            return false;
+        }
+
+        return (float) ($originalPrice ?? 0) !== (float) $lead->price;
+    }
+
+    private function humanPurchaseHasPrice(
+        CRM_HUMAN $lead
+    ): bool {
+        return (float) ($lead->price ?? 0) > 0;
+    }
+
+    private function sendHumanPurchaseWebhook(
+        CRM_HUMAN $lead
+    ): void {
+        if (!$this->humanPurchaseHasPrice($lead)) {
+            return;
+        }
+
+        $webhookUrl = trim((string) config(
+            'services.crm_purchase_webhook.url'
+        ));
+
+        if ($webhookUrl === '') {
+            Log::warning(
+                'Webhook Purchase CRM Human belum dikonfigurasi',
+                [
+                    'lead_id' => $lead->getKey(),
+                ]
+            );
+
+            return;
+        }
+
+        $idProteksi = trim((string) $lead->id_proteksi);
+        $phone = trim((string) $lead->phone);
+
+        if ($idProteksi === '' || $phone === '') {
+            Log::warning(
+                'Webhook Purchase CRM Human dilewati karena identitas tidak lengkap',
+                [
+                    'lead_id' => $lead->getKey(),
+                    'has_id_proteksi' => $idProteksi !== '',
+                    'has_phone' => $phone !== '',
+                ]
+            );
+
+            return;
+        }
+
+        $invoiceId = sprintf(
+            'CRM-HUMAN-%s',
+            $lead->getKey()
+        );
+
+        $payload = [
+            'invoice_id' => $invoiceId,
+            'lead_id' => $lead->getKey(),
+            'id_proteksi' => $idProteksi,
+            'phone' => $phone,
+            'purchase_price' => (float) $lead->price,
+            'currency' => 'IDR',
+            'paid_at' => now('Asia/Jakarta')->toIso8601String(),
+            'status' => 'paid',
+            'crm_status' => $lead->status,
+        ];
+
+        $secret = trim((string) config(
+            'services.crm_purchase_webhook.secret'
+        ));
+
+        try {
+            $request = Http::acceptJson()
+                ->asJson()
+                ->connectTimeout(5)
+                ->timeout(max(
+                    1,
+                    (int) config(
+                        'services.crm_purchase_webhook.timeout',
+                        10
+                    )
+                ));
+
+            if ($secret !== '') {
+                $request = $request->withHeaders([
+                    'X-Webhook-Secret' => $secret,
+                ]);
+            }
+
+            $response = $request->post(
+                $webhookUrl,
+                $payload
+            );
+
+            if (!$response->successful()) {
+                Log::error(
+                    'Webhook Purchase CRM Human ditolak',
+                    [
+                        'lead_id' => $lead->getKey(),
+                        'invoice_id' => $invoiceId,
+                        'status_code' => $response->status(),
+                        'response' => $response->body(),
+                    ]
+                );
+
+                return;
+            }
+
+            Log::info(
+                'Webhook Purchase CRM Human berhasil dikirim',
+                [
+                    'lead_id' => $lead->getKey(),
+                    'invoice_id' => $invoiceId,
+                    'events_received' => $response->json(
+                        'events_received'
+                    ),
+                    'fbtrace_id' => $response->json(
+                        'fbtrace_id'
+                    ),
+                ]
+            );
+        } catch (\Throwable $e) {
+            Log::error(
+                'Webhook Purchase CRM Human gagal dikirim',
+                [
+                    'lead_id' => $lead->getKey(),
+                    'invoice_id' => $invoiceId,
+                    'message' => $e->getMessage(),
+                ]
+            );
+        }
     }
 
     private function prepareCrmUpdatePayload(
@@ -1748,6 +1914,10 @@ class CRMController extends Controller
 
                 'layanan' => [
                     'layanan',
+                ],
+
+                'price' => [
+                    'price',
                 ],
 
                 'chanelling' => [
@@ -1978,6 +2148,11 @@ class CRMController extends Controller
                     'nullable',
                     'string',
                 ],
+                'price' => [
+                    'nullable',
+                    'numeric',
+                    'min:0',
+                ],
                 'can_push' => [
                     'nullable',
                     'boolean',
@@ -2072,6 +2247,9 @@ class CRMController extends Controller
 
             'layanan' =>
                 $data['layanan'] ?? null,
+
+            'price' =>
+                $data['price'] ?? null,
 
             'kebutuhan' =>
                 $data['kebutuhan'] ?? null,

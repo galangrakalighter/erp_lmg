@@ -425,6 +425,25 @@
 
                                     <div>
                                         <label
+                                            for="leadPrice"
+                                            class="mb-2 block text-xs font-semibold text-zinc-700"
+                                        >
+                                            Harga
+                                        </label>
+
+                                        <input
+                                            type="number"
+                                            id="leadPrice"
+                                            min="0"
+                                            step="0.01"
+                                            inputmode="decimal"
+                                            placeholder="Contoh: 1500000"
+                                            class="block w-full rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950"
+                                        >
+                                    </div>
+
+                                    <div>
+                                        <label
                                             for="leadNote"
                                             class="mb-2 block text-xs font-semibold text-zinc-700"
                                         >

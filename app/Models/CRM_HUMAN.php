@@ -15,6 +15,7 @@ class CRM_HUMAN extends Model
         'id_proteksi',
         'name',
         'brand',
+        'phone',
         'sosial_media',
         'kategori',
         'chanelling',
@@ -24,6 +25,7 @@ class CRM_HUMAN extends Model
         'tanggal_chat',
         'link_wa',
         'layanan',
+        'price',
         'status',
         'note',
         'kebutuhan',
@@ -42,6 +44,7 @@ class CRM_HUMAN extends Model
         'need_analysys' => 'boolean',
         'done_meeting' => 'boolean',
         'jumlah_follow_up' => 'integer',
+        'price' => 'decimal:2',
         'today' => 'boolean',
         'rate_balasan' => 'string',
     ];

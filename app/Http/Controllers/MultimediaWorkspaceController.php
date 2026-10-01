@@ -49,7 +49,7 @@ class MultimediaWorkspaceController extends Controller
             'workspaceDescription' => 'Lihat riset, branding, dan analisis serta lengkapi link output Content Plan.',
             'workspaceApiNamespace' => 'api.multimedia',
             'workspaceDivisionId' => $multimediaId,
-            'workspaceTabs' => ['market-research', 'branding', 'analisis', 'content-plan', 'dokumen', 'timeline'],
+            'workspaceTabs' => ['market-research', 'branding', 'analisis', 'content-plan', 'dokumen', 'guide', 'timeline'],
         ]);
     }
 }

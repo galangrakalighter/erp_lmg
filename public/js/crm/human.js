@@ -261,6 +261,31 @@ window.CRMRenderers =
         );
     }
 
+    function formatPrice(value, helpers) {
+        if (
+            value === null ||
+            value === undefined ||
+            value === ''
+        ) {
+            return '-';
+        }
+
+        const price = Number(value);
+
+        if (!Number.isFinite(price)) {
+            return '-';
+        }
+
+        return helpers.escape(
+            new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2,
+            }).format(price)
+        );
+    }
+
     function checklistCheckbox(
         leadId,
         field,
@@ -408,7 +433,7 @@ window.CRMRenderers =
                 body.innerHTML = `
                     <tr>
                         <td
-                            colspan="14"
+                            colspan="15"
                             class="
                                 text-center
                                 text-muted
@@ -612,6 +637,13 @@ window.CRMRenderers =
                                 ${longText(
                                     lead.layanan,
                                     'Layanan',
+                                    helpers
+                                )}
+                            </td>
+
+                            <td class="align-middle text-nowrap">
+                                ${formatPrice(
+                                    lead.price,
                                     helpers
                                 )}
                             </td>
@@ -822,16 +854,16 @@ window.CRMRenderers =
             body.querySelectorAll('tr').forEach(function (row) {
                 const cells = Array.from(row.children);
 
-                if (cells.length !== 26) {
+                if (cells.length !== 27) {
                     return;
                 }
 
                 const value = index => cells[index].innerHTML;
                 const progress = [
-                    ['Today', 22], ['Service Plan', 16],
-                    ['Need Analysis', 17], ['Meeting', 18],
-                    ['Mini Audit', 19], ['Insight', 20],
-                    ['Study Kasus', 21], ['Can Push', 15],
+                    ['Today', 23], ['Service Plan', 17],
+                    ['Need Analysis', 18], ['Meeting', 19],
+                    ['Mini Audit', 20], ['Insight', 21],
+                    ['Study Kasus', 22], ['Can Push', 16],
                 ].map(function ([label, index]) {
                     return `<div class="crm-progress-item"><span>${label}</span>${value(index)}</div>`;
                 }).join('');
@@ -840,17 +872,18 @@ window.CRMRenderers =
                     <td>${value(0)}</td>
                     <td><div class="crm-stack"><span class="crm-field-label">Tanggal chat</span>${value(1)}<span class="crm-field-label crm-field-gap">Pertama chat</span>${value(2)}</div></td>
                     <td><div class="crm-stack"><span class="crm-field-label">Nama</span><strong class="crm-lead-name">${value(3)}</strong><span class="crm-field-label crm-field-gap">Nama usaha</span>${value(4)}</div></td>
-                    <td>${value(11)}</td>
+                    <td>${value(12)}</td>
                     <td>${value(5)}</td>
                     <td><div class="crm-stack"><span class="crm-field-label">Telepon</span>${value(7)}<span class="crm-field-label crm-field-gap">Rate balasan</span>${value(8)}</div></td>
-                    <td><div class="crm-stack"><span class="crm-field-label">Sumber</span>${value(6)}<span class="crm-field-label crm-field-gap">Chanelling</span><span class="crm-muted">${value(10)}</span></div></td>
+                    <td><div class="crm-stack"><span class="crm-field-label">Sumber</span>${value(6)}<span class="crm-field-label crm-field-gap">Chanelling</span><span class="crm-muted">${value(11)}</span></div></td>
                     <td>${value(9)}</td>
-                    <td>${value(12)}</td>
+                    <td>${value(10)}</td>
                     <td>${value(13)}</td>
-                    <td class="human-lead-status">${value(14)}</td>
-                    <td><div class="crm-progress-grid">${progress}</div><div class="crm-follow-up-detail">${value(23)}</div></td>
-                    <td>${value(24)}</td>
-                    <td><div class="crm-actions">${value(25)}</div></td>
+                    <td>${value(14)}</td>
+                    <td class="human-lead-status">${value(15)}</td>
+                    <td><div class="crm-progress-grid">${progress}</div><div class="crm-follow-up-detail">${value(24)}</div></td>
+                    <td>${value(25)}</td>
+                    <td><div class="crm-actions">${value(26)}</div></td>
                 `;
             });
         };

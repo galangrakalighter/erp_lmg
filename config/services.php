@@ -43,6 +43,12 @@ return [
         'graph_version' => env('META_GRAPH_VERSION', 'v23.0'),
     ],
 
+    'crm_purchase_webhook' => [
+        'url' => env('CRM_PURCHASE_WEBHOOK_URL'),
+        'secret' => env('CRM_PURCHASE_WEBHOOK_SECRET'),
+        'timeout' => (int) env('CRM_PURCHASE_WEBHOOK_TIMEOUT', 10),
+    ],
+
     'threads' => [
         'client_id' => env('THREADS_CLIENT_ID'),
         'client_secret' => env('THREADS_CLIENT_SECRET'),

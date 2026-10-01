@@ -868,26 +868,37 @@
         const human =
             state.activeTab === 'human';
 
-        document
-            .getElementById('humanFields')
-            ?.classList.toggle(
-                'd-none',
-                !human
-            );
+        const setVisible = function (
+            id,
+            visible
+        ) {
+            const element =
+                document.getElementById(id);
 
-        document
-            .getElementById('aiFields')
-            ?.classList.toggle(
-                'd-none',
-                human
-            );
+            if (!element) {
+                return;
+            }
 
-        document
-            .getElementById('emailField')
-            ?.classList.toggle(
-                'd-none',
-                human
+            /*
+             * Template memakai utilitas Tailwind `hidden`, sedangkan
+             * sebagian tampilan lama memakai Bootstrap `d-none`.
+             * Keduanya harus diselaraskan agar field benar-benar tampil.
+             */
+            element.classList.toggle(
+                'hidden',
+                !visible
             );
+            element.classList.toggle(
+                'd-none',
+                !visible
+            );
+        };
+
+        setVisible('humanFields', human);
+        setVisible('humanStatusField', human);
+        setVisible('aiFields', !human);
+        setVisible('aiStatusField', !human);
+        setVisible('emailField', !human);
     }
 
     function openCreateLead() {
@@ -939,6 +950,11 @@
         setFormValue(
             'leadLayanan',
             lead.layanan
+        );
+
+        setFormValue(
+            'leadPrice',
+            lead.price
         );
 
         setFormValue(
@@ -1046,6 +1062,9 @@
     }
 
     function createPayload() {
+        const price =
+            formValue('leadPrice');
+
         return {
             nama: formValue('leadNama'),
             brand: formValue('leadBrand'),
@@ -1057,6 +1076,12 @@
 
             layanan:
                 formValue('leadLayanan'),
+
+            price:
+                state.activeTab === 'human'
+                    && price !== null
+                        ? Number(price)
+                        : null,
 
             kebutuhan:
                 formValue('leadKebutuhan'),

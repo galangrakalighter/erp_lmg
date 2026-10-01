@@ -42,10 +42,12 @@ class DivisionClientWorkspaceController extends Controller
                 ['key' => 'github', 'label' => 'GitHub', 'message' => 'Integrasi GitHub client belum tersedia.'],
                 ['key' => 'monitoring', 'label' => 'Monitoring', 'message' => 'Halaman Monitoring client belum tersedia.'],
                 ['key' => 'documents', 'label' => 'File Dokumen', 'url' => route('PDF', ['id_produk' => $client->id, 'division_id' => $config['id']])],
+                ['key' => 'guide', 'label' => 'Guide', 'url' => route('client.content-guide', ['client' => $client->id])],
                 ['key' => 'timeline', 'label' => 'Timeline', 'url' => route('client.kpi-timeline', ['client' => $client->id])],
             ],
             default => [
                 ['key' => 'documents', 'label' => 'File Dokumen', 'url' => route('PDF', ['id_produk' => $client->id, 'division_id' => $config['id']])],
+                ['key' => 'guide', 'label' => 'Guide', 'url' => route('client.content-guide', ['client' => $client->id])],
                 ['key' => 'timeline', 'label' => 'Timeline', 'url' => route('client.kpi-timeline', ['client' => $client->id])],
             ],
         };

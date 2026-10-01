@@ -59,6 +59,8 @@ Route::middleware('auth')->group(function () {
         ->name('division-client.workspace');
     Route::get('/client/{client}/kpi-timeline', [App\Http\Controllers\ClientKpiTimelineController::class, 'index'])
         ->name('client.kpi-timeline');
+    Route::get('/client/{client}/content-guide', [App\Http\Controllers\ClientContentGuideController::class, 'index'])
+        ->name('client.content-guide');
 
     Route::get('file-master', [App\Http\Controllers\AccountMasterFileController::class, 'index'])->name('file-master.index');
     Route::get('file-master/{owner}', [App\Http\Controllers\AccountMasterFileController::class, 'show'])->name('file-master.show');

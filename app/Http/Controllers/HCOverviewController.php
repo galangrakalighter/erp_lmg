@@ -50,7 +50,8 @@ class HCOverviewController extends Controller
         }
 
         $currentLevel = (int) ($user->userDivisions->first()?->role?->level ?? 0);
-        $canCreateTask = (bool) $user->isAdmin || ($currentLevel > 0 && $currentLevel < 3);
+        $readOnly = $request->boolean('readonly');
+        $canCreateTask = ! $readOnly && ((bool) $user->isAdmin || ($currentLevel > 0 && $currentLevel < 3));
 
          $handed_client = User::unlocked()->leftjoin('user_division', 'user_division.user_id', '=', 'users.id')
             ->select('users.id', 'users.name', 'users.email')
@@ -64,7 +65,7 @@ class HCOverviewController extends Controller
                 : collect();
         }
 
-        return view('hc.overview', compact('title', 'id', 'client', 'difficultyLabels', 'divisi_list', 'result', 'vic_list', 'canCreateTask'));
+        return view('hc.overview', compact('title', 'id', 'client', 'difficultyLabels', 'divisi_list', 'result', 'vic_list', 'canCreateTask', 'readOnly'));
     }
 
     public function tambahKPI(Request $request){
@@ -521,8 +522,9 @@ class HCOverviewController extends Controller
         return redirect()->back()->with('error', "Berhasil Dihapus");
     }
 
-    public function list_client(){
+    public function list_client(Request $request){
         $title = "Client Progress Monitor";
+        $readOnly = $request->boolean('readonly');
 
         $userHandledClients = Auth::user()->clients->pluck('id')->toArray(); // Contoh isinya: [13, 14]
 
@@ -580,7 +582,7 @@ class HCOverviewController extends Controller
                 ];
             })->values();
 
-        return view('hc.list_client', compact('title', 'projects'));
+        return view('hc.list_client', compact('title', 'projects', 'readOnly'));
     }
 
     private function getProgressColor($percentage) {

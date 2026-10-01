@@ -220,6 +220,7 @@
                     action="{{ route('hc_overview.index', $id) }}"
                     method="GET"
                 >
+                    @if($readOnly)<input type="hidden" name="readonly" value="1">@endif
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
 
                         {{-- Mulai --}}
@@ -1254,7 +1255,7 @@
                 |--------------------------------------------------------------------------
                 */
 
-                const action = !isCompleted
+                const action = @json($readOnly) ? '<span class="text-xs font-semibold text-zinc-400">Hanya lihat</span>' : (!isCompleted
 
                     ? `
                         <div class="flex flex-wrap items-center justify-center gap-1.5">
@@ -1332,7 +1333,7 @@
 
                             KPI Selesai
                         </span>
-                    `;
+                    `);
 
 
                 /*

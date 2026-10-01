@@ -171,20 +171,30 @@
                 </a>
             @endunless --}}
 
-            {{-- Daily Work pribadi --}}
-            <a
-                href="{{ route('daily-work.self') }}"
-                class="group mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition
-                {{ request()->routeIs('daily-work.self')
-                    ? 'bg-white text-zinc-950'
-                    : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
-                }}"
-            >
-                <svg class="h-[18px] w-[18px] shrink-0 {{ request()->routeIs('daily-work.self') ? 'text-zinc-950' : 'text-zinc-500 group-hover:text-white' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 4h8M9 3h6a1 1 0 011 1v2H8V4a1 1 0 011-1zM6 5h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2zM9 11h6M9 15h4"/>
-                </svg>
-                <span class="font-medium">Daily Work</span>
-            </a>
+            @php
+                $isPerformanceWorkspace = Route::is(
+                    'overview.dashboard_kpi',
+                    'overview.dashboard',
+                    'hc_overview.*',
+                    'hc_daily.index'
+                );
+            @endphp
+            <div class="mb-1">
+                <button type="button" data-sidebar-collapse="collapsePerformanceWorkspace" data-sidebar-group="primary"
+                    class="group flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition {{ $isPerformanceWorkspace ? 'bg-zinc-900 text-white' : 'text-zinc-400 hover:bg-zinc-900 hover:text-white' }}"
+                    aria-expanded="{{ $isPerformanceWorkspace ? 'true' : 'false' }}">
+                    <span class="flex items-center gap-3">
+                        <svg class="h-[18px] w-[18px] text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 19h16M6 17V9M12 17V5M18 17v-7" /></svg>
+                        <span class="font-medium">KPI &amp; Daily Work</span>
+                    </span>
+                    <svg class="sidebar-chevron h-4 w-4 text-zinc-600 transition-transform duration-200 {{ $isPerformanceWorkspace ? 'rotate-180' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 9l6 6 6-6" /></svg>
+                </button>
+                <div id="collapsePerformanceWorkspace" class="{{ $isPerformanceWorkspace ? '' : 'hidden' }} mt-1 space-y-1 pl-3">
+                    <a href="{{ route('overview.dashboard_kpi') }}" class="block rounded-lg px-3 py-2 text-xs transition {{ Route::is('overview.dashboard_kpi', 'overview.dashboard') ? 'bg-white font-semibold text-zinc-950' : 'text-zinc-500 hover:bg-zinc-900 hover:text-white' }}">Dashboard</a>
+                    <a href="{{ route('hc_overview.list') }}" class="block rounded-lg px-3 py-2 text-xs transition {{ Route::is('hc_overview.*') && !request()->boolean('readonly') ? 'bg-white font-semibold text-zinc-950' : 'text-zinc-500 hover:bg-zinc-900 hover:text-white' }}">Overview</a>
+                    <a href="{{ route('hc_daily.index') }}" class="block rounded-lg px-3 py-2 text-xs transition {{ Route::is('hc_daily.index') ? 'bg-white font-semibold text-zinc-950' : 'text-zinc-500 hover:bg-zinc-900 hover:text-white' }}">Daily Work</a>
+                </div>
+            </div>
 
             {{-- Storage --}}
             @php
@@ -457,7 +467,7 @@
         {{-- =================================================
             BUSINESS DEVELOPMENT
         ================================================== --}}
-        <div class="mt-5 border-t border-zinc-800 pt-4">
+        <div class="hidden" aria-hidden="true">
 
             @php
                 $isBDOpen = $isBusinessDevWorkspace && $isBDProduct;
@@ -639,6 +649,7 @@
         {{-- =================================================
             HUMAN CAPITAL
         ================================================== --}}
+        @if($isSuperAdmin || (int) ($myDivision->id ?? 0) === 4)
         @php
             $isHCPage = Route::is([
                 'hc_daily.index',
@@ -761,7 +772,7 @@
                         </a>
 
                         <a
-                            href="{{ route('hc_overview.list') }}"
+                            href="{{ route('hc_overview.list', ['readonly' => 1]) }}"
                             class="block rounded-lg px-3 py-2 text-xs transition
                             {{ Route::is('hc_overview.list')
                                 ? 'bg-white font-semibold text-zinc-950'
@@ -837,6 +848,7 @@
             </div>
 
         </div>
+        @endif
 
 
         {{-- =================================================

@@ -24,6 +24,7 @@ class HookController extends Controller
     }
 
     public function store(Request $request, $name){
+        $request->validate(['hook' => 'required|string|max:255', 'fungsi_singkat' => 'nullable|string|max:1000', 'contoh' => 'nullable|string|max:3000', 'status' => 'required|integer']);
         if($name == "LGTR"){
             $divisi = 1;
         }else {
@@ -32,6 +33,8 @@ class HookController extends Controller
         $status = (int)$request->status;
         DB::table("hooks")->insert([
             "hooks" => $request->hook,
+            "fungsi_singkat" => $request->fungsi_singkat,
+            "contoh" => $request->contoh,
             "status" => $status,
             "kategori_id" => $divisi
         ]);
@@ -40,11 +43,14 @@ class HookController extends Controller
     }
 
     public function update($id, Request $request){
+        $request->validate(['hook' => 'required|string|max:255', 'fungsi_singkat' => 'nullable|string|max:1000', 'contoh' => 'nullable|string|max:3000', 'status' => 'required|integer']);
         $id = (int)$id;
         $status = (int)$request->status;
         
         DB::table('hooks')->where('id', $id)->update([
             "hooks" => $request->hook,
+            "fungsi_singkat" => $request->fungsi_singkat,
+            "contoh" => $request->contoh,
             "status" => $status,
         ]);
 

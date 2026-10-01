@@ -23,6 +23,8 @@
                         <tr>
                             <th>No</th>
                             <th>Nama</th>
+                            <th>Fungsi Singkat</th>
+                            <th>Contoh</th>
                             <th>Status</th>
                             @if($role == 'Digital Marketer' || $role == 'Busines Unit Head' || $role == 'Super Admin')
                             <th>Aksi</th>
@@ -34,6 +36,8 @@
                             <tr>
                                 <th>{{ $loop->iteration }}</th>
                                 <th>{{ $item->pilar }}</th>
+                                <td>{{ $item->fungsi_singkat ?: '-' }}</td>
+                                <td>{{ $item->contoh ?: '-' }}</td>
                                 <th>{{ $item->status == 1 ? "Ditampilkan" : "Disembunyikan"}}</th>
                                 @if($role == 'Digital Marketer' || $role == 'Busines Unit Head' || $role == 'Super Admin')
                                 <th>
@@ -85,6 +89,7 @@
                             >
                         </div>
 
+                        @include('cms.partials.content_guidance_fields')
 
                         <div>
                             <label
@@ -161,6 +166,7 @@
                             >
                         </div>
 
+                        @include('cms.partials.content_guidance_fields', ['item' => $item])
 
                         <div>
                             <label

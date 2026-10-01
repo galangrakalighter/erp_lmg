@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Task;
 use Carbon\CarbonPeriod;
 use App\Models\ProdukClient;
+use Illuminate\Validation\Rule;
 
 class ManajemenKontenController extends Controller
 {
@@ -57,6 +58,11 @@ class ManajemenKontenController extends Controller
             $this->authorizeMultimediaClient((int) $produk_id);
         }
 
+        $validated = $request->validate([
+            'content_source' => ['nullable', Rule::in(['organic', 'paid'])],
+        ]);
+        $contentSource = $validated['content_source'] ?? 'organic';
+
         try {
             $query = DB::table("data_jasa")
                 ->leftJoin('type_produk', 'type_produk.id', '=', 'data_jasa.type_produk_id')
@@ -69,6 +75,7 @@ class ManajemenKontenController extends Controller
                 ->leftJoin('users', 'users.id', '=', 'data_jasa.pic')
                 ->where('data_jasa.produk_client_id', $produk_id)
                 ->where('data_jasa.platform', $platform)
+                ->where('data_jasa.content_source', $contentSource)
                 ->select(
                     'data_jasa.*', 
                     'type_produk.type', 
@@ -136,6 +143,7 @@ class ManajemenKontenController extends Controller
             // 'pic'               => 'nullable|integer',
             // 'prioritas'         => 'nullable|integer',
             'platform'          => 'nullable|string',
+            'content_source'    => ['required', Rule::in(['organic', 'paid'])],
             'type'              => 'required|integer',
             'strategy'          => 'required|integer',
             'pilar'             => 'required|integer',
@@ -178,6 +186,7 @@ class ManajemenKontenController extends Controller
                 'link'             => $request->link,
                 'status_id'        => $value['status'],
                 'platform'         => $request->platform,
+                'content_source'   => $request->content_source,
                 'funneling'        => $request->funneling,
                 'created_at'       => now(),
                 'updated_at'       => now(),
@@ -343,6 +352,7 @@ class ManajemenKontenController extends Controller
             // 'pic'               => 'nullable|integer',
             // 'prioritas'         => 'nullable|integer',
             'platform'          => 'nullable|string',
+            'content_source'    => ['required', Rule::in(['organic', 'paid'])],
             'type'              => 'required|integer',
             'strategy'          => 'required|integer',
             'pilar'             => 'required|integer',
@@ -384,6 +394,7 @@ class ManajemenKontenController extends Controller
                 'link'             => $request->link,
                 'status_id'        => $value['status'],
                 'platform'         => $request->platform,
+                'content_source'   => $request->content_source,
                 'funneling'        => $request->funneling,
                 'created_at'       => now(),
                 'updated_at'       => now(),

@@ -24,6 +24,7 @@ class JenisCTAController extends Controller
     }
 
     public function store(Request $request, $name){
+        $request->validate(['nama' => 'required|string|max:255', 'fungsi_singkat' => 'nullable|string|max:1000', 'contoh' => 'nullable|string|max:3000', 'status' => 'required|integer']);
         if($name == "LGTR"){
             $divisi = 1;
         }else {
@@ -31,6 +32,8 @@ class JenisCTAController extends Controller
         }
         DB::table("jenis_cta")->insert([
             "nama_cta" => $request->nama,
+            "fungsi_singkat" => $request->fungsi_singkat,
+            "contoh" => $request->contoh,
             "status" => $request->status,
             "kategori_id" => $divisi
         ]);
@@ -39,8 +42,11 @@ class JenisCTAController extends Controller
     }
 
     public function update($id, Request $request){
+        $request->validate(['nama' => 'required|string|max:255', 'fungsi_singkat' => 'nullable|string|max:1000', 'contoh' => 'nullable|string|max:3000', 'status' => 'required|integer']);
         DB::table('jenis_cta')->where('id', $id)->update([
             "nama_cta" => $request->nama,
+            "fungsi_singkat" => $request->fungsi_singkat,
+            "contoh" => $request->contoh,
             "status" => $request->status
         ]);
 

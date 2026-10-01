@@ -16,6 +16,13 @@
             @endif
         </div>
 
+        <div class="card-body border-bottom py-2">
+            <div class="btn-group d-flex content-source-tabs" role="group" aria-label="Jenis Content Plan">
+                <button type="button" class="btn btn-dark flex-fill" data-content-source="organic">Content Plan Organik</button>
+                <button type="button" class="btn btn-light flex-fill" data-content-source="paid">Content Plan Paid</button>
+            </div>
+        </div>
+
         {{-- FILTER TANGGAL --}}
         <div class="card-body border-bottom">
             <form id="filterForm" action="{{ url()->current() }}" method="GET">
@@ -32,7 +39,7 @@
                         <button type="submit" class="btn btn-primary btn-sm px-3">
                             <i class="fas fa-filter mr-1"></i> Filter
                         </button>
-                        <a href="{{ url()->current() }}" class="btn btn-secondary btn-sm px-3">
+                        <a href="{{ url()->current() }}" id="contentPlanReset" class="btn btn-secondary btn-sm px-3">
                             <i class="fas fa-undo mr-1"></i> Reset
                         </a>
                     </div>
@@ -92,6 +99,7 @@
                 <form action="{{ route('manajemen_create', $produk->id) }}" method="POST" style="display: flex; min-height: 0; max-height: calc(100dvh - 3rem); flex: 1 1 auto; flex-direction: column; overflow: hidden;">
                     @csrf
                     <input type="hidden" name="platform" value="{{ $platform }}">
+                    <input type="hidden" name="content_source" id="create_content_source" value="organic">
                     
                     <style>
                         #tambahModal .form-control {
@@ -452,6 +460,7 @@
                     <input type="hidden" name="id" id="edit_id">
                     <input type="hidden" name="id_project" value="{{ $produk->id }}">
                     <input type="hidden" name="platform" id="edit_platform">
+                    <input type="hidden" name="content_source" id="edit_content_source" value="organic">
 
                     <div class="modal-header bg-gradient-warning text-white py-3 border-0">
                         <div class="d-flex align-items-center">
@@ -681,6 +690,7 @@
     const platform = "{{ $platform }}";
     const isContentCreator = {{ $RoleSekarang == 'Content Creator' ? 'true' : 'false' }};
     const multimediaMode = {{ $multimediaMode ? 'true' : 'false' }};
+    let activeContentSource = new URLSearchParams(window.location.search).get('content_source') === 'paid' ? 'paid' : 'organic';
 
     let contentPlanData = [];
     let contentPlanCurrentPage = 1;
@@ -730,6 +740,7 @@
 
     async function loadContentPlan() {
         const params = new URLSearchParams();
+        params.set('content_source', activeContentSource);
         const startDate = document.querySelector('[name="start_date"]')?.value;
         const endDate = document.querySelector('[name="end_date"]')?.value;
         if (startDate) params.set('start_date', startDate);
@@ -746,6 +757,27 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
+        const syncContentSourceTabs = () => {
+            document.querySelectorAll('[data-content-source]').forEach(button => {
+                const active = button.dataset.contentSource === activeContentSource;
+                button.classList.toggle('btn-dark', active);
+                button.classList.toggle('btn-light', !active);
+                button.setAttribute('aria-pressed', active ? 'true' : 'false');
+            });
+            const createSource = document.getElementById('create_content_source');
+            if (createSource) createSource.value = activeContentSource;
+            const resetLink = document.getElementById('contentPlanReset');
+            if (resetLink) resetLink.href = `${window.location.pathname}?content_source=${activeContentSource}`;
+        };
+        syncContentSourceTabs();
+        document.querySelectorAll('[data-content-source]').forEach(button => button.addEventListener('click', () => {
+            activeContentSource = button.dataset.contentSource;
+            const currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.set('content_source', activeContentSource);
+            history.replaceState({}, '', currentUrl);
+            syncContentSourceTabs();
+            loadContentPlan();
+        }));
         if (multimediaMode) {
             document.querySelectorAll('#formEditKonten input, #formEditKonten select, #formEditKonten textarea').forEach(function (field) {
                 if (field.name !== 'link' && field.name !== '_token') {
@@ -790,6 +822,7 @@
             $('#edit_id').val(rowData.id);
             $('#display_id').text(rowData.id);
             $('#edit_platform').val(rowData.platform);
+            $('#edit_content_source').val(rowData.content_source || activeContentSource);
             $('#edit_judul').val(rowData.judul);
             $('#edit_inspirasi').val(rowData.inspirasi);
             $('#edit_type').val(rowData.type_produk_id);

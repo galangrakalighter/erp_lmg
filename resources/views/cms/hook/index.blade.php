@@ -23,6 +23,8 @@
                         <tr>
                             <th>No</th>
                             <th>Nama</th>
+                            <th>Fungsi Singkat</th>
+                            <th>Contoh</th>
                             <th>Status</th>
                             @if($role == 'Digital Marketer' || $role == 'Busines Unit Head' || $role == 'Super Admin')
                             <th>Aksi</th>
@@ -34,6 +36,8 @@
                             <tr>
                                 <th>{{ $loop->iteration }}</th>
                                 <th>{{ $item->hooks }}</th>
+                                <td>{{ $item->fungsi_singkat ?: '-' }}</td>
+                                <td>{{ $item->contoh ?: '-' }}</td>
                                 <th>{{ $item->status == 1 ? "Ditampilkan" : "Disembunyikan"}}</th>
                                 @if($role == 'Digital Marketer' || $role == 'Busines Unit Head' || $role == 'Super Admin')
                                 <th>
@@ -84,6 +88,8 @@
                                 required
                             >
                         </div>
+
+                        @include('cms.partials.content_guidance_fields')
 
                         <div>
                             <label
@@ -159,6 +165,8 @@
                                 class="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-[#161616] focus:ring-4 focus:ring-zinc-900/5"
                             >
                         </div>
+
+                        @include('cms.partials.content_guidance_fields', ['item' => $item])
 
                         <div>
                             <label

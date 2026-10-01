@@ -1,6 +1,7 @@
 @extends('layout.app')
 
 @section('content')
+@include('hc.partials.dashboard_tabs')
     <input type="hidden" id="divisi" value="{{ $divisiId }}">
 
     <div class="min-h-screen bg-[#f7f7f5] px-4 py-6 sm:px-6 lg:px-8">

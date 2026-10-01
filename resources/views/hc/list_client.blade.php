@@ -130,7 +130,7 @@
                 >
 
                     <a
-                        href="{{ route('hc_overview.index', $p['project_id']) }}"
+                        href="{{ route('hc_overview.index', ['id_client' => $p['project_id'], 'readonly' => !empty($readOnly) ? 1 : null]) }}"
                         class="group block h-full overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_8px_30px_rgba(0,0,0,0.035)] transition duration-300 hover:-translate-y-1 hover:border-zinc-300 hover:shadow-[0_16px_40px_rgba(0,0,0,0.07)]"
                     >
 

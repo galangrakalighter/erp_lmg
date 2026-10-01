@@ -40,13 +40,14 @@
                 @php
                     $firstPlatform = $platforms->first();
                     $apiNamespace = $workspaceApiNamespace ?? 'api.digital-marketing';
-                    $availableTabs = $workspaceTabs ?? ['market-research', 'branding', 'analisis', 'content-plan', 'dokumen'];
+                    $availableTabs = $workspaceTabs ?? ['market-research', 'branding', 'analisis', 'content-plan', 'dokumen', 'timeline'];
                     $tabs = collect([
                         ['key' => 'market-research', 'label' => 'Market Research', 'url' => $firstPlatform ? route($apiNamespace.'.market-research', [$client->id, $firstPlatform]) : null, 'platform' => true],
                         ['key' => 'branding', 'label' => 'Branding', 'url' => $firstPlatform ? route($apiNamespace.'.branding', [$client->id, $firstPlatform]) : null, 'platform' => true],
                         ['key' => 'analisis', 'label' => 'Analisis', 'url' => in_array('analisis', $availableTabs, true) && $firstPlatform ? route($apiNamespace.'.analisis', [$client->id, $firstPlatform]) : null, 'platform' => true],
                         ['key' => 'content-plan', 'label' => 'Content Plan', 'url' => $firstPlatform ? route($apiNamespace.'.content-plan', [$client->id, $firstPlatform]) : null, 'platform' => true],
                         ['key' => 'dokumen', 'label' => 'File Dokumen', 'url' => route('PDF', ['id_produk' => $client->id, 'division_id' => $workspaceDivisionId]), 'platform' => false],
+                        ['key' => 'timeline', 'label' => 'Timeline', 'url' => route('client.kpi-timeline', ['client' => $client->id]), 'platform' => false],
                     ])->whereIn('key', $availableTabs)->values();
                 @endphp
 
@@ -64,7 +65,7 @@
 
             @if($platforms->isEmpty())
                 <div class="border-b border-amber-200 bg-amber-50 px-5 py-3 text-sm text-amber-800">
-                    Platform client belum disetel. File Dokumen tetap dapat dibuka.
+                    Platform client belum disetel. File Dokumen dan Timeline tetap dapat dibuka.
                 </div>
             @endif
 

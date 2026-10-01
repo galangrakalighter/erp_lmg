@@ -92,6 +92,7 @@ class HCOverviewController extends Controller
         // Ambil semua data kecuali 'pic'
         $data = $request->except('pic');
         $data['status'] = 0;
+        $data['tanggal_approve'] = null;
         $data['create_by'] = Auth::id();
 
         // Simpan KPI
@@ -111,13 +112,19 @@ class HCOverviewController extends Controller
             'point'            => 'required',
             'tanggal_mulai'    => 'required',
             'tanggal_deadline' => 'required',
+            'status'           => ['required', Rule::in([0, 1, '0', '1'])],
             'note'             => 'nullable'
         ]);
 
         $kpi = KPI::findOrFail($id);
 
         // Update atribut utama
-        $kpi->update($request->except(['pic', '_token', '_method']));
+        $updateData = $request->except(['pic', '_token', '_method']);
+        $newStatus = (int) $request->status;
+        $updateData['tanggal_approve'] = $newStatus === 1
+            ? ($kpi->status == 1 && $kpi->tanggal_approve ? $kpi->tanggal_approve : now()->toDateString())
+            : null;
+        $kpi->update($updateData);
 
         // Update relasi PIC
         $kpi->pics()->sync($request->pic);
@@ -137,6 +144,7 @@ class HCOverviewController extends Controller
         }
 
         $kpi->status = 1;
+        $kpi->tanggal_approve = now()->toDateString();
         $kpi->save();
 
         return response()->json([
@@ -188,7 +196,9 @@ class HCOverviewController extends Controller
 
     public function getKPIData(Request $request, $id, $id_user)
     {
-        $user = User::findOrFail($id_user);
+        $user = $request->user();
+        abort_unless($user && (int) $id_user === (int) $user->id, 403);
+        $user->loadMissing('userDivisions');
         $division = $user->userDivisions->first();
 
         $query = KPI::with(['pics.userDivisions.role', 'pics.userDivisions.division']);
@@ -265,6 +275,7 @@ class HCOverviewController extends Controller
                 'point'            => $kpi->point,
                 'tanggal_mulai'    => $kpi->tanggal_mulai,
                 'tanggal_deadline' => $kpi->tanggal_deadline,
+                'tanggal_approve'  => $kpi->tanggal_approve,
                 'status'           => $kpi->status,
                 'note'             => $kpi->note,
                 'vic_email'        => $listEmail,
@@ -292,6 +303,7 @@ class HCOverviewController extends Controller
                 'point'            => $kpi->point,
                 'tanggal_mulai'    => $kpi->tanggal_mulai,
                 'tanggal_deadline' => $kpi->tanggal_deadline,
+                'tanggal_approve'  => $kpi->tanggal_approve,
                 'status'           => $kpi->status,
                 'note'             => $kpi->note,
                 'divisi'           => $kpi->divisi,

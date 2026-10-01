@@ -43,7 +43,6 @@
             @endif
         </div>
 
-
         {{-- =========================================================
             STAT CARDS
         ========================================================== --}}
@@ -459,6 +458,10 @@
 
                                 <th class="whitespace-nowrap px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
                                     Deadline
+                                </th>
+
+                                <th class="whitespace-nowrap px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
+                                    Tanggal Approve
                                 </th>
 
                                 <th class="whitespace-nowrap px-4 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
@@ -1067,7 +1070,7 @@
         document.getElementById('kpiNoResultsRow')?.remove();
 
         if (!kpiTableRows.length) {
-            tbody.innerHTML = '<tr><td colspan="11" class="px-6 py-14 text-center text-sm text-zinc-500">Belum ada data KPI.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="12" class="px-6 py-14 text-center text-sm text-zinc-500">Belum ada data KPI.</td></tr>';
             document.getElementById('kpiTableInfo').textContent = 'Menampilkan 0 data';
             document.getElementById('kpiTablePagination').innerHTML = '';
             return;
@@ -1075,7 +1078,7 @@
 
         if (!filteredRows.length) {
             kpiTableRows.forEach(row => row.classList.add('hidden'));
-            tbody.insertAdjacentHTML('beforeend', '<tr id="kpiNoResultsRow"><td colspan="11" class="px-6 py-14 text-center text-sm text-zinc-500">Data yang dicari tidak ditemukan.</td></tr>');
+            tbody.insertAdjacentHTML('beforeend', '<tr id="kpiNoResultsRow"><td colspan="12" class="px-6 py-14 text-center text-sm text-zinc-500">Data yang dicari tidak ditemukan.</td></tr>');
             document.getElementById('kpiTableInfo').textContent = 'Menampilkan 0 data';
             document.getElementById('kpiTablePagination').innerHTML = '';
             return;
@@ -1381,6 +1384,10 @@
                             ${item.tanggal_deadline ?? ''}
                         </td>
 
+                        <td class="whitespace-nowrap px-4 py-4 text-sm text-zinc-600">
+                            ${item.tanggal_approve ?? '-'}
+                        </td>
+
                         <td class="whitespace-nowrap px-4 py-4 text-center">
                             ${status}
                         </td>
@@ -1411,8 +1418,6 @@
             document.getElementById('pointSelesai').textContent = pointSelesai;
             document.getElementById('totalPoint').textContent = totalPoint;
             document.getElementById('totalKPI').textContent = response.data.length;
-
-
             kpiTableRows = Array.from(tbody.querySelectorAll('tr'));
             kpiTablePage = 1;
             renderKpiTable();
@@ -1425,11 +1430,10 @@
             kpiTableRows = [];
             document.getElementById('kpiTableInfo').textContent = 'Data gagal dimuat';
             document.getElementById('kpiTablePagination').innerHTML = '';
-
             document.querySelector('#dataTable tbody').innerHTML = `
                 <tr>
                     <td
-                        colspan="11"
+                        colspan="12"
                         class="px-4 py-10 text-center"
                     >
                         <div class="flex flex-col items-center justify-center">
@@ -1470,7 +1474,6 @@
 
         const filterForm = document.getElementById('filterForm');
         const resetFilter = document.getElementById('resetFilter');
-
 
         filterForm.addEventListener('submit', function (event) {
 

@@ -33,13 +33,15 @@ class IdmeClientWorkspaceController extends Controller
             $platform = $platforms->first();
 
             $documentTab = ['key' => 'documents', 'label' => 'File Dokumen', 'url' => route('PDF', ['id_produk' => $client->id, 'division_id' => $division->id]), 'platform' => false];
+            $timelineTab = ['key' => 'timeline', 'label' => 'Timeline', 'url' => route('client.kpi-timeline', ['client' => $client->id]), 'platform' => false];
 
             $tabs = $isDigitalMarketing ? [
                 ['key' => 'market-research', 'label' => 'Market Research', 'url' => $platform ? route('api.digital-marketing.market-research', [$client->id, $platform]) : null, 'platform' => true],
                 ['key' => 'analisis', 'label' => 'Analisis', 'url' => $platform ? route('api.digital-marketing.analisis', [$client->id, $platform]) : null, 'platform' => true],
                 ['key' => 'content-plan', 'label' => 'Content Plan', 'url' => $platform ? route('api.digital-marketing.content-plan', [$client->id, $platform]) : null, 'platform' => true],
                 $documentTab,
-            ] : [$documentTab];
+                $timelineTab,
+            ] : [$documentTab, $timelineTab];
 
             // Relasi Digital Marketing tetap valid walaupun platform belum
             // disetel. Tampilkan dokumen terlebih dahulu agar tidak terlihat
@@ -47,6 +49,7 @@ class IdmeClientWorkspaceController extends Controller
             if ($isDigitalMarketing && ! $platform) {
                 $tabs = [
                     $documentTab,
+                    $timelineTab,
                     [
                         'key' => 'platform-needed',
                         'label' => 'Informasi Client',

@@ -13,6 +13,7 @@ class KPI extends Model
         "point",
         "tanggal_mulai",
         "tanggal_deadline",
+        "tanggal_approve",
         "note",
         "status",
         "project",

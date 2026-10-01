@@ -142,6 +142,11 @@ Route::middleware('auth')->group(function () {
     Route::get('oauth/threads/callback', [App\Http\Controllers\ThreadsOAuthController::class, 'callback'])->name('oauth.threads.callback');
     Route::delete('oauth/threads/{client}', [App\Http\Controllers\ThreadsOAuthController::class, 'disconnect'])->name('oauth.threads.disconnect');
 
+    Route::get('oauth/tiktok/{client}/redirect', [App\Http\Controllers\TikTokOAuthController::class, 'redirect'])->name('oauth.tiktok.redirect');
+    Route::get('oauth/tiktok/connect', [App\Http\Controllers\TikTokOAuthController::class, 'redirectDraft'])->name('oauth.tiktok.connect');
+    Route::get('oauth/tiktok/callback', [App\Http\Controllers\TikTokOAuthController::class, 'callback'])->name('oauth.tiktok.callback');
+    Route::delete('oauth/tiktok/{client}', [App\Http\Controllers\TikTokOAuthController::class, 'disconnect'])->name('oauth.tiktok.disconnect');
+
     Route::get('client/{division}', [App\Http\Controllers\ProdukController::class, 'indexDivision'])->name('client.produk_divisi');
     Route::resource('perusahaan', App\Http\Controllers\PerusahaanController::class);
 

@@ -328,6 +328,15 @@ function buildEditModalHtml(res){
                             <button type="button" data-threads-disconnect data-client-id="${p.id}" class="rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-semibold text-rose-700">Putuskan</button>
                         </div>
                     ` : ''}
+                    ${oauthConnections.tiktok?.connected ? `
+                        <div class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                            <div>
+                                <p class="mb-0 text-sm font-bold text-emerald-900">TikTok terhubung sebagai ${escapeProdukHtml(oauthConnections.tiktok.provider_user_name || 'pengguna TikTok')}</p>
+                                <p class="mb-0 text-[11px] text-emerald-700">Akun siap digunakan melalui TikTok Login Kit dan Display API.</p>
+                            </div>
+                            <button type="button" data-tiktok-disconnect data-client-id="${p.id}" class="rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-semibold text-rose-700">Putuskan</button>
+                        </div>
+                    ` : ''}
                 </div>
             </div>
 

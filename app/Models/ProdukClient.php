@@ -93,6 +93,13 @@ class ProdukClient extends Model
             }
         }
 
+        if (strtolower($platform) === 'tiktok') {
+            $connection = $this->oauthConnections()->where('provider', 'tiktok')->first();
+            if ($connection && filled($connection->access_token)) {
+                return $connection->access_token;
+            }
+        }
+
         if (in_array(strtolower($platform), ['facebook', 'instagram'], true)) {
             $connection = $this->oauthConnections()->where('provider', 'meta')->first();
 
@@ -130,6 +137,10 @@ class ProdukClient extends Model
             $connection = $this->oauthConnections()->where('provider', 'threads')->first();
 
             return $connection?->provider_user_id;
+        }
+
+        if (strtolower($platform) === 'tiktok') {
+            return $this->oauthConnections()->where('provider', 'tiktok')->first()?->provider_user_id;
         }
 
         $connection = $this->oauthConnections()->where('provider', 'meta')->first();

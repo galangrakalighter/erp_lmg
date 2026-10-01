@@ -319,6 +319,7 @@ class ProdukController extends Controller
             $draftKey = $request->input('oauth_draft_key');
             $pendingMeta = $draftKey ? $request->session()->get('meta_oauth_pending.'.$draftKey) : null;
             $pendingThreads = $draftKey ? $request->session()->get('threads_oauth_pending.'.$draftKey) : null;
+            $pendingTikTok = $draftKey ? $request->session()->get('tiktok_oauth_pending.'.$draftKey) : null;
             if (is_array($pendingMeta)) {
                 OAuthConnection::updateOrCreate(
                     ['client_id' => $produk->id, 'provider' => 'meta'],
@@ -333,6 +334,13 @@ class ProdukController extends Controller
                 );
                 $this->ensureOAuthPlatformLabel($produk, 'Threads');
             }
+            if (is_array($pendingTikTok)) {
+                OAuthConnection::updateOrCreate(
+                    ['client_id' => $produk->id, 'provider' => 'tiktok'],
+                    $pendingTikTok
+                );
+                $this->ensureOAuthPlatformLabel($produk, 'TikTok');
+            }
 
             DB::commit();
 
@@ -341,6 +349,9 @@ class ProdukController extends Controller
             }
             if (is_array($pendingThreads) && $draftKey) {
                 $request->session()->forget('threads_oauth_pending.'.$draftKey);
+            }
+            if (is_array($pendingTikTok) && $draftKey) {
+                $request->session()->forget('tiktok_oauth_pending.'.$draftKey);
             }
 
             return redirect()

@@ -440,7 +440,7 @@
     }
 
     window.addEventListener('message', function (event) {
-        if (event.origin !== window.location.origin || !/^(meta|threads)-oauth-(success|error)$/.test(event.data?.type || '')) return;
+        if (event.origin !== window.location.origin || !/^(meta|threads|tiktok)-oauth-(success|error)$/.test(event.data?.type || '')) return;
 
         const provider = event.data.type.split('-')[0];
 
@@ -496,6 +496,21 @@
             return;
         }
 
+        const tiktokDisconnectButton = event.target.closest('[data-tiktok-disconnect]');
+        if (tiktokDisconnectButton) {
+            if (!confirm('Putuskan koneksi TikTok untuk client ini?')) return;
+            fetch(`/oauth/tiktok/${tiktokDisconnectButton.dataset.clientId}`, {
+                method: 'DELETE',
+                headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken }
+            }).then(async response => {
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'Koneksi TikTok gagal diputus.');
+                alert(data.message);
+                editProduk(tiktokDisconnectButton.dataset.clientId);
+            }).catch(error => alert(error.message));
+            return;
+        }
+
         const saveAssetsButton = event.target.closest('[data-meta-save-assets]');
         if (saveAssetsButton) {
             const panel = saveAssetsButton.closest('[data-meta-assets-panel]');
@@ -519,7 +534,7 @@
         if (!button) return;
 
         if (button.hasAttribute('data-oauth-new-client')) {
-            if (['meta', 'threads'].includes(button.dataset.oauthProvider)) {
+            if (['meta', 'threads', 'tiktok'].includes(button.dataset.oauthProvider)) {
                 const draftKey = button.closest('form')?.querySelector('[data-oauth-draft-key]')?.value;
                 if (!draftKey) {
                     alert('Kunci form client tidak ditemukan. Muat ulang halaman lalu coba kembali.');
@@ -533,7 +548,7 @@
             return;
         }
 
-        if (['meta', 'threads'].includes(button.dataset.oauthProvider)) {
+        if (['meta', 'threads', 'tiktok'].includes(button.dataset.oauthProvider)) {
             const provider = button.dataset.oauthProvider;
             openOAuthPopup(`/oauth/${provider}/${button.dataset.clientId}/redirect`, {
                 mode: 'edit',

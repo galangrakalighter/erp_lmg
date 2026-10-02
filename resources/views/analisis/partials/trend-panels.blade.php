@@ -23,7 +23,17 @@
         @foreach($trendSources as $sourceKey => $sourceLabel)
             @php
                 $comparison = data_get($trendComparisons ?? [], $sourceKey.'.'.$periodKey, []);
+                $comparisonAvailable = (bool) ($comparison['available'] ?? false);
+                $currentMetrics = collect(data_get($trendComparisons ?? [], $sourceKey.'.current', []));
                 $metrics = collect($comparison['metrics'] ?? []);
+                if (! $comparisonAvailable) {
+                    $metrics = $currentMetrics->map(fn ($value) => [
+                        'current' => $value,
+                        'previous' => null,
+                        'delta' => null,
+                        'percent' => null,
+                    ]);
+                }
                 $items = collect($comparison['items'] ?? []);
                 $upCount = $items->where('status', 'up')->count();
                 $downCount = $items->where('status', 'down')->count();
@@ -40,38 +50,34 @@
             <div class="trend-source-panel" data-trend-source-panel="{{ $periodKey }}:{{ $sourceKey }}" @if(!$loop->first) hidden @endif>
                 <div class="trend-head">
                     <div><p>{{ $sourceLabel }} · {{ $platform }}</p><h2>Progress {{ $dayCount }} Hari</h2></div>
-                    @if($comparison['available'] ?? false)<span class="trend-date-badge">vs {{ \Carbon\Carbon::parse($comparison['previous_date'])->translatedFormat('d M Y') }}</span>@endif
+                    <span class="trend-date-badge">{{ $comparisonAvailable ? 'vs '.\Carbon\Carbon::parse($comparison['previous_date'])->translatedFormat('d M Y') : 'Menunggu data pembanding' }}</span>
                 </div>
 
-                @if(!($comparison['available'] ?? false))
-                    <div class="trend-empty">Snapshot {{ $dayCount }} hari sebelumnya belum tersedia.<br>Sistem akan menampilkan progres otomatis setelah riwayat data mencukupi.</div>
-                @else
-                    <div class="trend-kpi-grid">
+                <div class="trend-kpi-grid">
                         @foreach($metrics as $key => $metric)
                             @php
-                                $delta = (float) ($metric['delta'] ?? 0);
+                                $delta = $metric['delta'] ?? null;
                                 $percent = $metric['percent'] ?? null;
                                 $isSpend = $key === 'spend';
-                                $state = $delta > 0 ? 'up' : ($delta < 0 ? 'down' : 'steady');
+                                $state = ($delta ?? 0) > 0 ? 'up' : (($delta ?? 0) < 0 ? 'down' : 'steady');
                             @endphp
-                            <article class="trend-kpi"><label>{{ $trendLabels[$key] ?? ucfirst($key) }}</label><strong>{{ $isSpend ? ($paidCurrency ?? 'IDR').' ' : '' }}{{ number_format($metric['current'] ?? 0, 0, ',', '.') }}</strong><span class="trend-kpi-progress is-{{ $state }}">{{ $delta > 0 ? '↑ Naik' : ($delta < 0 ? '↓ Turun' : '— Tetap') }} {{ $isSpend ? ($paidCurrency ?? 'IDR').' ' : '' }}{{ number_format(abs($delta), 0, ',', '.') }}@if($percent !== null) · {{ number_format(abs($percent), 1, ',', '.') }}%@endif</span><small>Sebelumnya {{ $isSpend ? ($paidCurrency ?? 'IDR').' ' : '' }}{{ number_format($metric['previous'] ?? 0, 0, ',', '.') }}</small></article>
+                            <article class="trend-kpi"><label>{{ $trendLabels[$key] ?? ucfirst($key) }}</label><strong>{{ $isSpend ? ($paidCurrency ?? 'IDR').' ' : '' }}{{ number_format($metric['current'] ?? 0, 0, ',', '.') }}</strong>@if($comparisonAvailable)<span class="trend-kpi-progress is-{{ $state }}">{{ $delta > 0 ? '↑ Naik' : ($delta < 0 ? '↓ Turun' : '— Tetap') }} {{ $isSpend ? ($paidCurrency ?? 'IDR').' ' : '' }}{{ number_format(abs($delta ?? 0), 0, ',', '.') }}@if($percent !== null) · {{ number_format(abs($percent), 1, ',', '.') }}%@endif</span><small>Sebelumnya {{ $isSpend ? ($paidCurrency ?? 'IDR').' ' : '' }}{{ number_format($metric['previous'] ?? 0, 0, ',', '.') }}</small>@else<span class="trend-kpi-progress is-steady">— Menunggu {{ $dayCount }} hari</span><small>Nilai saat ini</small>@endif</article>
                         @endforeach
-                    </div>
+                </div>
 
-                    <div class="trend-main-grid">
-                        <article class="meta-panel"><div class="meta-panel-head"><div><h3>Progress Konten {{ $dayCount }} Hari</h3><p>Perbandingan reach dan engagement setiap {{ $sourceKey === 'paid' ? 'iklan' : 'postingan' }}.</p></div></div><div class="trend-chart">@if($chartItems !== [])<canvas data-trend-item-chart data-trend-items="{{ e(json_encode($chartItems, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) }}"></canvas>@else<div class="trend-empty">Riwayat per postingan mulai dicatat dari snapshot terbaru.</div>@endif</div></article>
+                <div class="trend-main-grid">
+                        <article class="meta-panel"><div class="meta-panel-head"><div><h3>Progress Konten {{ $dayCount }} Hari</h3><p>Perbandingan reach dan engagement setiap {{ $sourceKey === 'paid' ? 'iklan' : 'postingan' }}.</p></div></div><div class="trend-chart">@if($chartItems !== [])<canvas data-trend-item-chart data-trend-items="{{ e(json_encode($chartItems, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) }}"></canvas>@else<div class="trend-empty">Snapshot {{ $dayCount }} hari sebelumnya belum memiliki rincian per postingan.<br>Grafik akan muncul otomatis setelah riwayat data mencukupi.</div>@endif</div></article>
                         <aside class="meta-panel"><div class="meta-panel-head"><div><h3>Ringkasan Progress</h3><p>Perubahan dibandingkan {{ $dayCount }} hari lalu.</p></div></div><div class="trend-summary"><div class="trend-summary-item"><span>Meningkat</span><strong class="trend-status trend-status--up">{{ $upCount }} konten</strong></div><div class="trend-summary-item"><span>Menurun</span><strong class="trend-status trend-status--down">{{ $downCount }} konten</strong></div><div class="trend-summary-item"><span>Konten baru</span><strong class="trend-status trend-status--new">{{ $newCount }} konten</strong></div><div class="trend-summary-item"><span>Belum berubah</span><strong class="trend-status trend-status--steady">{{ $steadyCount }} konten</strong></div></div></aside>
-                    </div>
+                </div>
 
-                    <article class="meta-panel meta-table-panel"><div class="meta-panel-head"><div><h3>Progress per {{ $sourceKey === 'paid' ? 'Iklan' : 'Postingan' }}</h3><p>Konten dengan progress terbesar ditampilkan lebih dahulu.</p></div></div><div class="meta-table-wrap"><table class="meta-table trend-progress-table"><thead><tr><th>No</th><th>{{ $sourceKey === 'paid' ? 'Iklan' : 'Postingan' }}</th><th>Reach Sebelumnya</th><th>Reach Sekarang</th><th>Progress Reach</th><th>Engagement Sebelumnya</th><th>Engagement Sekarang</th><th>Status</th></tr></thead><tbody>
+                <article class="meta-panel meta-table-panel"><div class="meta-panel-head"><div><h3>Progress per {{ $sourceKey === 'paid' ? 'Iklan' : 'Postingan' }}</h3><p>Konten dengan progress terbesar ditampilkan lebih dahulu.</p></div></div><div class="meta-table-wrap"><table class="meta-table trend-progress-table"><thead><tr><th>No</th><th>{{ $sourceKey === 'paid' ? 'Iklan' : 'Postingan' }}</th><th>Reach Sebelumnya</th><th>Reach Sekarang</th><th>Progress Reach</th><th>Engagement Sebelumnya</th><th>Engagement Sekarang</th><th>Status</th></tr></thead><tbody>
                         @forelse($items as $item)
                             @php $status = $item['status'] ?? 'steady'; $reachDelta = (float) data_get($item, 'progress.reach.delta', 0); @endphp
                             <tr><td>{{ $loop->iteration }}</td><td class="title" title="{{ $item['title'] ?? '' }}">{{ \Illuminate\Support\Str::limit($item['title'] ?? 'Konten tanpa judul', 65) }}@if(filled($item['campaign'] ?? null) || filled($item['adset'] ?? null))<small class="trend-item-context">{{ collect([$item['campaign'] ?? null, $item['adset'] ?? null])->filter()->join(' · ') }}</small>@endif</td><td>{{ number_format(data_get($item, 'progress.reach.previous', 0), 0, ',', '.') }}</td><td>{{ number_format(data_get($item, 'progress.reach.current', 0), 0, ',', '.') }}</td><td class="trend-delta {{ $reachDelta > 0 ? 'is-up' : ($reachDelta < 0 ? 'is-down' : '') }}">{{ $reachDelta > 0 ? '+' : '' }}{{ number_format($reachDelta, 0, ',', '.') }}</td><td>{{ number_format(data_get($item, 'progress.engagement.previous', 0), 0, ',', '.') }}</td><td>{{ number_format(data_get($item, 'progress.engagement.current', 0), 0, ',', '.') }}</td><td><span class="trend-status trend-status--{{ $status }}">{{ ['up'=>'Meningkat','down'=>'Menurun','new'=>'Baru','steady'=>'Tetap'][$status] ?? 'Tetap' }}</span></td></tr>
                         @empty
                             <tr><td colspan="8" class="meta-empty">Snapshot sebelumnya belum memiliki rincian per postingan. Data akan tersedia pada perbandingan berikutnya.</td></tr>
                         @endforelse
-                    </tbody></table></div></article>
-                @endif
+                </tbody></table></div></article>
             </div>
         @endforeach
     </section>

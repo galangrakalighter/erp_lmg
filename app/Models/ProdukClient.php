@@ -112,10 +112,9 @@ class ProdukClient extends Model
                     : $pages->firstWhere('id', $selectedAssets['page_id'] ?? null);
                 $page ??= $pages->first();
 
-                // Token koneksi telah ditukar menjadi long-lived user token saat OAuth.
-                // Gunakan token ini lebih dahulu agar data organik tidak bergantung pada
-                // snapshot Page token yang dapat menjadi tidak valid lebih cepat.
-                $oauthToken = $connection->access_token ?: ($page['access_token'] ?? null);
+                // Insight organik Page dan Instagram menggunakan Page access token.
+                // User token tetap menjadi cadangan untuk koneksi lama tanpa token Page.
+                $oauthToken = $page['access_token'] ?? $connection->access_token;
                 if (filled($oauthToken)) {
                     return $oauthToken;
                 }

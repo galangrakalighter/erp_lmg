@@ -82,7 +82,7 @@ class InstagramService
         $url = "https://graph.facebook.com/{$version}/{$accountId}/media";
 
         $params = [
-            'fields' => 'id,caption,permalink,timestamp,media_type,like_count,comments_count,insights.metric(reach,views,impressions,saved,shares)',
+            'fields' => 'id,caption,permalink,timestamp,media_type,like_count,comments_count,insights.metric(reach,views,saved,shares)',
             'since' => $start,
             'until' => $end,
             'access_token' => $token,

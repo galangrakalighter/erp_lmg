@@ -147,6 +147,13 @@ class FacebookService
 
                 $result = Http::timeout(120)->withOptions(['verify' => false])->get($url_result, $params_result);
                 $dataGabung = $result->json()['data'] ?? [];
+                if (! $result->successful()) {
+                    Log::warning('Facebook Graph API menolak insight postingan.', [
+                        'post_id' => $key['id_post'],
+                        'status' => $result->status(),
+                        'error' => $result->json('error.message'),
+                    ]);
+                }
                 // Inisialisasi default agar tidak error jika data kosong
                 $reachValue = 0; 
                 $impresiValue = 0;
@@ -174,6 +181,13 @@ class FacebookService
                 ];
 
                 $insights = Http::timeout(120)->withOptions(['verify' => false])->get($url_insight, $params_insights);
+                if (! $insights->successful()) {
+                    Log::warning('Facebook Graph API menolak engagement postingan.', [
+                        'post_id' => $key['id_post'],
+                        'status' => $insights->status(),
+                        'error' => $insights->json('error.message'),
+                    ]);
+                }
                 $reaction_count = data_get($insights->json(), 'reactions.summary.total_count', 0);
                 $comment_count = data_get($insights->json(), 'comments.summary.total_count', 0);
                 $shares_count =  data_get($insights->json(), 'shares.count', 0);

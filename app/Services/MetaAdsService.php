@@ -82,7 +82,12 @@ class MetaAdsService
                 ->withToken($accessToken)
                 ->withOptions(['verify' => false])
                 ->get("https://graph.facebook.com/{$version}/{$accountId}/adsets", [
-                    'fields' => 'id,start_time,end_time',
+                    'fields' => implode(',', [
+                        'id', 'status', 'effective_status', 'start_time', 'end_time',
+                        'daily_budget', 'lifetime_budget', 'budget_remaining',
+                        'billing_event', 'optimization_goal', 'bid_strategy', 'bid_amount',
+                        'targeting',
+                    ]),
                     'limit' => 500,
                 ]);
 
@@ -118,6 +123,7 @@ class MetaAdsService
                 $adsetSchedule = $adsetsById->get((string) ($row['adset_id'] ?? ''), []);
                 $adsetStart = $adsetSchedule['start_time'] ?? null;
                 $adsetEnd = $adsetSchedule['end_time'] ?? null;
+                $targeting = (array) ($adsetSchedule['targeting'] ?? []);
 
                 return [
                     'id' => $row['ad_id'] ?? null,
@@ -130,6 +136,18 @@ class MetaAdsService
                     'end_date' => $adsetEnd ? Carbon::parse($adsetEnd)->format('d M Y') : '-',
                     'start_timestamp' => $adsetStart ? Carbon::parse($adsetStart)->timestamp : null,
                     'end_timestamp' => $adsetEnd ? Carbon::parse($adsetEnd)->timestamp : null,
+                    'adset_details' => [
+                        'status' => $adsetSchedule['status'] ?? null,
+                        'effective_status' => $adsetSchedule['effective_status'] ?? null,
+                        'daily_budget' => isset($adsetSchedule['daily_budget']) ? (float) $adsetSchedule['daily_budget'] : null,
+                        'lifetime_budget' => isset($adsetSchedule['lifetime_budget']) ? (float) $adsetSchedule['lifetime_budget'] : null,
+                        'budget_remaining' => isset($adsetSchedule['budget_remaining']) ? (float) $adsetSchedule['budget_remaining'] : null,
+                        'billing_event' => $adsetSchedule['billing_event'] ?? null,
+                        'optimization_goal' => $adsetSchedule['optimization_goal'] ?? null,
+                        'bid_strategy' => $adsetSchedule['bid_strategy'] ?? null,
+                        'bid_amount' => isset($adsetSchedule['bid_amount']) ? (float) $adsetSchedule['bid_amount'] : null,
+                        'targeting' => $targeting,
+                    ],
                     'platform' => $platformKey,
                     'tanggal_posting' => $date ? Carbon::parse($date)->format('d M Y') : '-',
                     'timestamp' => $date ? Carbon::parse($date)->timestamp : 0,

@@ -180,6 +180,7 @@ class FacebookService
                 $engagement = $reaction_count + $comment_count + $shares_count;
 
                 $post['data'][] = [
+                    'id' => $key['id_post'],
                     'reach' => $reachValue ?: $jumlah_reach,
                     'judul' => $key['judul'],
                     'pemirsa' => $pemirsaValue,

@@ -6,6 +6,7 @@
     $number = fn ($value, int $decimals = 0) => number_format($value, $decimals, ',', '.');
     $money = fn ($value) => $paidCurrencyLabel.' '.$number($value, 0);
     $percent = fn ($value) => $number($value, 2).'%';
+    $metaLabel = fn ($value) => filled($value) ? \Illuminate\Support\Str::of((string) $value)->replace('_', ' ')->lower()->title()->toString() : '-';
     $ratio = fn ($top, $bottom, $multiplier = 1) => $bottom > 0 ? ($top / $bottom) * $multiplier : 0;
     $paidMetricDefinitions = [
         'ads' => ['Jumlah Iklan', $number($paidItems->count()), 'number'], 'reach' => ['Reach', $number($paidReach), 'number'],
@@ -58,6 +59,7 @@
                         'name' => $firstAd['adset'] ?? 'Set iklan tanpa nama',
                         'metrics' => $treeMetrics($adItems),
                         'dates' => $treeDates($adItems),
+                        'details' => $firstAd['adset_details'] ?? [],
                         'ads' => $adItems->values(),
                     ];
                 })->values();
@@ -104,6 +106,38 @@
                 <td class="title"><button type="button" class="paid-tree-toggle" data-paid-tree-toggle="{{ $adset['key'] }}" aria-expanded="false"><span class="paid-tree-chevron" aria-hidden="true">›</span><span title="{{ $adset['name'] }}">{{ \Illuminate\Support\Str::limit($adset['name'],45) }}</span><small>{{ $adset['ads']->count() }} iklan</small></button></td>
                 <td>—</td><td>{{ $adset['dates']['start'] }}</td><td>{{ $adset['dates']['end'] }}</td><td>{{ $number($adset['metrics']['reach']) }}</td><td>{{ $number($adset['metrics']['impressions']) }}</td><td>{{ $number($adset['metrics']['clicks']) }}</td><td>{{ $number($adset['metrics']['engagement']) }}</td><td>{{ $money($adset['metrics']['spend']) }}</td>
             </tr>
+            @php
+                $adsetDetails = $adset['details'] ?? [];
+                $targeting = data_get($adsetDetails, 'targeting', []);
+                $geo = data_get($targeting, 'geo_locations', []);
+                $countries = collect(data_get($geo, 'countries', []));
+                $regions = collect(data_get($geo, 'regions', []))->map(fn ($region) => $region['name'] ?? $region['key'] ?? null)->filter();
+                $cities = collect(data_get($geo, 'cities', []))->map(fn ($city) => $city['name'] ?? $city['key'] ?? null)->filter();
+                $genderLabels = collect(data_get($targeting, 'genders', []))->map(fn ($gender) => (int) $gender === 1 ? 'Pria' : ((int) $gender === 2 ? 'Wanita' : 'Semua'));
+                $audienceDetails = collect(data_get($targeting, 'flexible_spec', []))->flatMap(function ($spec) {
+                    return collect($spec)->flatten(1)->map(fn ($entry) => is_array($entry) ? ($entry['name'] ?? $entry['id'] ?? null) : $entry);
+                })->filter()->unique()->take(12);
+                $customAudiences = collect(data_get($targeting, 'custom_audiences', []))->map(fn ($audience) => $audience['name'] ?? $audience['id'] ?? null)->filter();
+                $excludedAudiences = collect(data_get($targeting, 'excluded_custom_audiences', []))->map(fn ($audience) => $audience['name'] ?? $audience['id'] ?? null)->filter();
+                $placements = collect([
+                    'Platform' => data_get($targeting, 'publisher_platforms', []),
+                    'Facebook' => data_get($targeting, 'facebook_positions', []),
+                    'Instagram' => data_get($targeting, 'instagram_positions', []),
+                    'Messenger' => data_get($targeting, 'messenger_positions', []),
+                    'Audience Network' => data_get($targeting, 'audience_network_positions', []),
+                    'Perangkat' => data_get($targeting, 'device_platforms', []),
+                ])->filter(fn ($values) => count((array) $values) > 0);
+            @endphp
+            <tr class="paid-tree-row paid-tree-detail-row" data-paid-tree-parent="{{ $adset['key'] }}" data-paid-tree-level="detail" hidden>
+                <td></td><td colspan="10">
+                    <div class="paid-adset-detail">
+                        <section><h4>Ringkasan</h4><dl><div><dt>Status</dt><dd>{{ $metaLabel(data_get($adsetDetails, 'effective_status') ?: data_get($adsetDetails, 'status')) }}</dd></div><div><dt>Optimasi</dt><dd>{{ $metaLabel(data_get($adsetDetails, 'optimization_goal')) }}</dd></div><div><dt>Penagihan</dt><dd>{{ $metaLabel(data_get($adsetDetails, 'billing_event')) }}</dd></div><div><dt>Strategi bid</dt><dd>{{ $metaLabel(data_get($adsetDetails, 'bid_strategy')) }}</dd></div></dl></section>
+                        <section><h4>Budget &amp; Delivery</h4><dl><div><dt>Budget harian</dt><dd>{{ data_get($adsetDetails, 'daily_budget') !== null ? $money(data_get($adsetDetails, 'daily_budget')) : '-' }}</dd></div><div><dt>Budget lifetime</dt><dd>{{ data_get($adsetDetails, 'lifetime_budget') !== null ? $money(data_get($adsetDetails, 'lifetime_budget')) : '-' }}</dd></div><div><dt>Sisa budget</dt><dd>{{ data_get($adsetDetails, 'budget_remaining') !== null ? $money(data_get($adsetDetails, 'budget_remaining')) : '-' }}</dd></div><div><dt>Jadwal</dt><dd>{{ $adset['dates']['start'] }} – {{ $adset['dates']['end'] }}</dd></div></dl></section>
+                        <section><h4>Audience</h4><dl><div><dt>Usia</dt><dd>{{ data_get($targeting, 'age_min', 18) }}–{{ data_get($targeting, 'age_max', '65+') }}</dd></div><div><dt>Gender</dt><dd>{{ $genderLabels->isNotEmpty() ? $genderLabels->join(', ') : 'Semua' }}</dd></div><div><dt>Lokasi</dt><dd>{{ $countries->concat($regions)->concat($cities)->unique()->take(8)->join(', ') ?: '-' }}</dd></div>@if($audienceDetails->isNotEmpty())<div><dt>Target terperinci</dt><dd>{{ $audienceDetails->join(', ') }}</dd></div>@endif @if($customAudiences->isNotEmpty())<div><dt>Custom audience</dt><dd>{{ $customAudiences->join(', ') }}</dd></div>@endif @if($excludedAudiences->isNotEmpty())<div><dt>Dikecualikan</dt><dd>{{ $excludedAudiences->join(', ') }}</dd></div>@endif</dl></section>
+                        <section><h4>Placement</h4>@forelse($placements as $placementLabel => $values)<div class="paid-placement-group"><span>{{ $placementLabel }}</span><div>@foreach((array) $values as $value)<b>{{ $metaLabel($value) }}</b>@endforeach</div></div>@empty<p class="paid-detail-empty">Placement otomatis / tidak dirinci oleh Meta.</p>@endforelse</section>
+                    </div>
+                </td>
+            </tr>
             @foreach($adset['ads'] as $item)
                 <tr class="paid-tree-row paid-tree-ad" data-paid-tree-parent="{{ $adset['key'] }}" data-paid-tree-level="ad" hidden>
                     <td></td><td class="paid-tree-guide">·</td><td class="paid-tree-guide">↳</td><td class="title" title="{{ $item['judul'] }}">{{ \Illuminate\Support\Str::limit($item['judul'],55) }}</td><td>{{ $item['start_date'] ?? '-' }}</td><td>{{ $item['end_date'] ?? '-' }}</td><td>{{ $number($item['reach']) }}</td><td>{{ $number($item['impressions']) }}</td><td>{{ $number($item['clicks']) }}</td><td>{{ $number($item['engagement']) }}</td><td>{{ $money($item['spend']) }}</td>
@@ -119,7 +153,7 @@
 
 <style>[data-paid-field][hidden]{display:none!important}.paid-field-menu{width:430px;max-width:min(430px,calc(100vw - 32px))}.paid-field-options{max-height:330px;grid-template-columns:repeat(2,minmax(0,1fr));overflow-y:auto;padding-right:4px}</style>
 <style>
-.paid-tree-table{min-width:1180px}.paid-tree-table th:nth-child(2),.paid-tree-table th:nth-child(3),.paid-tree-table th:nth-child(4){min-width:185px}.paid-tree-row[hidden]{display:none!important}.paid-tree-row{transition:background-color .15s ease}.paid-tree-campaign{background:#f4f4f5}.paid-tree-campaign td{border-top-color:#e4e4e7;color:#18181b;font-weight:700}.paid-tree-adset{background:#fafafa}.paid-tree-adset td{color:#3f3f46;font-weight:600}.paid-tree-ad td{background:#fff}.paid-tree-toggle{display:flex;width:100%;align-items:center;gap:7px;border:0;background:transparent;padding:0;color:inherit;text-align:left;font:inherit;cursor:pointer}.paid-tree-toggle small{margin-left:auto;border-radius:999px;background:#fff;padding:3px 7px;color:#71717a;font-size:8px;font-weight:650;white-space:nowrap}.paid-tree-chevron{display:grid;width:18px;height:18px;flex:0 0 18px;place-items:center;border:1px solid #d4d4d8;border-radius:5px;background:#fff;font-size:17px;line-height:1;transition:transform .18s ease}.paid-tree-toggle[aria-expanded="true"] .paid-tree-chevron{transform:rotate(90deg);border-color:#a1a1aa}.paid-tree-guide{color:#a1a1aa!important;text-align:center}.paid-tree-ad td:nth-child(4){padding-left:20px}.paid-tree-collapse-all{min-height:34px;padding:6px 10px}@media(max-width:760px){.paid-tree-collapse-all{display:none}}
+.paid-tree-table{min-width:1180px}.paid-tree-table th:nth-child(2),.paid-tree-table th:nth-child(3),.paid-tree-table th:nth-child(4){min-width:185px}.paid-tree-row[hidden]{display:none!important}.paid-tree-row{transition:background-color .15s ease}.paid-tree-campaign{background:#f4f4f5}.paid-tree-campaign td{border-top-color:#e4e4e7;color:#18181b;font-weight:700}.paid-tree-adset{background:#fafafa}.paid-tree-adset td{color:#3f3f46;font-weight:600}.paid-tree-ad td{background:#fff}.paid-tree-toggle{display:flex;width:100%;align-items:center;gap:7px;border:0;background:transparent;padding:0;color:inherit;text-align:left;font:inherit;cursor:pointer}.paid-tree-toggle small{margin-left:auto;border-radius:999px;background:#fff;padding:3px 7px;color:#71717a;font-size:8px;font-weight:650;white-space:nowrap}.paid-tree-chevron{display:grid;width:18px;height:18px;flex:0 0 18px;place-items:center;border:1px solid #d4d4d8;border-radius:5px;background:#fff;font-size:17px;line-height:1;transition:transform .18s ease}.paid-tree-toggle[aria-expanded="true"] .paid-tree-chevron{transform:rotate(90deg);border-color:#a1a1aa}.paid-tree-guide{color:#a1a1aa!important;text-align:center}.paid-tree-ad td:nth-child(4){padding-left:20px}.paid-tree-collapse-all{min-height:34px;padding:6px 10px}.paid-tree-detail-row>td{padding:0!important;background:#f7f7f8}.paid-adset-detail{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;margin:0 12px 12px;border:1px solid #e4e4e7;border-radius:12px;overflow:hidden;background:#e4e4e7}.paid-adset-detail section{min-width:0;background:#fff;padding:15px}.paid-adset-detail h4{margin:0 0 12px;color:#18181b;font-size:10px;text-transform:uppercase;letter-spacing:.08em}.paid-adset-detail dl{display:grid;gap:9px;margin:0}.paid-adset-detail dl div{display:grid;gap:3px}.paid-adset-detail dt,.paid-placement-group>span{color:#a1a1aa;font-size:8px;font-weight:650}.paid-adset-detail dd{margin:0;color:#3f3f46;font-size:9px;font-weight:650;line-height:1.45}.paid-placement-group{display:grid;gap:5px;margin-bottom:10px}.paid-placement-group div{display:flex;flex-wrap:wrap;gap:4px}.paid-placement-group b{border-radius:999px;background:#f4f4f5;padding:4px 7px;color:#52525b;font-size:8px;font-weight:650}.paid-detail-empty{margin:0;color:#71717a;font-size:9px;line-height:1.5}@media(max-width:1100px){.paid-adset-detail{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:760px){.paid-tree-collapse-all{display:none}.paid-adset-detail{grid-template-columns:1fr}}
 </style>
 <script>
 document.addEventListener('DOMContentLoaded',function(){

@@ -134,6 +134,7 @@ class AnalisisController extends Controller
                     $frekuensi = ($post['reach_count'] > 0) ? round($post['impresi'] / $post['reach_count']) : 0;
                     // Data Untuk Chart
                     $posts[] = [
+                        'id'       => $post['id'],
                         'judul'    => $post['judul'] ?? null,
                         'link'    => $post['link_content'],
                         'jenis'   => $post['jenis_konten'],
@@ -208,7 +209,7 @@ class AnalisisController extends Controller
                     'likes' => $totalLikes,
                     'comments' => $totalComments,
                     'shares' => array_sum(array_column($posts, 'shares')),
-                ], $paidPosts, $paidError, ! $fetch);
+                ], $posts, $paidPosts, $paidError, ! $fetch);
                 return view('analisis.instagram', compact(
                     'posts', 
                     'contentPlanItems',
@@ -269,7 +270,7 @@ class AnalisisController extends Controller
                     'likes' => $totalReaction,
                     'comments' => array_sum(array_column($dataBaru, 'comments')),
                     'shares' => array_sum(array_column($dataBaru, 'shares')),
-                ], $paidPosts, $paidError, ! $fetch);
+                ], $dataBaru, $paidPosts, $paidError, ! $fetch);
                 return view('analisis.facebook', compact(
                     'title',
                     'data',
@@ -324,7 +325,7 @@ class AnalisisController extends Controller
                     'likes' => $threadsItems->sum('likes'),
                     'comments' => $threadsItems->sum('replies'),
                     'shares' => $threadsItems->sum('shares'),
-                ], [], $paidError, ! $fetch);
+                ], $posts, [], $paidError, ! $fetch);
 
                 return view('analisis.threads', compact(
                     'title',
@@ -361,7 +362,7 @@ class AnalisisController extends Controller
                     'likes' => $tiktokItems->sum('likes'),
                     'comments' => $tiktokItems->sum('comments'),
                     'shares' => $tiktokItems->sum('shares'),
-                ], [], $paidError, ! $fetch);
+                ], $posts, [], $paidError, ! $fetch);
 
                 return view('analisis.tiktok', compact(
                     'title', 'posts', 'tiktokProfile', 'tiktokError', 'contentPlanItems',
@@ -394,11 +395,11 @@ class AnalisisController extends Controller
         return null;
     }
 
-    private function captureTrends(int $clientId, string $platform, array $organicMetrics, array $paidPosts, ?string $paidError, bool $capture): array
+    private function captureTrends(int $clientId, string $platform, array $organicMetrics, array $organicItems, array $paidPosts, ?string $paidError, bool $capture): array
     {
-        $unavailable = fn (int $days) => ['available' => false, 'days' => $days, 'previous_date' => null, 'metrics' => []];
+        $unavailable = fn (int $days) => ['available' => false, 'days' => $days, 'previous_date' => null, 'metrics' => [], 'items' => []];
         $trends = ['organic' => $capture
-            ? $this->analysisSnapshots->captureAndCompare($clientId, $platform, 'organic', $organicMetrics)
+            ? $this->analysisSnapshots->captureAndCompare($clientId, $platform, 'organic', $organicMetrics, $organicItems)
             : $this->analysisSnapshots->latestComparisons($clientId, $platform, 'organic')];
 
         if ($paidError) {
@@ -421,7 +422,7 @@ class AnalisisController extends Controller
             'spend' => $paidItems->sum('spend'),
         ];
         $trends['paid'] = $capture
-            ? $this->analysisSnapshots->captureAndCompare($clientId, $platform, 'paid', $paidMetrics)
+            ? $this->analysisSnapshots->captureAndCompare($clientId, $platform, 'paid', $paidMetrics, $paidPosts)
             : $this->analysisSnapshots->latestComparisons($clientId, $platform, 'paid');
 
         return $trends;

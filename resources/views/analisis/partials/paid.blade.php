@@ -23,6 +23,42 @@
         'video_p75' => ['Video 75%', $number($sum('video_p75')), 'number'], 'video_p100' => ['Video 100%', $number($sum('video_p100')), 'number'],
     ];
     $topPaidItem = $paidItems->sortByDesc('engagement')->first();
+    $treeMetrics = function ($items) {
+        $items = collect($items);
+
+        return [
+            'reach' => (int) $items->sum('reach'),
+            'impressions' => (int) $items->sum('impressions'),
+            'clicks' => (int) $items->sum('clicks'),
+            'engagement' => (int) $items->sum('engagement'),
+            'spend' => (float) $items->sum('spend'),
+        ];
+    };
+    $paidHierarchy = $paidItems
+        ->groupBy(fn ($item) => filled($item['campaign_id'] ?? null) ? 'id:'.$item['campaign_id'] : 'name:'.($item['campaign'] ?? '-'))
+        ->map(function ($campaignItems, $campaignKey) use ($treeMetrics) {
+            $firstCampaign = $campaignItems->first();
+            $adsets = $campaignItems
+                ->groupBy(fn ($item) => filled($item['adset_id'] ?? null) ? 'id:'.$item['adset_id'] : 'name:'.($item['adset'] ?? 'Set iklan tanpa nama'))
+                ->map(function ($adItems, $adsetKey) use ($treeMetrics) {
+                    $firstAd = $adItems->first();
+
+                    return [
+                        'key' => 'adset-'.md5((string) $adsetKey),
+                        'name' => $firstAd['adset'] ?? 'Set iklan tanpa nama',
+                        'metrics' => $treeMetrics($adItems),
+                        'ads' => $adItems->values(),
+                    ];
+                })->values();
+
+            return [
+                'key' => 'campaign-'.md5((string) $campaignKey),
+                'name' => $firstCampaign['campaign'] ?? 'Campaign tanpa nama',
+                'metrics' => $treeMetrics($campaignItems),
+                'adsets' => $adsets,
+                'ads_count' => $campaignItems->count(),
+            ];
+        })->values();
 @endphp
 
 <section data-analysis-source-panel="paid" class="hidden" hidden style="display:none">
@@ -43,18 +79,68 @@
         </div></aside>
     </div>
 
-    <div class="meta-panel meta-table-panel"><div class="meta-panel-head"><div><h3>Content Performance &amp; Analysis</h3><p>Data performa Paid {{ $platform }}.</p></div></div><div class="meta-table-wrap"><table class="meta-table"><thead><tr><th>No</th><th>Iklan</th><th>Campaign</th><th>Tanggal</th><th>Reach</th><th>Impresi</th><th>Klik</th><th>Engagement</th><th>Spend</th></tr></thead><tbody>
-    @forelse($paidItems as $item)<tr><td>{{ $loop->iteration }}</td><td class="title" title="{{ $item['judul'] }}">{{ \Illuminate\Support\Str::limit($item['judul'],60) }}</td><td title="{{ $item['campaign'] }}">{{ \Illuminate\Support\Str::limit($item['campaign'],45) }}</td><td>{{ $item['tanggal_posting'] }}</td><td>{{ $number($item['reach']) }}</td><td>{{ $number($item['impressions']) }}</td><td>{{ $number($item['clicks']) }}</td><td>{{ $number($item['engagement']) }}</td><td>{{ $money($item['spend']) }}</td></tr>@empty<tr><td colspan="9" class="meta-empty">Belum ada iklan {{ $platform }} pada periode yang dipilih.</td></tr>@endforelse
+    <div class="meta-panel meta-table-panel"><div class="meta-panel-head"><div><h3>Content Performance &amp; Analysis</h3><p>Klik Campaign, lalu Set Iklan untuk melihat struktur dan performa Paid {{ $platform }}.</p></div><button type="button" class="meta-v2-btn paid-tree-collapse-all" data-paid-tree-collapse>Ciutkan Semua</button></div><div class="meta-table-wrap"><table class="meta-table paid-tree-table"><thead><tr><th>No</th><th>Campaign</th><th>Set Iklan</th><th>Iklan</th><th>Tanggal</th><th>Reach</th><th>Impresi</th><th>Klik</th><th>Engagement</th><th>Spend</th></tr></thead><tbody>
+    @forelse($paidHierarchy as $campaign)
+        <tr class="paid-tree-row paid-tree-campaign" data-paid-tree-row="{{ $campaign['key'] }}" data-paid-tree-level="campaign">
+            <td>{{ $loop->iteration }}</td>
+            <td class="title"><button type="button" class="paid-tree-toggle" data-paid-tree-toggle="{{ $campaign['key'] }}" aria-expanded="false"><span class="paid-tree-chevron" aria-hidden="true">›</span><span title="{{ $campaign['name'] }}">{{ \Illuminate\Support\Str::limit($campaign['name'],45) }}</span><small>{{ $campaign['adsets']->count() }} set · {{ $campaign['ads_count'] }} iklan</small></button></td>
+            <td>—</td><td>—</td><td>—</td><td>{{ $number($campaign['metrics']['reach']) }}</td><td>{{ $number($campaign['metrics']['impressions']) }}</td><td>{{ $number($campaign['metrics']['clicks']) }}</td><td>{{ $number($campaign['metrics']['engagement']) }}</td><td>{{ $money($campaign['metrics']['spend']) }}</td>
+        </tr>
+        @foreach($campaign['adsets'] as $adset)
+            <tr class="paid-tree-row paid-tree-adset" data-paid-tree-row="{{ $adset['key'] }}" data-paid-tree-parent="{{ $campaign['key'] }}" data-paid-tree-level="adset" hidden>
+                <td></td><td class="paid-tree-guide">↳</td>
+                <td class="title"><button type="button" class="paid-tree-toggle" data-paid-tree-toggle="{{ $adset['key'] }}" aria-expanded="false"><span class="paid-tree-chevron" aria-hidden="true">›</span><span title="{{ $adset['name'] }}">{{ \Illuminate\Support\Str::limit($adset['name'],45) }}</span><small>{{ $adset['ads']->count() }} iklan</small></button></td>
+                <td>—</td><td>—</td><td>{{ $number($adset['metrics']['reach']) }}</td><td>{{ $number($adset['metrics']['impressions']) }}</td><td>{{ $number($adset['metrics']['clicks']) }}</td><td>{{ $number($adset['metrics']['engagement']) }}</td><td>{{ $money($adset['metrics']['spend']) }}</td>
+            </tr>
+            @foreach($adset['ads'] as $item)
+                <tr class="paid-tree-row paid-tree-ad" data-paid-tree-parent="{{ $adset['key'] }}" data-paid-tree-level="ad" hidden>
+                    <td></td><td class="paid-tree-guide">·</td><td class="paid-tree-guide">↳</td><td class="title" title="{{ $item['judul'] }}">{{ \Illuminate\Support\Str::limit($item['judul'],55) }}</td><td>{{ $item['tanggal_posting'] }}</td><td>{{ $number($item['reach']) }}</td><td>{{ $number($item['impressions']) }}</td><td>{{ $number($item['clicks']) }}</td><td>{{ $number($item['engagement']) }}</td><td>{{ $money($item['spend']) }}</td>
+                </tr>
+            @endforeach
+        @endforeach
+    @empty
+        <tr><td colspan="10" class="meta-empty">Belum ada iklan {{ $platform }} pada periode yang dipilih.</td></tr>
+    @endforelse
     </tbody></table></div></div>
 @endif
 </section>
 
 <style>[data-paid-field][hidden]{display:none!important}.paid-field-menu{width:430px;max-width:min(430px,calc(100vw - 32px))}.paid-field-options{max-height:330px;grid-template-columns:repeat(2,minmax(0,1fr));overflow-y:auto;padding-right:4px}</style>
+<style>
+.paid-tree-table{min-width:1180px}.paid-tree-table th:nth-child(2),.paid-tree-table th:nth-child(3),.paid-tree-table th:nth-child(4){min-width:185px}.paid-tree-row[hidden]{display:none!important}.paid-tree-row{transition:background-color .15s ease}.paid-tree-campaign{background:#f4f4f5}.paid-tree-campaign td{border-top-color:#e4e4e7;color:#18181b;font-weight:700}.paid-tree-adset{background:#fafafa}.paid-tree-adset td{color:#3f3f46;font-weight:600}.paid-tree-ad td{background:#fff}.paid-tree-toggle{display:flex;width:100%;align-items:center;gap:7px;border:0;background:transparent;padding:0;color:inherit;text-align:left;font:inherit;cursor:pointer}.paid-tree-toggle small{margin-left:auto;border-radius:999px;background:#fff;padding:3px 7px;color:#71717a;font-size:8px;font-weight:650;white-space:nowrap}.paid-tree-chevron{display:grid;width:18px;height:18px;flex:0 0 18px;place-items:center;border:1px solid #d4d4d8;border-radius:5px;background:#fff;font-size:17px;line-height:1;transition:transform .18s ease}.paid-tree-toggle[aria-expanded="true"] .paid-tree-chevron{transform:rotate(90deg);border-color:#a1a1aa}.paid-tree-guide{color:#a1a1aa!important;text-align:center}.paid-tree-ad td:nth-child(4){padding-left:20px}.paid-tree-collapse-all{min-height:34px;padding:6px 10px}@media(max-width:760px){.paid-tree-collapse-all{display:none}}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+    const table=document.querySelector('.paid-tree-table');
+    if(!table)return;
+    const directChildren=parent=>[...table.querySelectorAll(`[data-paid-tree-parent="${parent}"]`)];
+    function closeBranch(key){
+        const toggle=table.querySelector(`[data-paid-tree-toggle="${key}"]`);
+        if(toggle)toggle.setAttribute('aria-expanded','false');
+        directChildren(key).forEach(row=>{
+            row.hidden=true;
+            const childKey=row.dataset.paidTreeRow;
+            if(childKey)closeBranch(childKey);
+        });
+    }
+    table.addEventListener('click',event=>{
+        const toggle=event.target.closest('[data-paid-tree-toggle]');
+        if(!toggle)return;
+        const key=toggle.dataset.paidTreeToggle,isOpen=toggle.getAttribute('aria-expanded')==='true';
+        if(isOpen){closeBranch(key);return;}
+        toggle.setAttribute('aria-expanded','true');
+        directChildren(key).forEach(row=>row.hidden=false);
+    });
+    document.querySelector('[data-paid-tree-collapse]')?.addEventListener('click',()=>{
+        table.querySelectorAll('[data-paid-tree-level="campaign"]').forEach(row=>closeBranch(row.dataset.paidTreeRow));
+    });
+});
+</script>
 <script>
 document.addEventListener('DOMContentLoaded',function(){
 const raw=@json($paidItems->values()),definitions=@json(collect($paidMetricDefinitions)->map(fn($metric)=>['label'=>$metric[0],'unit'=>$metric[2]])),max=9,key='meta-analysis-paid-chart-fields-{{ strtolower($platform) }}-v2',defaults=['reach','impressions','clicks','ctr'],checks=[...document.querySelectorAll('[data-paid-field-checkbox]')],menu=document.querySelector('[data-paid-field-menu]'),toggle=document.querySelector('[data-paid-field-toggle]'),count=document.querySelector('[data-paid-field-count]'),canvas=document.querySelector('[data-paid-metrics-chart]'),colors=['#18181b','#64748b','#4f46e5','#0f766e','#ea580c','#be123c','#7e22ce','#0369a1','#65a30d'];let chart,selected;try{selected=JSON.parse(localStorage.getItem(key))}catch(e){selected=null}if(!Array.isArray(selected)||!selected.length)selected=defaults;selected=selected.filter(field=>definitions[field]).slice(0,max);
 function value(item,field){if(field==='ads')return 1;if(field==='ctr')return Number(item.impressions)>0?Number(item.clicks||0)/Number(item.impressions)*100:0;if(field==='unique_ctr')return Number(item.reach)>0?Number(item.unique_clicks||0)/Number(item.reach)*100:0;if(field==='inline_link_click_ctr')return Number(item.impressions)>0?Number(item.inline_link_clicks||0)/Number(item.impressions)*100:0;return Number(item[field]||0)}
-function datasets(){return selected.map((field,index)=>({label:definitions[field].label,data:raw.map(item=>value(item,field)),borderColor:colors[index],backgroundColor:index===0?'rgba(24,24,27,.08)':'transparent',fill:index===0,tension:.35,pointRadius:2,yAxisID:definitions[field].unit==='currency'?'yCurrency':definitions[field].unit==='percent'?'yPercent':'y'}))}
+function datasets(){return selected.map((field,index)=>({label:definitions[field].label,data:raw.map(item=>value(item,field)),borderColor:colors[index],backgroundColor:index===0?'rgba(24,24,27,.08)':'transparent',fill:index===0,tension:.35,borderWidth:2.5,pointRadius:5,pointHoverRadius:7,pointBorderWidth:2,pointBorderColor:colors[index],pointBackgroundColor:'#fff',yAxisID:definitions[field].unit==='currency'?'yCurrency':definitions[field].unit==='percent'?'yPercent':'y'}))}
 function render(){if(!canvas||typeof Chart==='undefined')return;const labels=raw.map(item=>{const title=item.judul||item.tanggal_posting||'Iklan';return title.length>22?`${title.slice(0,22)}…`:title});if(chart){chart.data.labels=labels;chart.data.datasets=datasets();chart.update();chart.resize();return}chart=new Chart(canvas.getContext('2d'),{type:'line',data:{labels,datasets:datasets()},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'bottom'}},scales:{x:{grid:{display:false},ticks:{minRotation:0,maxRotation:0,autoSkip:true,maxTicksLimit:10}},y:{beginAtZero:true,position:'left',grid:{color:'#f1f5f9'}},yCurrency:{beginAtZero:true,position:'right',grid:{drawOnChartArea:false},display:'auto'},yPercent:{beginAtZero:true,position:'right',grid:{drawOnChartArea:false},display:'auto'}}}})}
 function apply(){checks.forEach(check=>{check.checked=selected.includes(check.value);check.disabled=!check.checked&&selected.length>=max});if(count)count.textContent=`${selected.length}/${max}`;render()}
 toggle?.addEventListener('click',event=>{event.stopPropagation();menu.hidden=!menu.hidden});checks.forEach(check=>check.addEventListener('change',()=>{const next=checks.filter(item=>item.checked).map(item=>item.value);if(!next.length||next.length>max){check.checked=!check.checked;return}selected=next;localStorage.setItem(key,JSON.stringify(selected));apply()}));document.addEventListener('click',event=>{if(menu&&!event.target.closest('[data-paid-field-menu]')&&!event.target.closest('[data-paid-field-toggle]'))menu.hidden=true});window.addEventListener('analysis:source-changed',event=>{if(event.detail?.active==='paid')requestAnimationFrame(render)});localStorage.setItem(key,JSON.stringify(selected));apply();

@@ -21,7 +21,8 @@ class MetaAdsService
         $query = [
             'level' => 'ad',
             'fields' => implode(',', [
-                'ad_id', 'ad_name', 'campaign_name', 'reach', 'impressions', 'frequency',
+                'ad_id', 'ad_name', 'adset_id', 'adset_name', 'campaign_id', 'campaign_name',
+                'reach', 'impressions', 'frequency',
                 'spend', 'social_spend', 'clicks', 'unique_clicks', 'ctr', 'unique_ctr',
                 'cpc', 'cpm', 'cpp', 'inline_link_clicks', 'inline_link_click_ctr',
                 'inline_post_engagement', 'outbound_clicks', 'conversions', 'conversion_values',
@@ -91,7 +92,10 @@ class MetaAdsService
                 return [
                     'id' => $row['ad_id'] ?? null,
                     'judul' => $row['ad_name'] ?? 'Iklan tanpa nama',
+                    'campaign_id' => $row['campaign_id'] ?? null,
                     'campaign' => $row['campaign_name'] ?? '-',
+                    'adset_id' => $row['adset_id'] ?? null,
+                    'adset' => $row['adset_name'] ?? 'Set iklan tanpa nama',
                     'platform' => $platformKey,
                     'tanggal_posting' => $date ? Carbon::parse($date)->format('d M Y') : '-',
                     'timestamp' => $date ? Carbon::parse($date)->timestamp : 0,

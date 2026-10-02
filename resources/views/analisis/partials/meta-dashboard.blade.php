@@ -153,7 +153,7 @@ document.addEventListener('DOMContentLoaded', function () {
             type: 'line',
             data: {
                 labels: items.map(item => item.tanggal_posting),
-                datasets: activeMetrics.map((metric, index) => ({ label: metricLabels[metric] || metric, data: items.map(item => metricValue(item, metric)), borderColor: palette[index], backgroundColor: index === 0 ? 'rgba(24,24,27,.05)' : 'transparent', fill: index === 0, tension: .35, pointRadius: 2 }))
+                datasets: activeMetrics.map((metric, index) => ({ label: metricLabels[metric] || metric, data: items.map(item => metricValue(item, metric)), borderColor: palette[index], backgroundColor: index === 0 ? 'rgba(24,24,27,.05)' : 'transparent', fill: index === 0, tension: .35, borderWidth: 2.5, pointRadius: 5, pointHoverRadius: 7, pointBorderWidth: 2, pointBorderColor: palette[index], pointBackgroundColor: '#fff' }))
             },
             options: {
                 responsive: true,

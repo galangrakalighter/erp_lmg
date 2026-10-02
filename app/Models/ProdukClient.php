@@ -112,7 +112,10 @@ class ProdukClient extends Model
                     : $pages->firstWhere('id', $selectedAssets['page_id'] ?? null);
                 $page ??= $pages->first();
 
-                $oauthToken = $page['access_token'] ?? $connection->access_token;
+                // Token koneksi telah ditukar menjadi long-lived user token saat OAuth.
+                // Gunakan token ini lebih dahulu agar data organik tidak bergantung pada
+                // snapshot Page token yang dapat menjadi tidak valid lebih cepat.
+                $oauthToken = $connection->access_token ?: ($page['access_token'] ?? null);
                 if (filled($oauthToken)) {
                     return $oauthToken;
                 }

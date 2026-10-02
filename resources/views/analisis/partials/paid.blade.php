@@ -76,7 +76,32 @@
 @endphp
 
 <section data-analysis-source-panel="paid" class="hidden" hidden style="display:none">
-<div class="meta-panel meta-table-panel" style="margin-top:0"><div class="meta-panel-head"><div><h3>Content Plan Paid {{ $platform }}</h3><p>Rencana konten berbayar untuk platform {{ $platform }} pada periode terpilih.</p></div></div><div class="meta-table-wrap"><table class="meta-table"><thead><tr><th>No</th><th>Tanggal</th><th>Judul</th><th>Type</th><th>Strategy</th><th>Pilar</th><th>Hook</th><th>Body</th><th>CTA</th><th>Status</th><th>Output</th></tr></thead><tbody>@forelse($paidContentPlanRows ?? [] as $item)@php($contentTitle = $item->judul ?: 'Konten tanpa judul')<tr><td>{{ $loop->iteration }}</td><td>{{ $item->tanggal_posting ? \Carbon\Carbon::parse($item->tanggal_posting)->translatedFormat('d M Y') : '-' }}</td><td class="title" title="{{ $contentTitle }}">{{ \Illuminate\Support\Str::limit($contentTitle, 70) }}</td><td>{{ $item->type ?? '-' }}</td><td>{{ $item->strategy ?? '-' }}</td><td>{{ $item->pilar ?? '-' }}</td><td title="{{ $item->hooks ?? '' }}">{{ \Illuminate\Support\Str::limit($item->hooks ?? '-', 42) }}</td><td title="{{ $item->body ?? '' }}">{{ \Illuminate\Support\Str::limit($item->body ?? '-', 42) }}</td><td title="{{ $item->cta ?? '' }}">{{ \Illuminate\Support\Str::limit($item->cta ?? '-', 42) }}</td><td>{{ $item->nama_status ?? '-' }}</td><td>@if($item->link)<a href="{{ $item->link }}" target="_blank" rel="noopener">Lihat</a>@else - @endif</td></tr>@empty<tr><td colspan="11" class="meta-empty">Belum ada Content Plan Paid untuk {{ $platform }} pada periode ini.</td></tr>@endforelse</tbody></table></div></div>
+<div class="meta-panel meta-table-panel" style="margin-top:0">
+    <div class="meta-panel-head"><div><h3>Content Plan Paid {{ $platform }}</h3><p>Rencana konten berbayar untuk platform {{ $platform }} pada periode terpilih.</p></div></div>
+    <div class="meta-table-wrap"><table class="meta-table">
+        <thead><tr><th>No</th><th>Tanggal</th><th>Judul</th><th>Type</th><th>Strategy</th><th>Pilar</th><th>Hook</th><th>Body</th><th>CTA</th><th>Status</th><th>Output</th></tr></thead>
+        <tbody>
+        @forelse($paidContentPlanRows ?? [] as $item)
+            @php
+                $contentTitle = $item->judul ?: 'Konten tanpa judul';
+            @endphp
+            <tr>
+                <td>{{ $loop->iteration }}</td>
+                <td>{{ $item->tanggal_posting ? \Carbon\Carbon::parse($item->tanggal_posting)->translatedFormat('d M Y') : '-' }}</td>
+                <td class="title" title="{{ $contentTitle }}">{{ \Illuminate\Support\Str::limit($contentTitle, 70) }}</td>
+                <td>{{ $item->type ?? '-' }}</td><td>{{ $item->strategy ?? '-' }}</td><td>{{ $item->pilar ?? '-' }}</td>
+                <td title="{{ $item->hooks ?? '' }}">{{ \Illuminate\Support\Str::limit($item->hooks ?? '-', 42) }}</td>
+                <td title="{{ $item->body ?? '' }}">{{ \Illuminate\Support\Str::limit($item->body ?? '-', 42) }}</td>
+                <td title="{{ $item->cta ?? '' }}">{{ \Illuminate\Support\Str::limit($item->cta ?? '-', 42) }}</td>
+                <td>{{ $item->nama_status ?? '-' }}</td>
+                <td>@if($item->link)<a href="{{ $item->link }}" target="_blank" rel="noopener">Lihat</a>@else - @endif</td>
+            </tr>
+        @empty
+            <tr><td colspan="11" class="meta-empty">Belum ada Content Plan Paid untuk {{ $platform }} pada periode ini.</td></tr>
+        @endforelse
+        </tbody>
+    </table></div>
+</div>
 @if($paidError)
     <div class="meta-panel"><div class="meta-empty"><strong>Data Paid belum tersedia</strong><br>{{ $paidError }}</div></div>
 @else

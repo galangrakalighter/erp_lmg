@@ -74,10 +74,37 @@ class MetaAdsService
             return ['data' => [], 'error' => $message];
         }
 
+        $adsetsById = collect();
+        try {
+            $adsetsResponse = Http::connectTimeout(15)
+                ->timeout(60)
+                ->retry(1, 400, throw: false)
+                ->withToken($accessToken)
+                ->withOptions(['verify' => false])
+                ->get("https://graph.facebook.com/{$version}/{$accountId}/adsets", [
+                    'fields' => 'id,start_time,end_time',
+                    'limit' => 500,
+                ]);
+
+            if ($adsetsResponse->successful()) {
+                $adsetsById = collect($adsetsResponse->json('data', []))->keyBy('id');
+            } else {
+                Log::info('Jadwal Meta Ad Set tidak tersedia.', [
+                    'account_id' => $accountId,
+                    'error' => $adsetsResponse->json('error.message'),
+                ]);
+            }
+        } catch (\Throwable $exception) {
+            Log::info('Jadwal Meta Ad Set gagal dimuat.', [
+                'account_id' => $accountId,
+                'message' => $exception->getMessage(),
+            ]);
+        }
+
         $platformKey = strtolower($platform);
         $rows = collect($response->json('data', []))
             ->filter(fn ($row) => strtolower((string) ($row['publisher_platform'] ?? '')) === $platformKey)
-            ->map(function ($row) use ($platformKey) {
+            ->map(function ($row) use ($platformKey, $adsetsById) {
                 $sumValues = static fn ($values): float => collect($values ?? [])->sum(
                     fn ($value) => (float) ($value['value'] ?? 0)
                 );
@@ -88,6 +115,9 @@ class MetaAdsService
                     ?? $actions->get('page_engagement')
                     ?? $actions->sum());
                 $date = $row['date_start'] ?? null;
+                $adsetSchedule = $adsetsById->get((string) ($row['adset_id'] ?? ''), []);
+                $adsetStart = $adsetSchedule['start_time'] ?? null;
+                $adsetEnd = $adsetSchedule['end_time'] ?? null;
 
                 return [
                     'id' => $row['ad_id'] ?? null,
@@ -96,6 +126,10 @@ class MetaAdsService
                     'campaign' => $row['campaign_name'] ?? '-',
                     'adset_id' => $row['adset_id'] ?? null,
                     'adset' => $row['adset_name'] ?? 'Set iklan tanpa nama',
+                    'start_date' => $adsetStart ? Carbon::parse($adsetStart)->format('d M Y') : '-',
+                    'end_date' => $adsetEnd ? Carbon::parse($adsetEnd)->format('d M Y') : '-',
+                    'start_timestamp' => $adsetStart ? Carbon::parse($adsetStart)->timestamp : null,
+                    'end_timestamp' => $adsetEnd ? Carbon::parse($adsetEnd)->timestamp : null,
                     'platform' => $platformKey,
                     'tanggal_posting' => $date ? Carbon::parse($date)->format('d M Y') : '-',
                     'timestamp' => $date ? Carbon::parse($date)->timestamp : 0,

@@ -34,19 +34,30 @@
             'spend' => (float) $items->sum('spend'),
         ];
     };
+    $treeDates = function ($items) {
+        $items = collect($items);
+        $firstStart = $items->filter(fn ($item) => filled($item['start_timestamp'] ?? null))->sortBy('start_timestamp')->first();
+        $lastEnd = $items->filter(fn ($item) => filled($item['end_timestamp'] ?? null))->sortByDesc('end_timestamp')->first();
+
+        return [
+            'start' => $firstStart['start_date'] ?? '-',
+            'end' => $lastEnd['end_date'] ?? '-',
+        ];
+    };
     $paidHierarchy = $paidItems
         ->groupBy(fn ($item) => filled($item['campaign_id'] ?? null) ? 'id:'.$item['campaign_id'] : 'name:'.($item['campaign'] ?? '-'))
-        ->map(function ($campaignItems, $campaignKey) use ($treeMetrics) {
+        ->map(function ($campaignItems, $campaignKey) use ($treeMetrics, $treeDates) {
             $firstCampaign = $campaignItems->first();
             $adsets = $campaignItems
                 ->groupBy(fn ($item) => filled($item['adset_id'] ?? null) ? 'id:'.$item['adset_id'] : 'name:'.($item['adset'] ?? 'Set iklan tanpa nama'))
-                ->map(function ($adItems, $adsetKey) use ($treeMetrics) {
+                ->map(function ($adItems, $adsetKey) use ($treeMetrics, $treeDates) {
                     $firstAd = $adItems->first();
 
                     return [
                         'key' => 'adset-'.md5((string) $adsetKey),
                         'name' => $firstAd['adset'] ?? 'Set iklan tanpa nama',
                         'metrics' => $treeMetrics($adItems),
+                        'dates' => $treeDates($adItems),
                         'ads' => $adItems->values(),
                     ];
                 })->values();
@@ -55,6 +66,7 @@
                 'key' => 'campaign-'.md5((string) $campaignKey),
                 'name' => $firstCampaign['campaign'] ?? 'Campaign tanpa nama',
                 'metrics' => $treeMetrics($campaignItems),
+                'dates' => $treeDates($campaignItems),
                 'adsets' => $adsets,
                 'ads_count' => $campaignItems->count(),
             ];
@@ -79,27 +91,27 @@
         </div></aside>
     </div>
 
-    <div class="meta-panel meta-table-panel"><div class="meta-panel-head"><div><h3>Content Performance &amp; Analysis</h3><p>Klik Campaign, lalu Set Iklan untuk melihat struktur dan performa Paid {{ $platform }}.</p></div><button type="button" class="meta-v2-btn paid-tree-collapse-all" data-paid-tree-collapse>Ciutkan Semua</button></div><div class="meta-table-wrap"><table class="meta-table paid-tree-table"><thead><tr><th>No</th><th>Campaign</th><th>Set Iklan</th><th>Iklan</th><th>Tanggal</th><th>Reach</th><th>Impresi</th><th>Klik</th><th>Engagement</th><th>Spend</th></tr></thead><tbody>
+    <div class="meta-panel meta-table-panel"><div class="meta-panel-head"><div><h3>Content Performance &amp; Analysis</h3><p>Klik Campaign, lalu Set Iklan untuk melihat struktur dan performa Paid {{ $platform }}.</p></div><button type="button" class="meta-v2-btn paid-tree-collapse-all" data-paid-tree-collapse>Ciutkan Semua</button></div><div class="meta-table-wrap"><table class="meta-table paid-tree-table"><thead><tr><th>No</th><th>Campaign</th><th>Set Iklan</th><th>Iklan</th><th>Tanggal Mulai</th><th>Tanggal Selesai</th><th>Reach</th><th>Impresi</th><th>Klik</th><th>Engagement</th><th>Spend</th></tr></thead><tbody>
     @forelse($paidHierarchy as $campaign)
         <tr class="paid-tree-row paid-tree-campaign" data-paid-tree-row="{{ $campaign['key'] }}" data-paid-tree-level="campaign">
             <td>{{ $loop->iteration }}</td>
             <td class="title"><button type="button" class="paid-tree-toggle" data-paid-tree-toggle="{{ $campaign['key'] }}" aria-expanded="false"><span class="paid-tree-chevron" aria-hidden="true">›</span><span title="{{ $campaign['name'] }}">{{ \Illuminate\Support\Str::limit($campaign['name'],45) }}</span><small>{{ $campaign['adsets']->count() }} set · {{ $campaign['ads_count'] }} iklan</small></button></td>
-            <td>—</td><td>—</td><td>—</td><td>{{ $number($campaign['metrics']['reach']) }}</td><td>{{ $number($campaign['metrics']['impressions']) }}</td><td>{{ $number($campaign['metrics']['clicks']) }}</td><td>{{ $number($campaign['metrics']['engagement']) }}</td><td>{{ $money($campaign['metrics']['spend']) }}</td>
+            <td>—</td><td>—</td><td>{{ $campaign['dates']['start'] }}</td><td>{{ $campaign['dates']['end'] }}</td><td>{{ $number($campaign['metrics']['reach']) }}</td><td>{{ $number($campaign['metrics']['impressions']) }}</td><td>{{ $number($campaign['metrics']['clicks']) }}</td><td>{{ $number($campaign['metrics']['engagement']) }}</td><td>{{ $money($campaign['metrics']['spend']) }}</td>
         </tr>
         @foreach($campaign['adsets'] as $adset)
             <tr class="paid-tree-row paid-tree-adset" data-paid-tree-row="{{ $adset['key'] }}" data-paid-tree-parent="{{ $campaign['key'] }}" data-paid-tree-level="adset" hidden>
                 <td></td><td class="paid-tree-guide">↳</td>
                 <td class="title"><button type="button" class="paid-tree-toggle" data-paid-tree-toggle="{{ $adset['key'] }}" aria-expanded="false"><span class="paid-tree-chevron" aria-hidden="true">›</span><span title="{{ $adset['name'] }}">{{ \Illuminate\Support\Str::limit($adset['name'],45) }}</span><small>{{ $adset['ads']->count() }} iklan</small></button></td>
-                <td>—</td><td>—</td><td>{{ $number($adset['metrics']['reach']) }}</td><td>{{ $number($adset['metrics']['impressions']) }}</td><td>{{ $number($adset['metrics']['clicks']) }}</td><td>{{ $number($adset['metrics']['engagement']) }}</td><td>{{ $money($adset['metrics']['spend']) }}</td>
+                <td>—</td><td>{{ $adset['dates']['start'] }}</td><td>{{ $adset['dates']['end'] }}</td><td>{{ $number($adset['metrics']['reach']) }}</td><td>{{ $number($adset['metrics']['impressions']) }}</td><td>{{ $number($adset['metrics']['clicks']) }}</td><td>{{ $number($adset['metrics']['engagement']) }}</td><td>{{ $money($adset['metrics']['spend']) }}</td>
             </tr>
             @foreach($adset['ads'] as $item)
                 <tr class="paid-tree-row paid-tree-ad" data-paid-tree-parent="{{ $adset['key'] }}" data-paid-tree-level="ad" hidden>
-                    <td></td><td class="paid-tree-guide">·</td><td class="paid-tree-guide">↳</td><td class="title" title="{{ $item['judul'] }}">{{ \Illuminate\Support\Str::limit($item['judul'],55) }}</td><td>{{ $item['tanggal_posting'] }}</td><td>{{ $number($item['reach']) }}</td><td>{{ $number($item['impressions']) }}</td><td>{{ $number($item['clicks']) }}</td><td>{{ $number($item['engagement']) }}</td><td>{{ $money($item['spend']) }}</td>
+                    <td></td><td class="paid-tree-guide">·</td><td class="paid-tree-guide">↳</td><td class="title" title="{{ $item['judul'] }}">{{ \Illuminate\Support\Str::limit($item['judul'],55) }}</td><td>{{ $item['start_date'] ?? '-' }}</td><td>{{ $item['end_date'] ?? '-' }}</td><td>{{ $number($item['reach']) }}</td><td>{{ $number($item['impressions']) }}</td><td>{{ $number($item['clicks']) }}</td><td>{{ $number($item['engagement']) }}</td><td>{{ $money($item['spend']) }}</td>
                 </tr>
             @endforeach
         @endforeach
     @empty
-        <tr><td colspan="10" class="meta-empty">Belum ada iklan {{ $platform }} pada periode yang dipilih.</td></tr>
+        <tr><td colspan="11" class="meta-empty">Belum ada iklan {{ $platform }} pada periode yang dipilih.</td></tr>
     @endforelse
     </tbody></table></div></div>
 @endif

@@ -192,6 +192,12 @@ Route::middleware('auth')->group(function () {
     Route::post('cms/cta/edit/{id}', [App\Http\Controllers\JenisCTAController::class, 'update'])->name('cta_edit');
     Route::post('cms/cta/delete/{id}', [App\Http\Controllers\JenisCTAController::class, 'destroy'])->name('cta_delete');
 
+    // Komposisi Content Plan
+    Route::get('cms_{nama}/composition', [App\Http\Controllers\ContentCompositionController::class, 'index'])->name('cms.composition');
+    Route::post('cms_{nama}/composition/create', [App\Http\Controllers\ContentCompositionController::class, 'store'])->name('composition_create');
+    Route::post('cms/composition/edit/{id}', [App\Http\Controllers\ContentCompositionController::class, 'update'])->name('composition_edit');
+    Route::post('cms/composition/delete/{id}', [App\Http\Controllers\ContentCompositionController::class, 'destroy'])->name('composition_delete');
+
     // CMS MARKET
 
     // Analisa 4P

@@ -17,8 +17,10 @@ class ClientContentGuideController extends Controller
             ['key' => 'hook', 'label' => 'Hook', 'table' => 'hooks', 'name' => 'hooks'],
             ['key' => 'body', 'label' => 'Body', 'table' => 'jenis_body', 'name' => 'nama_body'],
             ['key' => 'cta', 'label' => 'CTA', 'table' => 'jenis_cta', 'name' => 'nama_cta'],
-        ])->map(function (array $section) {
+            ['key' => 'composition', 'label' => 'Komposisi', 'table' => 'content_compositions', 'name' => 'nama'],
+        ])->map(function (array $section) use ($clientModel) {
             $section['items'] = DB::table($section['table'])
+                ->where('kategori_id', $clientModel->kategori_jasa_id)
                 ->where('status', 1)
                 ->select([
                     'id',

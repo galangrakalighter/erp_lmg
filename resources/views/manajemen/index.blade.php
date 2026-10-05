@@ -273,10 +273,16 @@
                                             <input type="text" name="durasi" class="form-control bg-light border-0" placeholder="60s">
                                         </div>
                                     </div> --}}
-                                    <div class="col-md-3 col-6">
+                                    <div class="col-md-6">
                                         <div class="form-group mb-0">
                                             <label class="text-dark font-weight-bold small">Komposisi</label>
-                                            <input type="text" name="komposisi" class="form-control bg-light border-0" placeholder="9:16">
+                                            <select name="komposisi" id="create_komposisi" class="form-control custom-select bg-light border-0" data-composition-select data-guidance-target="create_komposisi_guidance">
+                                                <option value="">-- Pilih Komposisi --</option>
+                                                @foreach ($option['composition'] as $composition)
+                                                    <option value="{{ $composition->nama }}" data-function="{{ $composition->fungsi_singkat }}" data-example="{{ $composition->contoh }}">{{ $composition->nama }}</option>
+                                                @endforeach
+                                            </select>
+                                            <small id="create_komposisi_guidance" class="form-text text-muted" hidden></small>
                                         </div>
                                     </div>
                                     @if($kategory->id == 2)
@@ -565,9 +571,15 @@
                                             @endforeach
                                         </select>
                                     </div>
-                                    <div class="col-md-3 col-6">
+                                    <div class="col-md-6">
                                         <label class="text-muted font-weight-bold small">Komposisi</label>
-                                        <input type="text" name="komposisi" id="edit_komposisi" class="form-control bg-light border-0 shadow-none" {{ $role == "Content Creator" ? "readonly" : "" }}>
+                                        <select name="komposisi" id="edit_komposisi" class="form-control custom-select bg-light border-0 shadow-none" data-composition-select data-guidance-target="edit_komposisi_guidance" {{ $role == "Content Creator" ? "disabled" : "" }}>
+                                            <option value="">-- Pilih Komposisi --</option>
+                                            @foreach ($option['composition'] as $composition)
+                                                <option value="{{ $composition->nama }}" data-function="{{ $composition->fungsi_singkat }}" data-example="{{ $composition->contoh }}">{{ $composition->nama }}</option>
+                                            @endforeach
+                                        </select>
+                                        <small id="edit_komposisi_guidance" class="form-text text-muted" hidden></small>
                                     </div>
                                     
                                     @if($kategory->id == 2)
@@ -757,6 +769,22 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
+        const updateCompositionGuidance = select => {
+            const target = document.getElementById(select.dataset.guidanceTarget || '');
+            if (!target) return;
+            const option = select.options[select.selectedIndex];
+            const parts = [];
+            if (option?.dataset.function) parts.push(`<strong>Fungsi:</strong> ${escapeContentPlan(option.dataset.function)}`);
+            if (option?.dataset.example) parts.push(`<strong>Contoh:</strong> ${escapeContentPlan(option.dataset.example)}`);
+            target.innerHTML = parts.join('<br>');
+            target.hidden = parts.length === 0;
+        };
+        document.querySelectorAll('[data-composition-select]').forEach(select => {
+            select.addEventListener('change', () => updateCompositionGuidance(select));
+            updateCompositionGuidance(select);
+        });
+        window.updateCompositionGuidance = updateCompositionGuidance;
+
         const syncContentSourceTabs = () => {
             document.querySelectorAll('[data-content-source]').forEach(button => {
                 const active = button.dataset.contentSource === activeContentSource;
@@ -831,7 +859,11 @@
             $('#edit_hooks').val(rowData.hooks_id);
             $('#edit_body').val(rowData.body_id);
             $('#edit_cta').val(rowData.cta_id);
+            if (rowData.komposisi && !Array.from(document.getElementById('edit_komposisi').options).some(option => option.value === rowData.komposisi)) {
+                $('#edit_komposisi').append(new Option(`${rowData.komposisi} (data lama)`, rowData.komposisi));
+            }
             $('#edit_komposisi').val(rowData.komposisi);
+            window.updateCompositionGuidance?.(document.getElementById('edit_komposisi'));
             $('#edit_warna').val(rowData.background);
             $('#edit_tanggal_posting').val(rowData.tanggal_posting);
             $('#edit_link').val(rowData.link);

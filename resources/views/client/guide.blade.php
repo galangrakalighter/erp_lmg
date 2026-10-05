@@ -6,7 +6,7 @@
         <header class="rounded-2xl border border-zinc-200 bg-white px-5 py-5 shadow-sm sm:px-6">
             <p class="text-[10px] font-bold uppercase tracking-[.2em] text-zinc-400">Content Guide</p>
             <h1 class="mt-1 text-xl font-semibold tracking-tight text-zinc-950">Panduan Konten {{ $client->nama }}</h1>
-            <p class="mt-1 text-xs text-zinc-500">Referensi Pilar, Hook, Body, dan CTA untuk membantu penyusunan content plan.</p>
+            <p class="mt-1 text-xs text-zinc-500">Referensi Pilar, Hook, Body, CTA, dan Komposisi untuk membantu penyusunan content plan.</p>
         </header>
 
         <nav class="flex gap-1 overflow-x-auto rounded-2xl border border-zinc-200 bg-white p-1.5 shadow-sm" aria-label="Kategori content guide">

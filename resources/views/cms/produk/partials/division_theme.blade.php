@@ -568,7 +568,8 @@
     'cms.type',
     'cms.pilar',
     'cms.body',
-    'cms.cta'
+    'cms.cta',
+    'cms.composition'
 ))
     @include('partials.client_native_tables')
 @endif

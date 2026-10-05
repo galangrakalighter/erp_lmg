@@ -2,86 +2,6 @@
 
 @section('content')
 <style>
-    #crmApp .crm-date-trigger {
-        display: flex;
-        min-height: 42px;
-        width: 100%;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        border: 1px solid #e4e4e7;
-        border-radius: .5rem;
-        background: #fff;
-        padding: .625rem .75rem;
-        color: #18181b;
-        font-size: .875rem;
-        text-align: left;
-        transition: border-color 150ms ease, box-shadow 150ms ease;
-    }
-
-    #crmApp .crm-date-trigger:hover { border-color: #a1a1aa; }
-    #crmApp .crm-date-trigger:focus-visible {
-        border-color: #18181b;
-        outline: none;
-        box-shadow: 0 0 0 3px rgba(24, 24, 27, .1);
-    }
-
-    .crm-date-popover {
-        position: fixed;
-        z-index: 100;
-        width: 218px;
-        overflow: hidden;
-        border: 1px solid #d4d4d8;
-        border-radius: 6px;
-        background: #fff;
-        box-shadow: 0 8px 18px rgba(0, 0, 0, .16);
-        color: #18181b;
-        font-family: Arial, sans-serif;
-        font-size: 12px;
-    }
-
-    .crm-date-popover[hidden] { display: none; }
-    .crm-date-popover__header {
-        display: grid;
-        grid-template-columns: 28px 1fr 28px;
-        align-items: center;
-        min-height: 42px;
-        border-bottom: 1px solid #e4e4e7;
-        padding: 0 7px;
-    }
-
-    .crm-date-popover__month { font-weight: 700; text-align: center; }
-    .crm-date-popover__nav {
-        display: grid;
-        width: 26px;
-        height: 26px;
-        place-items: center;
-        border-radius: 4px;
-        color: #3f3f46;
-    }
-    .crm-date-popover__nav:hover { background: #f4f4f5; }
-    .crm-date-popover__weekdays,
-    .crm-date-popover__days { display: grid; grid-template-columns: repeat(7, 1fr); }
-    .crm-date-popover__weekdays { padding: 9px 8px 4px; color: #71717a; font-size: 10px; font-weight: 700; text-align: center; }
-    .crm-date-popover__days { gap: 2px; padding: 4px 8px 9px; }
-    .crm-date-popover__day {
-        display: grid;
-        width: 27px;
-        height: 27px;
-        place-items: center;
-        border: 1px solid transparent;
-        border-radius: 4px;
-        color: #27272a;
-        font: inherit;
-    }
-    .crm-date-popover__day:hover { background: #f4f4f5; }
-    .crm-date-popover__day.is-muted { color: #a1a1aa; }
-    .crm-date-popover__day.is-today { border-color: #71717a; }
-    .crm-date-popover__day.is-selected { background: #2563eb; border-color: #2563eb; color: #fff; }
-    .crm-date-popover__footer { display: flex; justify-content: space-between; border-top: 1px solid #f4f4f5; padding: 7px 10px; }
-    .crm-date-popover__action { color: #2563eb; font: inherit; }
-    .crm-date-popover__action:hover { text-decoration: underline; }
-
     #crmApp .crm-table-shell {
         max-height: 68vh;
         scrollbar-color: #a1a1aa #f4f4f5;
@@ -499,11 +419,8 @@
                                 Dari Tanggal
                             </label>
 
-                            <input type="hidden" id="startDate" value="{{ now('Asia/Jakarta')->subDay()->toDateString() }}">
-                            <button type="button" id="startDatePicker" class="crm-date-trigger" aria-haspopup="dialog" aria-expanded="false">
-                                <span>{{ now('Asia/Jakarta')->subDay()->format('d/m/Y') }}</span>
-                                <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>
-                            </button>
+                            <input type="date" id="startDate" name="start_date" data-filter-date data-no-default-date
+                                value="{{ now('Asia/Jakarta')->subDay()->toDateString() }}" aria-label="Dari tanggal">
                         </div>
 
 
@@ -516,11 +433,8 @@
                                 Sampai Tanggal
                             </label>
 
-                            <input type="hidden" id="endDate" value="{{ now('Asia/Jakarta')->toDateString() }}">
-                            <button type="button" id="endDatePicker" class="crm-date-trigger" aria-haspopup="dialog" aria-expanded="false">
-                                <span>{{ now('Asia/Jakarta')->format('d/m/Y') }}</span>
-                                <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>
-                            </button>
+                            <input type="date" id="endDate" name="end_date" data-filter-date data-no-default-date
+                                value="{{ now('Asia/Jakarta')->toDateString() }}" aria-label="Sampai tanggal">
                         </div>
 
 

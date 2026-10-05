@@ -41,6 +41,11 @@ class ManajemenKontenController extends Controller
                 ->where('status', 1)
                 ->get();
         }
+        $option['composition'] = DB::table('content_compositions')
+            ->where('kategori_id', $kategory->id)
+            ->where('status', 1)
+            ->orderBy('nama')
+            ->get();
 
         // Meta Tags
         $title = "Manajemen Konten " . $produk->nama;

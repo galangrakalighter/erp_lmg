@@ -407,6 +407,7 @@
                     ['route' => 'cms.pilar', 'label' => 'Pilar'],
                     ['route' => 'cms.body', 'label' => 'Body'],
                     ['route' => 'cms.cta', 'label' => 'CTA'],
+                    ['route' => 'cms.composition', 'label' => 'Komposisi'],
                 ];
             @endphp
 

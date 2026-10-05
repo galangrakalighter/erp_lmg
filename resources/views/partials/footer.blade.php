@@ -64,7 +64,8 @@
         'cms.type',
         'cms.pilar',
         'cms.body',
-        'cms.cta'
+        'cms.cta',
+        'cms.composition'
     ))
         <script src="{{ asset('js/demo/datatables-demo.js')}}"></script>
     @endunless

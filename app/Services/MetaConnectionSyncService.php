@@ -27,28 +27,65 @@ class MetaConnectionSyncService
             ->where('client_id', '!=', $currentClientId)
             ->get();
 
+        $updatedClientIds = collect();
         foreach ($siblings as $sibling) {
-            // Aset dan selected_assets sengaja tidak disentuh. Page access
-            // token untuk data organik melekat pada Page masing-masing client;
-            // menggantinya dengan daftar aset hasil login client lain membuat
-            // Page lama tidak ditemukan dan metrik organik terlihat nol.
+            $siblingAssets = $sibling->assets ?? [];
+            $selection = $sibling->selected_assets ?? [];
+            $freshPages = collect(data_get($connectionData, 'assets.pages', []))->keyBy(
+                fn ($page) => (string) ($page['id'] ?? '')
+            );
+            $selectedPageId = (string) ($selection['page_id'] ?? '');
+            $selectedInstagramId = (string) ($selection['instagram_account_id'] ?? '');
+            $freshSelectedPage = $selectedPageId !== '' ? $freshPages->get($selectedPageId) : null;
+            $freshInstagramPage = $freshPages->first(
+                fn ($page) => (string) data_get($page, 'instagram_business_account.id') === $selectedInstagramId
+            );
+
+            // Token baru hanya aman dipakai bila respons OAuth baru memang
+            // masih mencakup Page/Instagram yang dipilih client lama.
+            if (! $freshSelectedPage && ! $freshInstagramPage) {
+                Log::warning('Kredensial Meta client terkait tidak diperbarui karena aset tidak tercakup', [
+                    'source_client_id' => $currentClientId,
+                    'skipped_client_id' => $sibling->client_id,
+                    'selected_page_id' => $selectedPageId ?: null,
+                    'selected_instagram_id' => $selectedInstagramId ?: null,
+                ]);
+                continue;
+            }
+
+            $siblingAssets['pages'] = collect($siblingAssets['pages'] ?? [])->map(function ($oldPage) use ($freshPages) {
+                $freshPage = $freshPages->get((string) ($oldPage['id'] ?? ''));
+                return $freshPage ? array_replace_recursive($oldPage, $freshPage) : $oldPage;
+            })->values()->all();
+
+            $freshAdAccounts = collect(data_get($connectionData, 'assets.ad_accounts', []))->keyBy(
+                fn ($account) => (string) ($account['id'] ?? '')
+            );
+            $siblingAssets['ad_accounts'] = collect($siblingAssets['ad_accounts'] ?? [])->map(function ($oldAccount) use ($freshAdAccounts) {
+                $freshAccount = $freshAdAccounts->get((string) ($oldAccount['id'] ?? ''));
+                return $freshAccount ? array_replace_recursive($oldAccount, $freshAccount) : $oldAccount;
+            })->values()->all();
+
             $sibling->update([
                 'access_token' => $accessToken,
                 'token_type' => $connectionData['token_type'] ?? $sibling->token_type,
                 'expires_at' => $connectionData['expires_at'] ?? null,
                 'provider_user_name' => $connectionData['provider_user_name'] ?? $sibling->provider_user_name,
+                'scopes' => $connectionData['scopes'] ?? $sibling->scopes,
+                'assets' => $siblingAssets,
                 'last_synced_at' => $connectionData['last_synced_at'] ?? now(),
             ]);
+            $updatedClientIds->push($sibling->client_id);
         }
 
-        if ($siblings->isNotEmpty()) {
+        if ($updatedClientIds->isNotEmpty()) {
             Log::info('Kredensial Meta client terkait diperbarui', [
                 'source_client_id' => $currentClientId,
-                'updated_client_ids' => $siblings->pluck('client_id')->all(),
+                'updated_client_ids' => $updatedClientIds->all(),
                 'provider_user_id' => $providerUserId,
             ]);
         }
 
-        return $siblings->count();
+        return $updatedClientIds->count();
     }
 }

@@ -28,15 +28,15 @@ class MetaConnectionSyncService
             ->get();
 
         foreach ($siblings as $sibling) {
-            // selected_assets sengaja tidak disentuh: setiap client tetap
-            // menunjuk Page, Instagram, dan akun iklannya sendiri.
+            // Aset dan selected_assets sengaja tidak disentuh. Page access
+            // token untuk data organik melekat pada Page masing-masing client;
+            // menggantinya dengan daftar aset hasil login client lain membuat
+            // Page lama tidak ditemukan dan metrik organik terlihat nol.
             $sibling->update([
                 'access_token' => $accessToken,
                 'token_type' => $connectionData['token_type'] ?? $sibling->token_type,
                 'expires_at' => $connectionData['expires_at'] ?? null,
                 'provider_user_name' => $connectionData['provider_user_name'] ?? $sibling->provider_user_name,
-                'scopes' => $connectionData['scopes'] ?? [],
-                'assets' => $connectionData['assets'] ?? [],
                 'last_synced_at' => $connectionData['last_synced_at'] ?? now(),
             ]);
         }

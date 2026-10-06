@@ -47,6 +47,8 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/digital-marketing/client/{id_produk}', [App\Http\Controllers\DigitalMarketingWorkspaceController::class, 'show'])
         ->name('digital-marketing.workspace');
+    Route::put('/digital-marketing/client/{id_produk}/platform-mirroring', [App\Http\Controllers\DigitalMarketingWorkspaceController::class, 'updateMirroring'])
+        ->name('digital-marketing.platform-mirroring');
     Route::get('/multimedia/client/{id_produk}', [App\Http\Controllers\MultimediaWorkspaceController::class, 'show'])
         ->name('multimedia.workspace');
     Route::get('/business-dev/client/{id_produk}', [App\Http\Controllers\BusinessDevWorkspaceController::class, 'show'])

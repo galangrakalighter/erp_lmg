@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Services\MarketResearch\MarketResearchService;
+use App\Services\PlatformMirroringService;
 class marketResearchController extends Controller
 {
     protected $market;
@@ -15,8 +16,8 @@ class marketResearchController extends Controller
         $this->market = $market;
     }
 
-    public function index($id, $platform){
-        $data = $this->market->getMarket((int)$id, $platform);
+    public function index($id, $platform, PlatformMirroringService $mirroring){
+        $data = $this->market->getMarket((int)$id, $mirroring->platforms((int) $id, $platform));
         $divisi = User::find(Auth::user()->id)->userDivisions;
         $role = Auth::user()->isAdmin == false ? DB::table('roles')->where('id', $divisi[0]->role_id)->value('role_name') : "Super Admin";
         $title = "Market Research";

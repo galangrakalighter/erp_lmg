@@ -24,8 +24,9 @@ class MarketResearchServiceImplement extends ServiceApi implements MarketResearc
      * because used in extends service class
      */
 
-    public function getMarket(int $id, string $platform)
+    public function getMarket(int $id, string|array $platform)
     {
+        $platforms = (array) $platform;
         $data = [];
         $jumlah = [];
         $getData = ['analize_4p', 'analize_swot', 'positioning', 'segmentasi', 'target_audience'];
@@ -34,7 +35,11 @@ class MarketResearchServiceImplement extends ServiceApi implements MarketResearc
           $market = DB::table($getData[$i])
                     ->join('produk_client', 'produk_client.id', '=', $getData[$i].'.produk_client_id')
                     ->where($getData[$i].'.produk_client_id', $id)
-                    ->where($getData[$i].'.platform', $platform)
+                    ->whereIn($getData[$i].'.platform', $platforms)
+                    ->when(count($platforms) > 1, fn ($query) => $query->whereNotIn(
+                        $getData[$i].'.id',
+                        DB::table('platform_mirror_copies')->where('client_id', $id)->where('table_name', $getData[$i])->pluck('target_id')
+                    ))
                     ->select('produk_client.nama', $getData[$i].'.*')
                     ->get();
           array_push($data, $market);
@@ -42,7 +47,11 @@ class MarketResearchServiceImplement extends ServiceApi implements MarketResearc
           $jumlahData = DB::table($getData[$i])
                     ->select('produk_client_id', DB::raw('count(*) as total'))
                     ->where('produk_client_id', $id)
-                    ->where('platform', $platform)
+                    ->whereIn('platform', $platforms)
+                    ->when(count($platforms) > 1, fn ($query) => $query->whereNotIn(
+                        'id',
+                        DB::table('platform_mirror_copies')->where('client_id', $id)->where('table_name', $getData[$i])->pluck('target_id')
+                    ))
                     ->groupBy('produk_client_id')
                     ->get();
 

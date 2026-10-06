@@ -10,6 +10,7 @@ use App\Models\Task;
 use Carbon\CarbonPeriod;
 use App\Models\ProdukClient;
 use Illuminate\Validation\Rule;
+use App\Services\PlatformMirroringService;
 
 class ManajemenKontenController extends Controller
 {
@@ -57,7 +58,7 @@ class ManajemenKontenController extends Controller
         ));
     }
 
-    public function getApiData(Request $request, $produk_id, $platform)
+    public function getApiData(Request $request, $produk_id, $platform, PlatformMirroringService $mirroring)
     {
         if ($this->isMultimediaUser()) {
             $this->authorizeMultimediaClient((int) $produk_id);
@@ -69,6 +70,7 @@ class ManajemenKontenController extends Controller
         $contentSource = $validated['content_source'] ?? 'organic';
 
         try {
+            $mirroredPlatforms = $mirroring->platforms((int) $produk_id, $platform);
             $query = DB::table("data_jasa")
                 ->leftJoin('type_produk', 'type_produk.id', '=', 'data_jasa.type_produk_id')
                 ->leftJoin('strategy', 'strategy.id', '=', 'data_jasa.strategy_id')
@@ -79,7 +81,10 @@ class ManajemenKontenController extends Controller
                 ->leftJoin('jenis_cta', 'jenis_cta.id', '=', 'data_jasa.cta_id')
                 ->leftJoin('users', 'users.id', '=', 'data_jasa.pic')
                 ->where('data_jasa.produk_client_id', $produk_id)
-                ->where('data_jasa.platform', $platform)
+                ->whereIn('data_jasa.platform', $mirroredPlatforms)
+                ->when(count($mirroredPlatforms) > 1, fn ($query) => $query->whereNotIn(
+                    'data_jasa.id', $mirroring->copiedTargetIds((int) $produk_id, 'data_jasa')
+                ))
                 ->where('data_jasa.content_source', $contentSource)
                 ->select(
                     'data_jasa.*', 

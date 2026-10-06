@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\OAuthConnection;
 use App\Models\ProdukClient;
+use App\Services\MetaConnectionSyncService;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -50,7 +51,7 @@ class MetaOAuthController extends Controller
         return redirect()->away('https://www.facebook.com/dialog/oauth?'.$query);
     }
 
-    public function callback(Request $request)
+    public function callback(Request $request, MetaConnectionSyncService $connectionSync)
     {
         $pending = $request->session()->pull('meta_oauth');
         abort_unless(is_array($pending), 419, 'Sesi OAuth Meta tidak ditemukan atau sudah kedaluwarsa.');
@@ -157,6 +158,7 @@ class MetaOAuthController extends Controller
                     ['client_id' => $client->id, 'provider' => 'meta'],
                     $connectionData
                 );
+                $connectionSync->refreshSiblingConnections($client->id, $connectionData);
                 $this->ensurePlatformLabels($client, $pages);
             } else {
                 $draftKey = $pending['draft_key'] ?? null;

@@ -1,6 +1,9 @@
 @extends('layout.app')
 
 @section('content')
+@php
+    $platformMirroringEnabled = ($workspaceApiNamespace ?? 'api.digital-marketing') === 'api.digital-marketing';
+@endphp
 <style>
     .workspace-tab.is-active,
     .workspace-tab.is-active:hover,
@@ -31,10 +34,16 @@
                             <span class="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-zinc-400">Platform</span>
                             <select id="dmWorkspacePlatform" class="w-full rounded-xl border border-white/15 bg-white px-3 py-2.5 text-sm font-semibold text-zinc-950 outline-none">
                                 @foreach($platforms as $platform)
-                                    <option value="{{ $platform }}">{{ $platform }}</option>
+                                    <option value="{{ $platform }}" @selected(strcasecmp($platform, request('platform', 'Instagram')) === 0)>{{ $platform }}</option>
                                 @endforeach
                             </select>
                         </label>
+                        @if($platformMirroringEnabled)
+                        <button type="button" id="dmMirrorButton" class="inline-flex h-[42px] items-center justify-center gap-2 rounded-xl border border-white/20 bg-zinc-900 px-4 text-xs font-semibold text-white transition hover:bg-zinc-800">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 7h11m0 0-3-3m3 3-3 3M16 17H5m0 0 3 3m-3-3 3-3"/></svg>
+                            Mirroring
+                        </button>
+                        @endif
                     @endif
                     <a id="dmWorkspaceExport" href="{{ route('invoice.download', ['id' => $client->id, 'halaman' => 'Market Research']) }}" class="inline-flex h-[42px] items-center justify-center gap-2 rounded-xl border border-white/15 bg-white px-4 text-xs font-semibold text-zinc-950 transition hover:bg-zinc-100">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 3v12m-4-4 4 4 4-4M5 21h14"/></svg>
@@ -43,6 +52,24 @@
                 </div>
             </div>
         </header>
+
+        @if($platformMirroringEnabled)
+        <div id="dmMirrorModal" class="fixed inset-0 z-[10000] hidden items-center justify-center bg-black/55 p-4" aria-hidden="true">
+            <div class="w-full max-w-lg rounded-2xl bg-white shadow-2xl">
+                <div class="flex items-start justify-between border-b border-zinc-200 px-6 py-5">
+                    <div><h2 class="text-base font-semibold text-zinc-950">Mirroring Platform</h2><p class="mt-1 text-xs leading-5 text-zinc-500">Gabungkan data operasional platform terpilih tanpa menghapus atau memindahkan data aslinya.</p></div>
+                    <button type="button" id="dmMirrorClose" class="rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-950">&times;</button>
+                </div>
+                <form id="dmMirrorForm" class="px-6 py-5">
+                    <p class="text-sm text-zinc-700">Mirror <strong id="dmMirrorSource"></strong> dengan:</p>
+                    <div id="dmMirrorTargets" class="mt-4 grid grid-cols-2 gap-3"></div>
+                    <p class="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-800">Saat mirroring dimatikan, data yang sudah ada tetap tersimpan pada platform asalnya.</p>
+                    <div id="dmMirrorError" class="mt-3 hidden text-xs text-red-600"></div>
+                    <div class="mt-5 flex justify-end gap-2"><button type="button" id="dmMirrorCancel" class="rounded-xl border border-zinc-300 px-4 py-2.5 text-xs font-semibold text-zinc-700">Batal</button><button type="submit" class="rounded-xl bg-zinc-950 px-4 py-2.5 text-xs font-semibold text-white">Simpan Mirroring</button></div>
+                </form>
+            </div>
+        </div>
+        @endif
 
         <section class="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
             <nav id="dmWorkspaceTabs" class="flex gap-1 overflow-x-auto border-b border-zinc-200 bg-zinc-50 p-2" aria-label="Menu client {{ $workspaceLabel }}">
@@ -101,7 +128,56 @@ document.addEventListener('DOMContentLoaded', function () {
         'content-plan': @json(route('invoice.download', ['id' => $client->id, 'halaman' => 'Manajemen Konten']))
     };
     const panelCache = new Map();
+    const availablePlatforms = @json($platforms->values());
+    const mirrorPairs = @json($platformMirrorPairs ?? []);
+    const mirrorUrl = @json(route('digital-marketing.platform-mirroring', ['id_produk' => $client->id]));
     let activeKey = null;
+
+    const mirrorModal = document.getElementById('dmMirrorModal');
+    function closeMirrorModal() {
+        mirrorModal?.classList.add('hidden');
+        mirrorModal?.classList.remove('flex');
+        mirrorModal?.setAttribute('aria-hidden', 'true');
+    }
+    function openMirrorModal() {
+        if (!platformSelect || !mirrorModal) return;
+        const source = platformSelect.value;
+        document.getElementById('dmMirrorSource').textContent = source;
+        const escapeMirrorText = value => String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+        document.getElementById('dmMirrorTargets').innerHTML = availablePlatforms
+            .filter(platform => platform.toLowerCase() !== source.toLowerCase())
+            .map(platform => {
+                const checked = mirrorPairs.some(pair =>
+                    (pair.platform_a.toLowerCase() === source.toLowerCase() && pair.platform_b.toLowerCase() === platform.toLowerCase()) ||
+                    (pair.platform_b.toLowerCase() === source.toLowerCase() && pair.platform_a.toLowerCase() === platform.toLowerCase())
+                );
+                return `<label class="flex cursor-pointer items-center gap-3 rounded-xl border border-zinc-200 px-4 py-3 text-sm font-medium text-zinc-800 hover:bg-zinc-50"><input type="checkbox" name="targets[]" value="${escapeMirrorText(platform)}" ${checked ? 'checked' : ''} class="h-4 w-4 rounded border-zinc-300">${escapeMirrorText(platform)}</label>`;
+            }).join('');
+        mirrorModal.classList.remove('hidden');
+        mirrorModal.classList.add('flex');
+        mirrorModal.setAttribute('aria-hidden', 'false');
+    }
+    document.getElementById('dmMirrorButton')?.addEventListener('click', openMirrorModal);
+    document.getElementById('dmMirrorClose')?.addEventListener('click', closeMirrorModal);
+    document.getElementById('dmMirrorCancel')?.addEventListener('click', closeMirrorModal);
+    mirrorModal?.addEventListener('click', event => { if (event.target === mirrorModal) closeMirrorModal(); });
+    document.getElementById('dmMirrorForm')?.addEventListener('submit', async event => {
+        event.preventDefault();
+        const error = document.getElementById('dmMirrorError');
+        error.classList.add('hidden');
+        const response = await fetch(mirrorUrl, {
+            method: 'PUT',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+            body: JSON.stringify({ source: platformSelect.value, targets: Array.from(event.currentTarget.querySelectorAll('[name="targets[]"]:checked')).map(input => input.value) })
+        });
+        if (!response.ok) {
+            const payload = await response.json().catch(() => ({}));
+            error.textContent = payload.message || 'Mirroring gagal disimpan.';
+            error.classList.remove('hidden');
+            return;
+        }
+        window.location.reload();
+    });
 
     function urlFor(button) {
         const base = button.dataset.baseUrl;

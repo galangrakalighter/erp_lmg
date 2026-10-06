@@ -17,9 +17,13 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use App\Services\MetaConnectionSyncService;
 
 class ProdukController extends Controller
 {
+    private const DEFAULT_MARKETING_PLATFORMS = [
+        'Facebook', 'Instagram', 'TikTok', 'Threads', 'Google', 'YouTube',
+    ];
     public function index(Request $request, $nama)
     {
         $divisiId = ($nama == "LGTR") ? 1 : 2;
@@ -210,7 +214,7 @@ class ProdukController extends Controller
     }
 
 
-    public function store(Request $request)
+    public function store(Request $request, MetaConnectionSyncService $metaConnectionSync)
     {
         $request->validate([
             'client' => ['required', 'string', 'max:255'],
@@ -219,10 +223,10 @@ class ProdukController extends Controller
             'oauth_draft_key' => ['nullable', 'uuid'],
         ]);
 
-        $accessTokenArray = [
-            'platform' => $request->platform,
-            'access'   => $request->access,
-        ];
+        $accessTokenArray = $this->withDefaultMarketingPlatforms([
+            'platform' => (array) $request->input('platform', []),
+            'access'   => (array) $request->input('access', []),
+        ]);
 
         try {
             DB::beginTransaction();
@@ -240,11 +244,11 @@ class ProdukController extends Controller
                     'access_token'      => $accessTokenArray,
                 ]);
             } else {
-                $mergedTokens = $this->mergeAccessTokens(
+                $mergedTokens = $this->withDefaultMarketingPlatforms($this->mergeAccessTokens(
                     $produk->access_token,
                     (array) $request->input('platform', []),
                     (array) $request->input('access', [])
-                );
+                ));
 
                 $produk->update(['access_token' => $mergedTokens]);
             }
@@ -325,6 +329,7 @@ class ProdukController extends Controller
                     ['client_id' => $produk->id, 'provider' => 'meta'],
                     $pendingMeta
                 );
+                $metaConnectionSync->refreshSiblingConnections($produk->id, $pendingMeta);
                 $this->ensureOAuthPlatformLabels($produk, $pendingMeta['assets']['pages'] ?? []);
             }
             if (is_array($pendingThreads)) {
@@ -420,11 +425,11 @@ class ProdukController extends Controller
             // 1. Update data produk
             $produk = ProdukClient::findOrFail($id);
 
-            $accessTokenArray = $this->mergeAccessTokens(
+            $accessTokenArray = $this->withDefaultMarketingPlatforms($this->mergeAccessTokens(
                 $produk->access_token,
                 $request->input('platform', []),
                 $request->input('access', [])
-            );
+            ));
 
             $produk->update([
                 'kategori_jasa_id' => (int) $request->kategori_jasa_id,
@@ -613,6 +618,22 @@ class ProdukController extends Controller
             'platform' => $mergedPlatforms,
             'access' => $mergedAccessTokens,
         ];
+    }
+
+    private function withDefaultMarketingPlatforms(?array $tokens): array
+    {
+        $tokens = is_array($tokens) ? $tokens : [];
+        $platforms = collect($tokens['platform'] ?? [])->values();
+        $access = collect($tokens['access'] ?? [])->values();
+
+        foreach (self::DEFAULT_MARKETING_PLATFORMS as $defaultPlatform) {
+            if (! $platforms->contains(fn ($platform) => strcasecmp((string) $platform, $defaultPlatform) === 0)) {
+                $platforms->push($defaultPlatform);
+                $access->push('');
+            }
+        }
+
+        return ['platform' => $platforms->all(), 'access' => $access->all()];
     }
 
     private function findClientByName(?string $name): ?ProdukClient

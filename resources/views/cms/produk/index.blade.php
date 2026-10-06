@@ -198,7 +198,7 @@
                         <div class="card border-0 shadow-sm rounded-lg mb-4">
                             <div class="card-body p-4">
                                 <p class="mb-3 text-sm text-zinc-500">
-                                    Simpan client terlebih dahulu, lalu hubungkan akun melalui halaman persetujuan resmi masing-masing platform. Token akan dikelola otomatis oleh sistem.
+                                    Koneksi akun bersifat opsional. Client baru langsung memiliki Facebook, Instagram, TikTok, Threads, Google, dan YouTube; hubungkan akun hanya saat membutuhkan data insight eksternal. Token akan dikelola otomatis oleh sistem.
                                 </p>
                                 <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
                                     @foreach([

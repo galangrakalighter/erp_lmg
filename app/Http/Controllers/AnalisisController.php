@@ -129,7 +129,14 @@ class AnalisisController extends Controller
                 }
                 $posts = [];
                 $maxFollowers = 0;
-                foreach ($this->instagram->getMedia($since, $until, $fetch, $platformToken, $platformAccountId) as $post) {
+                $instagramMedia = $this->instagram->getMedia($since, $until, $fetch, $platformToken, $platformAccountId);
+                if ($connectionError = $this->instagram->consumeError()) {
+                    return response()->view('analisis.connection-error', [
+                        'platform' => 'Instagram',
+                        'message' => $connectionError,
+                    ], 422);
+                }
+                foreach ($instagramMedia as $post) {
                     $insightsRaw = $this->instagram->getInsights($post['id'], $since, $until, $fetch, $platformToken, $platformAccountId);
                     $frekuensi = ($post['reach_count'] > 0) ? round($post['impresi'] / $post['reach_count']) : 0;
                     // Data Untuk Chart
@@ -245,6 +252,12 @@ class AnalisisController extends Controller
                     ], 422);
                 }
                 $data = $this->facebook->getPost($since, $until, $platformToken, $fetch, $platformAccountId);
+                if ($connectionError = $this->facebook->consumeError()) {
+                    return response()->view('analisis.connection-error', [
+                        'platform' => 'Facebook',
+                        'message' => $connectionError,
+                    ], 422);
+                }
                 $dataBaru = $data['data'] ?? [];
                 $dataBaru = collect($dataBaru ?? [])->sortBy('timestamp')->values()->all();
                 $totalReach = array_sum(array_column($dataBaru, 'reach'));
@@ -312,6 +325,12 @@ class AnalisisController extends Controller
                 $posts = $threadsResult['data'] ?? [];
                 $threadsFollowers = $threadsResult['followers'] ?? 0;
                 $threadsError = $threadsResult['error'] ?? null;
+                if ($threadsError && empty($posts)) {
+                    return response()->view('analisis.connection-error', [
+                        'platform' => 'Threads',
+                        'message' => $threadsError,
+                    ], 422);
+                }
                 $threadsItems = collect($posts);
                 $threadsEngagement = $threadsItems->sum(fn ($item) =>
                     ($item['likes'] ?? 0) + ($item['replies'] ?? 0) + ($item['reposts'] ?? 0)
@@ -353,6 +372,12 @@ class AnalisisController extends Controller
                 $posts = $tiktokResult['data'] ?? [];
                 $tiktokProfile = $tiktokResult['profile'] ?? [];
                 $tiktokError = $tiktokResult['error'] ?? null;
+                if ($tiktokError && empty($posts)) {
+                    return response()->view('analisis.connection-error', [
+                        'platform' => 'TikTok',
+                        'message' => $tiktokError,
+                    ], 422);
+                }
                 $tiktokItems = collect($posts);
                 $trendComparisons = $this->captureTrends($produkBaru->id, 'TikTok', [
                     'posts' => $tiktokItems->count(),

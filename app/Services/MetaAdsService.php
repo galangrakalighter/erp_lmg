@@ -9,6 +9,10 @@ use Illuminate\Support\Facades\Log;
 
 class MetaAdsService
 {
+    public function __construct(private readonly PlatformErrorPresenter $errorPresenter)
+    {
+    }
+
     public function getPaidPosts(
         string $adAccountId,
         string $accessToken,
@@ -71,7 +75,7 @@ class MetaAdsService
                 'error' => $message,
             ]);
 
-            return ['data' => [], 'error' => $message];
+            return ['data' => [], 'error' => $this->errorPresenter->message('Meta Ads', $message, (int) $response->json('error.code'))];
         }
 
         $adsetsById = collect();

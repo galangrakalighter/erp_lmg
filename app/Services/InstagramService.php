@@ -9,6 +9,19 @@ use Illuminate\Support\Facades\Log;
 class InstagramService
 {
     protected string $token;
+    private ?string $lastError = null;
+
+    public function __construct(private readonly PlatformErrorPresenter $errorPresenter)
+    {
+    }
+
+    public function consumeError(): ?string
+    {
+        $error = $this->lastError;
+        $this->lastError = null;
+
+        return $error;
+    }
 
     public function getAudienceBreakdowns($token = null, $accountId = null): array
     {
@@ -70,6 +83,7 @@ class InstagramService
      */
     public function getMedia($since = null, $until = null, bool $fetch = false, $token = null, $accountId = null)
     {
+        $this->lastError = null;
         if (! filled($token) || ! filled($accountId)) {
             Log::warning('Instagram OAuth belum memiliki token atau Instagram Business Account ID.');
             return [];
@@ -117,6 +131,11 @@ class InstagramService
                     }
                 }
             } else {
+                $this->lastError = $this->errorPresenter->message(
+                    'Instagram',
+                    $response->json('error.message'),
+                    (int) $response->json('error.code')
+                );
                 Log::warning('Instagram Graph API menolak permintaan media.', [
                     'status' => $response->status(),
                     'error' => $response->json('error.message'),
@@ -159,6 +178,7 @@ class InstagramService
             return collect($data)->sortBy('timestamp')->values()->all();
         } catch (\Exception $e) {
             Log::error("Instagram Media Timeout/Error: " . $e->getMessage());
+            $this->lastError = $this->errorPresenter->network('Instagram');
             return [];
         }
     }

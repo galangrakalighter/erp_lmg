@@ -8,6 +8,10 @@ use Illuminate\Support\Facades\Log;
 
 class ThreadsService
 {
+    public function __construct(private readonly PlatformErrorPresenter $errorPresenter)
+    {
+    }
+
     public function getAnalysis(string $token, string $accountId, ?int $since = null, ?int $until = null, bool $fetch = false): array
     {
         $version = config('services.threads.graph_version', 'v1.0');
@@ -23,7 +27,20 @@ class ThreadsService
             ]);
 
             if (! $response->successful()) {
-                return ['data' => [], 'followers' => 0, 'error' => $this->message($response->json())];
+                $technicalMessage = $this->message($response->json());
+                Log::warning('Threads API menolak permintaan analisis.', [
+                    'status' => $response->status(),
+                    'error' => $technicalMessage,
+                ]);
+                return [
+                    'data' => [],
+                    'followers' => 0,
+                    'error' => $this->errorPresenter->message(
+                        'Threads',
+                        $technicalMessage,
+                        (int) data_get($response->json(), 'error.code')
+                    ),
+                ];
             }
 
             $payload = $response->json();
@@ -74,7 +91,7 @@ class ThreadsService
         } catch (\Throwable $exception) {
             Log::warning('Threads API gagal mengambil data analisis.', ['message' => $exception->getMessage()]);
 
-            return ['data' => [], 'followers' => 0, 'error' => 'Data Threads belum dapat diambil. Periksa token dan izin threads_manage_insights.'];
+            return ['data' => [], 'followers' => 0, 'error' => $this->errorPresenter->network('Threads')];
         }
     }
 

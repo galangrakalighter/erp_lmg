@@ -1,0 +1,1 @@
+@include('errors.friendly', ['title' => 'Akses tidak diizinkan', 'message' => 'Akun Anda tidak memiliki izin untuk membuka halaman ini. Silakan kembali atau hubungi admin jika seharusnya Anda memiliki akses.'])

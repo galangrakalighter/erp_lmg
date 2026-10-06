@@ -9,6 +9,10 @@ use Illuminate\Support\Facades\Log;
 
 class TikTokService
 {
+    public function __construct(private readonly PlatformErrorPresenter $errorPresenter)
+    {
+    }
+
     public function getAnalysis(OAuthConnection $connection, ?int $since = null, ?int $until = null, bool $fetch = false): array
     {
         try {
@@ -81,7 +85,11 @@ class TikTokService
             return ['data' => $items, 'profile' => $profile, 'error' => null];
         } catch (\Throwable $exception) {
             Log::warning('TikTok API gagal mengambil data analisis.', ['message' => $exception->getMessage()]);
-            return ['data' => [], 'profile' => data_get($connection->assets, 'profile', []), 'error' => 'Data TikTok belum dapat diambil: '.$exception->getMessage()];
+            return [
+                'data' => [],
+                'profile' => data_get($connection->assets, 'profile', []),
+                'error' => $this->errorPresenter->message('TikTok', $exception->getMessage()),
+            ];
         }
     }
 

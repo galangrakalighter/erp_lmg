@@ -7,6 +7,19 @@ use Carbon\Carbon;
 class FacebookService
 {
     protected string $token;
+    private ?string $lastError = null;
+
+    public function __construct(private readonly PlatformErrorPresenter $errorPresenter)
+    {
+    }
+
+    public function consumeError(): ?string
+    {
+        $error = $this->lastError;
+        $this->lastError = null;
+
+        return $error;
+    }
 
     public function getAudienceBreakdowns($token, $pageId, $since = null, $until = null): array
     {
@@ -72,6 +85,7 @@ class FacebookService
      * Mengambil media dengan penambahan Timeout 120 detik
      */
     public function getPost($since, $until, $token, $fetch = false, $pageId = null){
+        $this->lastError = null;
         if (! filled($token) || ! filled($pageId)) {
             Log::warning('Facebook OAuth belum memiliki token atau Facebook Page ID.');
             return ['data' => [], 'followers' => [0]];
@@ -89,7 +103,13 @@ class FacebookService
 
         $data = [];
         $post = [];
-        $response = Http::timeout(150)->withOptions(['verify' => false])->get($url, $params);
+        try {
+            $response = Http::timeout(150)->withOptions(['verify' => false])->get($url, $params);
+        } catch (\Throwable $exception) {
+            Log::warning('Facebook Graph API tidak dapat dihubungi.', ['message' => $exception->getMessage()]);
+            $this->lastError = $this->errorPresenter->network('Facebook');
+            return ['data' => [], 'followers' => [0]];
+        }
         if($response->successful()){
             $json = $response->json();
             $allMedia = $json['data'] ?? [];
@@ -217,6 +237,11 @@ class FacebookService
             $follower_count = Http::timeout(120)->withOptions(['verify' => false])->get($url_follower, $params_follower);
             $post['followers'][] = $follower_count->json()['followers_count'] ?? 0;
         } else {
+            $this->lastError = $this->errorPresenter->message(
+                'Facebook',
+                $response->json('error.message'),
+                (int) $response->json('error.code')
+            );
             Log::warning('Facebook Graph API menolak permintaan feed.', [
                 'status' => $response->status(),
                 'error' => $response->json('error.message'),

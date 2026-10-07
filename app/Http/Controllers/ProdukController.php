@@ -454,6 +454,20 @@ class ProdukController extends Controller
                 ->merge(collect($request->input('ccm_ids', [])))
                 ->merge(collect($request->input('cc_ids', [])));
 
+            // Akun reviewer pada client App Review harus tetap memiliki akses
+            // walaupun tidak ikut terkirim dari pilihan tim pada form edit.
+            $reviewerEmail = match (strtolower(trim((string) $produk->nama))) {
+                'meta app review' => 'reviewer.meta@lightermediagroup.com',
+                'tiktok app review' => 'reviewer.tiktok@lightermediagroup.com',
+                default => null,
+            };
+            if ($reviewerEmail) {
+                $reviewerId = User::query()->where('email', $reviewerEmail)->value('id');
+                if ($reviewerId) {
+                    $allUserIds->push((int) $reviewerId);
+                }
+            }
+
             // 3. Tentukan user acuan
             $targetUserId = !Auth::user()->isAdmin
                 ? Auth::id()

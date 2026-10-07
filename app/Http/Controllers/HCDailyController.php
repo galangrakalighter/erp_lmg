@@ -32,7 +32,7 @@ class HCDailyController extends Controller
         ]);
 
         $title = "Daily Schedule";
-        $today = Carbon::today();
+        $today = Carbon::today('Asia/Jakarta');
         $user = Auth::user();
         $hierarchy = [];
         $RoleSekarang = '';
@@ -252,7 +252,7 @@ class HCDailyController extends Controller
             return response()->json(['message' => 'Sesi login sudah berakhir. Silakan login kembali.'], 401);
         }
 
-        $today = Carbon::today();
+        $today = Carbon::today('Asia/Jakarta');
         $formContext = $this->dailyWorkFormContext($currentUser);
         $selfOnly = str_starts_with((string) $request->query('scope'), 'self');
 
@@ -306,10 +306,18 @@ class HCDailyController extends Controller
                         ->whereDate('task.tanggal_deadline', $today);
                 });
 
-                // Status 7 = overdue yang belum dikirim. Pemilik tetap
-                // melihatnya di Task Pool, termasuk jika sebelumnya memiliki
-                // jam kerja.
+                // Task revisi kembali menjadi backlog pemilik: tidak memiliki
+                // deadline dan tetap tampil di pool sampai dijadwalkan ulang.
+                // Status ini sengaja dipisahkan dari overdue.
                 if ($isViewingOwnWorkspace) {
+                    $query->orWhere(function ($revision) {
+                        $revision->where('task.status', 2)
+                            ->whereNull('task.tanggal_deadline');
+                    });
+
+                    // Status 7 = overdue yang belum dikirim. Pemilik tetap
+                    // melihatnya di Task Pool, termasuk jika sebelumnya memiliki
+                    // jam kerja.
                     $query->orWhere(function ($overdue) use ($today) {
                         $overdue->whereDate('task.tanggal_deadline', '<', $today)
                             ->where('task.status', 7);
@@ -741,15 +749,19 @@ class HCDailyController extends Controller
 
             $this->validateScheduleConflict([
                 'pic_id' => $task->pic,
-                'start_date' => Carbon::today()->toDateString(),
+                'start_date' => Carbon::today('Asia/Jakarta')->toDateString(),
                 'start_time' => $newTime->format('H:i'),
                 'minutes' => (int) $task->menit,
             ], $task->id);
 
+            $scheduleDate = Carbon::today('Asia/Jakarta');
+            $wasRevision = (int) $task->status === 2;
             $task->update([
                 'jam_mulai' => $newTime->format('H:i:s'),
-                'tanggal_mulai' => Carbon::today(),
-                'status' => ($task->status == 2) ? 0 : $task->status 
+                'tanggal_mulai' => $scheduleDate,
+                // Deadline revisi hanya dibuat lagi ketika task dijadwalkan.
+                'tanggal_deadline' => $wasRevision ? $scheduleDate : $task->tanggal_deadline,
+                'status' => $wasRevision ? 0 : $task->status,
             ]);
         }
         return response()->json(['success' => true]);
@@ -836,7 +848,15 @@ class HCDailyController extends Controller
                 Storage::disk('local')->delete($oldProofPath);
             }
         } elseif ($action == 'revisi') {
-            $task->update(['status' => 2, 'tanggal_revisi' => now()]); // Balik ke Pool Jadi Revisi
+            $revisionAt = Carbon::now('Asia/Jakarta');
+            $task->update([
+                'status' => 2,
+                'tanggal_revisi' => $revisionAt,
+                'tanggal_mulai' => $revisionAt->toDateString(),
+                'tanggal_deadline' => null,
+                'jam_mulai' => null,
+                'tanggal_approve' => null,
+            ]); // Kembali ke pool sebagai revisi, bukan overdue.
         } elseif ($action == 'approve') {
             if (! $task->completion_proof_path || ! Storage::disk('local')->exists($task->completion_proof_path)) {
                 return response()->json(['message' => 'Task belum memiliki bukti penyelesaian.'], 422);

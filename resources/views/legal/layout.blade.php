@@ -22,6 +22,10 @@
         h2 { margin:34px 0 8px; font-size:19px; }
         p, li { color:#52525b; }
         ul, ol { padding-left:22px; }
+        .table-wrap { margin:20px 0; overflow-x:auto; }
+        table { width:100%; min-width:780px; border-collapse:collapse; font-size:13px; }
+        th, td { border:1px solid var(--line); padding:12px; text-align:left; vertical-align:top; }
+        th { background:#f4f4f5; color:var(--ink); }
         .updated { margin:14px 0 30px; color:#a1a1aa; font-size:13px; }
         .notice { margin:26px 0; border:1px solid #d4d4d8; border-radius:14px; background:#fafafa; padding:18px 20px; }
         .notice strong { display:block; margin-bottom:4px; color:var(--ink); }
@@ -33,8 +37,9 @@
 <body>
     <header>
         <nav>
-            <a class="brand" href="https://erp.lightermediagroup.com">Lighter Media Group</a>
+            <a class="brand" href="https://lightermediagroup.com">Lighter Media Group</a>
             <div class="links">
+                <a href="{{ auth()->check() ? route('home') : route('login') }}">{{ auth()->check() ? 'Buka ERP' : 'Masuk ERP' }}</a>
                 <a href="{{ route('legal.privacy') }}">Kebijakan Privasi</a>
                 <a href="{{ route('legal.terms') }}">Ketentuan Layanan</a>
                 <a href="{{ route('legal.data-deletion') }}">Penghapusan Data</a>

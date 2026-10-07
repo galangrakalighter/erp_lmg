@@ -251,6 +251,13 @@
                                 © {{ date('Y') }} Lighter Media Group.
                                 All rights reserved.
                             </p>
+                            <p class="mt-3 text-center text-xs text-zinc-400">
+                                <a class="underline transition hover:text-zinc-700" href="{{ route('legal.privacy') }}">Kebijakan Privasi</a>
+                                <span aria-hidden="true"> · </span>
+                                <a class="underline transition hover:text-zinc-700" href="{{ route('legal.terms') }}">Ketentuan Layanan</a>
+                                <span aria-hidden="true"> · </span>
+                                <a class="underline transition hover:text-zinc-700" href="{{ route('legal.data-deletion') }}">Penghapusan Data</a>
+                            </p>
                         </div>
 
                     </div>

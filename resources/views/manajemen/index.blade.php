@@ -69,6 +69,7 @@
                             <th>Komposisi</th>
                             <th>Note</th>
                             <th>Tgl Posting</th>
+                            <th id="contentPlanTimeHeader">Jam</th>
                             <th>Link</th>
                             <th>Status</th>
                             @if(!$multimediaMode && $contentPlanCanManage)
@@ -363,7 +364,18 @@
                                         <div class="input-group-prepend">
                                             <span class="input-group-text bg-white border-right-0"><i class="far fa-calendar-check text-muted"></i></span>
                                         </div>
-                                        <input type="date" name="tanggal_posting" class="form-control border-left-0">
+                                        <input type="date" name="tanggal_posting" class="form-control border-left-0" data-native-date="true">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3" data-organic-only>
+                                <div class="form-group">
+                                    <label class="text-dark font-weight-bold small">Jam Posting</label>
+                                    <div class="input-group shadow-sm">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text bg-white border-right-0"><i class="far fa-clock text-muted"></i></span>
+                                        </div>
+                                        <input type="time" name="jam_posting" id="create_jam_posting" class="form-control border-left-0" step="60">
                                     </div>
                                 </div>
                             </div>
@@ -606,7 +618,14 @@
                             <div class="col-md-4">
                                 <div class="form-group">
                                     <label class="text-muted font-weight-bold small uppercase">Tanggal Posting</label>
-                                    <input type="date" name="tanggal_posting" id="edit_tanggal_posting" class="form-control shadow-sm" {{ $role == "Content Creator" ? "readonly" : "" }}>
+                                    <input type="date" name="tanggal_posting" id="edit_tanggal_posting" class="form-control shadow-sm" data-native-date="true" {{ $role == "Content Creator" ? "readonly" : "" }}>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4" data-organic-only>
+                                <div class="form-group">
+                                    <label class="text-muted font-weight-bold small uppercase">Jam Posting</label>
+                                    <input type="time" name="jam_posting" id="edit_jam_posting" class="form-control shadow-sm" step="60">
                                 </div>
                             </div>
 
@@ -737,6 +756,7 @@
                 <td>${escapeContentPlan(row.komposisi)}</td>
                 <td>${escapeContentPlan(row.note)}</td>
                 <td>${row.tanggal_posting ? new Date(row.tanggal_posting).toLocaleDateString('id-ID') : '-'}</td>
+                ${activeContentSource === 'organic' ? `<td>${row.jam_posting ? escapeContentPlan(String(row.jam_posting).slice(0, 5)) : '-'}</td>` : ''}
                 <td>${row.link ? `<a href="${escapeContentPlan(row.link)}" target="_blank" rel="noopener"><i class="fas fa-link"></i></a>` : '-'}</td>
                 <td><span class="badge ${row.nama_status === 'Selesai' ? 'badge-dark' : 'badge-light'}">${escapeContentPlan(row.nama_status)}</span></td>
                 @if(!$multimediaMode && $contentPlanCanManage)
@@ -796,6 +816,15 @@
             });
             const createSource = document.getElementById('create_content_source');
             if (createSource) createSource.value = activeContentSource;
+            document.querySelectorAll('[data-organic-only]').forEach(field => {
+                const organic = activeContentSource === 'organic';
+                field.classList.toggle('d-none', !organic);
+                field.querySelectorAll('input, select, textarea').forEach(input => {
+                    input.disabled = !organic;
+                    if (!organic && input.name === 'jam_posting') input.value = '';
+                });
+            });
+            document.getElementById('contentPlanTimeHeader')?.classList.toggle('d-none', activeContentSource !== 'organic');
             const resetLink = document.getElementById('contentPlanReset');
             if (resetLink) resetLink.href = `${window.location.pathname}?content_source=${activeContentSource}`;
         };
@@ -861,6 +890,7 @@
             window.updateCompositionGuidance?.(document.getElementById('edit_komposisi'));
             $('#edit_warna').val(rowData.background);
             $('#edit_tanggal_posting').val(rowData.tanggal_posting);
+            $('#edit_jam_posting').val(rowData.jam_posting ? String(rowData.jam_posting).slice(0, 5) : '');
             $('#edit_link').val(rowData.link);
             $('#edit_status').val(rowData.status_id);
             $('#edit_note').val(rowData.note);

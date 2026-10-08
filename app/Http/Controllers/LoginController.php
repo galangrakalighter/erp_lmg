@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class LoginController extends Controller
 {
@@ -15,6 +16,10 @@ class LoginController extends Controller
 
     public function login(Request $request)
     {
+        $request->merge([
+            'email' => Str::lower(trim((string) $request->input('email'))),
+        ]);
+
         $credentials = $request->validate([
             'email' => 'required|email',
             'password' => 'required',

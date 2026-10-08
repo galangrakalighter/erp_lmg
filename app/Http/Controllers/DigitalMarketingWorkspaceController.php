@@ -27,10 +27,12 @@ class DigitalMarketingWorkspaceController extends Controller
             ->unique()
             ->values();
         $role = DigitalMarketingPermissions::role(Auth::user());
-        $workspaceTabs = match ($role) {
-            'Sosial Media Spesialis' => ['social-media-research', 'content-plan', 'guide'],
-            'Advertising' => ['market-research', 'social-media-research', 'advertising-research', 'content-plan'],
-            default => ['market-research', 'branding', 'social-media-research', 'advertising-research', 'content-plan', 'guide', 'analisis', 'explore', 'dokumen', 'timeline'],
+        $workspaceTabs = ['market-research', 'branding', 'social-media-research', 'advertising-research', 'content-plan', 'guide', 'analisis', 'explore', 'dokumen', 'timeline'];
+        $workspaceReadOnlyTabs = match ($role) {
+            'Digital Marketing' => ['social-media-research', 'advertising-research', 'content-plan', 'guide', 'analisis', 'explore', 'dokumen', 'timeline'],
+            'Sosial Media Spesialis' => ['market-research', 'branding', 'content-plan', 'analisis', 'explore', 'dokumen', 'timeline'],
+            'Advertising' => ['market-research', 'branding', 'guide', 'analisis', 'explore', 'dokumen', 'timeline'],
+            default => [],
         };
 
         return view('digital_marketing.workspace', [
@@ -43,6 +45,8 @@ class DigitalMarketingWorkspaceController extends Controller
             'workspaceDivisionId' => 1,
             'useMrCrepeNavigation' => true,
             'workspaceTabs' => $workspaceTabs,
+            'workspaceReadOnlyTabs' => $workspaceReadOnlyTabs,
+            'workspaceCanManageSettings' => DigitalMarketingPermissions::isManager($role),
             'platformMirrorPairs' => $mirroring->activePairs($client->id),
         ]);
     }
@@ -52,6 +56,7 @@ class DigitalMarketingWorkspaceController extends Controller
         $client = ProdukClient::query()->findOrFail($id_produk);
         abort_if($client->is_internal, 404);
         $this->authorizeWorkspace($client);
+        abort_unless(DigitalMarketingPermissions::isManager(DigitalMarketingPermissions::role(Auth::user())), 403);
 
         $platforms = collect(data_get($client->access_token, 'platform', []))
             ->filter(fn ($platform) => is_string($platform) && trim($platform) !== '')

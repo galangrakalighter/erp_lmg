@@ -158,6 +158,7 @@ body.lmg-embedded .lmg-pdf-table-scroll {
                 Data File PDF · {{ $divisionName }}
             </h6>
 
+            @if(!$readOnly)
             <div>
                 <button type="button" class="btn btn-success mr-2" data-toggle="modal" data-target="#buatDokumenModal">
                     <i class="fas fa-file-alt mr-1"></i> Buat Dokumen
@@ -166,6 +167,9 @@ body.lmg-embedded .lmg-pdf-table-scroll {
                     <i class="fas fa-upload mr-1"></i> Upload PDF
                 </button>
             </div>
+            @else
+                <span class="badge badge-light border px-3 py-2">Mode baca saja</span>
+            @endif
         </div>
 
         <div class="card-body">
@@ -179,8 +183,9 @@ body.lmg-embedded .lmg-pdf-table-scroll {
 
             <form method="GET" action="{{ route('PDF', ['id_produk' => $id, 'division_id' => $divisionId]) }}" class="d-flex flex-wrap align-items-end mb-3" style="gap:10px">
                 <input type="hidden" name="division_id" value="{{ $divisionId }}">
+                @if($readOnly)<input type="hidden" name="readonly" value="1">@endif
                 <label class="mb-0 flex-grow-1" style="min-width:220px;max-width:380px"><span class="d-block small font-weight-bold text-uppercase text-muted mb-1">Pengunggah</span><select name="uploaded_by" class="form-control" onchange="this.form.submit()"><option value="">Semua Pengunggah</option>@foreach($uploaders as $uploader)<option value="{{ $uploader->id }}" @selected((int)$selectedUploaderId === (int)$uploader->id)>{{ $uploader->name ?: $uploader->email }}</option>@endforeach</select></label>
-                @if($selectedUploaderId)<a href="{{ route('PDF', ['id_produk' => $id, 'division_id' => $divisionId]) }}" class="btn btn-light border">Reset</a>@endif
+                @if($selectedUploaderId)<a href="{{ route('PDF', ['id_produk' => $id, 'division_id' => $divisionId, 'readonly' => $readOnly ? 1 : null]) }}" class="btn btn-light border">Reset</a>@endif
             </form>
 
             <div class="table-responsive lmg-pdf-table-scroll">
@@ -226,11 +231,13 @@ body.lmg-embedded .lmg-pdf-table-scroll {
 
                             <td>
 
+                                @if(!$readOnly)
                                 <button class="btn btn-warning btn-sm"
                                         data-toggle="modal"
                                         data-target="#editModal_{{ $item->id }}">
                                     Edit
                                 </button>
+                                @endif
 
                                 @if($item->is_pinned)
                                 <button class="btn btn-outline-secondary btn-sm"
@@ -240,13 +247,13 @@ body.lmg-embedded .lmg-pdf-table-scroll {
                                 </button>
                                 @endif
 
-                                @unless($item->is_system_template)
+                                @if(!$readOnly && !$item->is_system_template)
                                 <button class="btn btn-danger btn-sm"
                                         data-toggle="modal"
                                         data-target="#hapusModal_{{ $item->id }}">
                                     Hapus
                                 </button>
-                                @endunless
+                                @endif
 
                             </td>
 

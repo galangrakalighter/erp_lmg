@@ -16,6 +16,7 @@ use Carbon\Carbon;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+use App\Support\DigitalMarketingPermissions;
 class PDFController extends Controller
 {
     protected $pdf;
@@ -199,8 +200,9 @@ class PDFController extends Controller
             ->whereIn('id', FilePdf::where('client', $id)->where('division_id', $divisionId)->whereNotNull('uploaded_by')->select('uploaded_by'))
             ->orderBy('name')->get(['id', 'name', 'email']);
         $selectedUploaderId = $request->integer('uploaded_by') ?: null;
+        $readOnly = $request->boolean('readonly');
 
-        return view('pdf.index', compact('clients', 'title', 'id', 'divisionId', 'divisionName', 'uploaders', 'selectedUploaderId'));
+        return view('pdf.index', compact('clients', 'title', 'id', 'divisionId', 'divisionName', 'uploaders', 'selectedUploaderId', 'readOnly'));
     }
 
     public function store(Request $request)
@@ -211,6 +213,7 @@ class PDFController extends Controller
             'division_id' => ['required', 'integer', 'exists:divisions,id'],
             'pdf'       => 'required|mimes:pdf', // Maksimal 10MB
         ]);
+        $this->authorizeDocumentMutation((int) $request->client, (int) $request->division_id);
 
         // Folder berdasarkan ID client
         $this->ensureClientDivision((int) $request->client, (int) $request->division_id);
@@ -249,6 +252,7 @@ class PDFController extends Controller
             'nama_file.required' => 'Nama dokumen wajib diisi.',
             'content.required' => 'Isi dokumen wajib diisi.',
         ]);
+        $this->authorizeDocumentMutation((int) $validated['client'], (int) $validated['division_id']);
 
         $content = $this->sanitizeDocumentHtml($validated['content']);
         if (trim(strip_tags($content)) === '') {
@@ -341,6 +345,7 @@ class PDFController extends Controller
     {
         $file = FilePDF::findOrFail($id);
         $this->ensureFileAccessible($file);
+        $this->authorizeDocumentMutation((int) $file->client, (int) $file->division_id);
 
         $request->validate([
             'nama_file' => 'required|string|max:255',
@@ -437,6 +442,7 @@ class PDFController extends Controller
     {
         $file = FilePDF::findOrFail($id);
         $this->ensureFileAccessible($file);
+        $this->authorizeDocumentMutation((int) $file->client, (int) $file->division_id);
         abort_if($file->is_system_template, 403, 'Dokumen bawaan client tidak dapat dihapus.');
 
         // Hapus file fisik
@@ -474,6 +480,25 @@ class PDFController extends Controller
             ->exists(), 404, 'Client tidak tersedia pada divisi tersebut.');
 
         $this->ensureMultimediaDocumentScope($clientId, $divisionId);
+    }
+
+    private function authorizeDocumentMutation(int $clientId, int $divisionId): void
+    {
+        $isDigitalMarketing = DB::table('divisions')
+            ->where('id', $divisionId)
+            ->whereRaw("LOWER(TRIM(name)) = 'digital marketing'")
+            ->exists();
+
+        if (! $isDigitalMarketing) {
+            return;
+        }
+
+        $this->ensureClientDivision($clientId, $divisionId);
+        abort_unless(
+            DigitalMarketingPermissions::isManager(DigitalMarketingPermissions::role(Auth::user())),
+            403,
+            'File Dokumen hanya dapat diubah oleh Business Unit Head atau Digital Marketing Manager.'
+        );
     }
 
     private function ensureFileAccessible(FilePdf $file): void

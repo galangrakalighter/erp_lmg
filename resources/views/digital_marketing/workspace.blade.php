@@ -42,7 +42,7 @@
                                 @endforeach
                             </select>
                         </label>
-                        @if($platformMirroringEnabled)
+                        @if($platformMirroringEnabled && ($workspaceCanManageSettings ?? false))
                         <button type="button" id="dmMirrorButton" class="inline-flex h-[42px] items-center justify-center gap-2 rounded-xl border border-white/20 bg-zinc-900 px-4 text-xs font-semibold text-white transition hover:bg-zinc-800">
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 7h11m0 0-3-3m3 3-3 3M16 17H5m0 0 3 3m-3-3 3-3"/></svg>
                             Mirroring
@@ -81,6 +81,7 @@
                     $firstPlatform = $platforms->first();
                     $apiNamespace = $workspaceApiNamespace ?? 'api.digital-marketing';
                     $availableTabs = $workspaceTabs ?? ['market-research', 'branding', 'analisis', 'content-plan', 'dokumen', 'guide', 'timeline'];
+                    $readOnlyTabs = $workspaceReadOnlyTabs ?? [];
                     $tabs = collect([
                         ['key' => 'market-research', 'label' => 'Market Research', 'group' => 'MR', 'url' => $firstPlatform ? route($apiNamespace.'.market-research', [$client->id, $firstPlatform]) : null, 'platform' => true],
                         ['key' => 'branding', 'label' => 'Branding', 'group' => 'MR', 'url' => $firstPlatform ? route($apiNamespace.'.branding', [$client->id, $firstPlatform]) : null, 'platform' => true],
@@ -92,7 +93,10 @@
                         ['key' => 'explore', 'label' => 'E', 'group' => 'E', 'url' => Route::has($apiNamespace.'.explore') ? route($apiNamespace.'.explore', [$client->id]) : null, 'platform' => false],
                         ['key' => 'dokumen', 'label' => 'File Dokumen', 'group' => 'utility', 'url' => route('PDF', ['id_produk' => $client->id, 'division_id' => $workspaceDivisionId]), 'platform' => false],
                         ['key' => 'timeline', 'label' => 'Timeline', 'group' => 'utility', 'url' => route('client.kpi-timeline', ['client' => $client->id]), 'platform' => false],
-                    ])->whereIn('key', $availableTabs)->values();
+                    ])->whereIn('key', $availableTabs)->map(function ($tab) use ($readOnlyTabs) {
+                        $tab['readonly'] = in_array($tab['key'], $readOnlyTabs, true);
+                        return $tab;
+                    })->values();
                 @endphp
 
                 @if($useMrCrepeNavigation ?? false)
@@ -105,25 +109,25 @@
                         @if($tabs->where('group', 'utility')->isNotEmpty())
                             <div class="mx-1 w-px shrink-0 bg-zinc-200"></div>
                             @foreach($tabs->where('group', 'utility') as $tab)
-                                <button type="button" data-workspace-tab="{{ $tab['key'] }}" data-workspace-utility="1" data-base-url="{{ $tab['url'] }}" data-needs-platform="0" class="workspace-tab whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-semibold text-zinc-500 transition">{{ $tab['label'] }}</button>
+                                <button type="button" data-workspace-tab="{{ $tab['key'] }}" data-workspace-utility="1" data-base-url="{{ $tab['url'] }}" data-needs-platform="0" data-readonly="{{ $tab['readonly'] ? '1' : '0' }}" class="workspace-tab whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-semibold text-zinc-500 transition">{{ $tab['label'] }}@if($tab['readonly']) <span class="ml-1 text-[9px] font-medium opacity-60">Read</span>@endif</button>
                             @endforeach
                         @endif
                     </div>
                     @foreach(['MR', 'CRE', 'P'] as $group)
                         <div data-workspace-submenu="{{ $group }}" class="hidden flex gap-1 overflow-x-auto border-t border-zinc-200 bg-white p-2 pl-4">
                             @foreach($tabs->where('group', $group) as $tab)
-                                <button type="button" data-workspace-tab="{{ $tab['key'] }}" data-workspace-parent="{{ $group }}" data-base-url="{{ $tab['url'] }}" data-needs-platform="{{ $tab['platform'] ? '1' : '0' }}" @disabled(!$tab['url']) class="workspace-tab whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-semibold text-zinc-500 transition disabled:cursor-not-allowed disabled:opacity-40">{{ $tab['label'] }}</button>
+                                <button type="button" data-workspace-tab="{{ $tab['key'] }}" data-workspace-parent="{{ $group }}" data-base-url="{{ $tab['url'] }}" data-needs-platform="{{ $tab['platform'] ? '1' : '0' }}" data-readonly="{{ $tab['readonly'] ? '1' : '0' }}" @disabled(!$tab['url']) class="workspace-tab whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-semibold text-zinc-500 transition disabled:cursor-not-allowed disabled:opacity-40">{{ $tab['label'] }}@if($tab['readonly']) <span class="ml-1 text-[9px] font-medium opacity-60">Read</span>@endif</button>
                             @endforeach
                         </div>
                     @endforeach
                     @php($emptyTab = $tabs->firstWhere('group', 'E'))
                     @if($emptyTab)
-                        <button type="button" data-workspace-tab="{{ $emptyTab['key'] }}" data-workspace-parent="E" data-base-url="{{ $emptyTab['url'] }}" data-needs-platform="0" class="hidden"></button>
+                        <button type="button" data-workspace-tab="{{ $emptyTab['key'] }}" data-workspace-parent="E" data-base-url="{{ $emptyTab['url'] }}" data-needs-platform="0" data-readonly="{{ $emptyTab['readonly'] ? '1' : '0' }}" class="hidden"></button>
                     @endif
                 @else
                     <div class="flex gap-1 overflow-x-auto p-2">
                         @foreach($tabs as $tab)
-                            <button type="button" data-workspace-tab="{{ $tab['key'] }}" data-base-url="{{ $tab['url'] }}" data-needs-platform="{{ $tab['platform'] ? '1' : '0' }}" @disabled(!$tab['url']) class="workspace-tab whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-semibold text-zinc-500 transition disabled:cursor-not-allowed disabled:opacity-40">{{ $tab['label'] }}</button>
+                            <button type="button" data-workspace-tab="{{ $tab['key'] }}" data-base-url="{{ $tab['url'] }}" data-needs-platform="{{ $tab['platform'] ? '1' : '0' }}" data-readonly="{{ $tab['readonly'] ? '1' : '0' }}" @disabled(!$tab['url']) class="workspace-tab whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-semibold text-zinc-500 transition disabled:cursor-not-allowed disabled:opacity-40">{{ $tab['label'] }}@if($tab['readonly']) <span class="ml-1 text-[9px] font-medium opacity-60">Read</span>@endif</button>
                         @endforeach
                     </div>
                 @endif
@@ -230,6 +234,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const parsed = new URL(url, window.location.origin);
         parsed.searchParams.set('embed', '1');
+        if (button.dataset.readonly === '1') parsed.searchParams.set('readonly', '1');
         return parsed.toString();
     }
 

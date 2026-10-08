@@ -776,8 +776,28 @@
                                         <input
                                             type="password"
                                             name="password"
+                                            autocomplete="new-password"
                                             class="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 pr-11 text-sm text-zinc-800 outline-none placeholder:text-zinc-400 focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950"
                                             placeholder="Kosongkan jika tidak ingin mengubah password"
+                                        >
+                                        <button type="button" data-password-toggle class="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-zinc-400 transition hover:text-zinc-900" aria-label="Tampilkan password" title="Tampilkan password">
+                                            <i class="fas fa-eye" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="md:col-span-2">
+                                    <label class="mb-1.5 block text-xs font-medium text-zinc-600">
+                                        Konfirmasi Password Baru
+                                    </label>
+
+                                    <div class="relative">
+                                        <input
+                                            type="password"
+                                            name="password_confirmation"
+                                            autocomplete="new-password"
+                                            class="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 pr-11 text-sm text-zinc-800 outline-none placeholder:text-zinc-400 focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950"
+                                            placeholder="Ulangi password baru"
                                         >
                                         <button type="button" data-password-toggle class="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-zinc-400 transition hover:text-zinc-900" aria-label="Tampilkan password" title="Tampilkan password">
                                             <i class="fas fa-eye" aria-hidden="true"></i>
@@ -1040,50 +1060,7 @@
     |--------------------------------------------------------------------------
     */
 
-    const divisionHierarchy = {
-        "IDME": [
-            { role: "CEO", label: "CEO" },
-            { role: "COO", label: "COO" },
-            { role: "CMO", label: "CMO" },
-            { role: "CFO", label: "CFO" }
-        ],
-
-        "Digital Marketing": [
-            { role: "Busines Unit Head", label: "Business Unit Head" },
-            { role: "Digital Marketing Manager", label: "Digital Marketing Manager" },
-            { role: "Digital Marketing", label: "Digital Marketing" },
-            { role: "Sosial Media Spesialis", label: "Sosial Media Spesialis" },
-            { role: "Advertising", label: "Advertising" }
-        ],
-
-        "Multimedia": [
-            { role: "Busines Unit Head", label: "Business Unit Head" },
-            { role: "Content Creator Manager", label: "Content Creator Manager" },
-            { role: "Content Creator", label: "Content Creator" }
-        ],
-
-        "Business Dev": [
-            { role: "Busines Unit Head", label: "Busines Unit Head" },
-            { role: "Busines Development Manager", label: "Busines Development Manager" },
-            { role: "Busines Development Specialist", label: "Busines Development Specialist" }
-        ],
-
-        "MCN": [
-            { role: "Busines Unit Head", label: "Busines Unit Head" },
-            { role: "MCN Specialis Manager", label: "MCN Specialis Manager" },
-            { role: "MCN Specialis", label: "MCN Specialis" }
-        ],
-
-        "Tech": [
-            { role: "Busines Unit Head", label: "Busines Unit Head" },
-            { role: "Project Manager", label: "Project Manager" },
-            { role: "Developer", label: "Developer" }
-        ],
-
-        "Finance": [
-            { role: "Busines Unit Head", label: "Busines Unit Head" }
-        ]
-    };
+    const divisionHierarchy = @json($divisionHierarchy);
 
 
     /*

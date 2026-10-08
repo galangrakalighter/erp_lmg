@@ -9,6 +9,8 @@ use App\Models\userDivision as UserDivision;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -43,9 +45,33 @@ class UserController extends Controller
             ->whereRaw("LOWER(TRIM(name)) <> 'idme'")
             ->orderBy('name')
             ->get();
-        $roles = Role::all();
+        $roles = Role::query()
+            ->orderBy('division_id')
+            ->orderBy('level')
+            ->orderBy('role_name')
+            ->get();
 
-        return view('users.index', compact('title', 'data', 'divisions', 'roles'));
+        // Susunan role pada Manajemen User harus selalu mengikuti tabel roles.
+        // Dengan begitu perubahan struktur organisasi melalui migration tidak
+        // perlu disalin lagi ke JavaScript halaman ini.
+        $divisionHierarchy = [
+            'IDME' => collect(['CEO', 'COO', 'CMO', 'CFO'])
+                ->map(fn (string $role) => ['role' => $role, 'label' => $role])
+                ->values(),
+        ];
+        foreach ($divisions as $division) {
+            $divisionHierarchy[$division->name] = $roles
+                ->where('division_id', $division->id)
+                ->map(fn (Role $role) => [
+                    'role' => $role->role_name,
+                    'label' => $role->role_name === 'Busines Unit Head'
+                        ? 'Business Unit Head'
+                        : $role->role_name,
+                ])
+                ->values();
+        }
+
+        return view('users.index', compact('title', 'data', 'divisions', 'roles', 'divisionHierarchy'));
     }
 
     public function getUsersJson() 
@@ -192,6 +218,7 @@ class UserController extends Controller
     }
 
     public function store(Request $request){
+        $request->merge(['email' => Str::lower(trim((string) $request->input('email')))]);
         $isLmg = in_array((string) $request->input('divisi_id'), ['lmg', 'idme'], true);
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -219,7 +246,7 @@ class UserController extends Controller
             $newUser = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
-                'password' => bcrypt($request->password),
+                'password' => Hash::make($request->password),
                 'isAdmin' => $isLmg,
                 'jabatan' => $isLmg ? strtolower($request->jabatan) : null,
             ]);
@@ -256,11 +283,12 @@ class UserController extends Controller
 
     public function update($id, Request $request){
         $user = User::findOrFail($id);
+        $request->merge(['email' => Str::lower(trim((string) $request->input('email')))]);
         $isLmg = in_array((string) $request->input('divisi_id'), ['lmg', 'idme'], true);
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255'],
-            'password' => ['nullable', 'string', 'min:6'],
+            'password' => ['nullable', 'string', 'min:6', 'confirmed'],
             'divisi_id' => ['required'],
             'jabatan' => [$isLmg ? 'required' : 'nullable', 'in:ceo,coo,cmo,cfo'],
             'role_id' => [$isLmg ? 'nullable' : 'required', 'nullable', 'integer'],
@@ -292,10 +320,20 @@ class UserController extends Controller
             
             // Hanya update password jika diisi
             if ($request->filled('password')) {
-                $userData['password'] = bcrypt($request->password);
+                $userData['password'] = Hash::make($request->password);
             }
 
             $user->update($userData);
+
+            if ($request->filled('password')) {
+                // Putuskan login persisten lama setelah kredensial diubah.
+                $user->setRememberToken(Str::random(60));
+                $user->save();
+
+                if (! Hash::check($request->password, $user->fresh()->getAuthPassword())) {
+                    throw new \RuntimeException('Password baru gagal disimpan dengan benar.');
+                }
+            }
 
             // 3. Update User Division (Atasan). Mengubah data pimpinan di IDME
             // tidak boleh menghapus penempatan Finance atau relasi bawahannya.

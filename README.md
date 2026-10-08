@@ -9,6 +9,7 @@ Aplikasi internal berbasis Laravel untuk mengelola operasional Lighter Media Gro
 - Customer Relationship Management (CRM)
 - Manajemen user
 - Daily Work dan timeline kanban
+- Live Monitoring layar kerja dan kamera opsional
 - Folder Master
 - File Master
 - Chart of Account
@@ -28,6 +29,7 @@ Aplikasi internal berbasis Laravel untuk mengelola operasional Lighter Media Gro
 - [CRM](#crm)
 - [Manajemen User](#manajemen-user)
 - [Daily Work](#daily-work)
+- [Live Monitoring](#live-monitoring)
 - [Folder Master](#folder-master)
 - [File Master](#file-master)
 - [Chart of Account](#chart-of-account)
@@ -140,6 +142,7 @@ app/
 │   ├── CRMController.php
 │   ├── UserController.php
 │   ├── HCDailyController.php
+│   ├── MonitoringController.php
 │   ├── MasterFolderController.php
 │   ├── AccountMasterFileController.php
 │   ├── COAController.php
@@ -151,6 +154,9 @@ app/
 │   ├── CRM.php
 │   ├── CRM_HUMAN.php
 │   ├── Meeting.php
+│   ├── MonitoringAccess.php
+│   ├── MonitoringSession.php
+│   ├── MonitoringSignal.php
 │   ├── User.php
 │   └── historyChat.php
 └── Providers/MenuServiceProvider.php
@@ -171,6 +177,10 @@ resources/views/
 │   ├── meeting.blade.php
 │   └── modals.blade.php
 ├── hc/dailywork.blade.php
+├── monitoring/
+│   ├── directory.blade.php
+│   ├── index.blade.php
+│   └── access.blade.php
 ├── master_folder/
 │   ├── index.blade.php
 │   ├── show.blade.php
@@ -218,6 +228,7 @@ flowchart LR
     I --> M[Folder dan File Master]
     I --> N[Chart of Account]
     I --> O[Finance]
+    I --> P[Live Monitoring]
 ```
 
 Semua halaman utama di dalam grup `auth` hanya dapat dibuka setelah pengguna berhasil login. Pengguna yang belum terautentikasi diarahkan ke halaman login.
@@ -957,6 +968,77 @@ Migration berikut digunakan untuk membersihkan relasi client lama:
 
 Migration menggabungkan `produk_client` dengan nama yang sama, memindahkan referensi `client_division` dan `user_client` ke ID utama, lalu membersihkan relasi yang tidak lagi mempunyai pasangan pada `produk_client`. Selalu buat backup database sebelum menjalankan migration pembersihan pada lingkungan produksi.
 
+## Live Monitoring
+
+Live Monitoring digunakan untuk menampilkan window kerja dan, jika tersedia, kamera fisik pengguna secara langsung kepada pemantau yang sudah diberi akses. Pemantau hanya dapat melihat tayangan; fitur ini tidak memberi kendali jarak jauh dan tidak merekam video.
+
+### Hak akses
+
+- Administrator dapat membuka direktori seluruh pengguna dan mengatur siapa yang boleh memantau siapa melalui halaman pengaturan akses monitoring.
+- Pengguna target dapat membagikan layarnya jika administrator sudah memberikan minimal satu akses pemantau untuk pengguna tersebut.
+- Pemantau non-administrator hanya dapat melihat pengguna yang secara khusus ditugaskan kepadanya.
+- Pengguna target harus memberikan persetujuan browser pada setiap sesi. Akses yang tersimpan di ERP tidak melewati dialog izin dari browser.
+
+### Memulai siaran sebagai pengguna target
+
+1. Buka menu **Monitoring**.
+2. Dari direktori, pilih **Bagikan layar saya**.
+3. Tekan **1. Izinkan window kerja**, lalu pilih satu window pada dialog browser. Hindari membagikan seluruh layar jika hanya satu aplikasi yang perlu dipantau.
+4. Sistem memeriksa ketersediaan kamera fisik:
+   - Jika kamera fisik tersedia, tombol **2. Izinkan kamera** ditampilkan dan pengguna perlu menyetujuinya sebelum siaran aktif.
+   - Jika kamera fisik tidak ditemukan, siaran langsung aktif menggunakan window kerja saja.
+   - Kamera virtual seperti OBS Virtual Camera, ManyCam, Snap Camera, XSplit, NDI, DroidCam, Iriun, dan EpocCam diabaikan dan tidak dianggap sebagai kamera fisik.
+5. Biarkan tab Monitoring tetap terbuka. Menutup atau me-refresh tab, menghentikan share dari browser, atau menekan **Hentikan** akan mengakhiri sesi.
+
+Jika kamera fisik memang tersedia tetapi izinnya ditolak, sistem tidak otomatis melanjutkan tanpa kamera. Pengguna perlu memperbaiki izin kamera lalu mencoba kembali. Pengecualian mode tanpa kamera hanya berlaku ketika perangkat kamera fisik benar-benar tidak terdeteksi.
+
+### Melihat siaran sebagai pemantau
+
+1. Buka menu **Monitoring**.
+2. Pilih pengguna yang sudah ditugaskan kepada akun pemantau.
+3. Jika pengguna tersebut sedang live, buka sesi aktif untuk melihat window kerja dan kamera opsionalnya.
+4. Jika tidak ada sesi aktif, tunggu pengguna target memulai siaran dan muat ulang daftar bila diperlukan.
+
+Satu target dapat dipantau oleh lebih dari satu pemantau yang berwenang. Setiap pemantau memakai koneksi WebRTC tersendiri.
+
+### Mengatur akses monitoring sebagai administrator
+
+1. Buka **Monitoring**, lalu masuk ke pengaturan akses.
+2. Pilih pengguna target yang akan membagikan window kerja.
+3. Pilih satu atau beberapa pengguna sebagai pemantau.
+4. Simpan perubahan. Target kemudian dapat memulai siaran, sedangkan pemantau hanya melihat target yang ditugaskan.
+
+Pengguna target tidak dapat ditambahkan sebagai pemantau untuk dirinya sendiri. Menghapus relasi akses mencegah sesi berikutnya diakses oleh pemantau tersebut.
+
+### Alur teknis dan privasi
+
+- Media dikirim antarbrowser melalui WebRTC.
+- Firestore digunakan untuk status ruang dan pertukaran sinyal secara real-time, dengan endpoint ERP sebagai jalur sinyal pendukung.
+- Cloudflare TURN menyediakan kredensial koneksi sementara untuk kondisi jaringan yang tidak dapat tersambung langsung.
+- Server membuat sesi atas nama pengguna yang sedang login sehingga browser tidak dapat memilih identitas target secara bebas.
+- Kamera bersifat opsional hanya ketika kamera fisik tidak terdeteksi. Audio tidak diminta.
+- Tidak ada fungsi rekam, penyimpanan video, atau kendali keyboard dan mouse dalam fitur ini.
+
+### Konfigurasi utama
+
+Pastikan konfigurasi Firebase/Firestore dan Cloudflare TURN di environment produksi sudah terisi. Akses kamera dan screen sharing membutuhkan konteks aman HTTPS, kecuali saat pengembangan melalui `localhost`.
+
+Route utama berada di `routes/web.php`, controller berada di `app/Http/Controllers/MonitoringController.php`, dan antarmuka sesi berada di `resources/views/monitoring/index.blade.php`.
+
+### Troubleshooting Live Monitoring
+
+| Gejala | Penjelasan dan tindakan |
+|---|---|
+| OBS Virtual Camera masih terlihat di menu kamera browser | Itu adalah driver virtual yang didaftarkan pada Windows/browser. ERP mengabaikannya saat menentukan kamera fisik. Jika ingin menghilangkannya juga dari daftar browser, nonaktifkan atau hapus driver virtual dari OBS/Windows. |
+| Kamera dicabut tetapi tombol kamera sempat muncul | Label perangkat kadang belum tersedia sebelum izin diberikan atau daftar perangkat belum diperbarui browser. Saat track yang diterima teridentifikasi sebagai kamera virtual, ERP menghentikannya dan melanjutkan siaran window kerja saja. Coba refresh halaman setelah perangkat dicabut. |
+| Kamera fisik tersedia tetapi izin ditolak | Izinkan kamera melalui ikon izin di bilah alamat, lalu ulangi sesi. Sistem sengaja tidak melewati izin kamera jika kamera fisik terdeteksi. |
+| Window kerja tidak muncul | Pastikan browser mendukung `getDisplayMedia`, halaman dibuka lewat HTTPS, dan pengguna memilih sebuah window pada dialog share. |
+| Pemantau tidak melihat pengguna | Administrator perlu memastikan relasi target-pemantau sudah tersimpan dan akun target tidak terkunci. |
+| Sesi aktif tetapi video tidak tersambung | Periksa konfigurasi Cloudflare TURN, koneksi jaringan kedua perangkat, dan konfigurasi Firebase/Firestore. |
+| Sesi langsung berhenti | Jangan tutup atau me-refresh tab Monitoring. Pastikan window yang dibagikan tidak dihentikan dari indikator share milik browser. |
+
+Versi siap cetak tersedia pada `output/pdf/dokumentasi-live-monitoring-erp-lmg.pdf`.
+
 ## Troubleshooting
 
 ### Tailwind hilang setelah Vite memakai IP LAN
@@ -1041,6 +1123,19 @@ Pastikan halaman COA memakai `escapeCoaHtml`, bukan fungsi global `escapeHtml`. 
 Halaman detail yang masih memiliki interaksi editor lama menggunakan `resources/views/partials/lmg_legacy_workspace.blade.php` sebagai pengendali modal dan lapisan visual sementara. Pastikan partial tersebut tetap dimuat oleh halaman detail.
 
 ## Checklist pengujian per modul
+
+### Live Monitoring
+
+- Pengguna tanpa relasi akses tidak dapat memulai siaran atau melihat target lain.
+- Administrator dapat menambah, mengubah, dan menghapus relasi target-pemantau.
+- Window kerja dapat dibagikan setelah pengguna menyetujui dialog browser.
+- Kamera fisik yang tersedia tetap meminta izin kamera.
+- Tanpa kamera fisik, siaran aktif menggunakan window kerja saja.
+- OBS Virtual Camera dan kamera virtual umum lainnya tidak dianggap sebagai kamera fisik.
+- Penolakan izin kamera fisik menampilkan kegagalan dan tidak diam-diam melewati kamera.
+- Pemantau yang berwenang menerima video layar dan kamera opsional.
+- Tombol Hentikan, penutupan tab, dan penghentian share browser mengakhiri sesi.
+- Pemantau yang tidak ditugaskan menerima respons akses ditolak.
 
 ### Daily Work
 

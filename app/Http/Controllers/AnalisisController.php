@@ -115,6 +115,18 @@ class AnalisisController extends Controller
             $paidPosts = $paidResult['data'] ?? [];
             $paidError = $paidResult['error'] ?? null;
             $paidCurrency = $adsConnection['currency'] ?: 'IDR';
+            $paidLinksByDate = $contentPlanItems
+                ->where('content_source', 'paid')
+                ->filter(fn ($item) => filled($item->tanggal_posting) && filled($item->link))
+                ->groupBy(fn ($item) => Carbon::parse($item->tanggal_posting)->toDateString())
+                ->map(fn ($items) => $items->first()->link);
+            $paidPosts = collect($paidPosts)->map(function (array $post) use ($paidLinksByDate) {
+                $dateKey = filled($post['tanggal_posting'] ?? null)
+                    ? Carbon::parse($post['tanggal_posting'])->toDateString()
+                    : null;
+                $post['link'] = $post['link'] ?? ($dateKey ? $paidLinksByDate->get($dateKey) : null);
+                return $post;
+            })->all();
         }
 
         switch ($platform) {

@@ -173,14 +173,24 @@
    poller=setInterval(handleSignals,pollDelay);handleSignals();
  }
  async function negotiate(viewerId){const c=peer(true,viewerId);if(c.signalingState!=='stable')throw new Error('Menunggu koneksi sebelumnya selesai.');const offer=await c.createOffer();await c.setLocalDescription(offer);await send('offer',c.localDescription,viewerId)}
+ const isVirtualCamera=device=>/(obs|virtual|manycam|snap camera|xsplit|ndi|droidcam|iriun|epoccam)/i.test(String(device?.label||''));
+ async function hasPhysicalCamera(){
+   if(!navigator.mediaDevices?.getUserMedia)return false;
+   if(!navigator.mediaDevices.enumerateDevices)return true;
+   try{
+     const cameras=(await navigator.mediaDevices.enumerateDevices()).filter(device=>device.kind==='videoinput');
+     if(!cameras.length)return false;
+     const labelled=cameras.filter(device=>String(device.label||'').trim()!=='');
+     return labelled.length?labelled.some(device=>!isVirtualCamera(device)):true;
+   }catch(e){return true}
+ }
  async function start(){
    if(screenStream)return;
    if(!window.isSecureContext||!navigator.mediaDevices?.getDisplayMedia)return say('Browser hanya dapat membagikan window melalui HTTPS atau localhost. Buka ERP memakai https://, bukan http://alamat-IP.',true);
    try{
      screenStream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:10,max:15},width:{ideal:1280,max:1280},height:{ideal:720,max:720},displaySurface:'window'},audio:false,preferCurrentTab:false,selfBrowserSurface:'exclude',surfaceSwitching:'include'});
      show(screen,'screen-empty',screenStream);screenStream.getVideoTracks()[0].onended=()=>end(true);document.getElementById('start-live').classList.add('hidden');
-     let hasCamera=Boolean(navigator.mediaDevices.getUserMedia);
-     if(hasCamera&&navigator.mediaDevices.enumerateDevices){try{const devices=await navigator.mediaDevices.enumerateDevices();hasCamera=devices.some(device=>device.kind==='videoinput')}catch(e){hasCamera=true}}
+     const hasCamera=await hasPhysicalCamera();
      if(!hasCamera){document.getElementById('camera-empty').textContent='Kamera tidak terdeteksi. Live berjalan dengan window kerja saja.';await activateLive(false);return}
      document.getElementById('allow-camera').classList.remove('hidden');say('Window kerja sudah diizinkan. Lanjutkan dengan izin kamera.');
    }catch(e){say('Izin window tidak diberikan. Pilih window Chrome lalu klik Izinkan pada dialog browser.',true)}
@@ -230,7 +240,7 @@
    const allowButton=document.getElementById('allow-camera');
    if(!screenStream||allowButton?.disabled)return;
    if(allowButton)allowButton.disabled=true;
-   try{cameraStream=await navigator.mediaDevices.getUserMedia({video:{frameRate:{ideal:10,max:15},width:{ideal:640,max:640},height:{ideal:360,max:360}},audio:false});show(camera,'camera-empty',cameraStream);await activateLive(true)}catch(e){if(['NotFoundError','DevicesNotFoundError'].includes(e?.name)){allowButton.classList.add('hidden');document.getElementById('camera-empty').textContent='Kamera tidak terdeteksi. Live berjalan dengan window kerja saja.';await activateLive(false);return}if(allowButton)allowButton.disabled=false;say('Live monitoring tidak dapat dimulai: '+(e.message||'periksa izin kamera dan konfigurasi TURN.'),true)}}
+   try{cameraStream=await navigator.mediaDevices.getUserMedia({video:{frameRate:{ideal:10,max:15},width:{ideal:640,max:640},height:{ideal:360,max:360}},audio:false});const cameraTrack=cameraStream.getVideoTracks()[0];if(isVirtualCamera({label:cameraTrack?.label})){cameraStream.getTracks().forEach(track=>track.stop());cameraStream=null;allowButton.classList.add('hidden');document.getElementById('camera-empty').textContent='Kamera fisik tidak terdeteksi. Kamera virtual diabaikan.';await activateLive(false);return}show(camera,'camera-empty',cameraStream);await activateLive(true)}catch(e){if(['NotFoundError','DevicesNotFoundError'].includes(e?.name)){allowButton.classList.add('hidden');document.getElementById('camera-empty').textContent='Kamera tidak terdeteksi. Live berjalan dengan window kerja saja.';await activateLive(false);return}if(allowButton)allowButton.disabled=false;say('Live monitoring tidak dapat dimulai: '+(e.message||'periksa izin kamera dan konfigurasi TURN.'),true)}}
  async function activateLive(withCamera){
    let data=await post(url('start'),{consent:true,camera_available:withCamera});session=data.session.id;await loadIceServers();document.getElementById('allow-camera').classList.add('hidden');document.getElementById('stop-live').classList.remove('hidden');document.getElementById('toggle-camera-blur').classList.toggle('hidden',!withCamera);status.textContent='Live monitoring aktif';status.className='rounded-full bg-red-50 px-3 py-2 text-xs font-semibold text-red-700';say(withCamera?'Streaming layar dan kamera aktif. Menunggu admin terhubung.':'Streaming window kerja aktif tanpa kamera. Menunggu admin terhubung.');beginPoll()
  }

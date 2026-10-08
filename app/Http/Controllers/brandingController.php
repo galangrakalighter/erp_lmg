@@ -12,7 +12,7 @@ class brandingController extends Controller
 {
     public function index($id, $platform, PlatformMirroringService $mirroring){
         $title = 'Branding';
-        $mirroredPlatforms = $mirroring->platforms((int) $id, $platform);
+        $mirroredPlatforms = $mirroring->platforms((int) $id, $platform, 'branding');
         $withoutMirrorCopies = fn ($query, string $table) => count($mirroredPlatforms) > 1
             ? $query->whereNotIn($table.'.id', $mirroring->copiedTargetIds((int) $id, $table))
             : $query;

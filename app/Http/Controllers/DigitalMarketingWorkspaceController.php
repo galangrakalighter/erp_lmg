@@ -27,6 +27,7 @@ class DigitalMarketingWorkspaceController extends Controller
             ->unique()
             ->values();
         $role = DigitalMarketingPermissions::role(Auth::user());
+        $mirrorScopes = DigitalMarketingPermissions::mirrorScopes($role);
         $workspaceTabs = ['market-research', 'branding', 'social-media-research', 'advertising-research', 'content-plan', 'guide', 'analisis', 'explore', 'dokumen', 'timeline'];
         $workspaceReadOnlyTabs = match ($role) {
             'Digital Marketing' => ['social-media-research', 'advertising-research', 'content-plan', 'guide', 'analisis', 'explore', 'dokumen', 'timeline'],
@@ -46,7 +47,17 @@ class DigitalMarketingWorkspaceController extends Controller
             'useMrCrepeNavigation' => true,
             'workspaceTabs' => $workspaceTabs,
             'workspaceReadOnlyTabs' => $workspaceReadOnlyTabs,
-            'workspaceCanManageSettings' => DigitalMarketingPermissions::isManager($role),
+            'workspaceCanManageSettings' => $mirrorScopes !== [],
+            'platformMirrorScopes' => collect($mirrorScopes)->mapWithKeys(fn (string $scope) => [
+                $scope => match ($scope) {
+                    'market-research' => 'Market Research',
+                    'branding' => 'Branding',
+                    'social-media-research' => 'Sosial Media Research',
+                    'advertising-research' => 'Advertising Research',
+                    'content-plan-organic' => 'Content Plan Organik',
+                    'content-plan-paid' => 'Content Plan Paid',
+                },
+            ]),
             'platformMirrorPairs' => $mirroring->activePairs($client->id),
         ]);
     }
@@ -56,7 +67,7 @@ class DigitalMarketingWorkspaceController extends Controller
         $client = ProdukClient::query()->findOrFail($id_produk);
         abort_if($client->is_internal, 404);
         $this->authorizeWorkspace($client);
-        abort_unless(DigitalMarketingPermissions::isManager(DigitalMarketingPermissions::role(Auth::user())), 403);
+        $allowedScopes = DigitalMarketingPermissions::mirrorScopes(DigitalMarketingPermissions::role(Auth::user()));
 
         $platforms = collect(data_get($client->access_token, 'platform', []))
             ->filter(fn ($platform) => is_string($platform) && trim($platform) !== '')
@@ -64,9 +75,12 @@ class DigitalMarketingWorkspaceController extends Controller
 
         $validated = $request->validate([
             'source' => ['required', 'string'],
+            'scope' => ['required', 'string'],
             'targets' => ['array'],
             'targets.*' => ['string'],
         ]);
+        abort_unless(in_array($validated['scope'], $allowedScopes, true), 403, 'Anda tidak memiliki akses mirroring untuk bagian ini.');
+        $scope = $validated['scope'];
         $source = $platforms->first(fn ($platform) => strcasecmp($platform, $validated['source']) === 0);
         abort_unless($source, 422, 'Platform sumber tidak valid.');
         $targets = collect($validated['targets'] ?? [])
@@ -74,9 +88,10 @@ class DigitalMarketingWorkspaceController extends Controller
             ->filter(fn ($target) => $target && strcasecmp($target, $source) !== 0)
             ->unique(fn ($target) => strtolower($target))->values();
 
-        DB::transaction(function () use ($client, $source, $targets, $mirroring) {
+        DB::transaction(function () use ($client, $source, $targets, $mirroring, $scope) {
             $existingPairs = DB::table('client_platform_mirrors')
                 ->where('client_id', $client->id)
+                ->where('scope', $scope)
                 ->where('active', true)
                 ->where(fn ($query) => $query->where('platform_a', $source)->orWhere('platform_b', $source))
                 ->get(['platform_a', 'platform_b']);
@@ -89,12 +104,13 @@ class DigitalMarketingWorkspaceController extends Controller
                     fn ($target) => strcasecmp($target, $otherPlatform) === 0
                 );
                 if (! $isStillEnabled) {
-                    $mirroring->snapshotPair($client->id, $pair->platform_a, $pair->platform_b);
+                    $mirroring->snapshotPair($client->id, $pair->platform_a, $pair->platform_b, $scope);
                 }
             }
 
             DB::table('client_platform_mirrors')
                 ->where('client_id', $client->id)
+                ->where('scope', $scope)
                 ->where(fn ($query) => $query->where('platform_a', $source)->orWhere('platform_b', $source))
                 ->update(['active' => false, 'updated_at' => now()]);
 
@@ -103,7 +119,7 @@ class DigitalMarketingWorkspaceController extends Controller
                     ? [$source, $target]
                     : [$target, $source];
                 DB::table('client_platform_mirrors')->updateOrInsert(
-                    ['client_id' => $client->id, 'platform_a' => $platformA, 'platform_b' => $platformB],
+                    ['client_id' => $client->id, 'scope' => $scope, 'platform_a' => $platformA, 'platform_b' => $platformB],
                     ['active' => true, 'created_at' => now(), 'updated_at' => now()]
                 );
             }

@@ -33,4 +33,20 @@ class DigitalMarketingPermissionsTest extends TestCase
             DigitalMarketingPermissions::canManageContentPlan($role, $source),
         );
     }
+
+    public function test_mirroring_is_limited_to_crud_scopes(): void
+    {
+        $this->assertSame(
+            ['market-research', 'branding'],
+            DigitalMarketingPermissions::mirrorScopes('Digital Marketing'),
+        );
+        $this->assertSame(
+            ['social-media-research', 'content-plan-organic'],
+            DigitalMarketingPermissions::mirrorScopes('Sosial Media Spesialis'),
+        );
+        $this->assertSame(
+            ['social-media-research', 'advertising-research', 'content-plan-paid'],
+            DigitalMarketingPermissions::mirrorScopes('Advertising'),
+        );
+    }
 }

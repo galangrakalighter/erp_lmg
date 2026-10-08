@@ -8,21 +8,24 @@ use Illuminate\Support\Facades\Schema;
 
 class PlatformMirroringService
 {
-    private const MIRRORED_TABLES = [
-        'data_jasa',
-        'analize_4p', 'analize_swot', 'positioning', 'segmentasi', 'target_audience',
-        'brand_identify', 'brand_image', 'brand_value', 'brand_tagline',
-        'gaya_komunikasi', 'komposisi', 'audio_brand', 'moodboard', 'alat_branding',
+    private const SCOPE_TABLES = [
+        'market-research' => ['analize_4p', 'analize_swot', 'positioning', 'segmentasi', 'target_audience'],
+        'branding' => ['brand_identify', 'brand_image', 'brand_value', 'brand_tagline', 'gaya_komunikasi', 'komposisi', 'audio_brand', 'moodboard', 'alat_branding'],
+        'social-media-research' => [],
+        'advertising-research' => [],
+        'content-plan-organic' => ['data_jasa'],
+        'content-plan-paid' => ['data_jasa'],
     ];
 
     /**
      * Return the complete active mirror group. Records stay on their original
      * platform; callers only use this list to build a non-destructive union.
      */
-    public function platforms(int $clientId, string $platform): array
+    public function platforms(int $clientId, string $platform, string $scope): array
     {
         $edges = DB::table('client_platform_mirrors')
             ->where('client_id', $clientId)
+            ->where('scope', $scope)
             ->where('active', true)
             ->get(['platform_a', 'platform_b']);
 
@@ -54,7 +57,7 @@ class PlatformMirroringService
         return DB::table('client_platform_mirrors')
             ->where('client_id', $clientId)
             ->where('active', true)
-            ->get(['platform_a', 'platform_b']);
+            ->get(['scope', 'platform_a', 'platform_b']);
     }
 
     public function copiedTargetIds(int $clientId, string $table): Collection
@@ -70,19 +73,19 @@ class PlatformMirroringService
      * enabled and again before it is disabled, so each platform keeps an
      * independent copy after the live union is turned off.
      */
-    public function snapshotPair(int $clientId, string $platformA, string $platformB): void
+    public function snapshotPair(int $clientId, string $platformA, string $platformB, string $scope): void
     {
-        foreach (self::MIRRORED_TABLES as $table) {
+        foreach (self::SCOPE_TABLES[$scope] ?? [] as $table) {
             if (! Schema::hasTable($table) || ! Schema::hasColumn($table, 'produk_client_id') || ! Schema::hasColumn($table, 'platform')) {
                 continue;
             }
 
-            $this->copyPlatformRows($clientId, $table, $platformA, $platformB);
-            $this->copyPlatformRows($clientId, $table, $platformB, $platformA);
+            $this->copyPlatformRows($clientId, $table, $platformA, $platformB, $scope);
+            $this->copyPlatformRows($clientId, $table, $platformB, $platformA, $scope);
         }
     }
 
-    private function copyPlatformRows(int $clientId, string $table, string $sourcePlatform, string $targetPlatform): void
+    private function copyPlatformRows(int $clientId, string $table, string $sourcePlatform, string $targetPlatform, string $scope): void
     {
         $copiedTargetIds = DB::table('platform_mirror_copies')
             ->where('client_id', $clientId)
@@ -93,6 +96,8 @@ class PlatformMirroringService
         DB::table($table)
             ->where('produk_client_id', $clientId)
             ->whereRaw('LOWER(platform) = ?', [strtolower($sourcePlatform)])
+            ->when($table === 'data_jasa' && $scope === 'content-plan-organic', fn ($query) => $query->where('content_source', 'organic'))
+            ->when($table === 'data_jasa' && $scope === 'content-plan-paid', fn ($query) => $query->where('content_source', 'paid'))
             ->when($copiedTargetIds->isNotEmpty(), fn ($query) => $query->whereNotIn('id', $copiedTargetIds))
             ->orderBy('id')
             ->get()

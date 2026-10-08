@@ -65,7 +65,14 @@
                     <button type="button" id="dmMirrorClose" class="rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-950">&times;</button>
                 </div>
                 <form id="dmMirrorForm" class="px-6 py-5">
-                    <p class="text-sm text-zinc-700">Mirror <strong id="dmMirrorSource"></strong> dengan:</p>
+                    <label class="block text-xs font-semibold text-zinc-700">Bagian yang dimirroring
+                        <select id="dmMirrorScope" class="mt-1.5 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900">
+                            @foreach(($platformMirrorScopes ?? []) as $scope => $label)
+                                <option value="{{ $scope }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <p class="mt-4 text-sm text-zinc-700">Mirror <strong id="dmMirrorSource"></strong> dengan:</p>
                     <div id="dmMirrorTargets" class="mt-4 grid grid-cols-2 gap-3"></div>
                     <p class="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-800">Saat mirroring dimatikan, data yang sudah ada tetap tersimpan pada platform asalnya.</p>
                     <div id="dmMirrorError" class="mt-3 hidden text-xs text-red-600"></div>
@@ -165,6 +172,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const panelCache = new Map();
     const availablePlatforms = @json($platforms->values());
     const mirrorPairs = @json($platformMirrorPairs ?? []);
+    const mirrorScopes = @json($platformMirrorScopes ?? []);
     const mirrorUrl = @json(route('digital-marketing.platform-mirroring', ['id_produk' => $client->id]));
     let activeKey = null;
 
@@ -183,24 +191,33 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!platformSelect || !mirrorModal) return;
         const source = platformSelect.value;
         document.getElementById('dmMirrorSource').textContent = source;
+        renderMirrorTargets();
+        mirrorModal.classList.remove('hidden');
+        mirrorModal.classList.add('flex');
+        mirrorModal.setAttribute('aria-hidden', 'false');
+    }
+    function renderMirrorTargets() {
+        if (!platformSelect) return;
+        const source = platformSelect.value;
+        const scope = document.getElementById('dmMirrorScope')?.value || Object.keys(mirrorScopes)[0];
         const escapeMirrorText = value => String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
         document.getElementById('dmMirrorTargets').innerHTML = availablePlatforms
             .filter(platform => platform.toLowerCase() !== source.toLowerCase())
             .map(platform => {
                 const checked = mirrorPairs.some(pair =>
+                    pair.scope === scope &&
                     (pair.platform_a.toLowerCase() === source.toLowerCase() && pair.platform_b.toLowerCase() === platform.toLowerCase()) ||
+                    pair.scope === scope &&
                     (pair.platform_b.toLowerCase() === source.toLowerCase() && pair.platform_a.toLowerCase() === platform.toLowerCase())
                 );
                 return `<label class="flex cursor-pointer items-center gap-3 rounded-xl border border-zinc-200 px-4 py-3 text-sm font-medium text-zinc-800 hover:bg-zinc-50"><input type="checkbox" name="targets[]" value="${escapeMirrorText(platform)}" ${checked ? 'checked' : ''} class="h-4 w-4 rounded border-zinc-300">${escapeMirrorText(platform)}</label>`;
             }).join('');
-        mirrorModal.classList.remove('hidden');
-        mirrorModal.classList.add('flex');
-        mirrorModal.setAttribute('aria-hidden', 'false');
     }
     document.getElementById('dmMirrorButton')?.addEventListener('click', openMirrorModal);
     document.getElementById('dmMirrorClose')?.addEventListener('click', closeMirrorModal);
     document.getElementById('dmMirrorCancel')?.addEventListener('click', closeMirrorModal);
     mirrorModal?.addEventListener('click', event => { if (event.target === mirrorModal) closeMirrorModal(); });
+    document.getElementById('dmMirrorScope')?.addEventListener('change', renderMirrorTargets);
     document.getElementById('dmMirrorForm')?.addEventListener('submit', async event => {
         event.preventDefault();
         const error = document.getElementById('dmMirrorError');
@@ -208,7 +225,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const response = await fetch(mirrorUrl, {
             method: 'PUT',
             headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
-            body: JSON.stringify({ source: platformSelect.value, targets: Array.from(event.currentTarget.querySelectorAll('[name="targets[]"]:checked')).map(input => input.value) })
+            body: JSON.stringify({ source: platformSelect.value, scope: document.getElementById('dmMirrorScope').value, targets: Array.from(event.currentTarget.querySelectorAll('[name="targets[]"]:checked')).map(input => input.value) })
         });
         if (!response.ok) {
             const payload = await response.json().catch(() => ({}));

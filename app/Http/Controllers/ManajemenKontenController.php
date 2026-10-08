@@ -84,7 +84,8 @@ class ManajemenKontenController extends Controller
         if ($dmRole === 'Advertising') $contentSource = 'paid';
 
         try {
-            $mirroredPlatforms = $mirroring->platforms((int) $produk_id, $platform);
+            $mirrorScope = $contentSource === 'paid' ? 'content-plan-paid' : 'content-plan-organic';
+            $mirroredPlatforms = $mirroring->platforms((int) $produk_id, $platform, $mirrorScope);
             $query = DB::table("data_jasa")
                 ->leftJoin('type_produk', 'type_produk.id', '=', 'data_jasa.type_produk_id')
                 ->leftJoin('strategy', 'strategy.id', '=', 'data_jasa.strategy_id')

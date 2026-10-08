@@ -18,7 +18,7 @@ class marketResearchController extends Controller
     }
 
     public function index($id, $platform, PlatformMirroringService $mirroring){
-        $data = $this->market->getMarket((int)$id, $mirroring->platforms((int) $id, $platform));
+        $data = $this->market->getMarket((int)$id, $mirroring->platforms((int) $id, $platform, 'market-research'));
         $divisi = User::find(Auth::user()->id)->userDivisions;
         $role = Auth::user()->isAdmin == false ? DB::table('roles')->where('id', $divisi[0]->role_id)->value('role_name') : "Super Admin";
         $title = "Market Research";

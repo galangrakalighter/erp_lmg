@@ -27,4 +27,21 @@ class DigitalMarketingPermissions
             || ($role === 'Sosial Media Spesialis' && $contentSource === 'organic')
             || ($role === 'Advertising' && $contentSource === 'paid');
     }
+
+    public static function mirrorScopes(string $role): array
+    {
+        if (self::isManager($role)) {
+            return [
+                'market-research', 'branding', 'social-media-research',
+                'advertising-research', 'content-plan-organic', 'content-plan-paid',
+            ];
+        }
+
+        return match ($role) {
+            'Digital Marketing' => ['market-research', 'branding'],
+            'Sosial Media Spesialis' => ['social-media-research', 'content-plan-organic'],
+            'Advertising' => ['social-media-research', 'advertising-research', 'content-plan-paid'],
+            default => [],
+        };
+    }
 }

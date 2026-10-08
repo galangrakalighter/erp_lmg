@@ -90,14 +90,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const dateFormatter = new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
     const metricLabels = @json(collect($metaMetricDefinitions)->map(fn ($definition) => $definition[0]));
     const accountMetrics = { follows: Number(@json($followerMetric ?? 0)), unfollows: 0, net_followers: Number(@json($followerMetric ?? 0)), profile_visits: 0, link_clicks: 0 };
-    const additiveKeys = ['reach','views','impressions','accounts_reached','engagement','likes','comments','replies','shares','saved','reposts','quotes','video_views','video_3s_views','video_1m_views','watch_time'];
-    const dailyMap = new Map();
-    rawItems.forEach(item => {
+    const items = rawItems.map((item, uploadIndex) => {
         const date = new Date(item.tanggal_posting);
-        if (Number.isNaN(date.getTime())) return;
-        const key = date.toISOString().slice(0, 10);
-        const current = dailyMap.get(key) || { date, item_count: 0 };
-        const normalized = {
+        return {
+            judul: item.judul || `Konten ${uploadIndex + 1}`,
+            tanggal_posting: Number.isNaN(date.getTime()) ? (item.tanggal_posting || '-') : dateFormatter.format(date),
+            timestamp: Number.isNaN(date.getTime()) ? Number.MAX_SAFE_INTEGER : date.getTime(),
+            upload_index: uploadIndex,
             reach: Number(item.reach || 0), views: Number(item.views ?? item.impressions ?? 0),
             impressions: Number(item.impressions || 0), accounts_reached: Number(item.accounts_reached ?? item.reach ?? 0),
             engagement: Number(item.engagement || 0), likes: Number(item.likes || 0), comments: Number(item.comments || 0),
@@ -106,28 +105,7 @@ document.addEventListener('DOMContentLoaded', function () {
             video_3s_views: Number(item.video_3s_views || 0), video_1m_views: Number(item.video_1m_views || 0),
             watch_time: Number(item.watch_time || 0), average_watch_time: Number(item.average_watch_time || 0)
         };
-        additiveKeys.forEach(metric => { current[metric] = Number(current[metric] || 0) + normalized[metric]; });
-        current.average_watch_time = Number(current.average_watch_time || 0) + normalized.average_watch_time;
-        current.item_count += 1;
-        dailyMap.set(key, current);
-    });
-    const dailyItems = [...dailyMap.values()].sort((a, b) => a.date - b.date);
-    const items = [];
-    const bucketSize = dailyItems.length > 10 ? 3 : 1;
-    for (let index = 0; index < dailyItems.length; index += bucketSize) {
-        const bucket = dailyItems.slice(index, index + bucketSize);
-        const first = bucket[0];
-        const last = bucket[bucket.length - 1];
-        const aggregate = {
-            tanggal_posting: bucket.length === 1
-                ? dateFormatter.format(first.date)
-                : `${dateFormatter.format(first.date)} – ${dateFormatter.format(last.date)}`,
-            item_count: bucket.reduce((total, item) => total + item.item_count, 0),
-        };
-        additiveKeys.forEach(metric => { aggregate[metric] = bucket.reduce((total, item) => total + Number(item[metric] || 0), 0); });
-        aggregate.average_watch_time = aggregate.item_count ? bucket.reduce((total, item) => total + Number(item.average_watch_time || 0), 0) / aggregate.item_count : 0;
-        items.push(aggregate);
-    }
+    }).sort((a, b) => a.timestamp - b.timestamp || a.upload_index - b.upload_index);
 
     const rate = (numerator, denominator) => denominator > 0 ? (numerator / denominator) * 100 : 0;
     function metricValue(item, metric) {
@@ -159,7 +137,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 responsive: true,
                 maintainAspectRatio: false,
                 interaction: { mode: 'index', intersect: false },
-                plugins: { legend: { position: 'bottom' } },
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: { callbacks: { title(context) { const item = items[context[0]?.dataIndex]; return item ? `${item.tanggal_posting} · ${item.judul}` : ''; } } }
+                },
                 scales: {
                     y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
                     x: { grid: { display: false }, ticks: { minRotation: 0, maxRotation: 0, autoSkip: true, maxTicksLimit: 10 } }

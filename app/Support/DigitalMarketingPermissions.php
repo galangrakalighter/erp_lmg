@@ -52,19 +52,15 @@ class DigitalMarketingPermissions
 
     public static function workspaceTabs(string $role): array
     {
-        return match ($role) {
-            'Sosial Media Spesialis' => ['content-plan', 'guide', 'dokumen', 'timeline'],
-            'Advertising' => ['market-research', 'social-media-research', 'advertising-research', 'content-plan', 'dokumen', 'timeline'],
-            default => self::ALL_WORKSPACE_TABS,
-        };
+        return self::ALL_WORKSPACE_TABS;
     }
 
     public static function readOnlyWorkspaceTabs(string $role): array
     {
         return match ($role) {
             'Digital Marketing' => ['social-media-research', 'advertising-research', 'content-plan', 'guide', 'analisis', 'explore', 'dokumen', 'timeline'],
-            'Sosial Media Spesialis' => ['dokumen', 'timeline'],
-            'Advertising' => ['market-research', 'social-media-research', 'dokumen', 'timeline'],
+            'Sosial Media Spesialis' => ['market-research', 'branding', 'social-media-research', 'advertising-research', 'analisis', 'explore', 'dokumen', 'timeline'],
+            'Advertising' => ['market-research', 'branding', 'social-media-research', 'guide', 'analisis', 'explore', 'dokumen', 'timeline'],
             default => [],
         };
     }

@@ -53,17 +53,21 @@ class DigitalMarketingPermissionsTest extends TestCase
     public function test_workspace_tabs_follow_the_final_role_matrix(): void
     {
         $this->assertSame(
-            ['content-plan', 'guide', 'dokumen', 'timeline'],
+            DigitalMarketingPermissions::workspaceTabs('Digital Marketing'),
             DigitalMarketingPermissions::workspaceTabs('Sosial Media Spesialis'),
         );
         $this->assertSame(
-            ['market-research', 'social-media-research', 'advertising-research', 'content-plan', 'dokumen', 'timeline'],
+            DigitalMarketingPermissions::workspaceTabs('Digital Marketing'),
             DigitalMarketingPermissions::workspaceTabs('Advertising'),
         );
         $this->assertContains('branding', DigitalMarketingPermissions::workspaceTabs('Digital Marketing'));
         $this->assertSame(
-            ['market-research', 'social-media-research', 'dokumen', 'timeline'],
+            ['market-research', 'branding', 'social-media-research', 'guide', 'analisis', 'explore', 'dokumen', 'timeline'],
             DigitalMarketingPermissions::readOnlyWorkspaceTabs('Advertising'),
+        );
+        $this->assertSame(
+            ['market-research', 'branding', 'social-media-research', 'advertising-research', 'analisis', 'explore', 'dokumen', 'timeline'],
+            DigitalMarketingPermissions::readOnlyWorkspaceTabs('Sosial Media Spesialis'),
         );
     }
 }

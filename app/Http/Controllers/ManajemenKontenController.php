@@ -148,7 +148,7 @@ class ManajemenKontenController extends Controller
         }
     }
 
-    public function store($id, Request $request){
+    public function store($id, Request $request, PlatformMirroringService $mirroring){
         abort_if($this->isMultimediaUser(), 403, 'Multimedia hanya dapat melihat Content Plan.');
         $dmRole = DigitalMarketingPermissions::role(Auth::user());
         $this->authorizeManagerClient((int) $id, $dmRole);
@@ -221,6 +221,12 @@ class ManajemenKontenController extends Controller
                 'created_at'       => now(),
                 'updated_at'       => now(),
             ]);
+            $mirroring->syncRow(
+                $id,
+                'data_jasa',
+                $data_jasa,
+                $request->content_source === 'paid' ? 'content-plan-paid' : 'content-plan-organic'
+            );
 
             // $BATAS_HARIAN = (int)$request->pic == 39 ? 480 : 420;
             // $existingJobs = DB::table('data_jasa')
@@ -303,7 +309,7 @@ class ManajemenKontenController extends Controller
         }
     }
 
-    public function update($id, Request $request){
+    public function update($id, Request $request, PlatformMirroringService $mirroring){
         $data = DB::table('data_jasa')->where('id', $id)->first();
         abort_unless($data, 404);
 
@@ -426,6 +432,12 @@ class ManajemenKontenController extends Controller
                 'created_at'       => now(),
                 'updated_at'       => now(),
             ]);
+            $mirroring->syncRow(
+                (int) $data->produk_client_id,
+                'data_jasa',
+                (int) $id,
+                $request->content_source === 'paid' ? 'content-plan-paid' : 'content-plan-organic'
+            );
 
             // if(Auth::user()->role != "content_creator"){
             //     $check = Task::where('id_manajement_konten', $id)->first();
@@ -477,13 +489,19 @@ class ManajemenKontenController extends Controller
         }
     }
 
-    public function destroy($id) {
+    public function destroy($id, PlatformMirroringService $mirroring) {
         abort_if($this->isMultimediaUser(), 403, 'Multimedia tidak dapat menghapus Content Plan.');
         $id = (int)$id;
         $data = DB::table('data_jasa')->where('id', $id)->first();
         $dmRole = DigitalMarketingPermissions::role(Auth::user());
         if ($data) $this->authorizeManagerClient((int) $data->produk_client_id, $dmRole);
         abort_unless($data && DigitalMarketingPermissions::canManageContentPlan($dmRole, (string) $data->content_source), 403);
+        $mirroring->deleteMirroredRow(
+            (int) $data->produk_client_id,
+            'data_jasa',
+            (int) $id,
+            $data->content_source === 'paid' ? 'content-plan-paid' : 'content-plan-organic'
+        );
         DB::table("data_jasa")->delete($id);
         DB::table("task")->where('id_manajement_konten', $id)->delete();
         return redirect()->back()->with('success', 'Data Berhasil Di Hapus');

@@ -457,7 +457,7 @@
                         </div>
                     </div>
 
-                    <div class="modal-footer bg-light border-0 py-3 px-4">
+                    <div class="modal-footer bg-light border-0 py-3 px-4" style="position:sticky; bottom:0; z-index:2; flex:0 0 auto;">
                         <button type="button" class="btn btn-link text-muted px-4 font-weight-bold" data-dismiss="modal" style="text-decoration: none;">Batal</button>
                         <button type="submit" class="btn btn-primary px-5 font-weight-bold shadow">
                             <i class="fas fa-save mr-2"></i> Simpan Data
@@ -470,9 +470,9 @@
 
     {{-- Modal Edit --}}
     <div class="modal fade" id="modalEditKonten" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-            <div class="modal-content border-0 shadow-lg" style="border-radius: 15px; overflow: hidden;">
-                <form id="formEditKonten" method="POST">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" role="document" style="max-height: calc(100dvh - 2rem);">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 15px; overflow: hidden; max-height: calc(100dvh - 2rem);">
+                <form id="formEditKonten" method="POST" style="display:flex; min-height:0; max-height:calc(100dvh - 2rem); flex:1 1 auto; flex-direction:column; overflow:hidden;">
                     @csrf
                     @method('POST')
                     <input type="hidden" name="id" id="edit_id">
@@ -495,7 +495,7 @@
                         </button>
                     </div>
 
-                    <div class="modal-body p-4" style="background-color: #fcfcfd; max-height: 75vh; overflow-y: auto;">
+                    <div class="modal-body p-4" style="min-height:0; flex:1 1 auto; background-color:#fcfcfd; overflow-y:auto; overscroll-behavior:contain;">
                         
                         <div class="section-title mb-3 d-flex align-items-center">
                             <div class="bg-warning mr-2" style="width: 4px; height: 20px; border-radius: 10px;"></div>
@@ -672,7 +672,7 @@
                         </div>
                     </div>
 
-                    <div class="modal-footer bg-light border-0 py-3">
+                    <div class="modal-footer bg-light border-0 py-3" style="position:sticky; bottom:0; z-index:2; flex:0 0 auto;">
                         <button type="button" class="btn btn-link text-muted font-weight-bold shadow-none" data-dismiss="modal">Tutup</button>
                         <button type="submit" class="btn btn-warning text-white px-5 font-weight-bold shadow" style="border-radius: 8px;">
                             <i class="fas fa-save mr-2"></i> Update Data

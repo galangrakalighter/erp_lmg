@@ -85,7 +85,57 @@ class PlatformMirroringService
         }
     }
 
-    private function copyPlatformRows(int $clientId, string $table, string $sourcePlatform, string $targetPlatform, string $scope): void
+    /** Sinkronkan satu baris yang baru dibuat atau diedit selama mirror aktif. */
+    public function syncRow(int $clientId, string $table, int $rowId, string $scope): void
+    {
+        if (! in_array($table, self::SCOPE_TABLES[$scope] ?? [], true) || ! Schema::hasTable($table)) {
+            return;
+        }
+
+        $source = DB::table($table)->where('id', $rowId)->where('produk_client_id', $clientId)->first();
+        if (! $source || blank($source->platform ?? null)) {
+            return;
+        }
+
+        $platforms = $this->platforms($clientId, (string) $source->platform, $scope);
+        foreach ($platforms as $targetPlatform) {
+            if (strcasecmp($targetPlatform, (string) $source->platform) === 0) {
+                continue;
+            }
+            $this->copyPlatformRows($clientId, $table, (string) $source->platform, $targetPlatform, $scope, $rowId);
+        }
+    }
+
+    /** Hapus salinan pada platform mirror aktif ketika sumber dihapus. */
+    public function deleteMirroredRow(int $clientId, string $table, int $rowId, string $scope): void
+    {
+        $source = DB::table($table)->where('id', $rowId)->where('produk_client_id', $clientId)->first();
+        if (! $source || blank($source->platform ?? null)) {
+            return;
+        }
+
+        $activePlatforms = collect($this->platforms($clientId, (string) $source->platform, $scope))
+            ->map(fn ($platform) => strtolower((string) $platform));
+        if ($activePlatforms->count() <= 1) {
+            return;
+        }
+
+        $copies = DB::table('platform_mirror_copies')
+            ->where('client_id', $clientId)
+            ->where('table_name', $table)
+            ->where('source_id', $rowId)
+            ->get();
+
+        foreach ($copies as $copy) {
+            if (! $activePlatforms->contains(strtolower((string) $copy->target_platform))) {
+                continue;
+            }
+            DB::table($table)->where('id', $copy->target_id)->delete();
+            DB::table('platform_mirror_copies')->where('id', $copy->id)->delete();
+        }
+    }
+
+    private function copyPlatformRows(int $clientId, string $table, string $sourcePlatform, string $targetPlatform, string $scope, ?int $onlySourceId = null): void
     {
         $copiedTargetIds = DB::table('platform_mirror_copies')
             ->where('client_id', $clientId)
@@ -96,6 +146,7 @@ class PlatformMirroringService
         DB::table($table)
             ->where('produk_client_id', $clientId)
             ->whereRaw('LOWER(platform) = ?', [strtolower($sourcePlatform)])
+            ->when($onlySourceId !== null, fn ($query) => $query->where('id', $onlySourceId))
             ->when($table === 'data_jasa' && $scope === 'content-plan-organic', fn ($query) => $query->where('content_source', 'organic'))
             ->when($table === 'data_jasa' && $scope === 'content-plan-paid', fn ($query) => $query->where('content_source', 'paid'))
             ->when($copiedTargetIds->isNotEmpty(), fn ($query) => $query->whereNotIn('id', $copiedTargetIds))

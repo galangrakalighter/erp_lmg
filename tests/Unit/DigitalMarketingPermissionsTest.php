@@ -41,12 +41,29 @@ class DigitalMarketingPermissionsTest extends TestCase
             DigitalMarketingPermissions::mirrorScopes('Digital Marketing'),
         );
         $this->assertSame(
-            ['social-media-research', 'content-plan-organic'],
+            ['content-plan-organic'],
             DigitalMarketingPermissions::mirrorScopes('Sosial Media Spesialis'),
         );
         $this->assertSame(
-            ['social-media-research', 'advertising-research', 'content-plan-paid'],
+            ['advertising-research', 'content-plan-paid'],
             DigitalMarketingPermissions::mirrorScopes('Advertising'),
+        );
+    }
+
+    public function test_workspace_tabs_follow_the_final_role_matrix(): void
+    {
+        $this->assertSame(
+            ['content-plan', 'guide', 'dokumen', 'timeline'],
+            DigitalMarketingPermissions::workspaceTabs('Sosial Media Spesialis'),
+        );
+        $this->assertSame(
+            ['market-research', 'social-media-research', 'advertising-research', 'content-plan', 'dokumen', 'timeline'],
+            DigitalMarketingPermissions::workspaceTabs('Advertising'),
+        );
+        $this->assertContains('branding', DigitalMarketingPermissions::workspaceTabs('Digital Marketing'));
+        $this->assertSame(
+            ['market-research', 'social-media-research', 'dokumen', 'timeline'],
+            DigitalMarketingPermissions::readOnlyWorkspaceTabs('Advertising'),
         );
     }
 }

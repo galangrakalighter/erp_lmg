@@ -6,6 +6,11 @@ use App\Models\User;
 
 class DigitalMarketingPermissions
 {
+    private const ALL_WORKSPACE_TABS = [
+        'market-research', 'branding', 'social-media-research', 'advertising-research',
+        'content-plan', 'guide', 'analisis', 'explore', 'dokumen', 'timeline',
+    ];
+
     public static function role(?User $user): string
     {
         if (! $user) return '';
@@ -39,8 +44,27 @@ class DigitalMarketingPermissions
 
         return match ($role) {
             'Digital Marketing' => ['market-research', 'branding'],
-            'Sosial Media Spesialis' => ['social-media-research', 'content-plan-organic'],
-            'Advertising' => ['social-media-research', 'advertising-research', 'content-plan-paid'],
+            'Sosial Media Spesialis' => ['content-plan-organic'],
+            'Advertising' => ['advertising-research', 'content-plan-paid'],
+            default => [],
+        };
+    }
+
+    public static function workspaceTabs(string $role): array
+    {
+        return match ($role) {
+            'Sosial Media Spesialis' => ['content-plan', 'guide', 'dokumen', 'timeline'],
+            'Advertising' => ['market-research', 'social-media-research', 'advertising-research', 'content-plan', 'dokumen', 'timeline'],
+            default => self::ALL_WORKSPACE_TABS,
+        };
+    }
+
+    public static function readOnlyWorkspaceTabs(string $role): array
+    {
+        return match ($role) {
+            'Digital Marketing' => ['social-media-research', 'advertising-research', 'content-plan', 'guide', 'analisis', 'explore', 'dokumen', 'timeline'],
+            'Sosial Media Spesialis' => ['dokumen', 'timeline'],
+            'Advertising' => ['market-research', 'social-media-research', 'dokumen', 'timeline'],
             default => [],
         };
     }

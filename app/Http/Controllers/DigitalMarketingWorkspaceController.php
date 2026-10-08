@@ -28,13 +28,8 @@ class DigitalMarketingWorkspaceController extends Controller
             ->values();
         $role = DigitalMarketingPermissions::role(Auth::user());
         $mirrorScopes = DigitalMarketingPermissions::mirrorScopes($role);
-        $workspaceTabs = ['market-research', 'branding', 'social-media-research', 'advertising-research', 'content-plan', 'guide', 'analisis', 'explore', 'dokumen', 'timeline'];
-        $workspaceReadOnlyTabs = match ($role) {
-            'Digital Marketing' => ['social-media-research', 'advertising-research', 'content-plan', 'guide', 'analisis', 'explore', 'dokumen', 'timeline'],
-            'Sosial Media Spesialis' => ['market-research', 'branding', 'analisis', 'explore', 'dokumen', 'timeline'],
-            'Advertising' => ['market-research', 'branding', 'guide', 'analisis', 'explore', 'dokumen', 'timeline'],
-            default => [],
-        };
+        $workspaceTabs = DigitalMarketingPermissions::workspaceTabs($role);
+        $workspaceReadOnlyTabs = DigitalMarketingPermissions::readOnlyWorkspaceTabs($role);
 
         return view('digital_marketing.workspace', [
             'title' => $client->nama.' · Digital Marketing',

@@ -145,7 +145,7 @@ class ProdukController extends Controller
             };
             $options = [
                 'buh' => $usersForRole('Busines Unit Head'),
-                'dm' => $usersForRole('Digital Marketer')->map(function ($u) use ($divisionId) {
+                'dm' => $usersForRole('Digital Marketing')->map(function ($u) use ($divisionId) {
                     return ['id' => $u->id, 'name' => $u->name, 'parent' => $u->userDivisions->firstWhere('division_id', $divisionId)?->parent_id ?? 0];
                 }),
                 'ads' => $usersForRole('Advertising')->map(function ($u) use ($divisionId) {

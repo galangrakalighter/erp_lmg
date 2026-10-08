@@ -1050,7 +1050,9 @@
 
         "Digital Marketing": [
             { role: "Busines Unit Head", label: "Business Unit Head" },
-            { role: "Digital Marketer", label: "Digital Marketer" },
+            { role: "Digital Marketing Manager", label: "Digital Marketing Manager" },
+            { role: "Digital Marketing", label: "Digital Marketing" },
+            { role: "Sosial Media Spesialis", label: "Sosial Media Spesialis" },
             { role: "Advertising", label: "Advertising" }
         ],
 

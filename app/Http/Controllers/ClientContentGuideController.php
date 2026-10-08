@@ -6,6 +6,7 @@ use App\Models\ProdukClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Support\DigitalMarketingPermissions;
 
 class ClientContentGuideController extends Controller
 {
@@ -34,10 +35,10 @@ class ClientContentGuideController extends Controller
 
         $user = Auth::user();
         $user->loadMissing('userDivisions.role', 'userDivisions.division');
-        $canManage = ! request()->boolean('readonly') && ((bool) $user->isAdmin || $user->userDivisions->contains(function ($assignment) {
-            return strtolower(trim((string) $assignment->division?->name)) === 'digital marketing'
-                && in_array($assignment->role?->role_name, ['Digital Marketer', 'Busines Unit Head'], true);
-        }));
+        $role = DigitalMarketingPermissions::role($user);
+        $this->authorizeAssignedClient($clientModel->id, $role);
+        $canManage = ! request()->boolean('readonly')
+            && (DigitalMarketingPermissions::isManager($role) || $role === 'Sosial Media Spesialis');
 
         return view('client.guide', [
             'title' => 'Content Guide · '.$clientModel->nama,
@@ -51,6 +52,7 @@ class ClientContentGuideController extends Controller
     {
         $clientModel = ProdukClient::query()->findOrFail($client);
         $config = $this->section($section);
+        $this->authorizeAssignedClient($clientModel->id, DigitalMarketingPermissions::role(Auth::user()));
         $this->authorizeManage();
         $validated = $this->validated($request, $config);
         $validated['kategori_id'] = $clientModel->kategori_jasa_id;
@@ -63,6 +65,7 @@ class ClientContentGuideController extends Controller
     {
         $clientModel = ProdukClient::query()->findOrFail($client);
         $config = $this->section($section);
+        $this->authorizeAssignedClient($clientModel->id, DigitalMarketingPermissions::role(Auth::user()));
         $this->authorizeManage();
         DB::table($config['table'])->where('id', $item)
             ->where('kategori_id', $clientModel->kategori_jasa_id)
@@ -75,6 +78,7 @@ class ClientContentGuideController extends Controller
     {
         $clientModel = ProdukClient::query()->findOrFail($client);
         $config = $this->section($section);
+        $this->authorizeAssignedClient($clientModel->id, DigitalMarketingPermissions::role(Auth::user()));
         $this->authorizeManage();
         DB::table($config['table'])->where('id', $item)
             ->where('kategori_id', $clientModel->kategori_jasa_id)->delete();
@@ -122,10 +126,14 @@ class ClientContentGuideController extends Controller
     {
         $user = Auth::user();
         $user->loadMissing('userDivisions.role', 'userDivisions.division');
-        $allowed = (bool) $user->isAdmin || $user->userDivisions->contains(function ($assignment) {
-            return strtolower(trim((string) $assignment->division?->name)) === 'digital marketing'
-                && in_array($assignment->role?->role_name, ['Digital Marketer', 'Busines Unit Head'], true);
-        });
+        $role = DigitalMarketingPermissions::role($user);
+        $allowed = DigitalMarketingPermissions::isManager($role) || $role === 'Sosial Media Spesialis';
         abort_unless($allowed, 403);
+    }
+
+    private function authorizeAssignedClient(int $clientId, string $role): void
+    {
+        if (Auth::user()?->isAdmin || $role === '' || $role === 'Busines Unit Head') return;
+        abort_unless(Auth::user()->userClients()->where('client_id', $clientId)->exists(), 403);
     }
 }

@@ -36,7 +36,7 @@ Route::middleware(['web', 'auth'])->prefix('mcn')->name('api.mcn.')->group(funct
     Route::get('/blacklist', [App\Http\Controllers\BlacklistController::class, 'dataApi'])->name('blacklist');
 });
 
-Route::middleware(['web', 'auth'])
+Route::middleware(['web', 'auth', 'digital-marketing.client'])
     ->prefix('digital-marketing/workspace')
     ->name('api.digital-marketing.')
     ->group(function () {

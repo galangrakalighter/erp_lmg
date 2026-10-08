@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Services\MarketResearch\MarketResearchService;
 use App\Services\PlatformMirroringService;
+use App\Support\DigitalMarketingPermissions;
 class marketResearchController extends Controller
 {
     protected $market;
@@ -28,7 +29,8 @@ class marketResearchController extends Controller
         }
         $produk = DB::table('produk_client')->where('id', $id)->first();
         $halaman = "Market Research";
-        $readOnly = request()->routeIs('api.multimedia.*') || (! Auth::user()->isAdmin && $divisi->contains(
+        $dmRole = DigitalMarketingPermissions::role(Auth::user());
+        $readOnly = request()->routeIs('api.multimedia.*') || (! DigitalMarketingPermissions::isManager($dmRole) && $dmRole !== 'Digital Marketing') || (! Auth::user()->isAdmin && $divisi->contains(
             fn ($row) => strtolower(trim((string) $row->division?->name)) === 'multimedia'
         ));
         return view('market.index', compact('data', 'title', 'produk', 'platform', 'halaman', 'role', 'readOnly'));

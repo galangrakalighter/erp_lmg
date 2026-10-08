@@ -7,7 +7,7 @@
         {{-- CARD HEADER --}}
         <div class="card-header d-flex justify-content-between align-items-center">
             <h6 class="m-0 font-weight-bold text-primary">Manajemen Client</h6>
-            @if($role == 'Digital Marketer' || $role == 'Busines Unit Head' || $role == 'Super Admin')
+            @if($role == 'Busines Unit Head' || $role == 'Super Admin')
                 <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#tambahModal"><i class="fas fa-plus mr-1"></i> Tambah Client</button>
             @endif
             {{-- <a href="{{ route('create_produk_jasa') }}" class="btn btn-sm btn-primary">
@@ -27,10 +27,10 @@
                             <th scope="col">Client</th>
                             <th scope="col">Status</th>
                             <th scope="col">BUH</th>
-                            <th scope="col">Digital Marketer</th>
+                            <th scope="col">Digital Marketing</th>
                             <th scope="col">Advertising</th>
 
-                            @if ($role == 'Digital Marketer' || $role == 'Busines Unit Head' || $role == 'Super Admin')
+                            @if ($role == 'Busines Unit Head' || $role == 'Super Admin')
                                 <th scope="col">Aksi</th>
                             @endif
                         </tr>
@@ -273,14 +273,14 @@
                             @endif
 
 
-                            {{-- Digital Marketer --}}
+                            {{-- Digital Marketing --}}
                             <div>
                                 <label
                                     for="select-dm"
                                     class="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-900"
                                 >
                                     <span class="h-1.5 w-1.5 rounded-full bg-zinc-500"></span>
-                                    Digital Marketer (DM)
+                                    Digital Marketing (DM)
                                 </label>
 
                                 <select

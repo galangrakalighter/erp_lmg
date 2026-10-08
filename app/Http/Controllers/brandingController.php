@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Services\PlatformMirroringService;
+use App\Support\DigitalMarketingPermissions;
 class brandingController extends Controller
 {
     public function index($id, $platform, PlatformMirroringService $mirroring){
@@ -92,7 +93,8 @@ class brandingController extends Controller
                 ->get();
 
         $halaman = "Branding";
-        $readOnly = request()->routeIs('api.multimedia.*') || (! Auth::user()->isAdmin && $divisi->contains(
+        $dmRole = DigitalMarketingPermissions::role(Auth::user());
+        $readOnly = request()->routeIs('api.multimedia.*') || (! DigitalMarketingPermissions::isManager($dmRole) && $dmRole !== 'Digital Marketing') || (! Auth::user()->isAdmin && $divisi->contains(
             fn ($row) => strtolower(trim((string) $row->division?->name)) === 'multimedia'
         ));
         return view('branding.index', compact(

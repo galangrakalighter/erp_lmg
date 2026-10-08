@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Support\DigitalMarketingPermissions;
 
 class DigitalMarketingWorkspaceController extends Controller
 {
@@ -25,6 +26,12 @@ class DigitalMarketingWorkspaceController extends Controller
             ->map(fn ($platform) => trim($platform))
             ->unique()
             ->values();
+        $role = DigitalMarketingPermissions::role(Auth::user());
+        $workspaceTabs = match ($role) {
+            'Sosial Media Spesialis' => ['social-media-research', 'content-plan', 'guide'],
+            'Advertising' => ['market-research', 'social-media-research', 'advertising-research', 'content-plan'],
+            default => ['market-research', 'branding', 'social-media-research', 'advertising-research', 'content-plan', 'guide', 'analisis', 'explore', 'dokumen', 'timeline'],
+        };
 
         return view('digital_marketing.workspace', [
             'title' => $client->nama.' · Digital Marketing',
@@ -35,7 +42,7 @@ class DigitalMarketingWorkspaceController extends Controller
             'workspaceApiNamespace' => 'api.digital-marketing',
             'workspaceDivisionId' => 1,
             'useMrCrepeNavigation' => true,
-            'workspaceTabs' => ['market-research', 'branding', 'social-media-research', 'advertising-research', 'content-plan', 'guide', 'analisis', 'explore', 'dokumen', 'timeline'],
+            'workspaceTabs' => $workspaceTabs,
             'platformMirrorPairs' => $mirroring->activePairs($client->id),
         ]);
     }
@@ -110,6 +117,7 @@ class DigitalMarketingWorkspaceController extends Controller
         $allowed = (bool) $user->isAdmin
             || $user->userDivisions->contains(fn ($row) => $row->role?->role_name === 'Performance & Reporting')
             || $user->userDivisions->contains(fn ($row) => $row->division?->name === 'Ecommerce')
+            || $user->userDivisions->contains(fn ($row) => (int) $row->division_id === 1 && $row->role?->role_name === 'Busines Unit Head')
             || ($user->userDivisions->contains('division_id', 1) && $user->userClients->contains('client_id', $client->id));
         abort_unless($allowed, 403);
     }

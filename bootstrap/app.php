@@ -25,8 +25,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->appendToGroup('web', \App\Http\Middleware\EnsureAccountIsUnlocked::class);
         $middleware->appendToGroup('web', \App\Http\Middleware\LogPageVisit::class);
         $middleware->appendToGroup('web', \App\Http\Middleware\ProtectMultimediaSharedModules::class);
+        $middleware->appendToGroup('web', \App\Http\Middleware\ProtectDigitalMarketingModules::class);
+        $middleware->appendToGroup('web', \App\Http\Middleware\ProtectClientManagement::class);
         $middleware->alias([
             'multimedia.client' => \App\Http\Middleware\EnsureMultimediaClientAccess::class,
+            'digital-marketing.client' => \App\Http\Middleware\EnsureDigitalMarketingClientAccess::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

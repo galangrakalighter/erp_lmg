@@ -83,12 +83,7 @@
             BRAND / CMS
         ================================================== --}}
         @if (
-            $isSuperAdmin ||
-            (
-                ($myDivision->name == "Digital Marketing" ||
-                $myDivision->name == "Ecommerce") &&
-                $myRole->level < 3
-            )
+            $isSuperAdmin || ($myRole->role_name ?? '') === 'Busines Unit Head'
         )
 
             <div class="mb-3">

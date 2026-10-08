@@ -2,7 +2,7 @@
 @section('content')
     @if($readOnly ?? false)
         <style>.multimedia-readonly [data-toggle="modal"], .multimedia-readonly form[action*="cms_branding"] { display: none !important; }</style>
-        <div class="alert alert-info border-0 shadow-sm">Mode Multimedia: Branding hanya dapat dilihat.</div>
+        <div class="alert alert-info border-0 shadow-sm">Branding tersedia dalam mode baca saja untuk akun ini.</div>
     @endif
     <div class="{{ ($readOnly ?? false) ? 'multimedia-readonly' : '' }}">
     @include('partials.client_data_theme')

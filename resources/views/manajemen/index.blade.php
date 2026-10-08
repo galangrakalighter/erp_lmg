@@ -6,8 +6,8 @@
     <div class="card shadow">
         <div class="card-body border-bottom py-2">
             <div class="btn-group d-flex content-source-tabs" role="group" aria-label="Jenis Content Plan">
-                <button type="button" class="btn btn-dark flex-fill" data-content-source="organic">Content Plan Organik</button>
-                <button type="button" class="btn btn-light flex-fill" data-content-source="paid">Content Plan Paid</button>
+                @if(in_array('organic', $allowedContentSources, true))<button type="button" class="btn btn-dark flex-fill" data-content-source="organic">Content Plan Organik</button>@endif
+                @if(in_array('paid', $allowedContentSources, true))<button type="button" class="btn btn-light flex-fill" data-content-source="paid">Content Plan Paid</button>@endif
             </div>
         </div>
 
@@ -16,7 +16,7 @@
             <h6 class="m-0 font-weight-bold text-primary">
                 <i class="fas fa-tasks mr-2"></i>Manajemen Konten {{ $produk->nama }}
             </h6>
-            @if(!$multimediaMode && ($role == 'Content Creator Manager' || $role == 'Digital Marketer' || $role == 'Busines Unit Head' || $role == 'Super Admin'))
+            @if(!$multimediaMode && $contentPlanCanManage)
             <button type="button" class="btn btn-primary btn-sm shadow-sm" data-toggle="modal" data-target="#tambahModal">
                 <i class="fas fa-plus fa-sm text-white-50 mr-1"></i> Tambah Konten
             </button>
@@ -71,7 +71,7 @@
                             <th>Tgl Posting</th>
                             <th>Link</th>
                             <th>Status</th>
-                            @if(!$multimediaMode && (Auth::user()->isAdmin || $divisi[0]->division_id == 1))
+                            @if(!$multimediaMode && $contentPlanCanManage)
                             <th>Action</th>
                             @endif
                         </tr>
@@ -702,7 +702,9 @@
     const platform = "{{ $platform }}";
     const isContentCreator = {{ $RoleSekarang == 'Content Creator' ? 'true' : 'false' }};
     const multimediaMode = {{ $multimediaMode ? 'true' : 'false' }};
-    let activeContentSource = new URLSearchParams(window.location.search).get('content_source') === 'paid' ? 'paid' : 'organic';
+    const allowedContentSources = @json($allowedContentSources);
+    const requestedContentSource = new URLSearchParams(window.location.search).get('content_source');
+    let activeContentSource = allowedContentSources.includes(requestedContentSource) ? requestedContentSource : allowedContentSources[0];
 
     let contentPlanData = [];
     let contentPlanCurrentPage = 1;
@@ -737,7 +739,7 @@
                 <td>${row.tanggal_posting ? new Date(row.tanggal_posting).toLocaleDateString('id-ID') : '-'}</td>
                 <td>${row.link ? `<a href="${escapeContentPlan(row.link)}" target="_blank" rel="noopener"><i class="fas fa-link"></i></a>` : '-'}</td>
                 <td><span class="badge ${row.nama_status === 'Selesai' ? 'badge-dark' : 'badge-light'}">${escapeContentPlan(row.nama_status)}</span></td>
-                @if(!$multimediaMode && (Auth::user()->isAdmin || $divisi[0]->division_id == 1))
+                @if(!$multimediaMode && $contentPlanCanManage)
                 <td class="text-nowrap"><button class="btn btn-sm btn-warning" onclick="getDataEdit(${Number(row.id)})" title="Edit"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-danger" onclick="confirmDelete(${Number(row.id)})"><i class="fas fa-trash"></i></button></td>
                 @endif
             </tr>`).join('') : '<tr><td colspan="17" class="py-4 text-center text-muted">Tidak ada data.</td></tr>';

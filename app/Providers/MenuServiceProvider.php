@@ -87,6 +87,13 @@ class MenuServiceProvider extends ServiceProvider
                 ->groupBy('division_id');
 
             $digitalMarketingProduk = $sidebarProducts->get(1, collect());
+            if ($user && ! $isSuperAdmin) {
+                $digitalMarketingAssignment = $user->userDivisions->firstWhere('division_id', 1);
+                if ($digitalMarketingAssignment && $digitalMarketingAssignment->role?->role_name !== 'Busines Unit Head') {
+                    $digitalMarketingProduk = $digitalMarketingProduk
+                        ->whereIn('client_id', $myClientIds)->values();
+                }
+            }
             $businessDevProduk = $sidebarProducts->get(2, collect());
             $mcnProduk = $sidebarProducts->get(3, collect());
             $techProduk = $sidebarProducts->get(5, collect());

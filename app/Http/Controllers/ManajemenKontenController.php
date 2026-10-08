@@ -16,7 +16,7 @@ class ManajemenKontenController extends Controller
 {
     public function index(Request $request, $produk_id, $platform) {
         $divisi = User::find(Auth::user()->id)->userDivisions;
-        $multimediaMode = $this->isMultimediaUser();
+        $multimediaMode = $request->routeIs('api.multimedia.*') || $this->isMultimediaUser();
         if ($multimediaMode) {
             $this->authorizeMultimediaClient((int) $produk_id);
         }
@@ -134,7 +134,7 @@ class ManajemenKontenController extends Controller
     }
 
     public function store($id, Request $request){
-        abort_if($this->isMultimediaUser(), 403, 'Multimedia hanya dapat mengubah link output Content Plan.');
+        abort_if($this->isMultimediaUser(), 403, 'Multimedia hanya dapat melihat Content Plan.');
         $id = (int)$id;
         // Request yang valuenya diambil dari table yang berbeda
         $arr = ['type', 'strategy', 'pilar', 'hooks',   'status', 'jenis_body', 'jenis_cta'];
@@ -287,19 +287,7 @@ class ManajemenKontenController extends Controller
         $data = DB::table('data_jasa')->where('id', $id)->first();
         abort_unless($data, 404);
 
-        if ($this->isMultimediaUser()) {
-            $this->authorizeMultimediaClient((int) $data->produk_client_id);
-            $validated = $request->validate([
-                'link' => ['nullable', 'url', 'max:2048'],
-            ]);
-
-            DB::table('data_jasa')->where('id', $id)->update([
-                'link' => $validated['link'] ?? null,
-                'updated_at' => now(),
-            ]);
-
-            return redirect()->back()->with('success', 'Link output berhasil diubah');
-        }
+        abort_if($this->isMultimediaUser(), 403, 'Multimedia hanya dapat melihat Content Plan.');
         $BATAS_HARIAN = (int)$request->pic == 39 ? 480 : 420;
         $otherJobs = DB::table('data_jasa')
                     ->where('pic', (int)$request->pic)
@@ -480,6 +468,10 @@ class ManajemenKontenController extends Controller
     private function authorizeMultimediaClient(int $clientId): void
     {
         $user = Auth::user();
+        if ($user?->isAdmin) {
+            return;
+        }
+
         $multimediaId = DB::table('divisions')
             ->whereRaw('LOWER(TRIM(name)) = ?', ['multimedia'])
             ->value('id');

@@ -17,6 +17,10 @@
         background: #f4f4f5 !important;
         color: #18181b !important;
     }
+    .workspace-group.is-active {
+        background: #18181b !important;
+        color: #ffffff !important;
+    }
 </style>
 <main class="min-h-screen bg-[#f5f5f3] px-4 py-5 sm:px-6 lg:px-8">
     <div class="mx-auto max-w-[1800px] space-y-5">
@@ -72,32 +76,57 @@
         @endif
 
         <section class="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
-            <nav id="dmWorkspaceTabs" class="flex gap-1 overflow-x-auto border-b border-zinc-200 bg-zinc-50 p-2" aria-label="Menu client {{ $workspaceLabel }}">
+            <nav id="dmWorkspaceTabs" class="border-b border-zinc-200 bg-zinc-50" aria-label="Menu client {{ $workspaceLabel }}">
                 @php
                     $firstPlatform = $platforms->first();
                     $apiNamespace = $workspaceApiNamespace ?? 'api.digital-marketing';
                     $availableTabs = $workspaceTabs ?? ['market-research', 'branding', 'analisis', 'content-plan', 'dokumen', 'guide', 'timeline'];
                     $tabs = collect([
-                        ['key' => 'market-research', 'label' => 'Market Research', 'url' => $firstPlatform ? route($apiNamespace.'.market-research', [$client->id, $firstPlatform]) : null, 'platform' => true],
-                        ['key' => 'branding', 'label' => 'Branding', 'url' => $firstPlatform ? route($apiNamespace.'.branding', [$client->id, $firstPlatform]) : null, 'platform' => true],
-                        ['key' => 'analisis', 'label' => 'Analisis', 'url' => in_array('analisis', $availableTabs, true) && $firstPlatform ? route($apiNamespace.'.analisis', [$client->id, $firstPlatform]) : null, 'platform' => true],
-                        ['key' => 'content-plan', 'label' => 'Content Plan', 'url' => $firstPlatform ? route($apiNamespace.'.content-plan', [$client->id, $firstPlatform]) : null, 'platform' => true],
-                        ['key' => 'dokumen', 'label' => 'File Dokumen', 'url' => route('PDF', ['id_produk' => $client->id, 'division_id' => $workspaceDivisionId]), 'platform' => false],
-                        ['key' => 'guide', 'label' => 'Guide', 'url' => route('client.content-guide', ['client' => $client->id]), 'platform' => false],
-                        ['key' => 'timeline', 'label' => 'Timeline', 'url' => route('client.kpi-timeline', ['client' => $client->id]), 'platform' => false],
+                        ['key' => 'market-research', 'label' => 'Market Research', 'group' => 'MR', 'url' => $firstPlatform ? route($apiNamespace.'.market-research', [$client->id, $firstPlatform]) : null, 'platform' => true],
+                        ['key' => 'branding', 'label' => 'Branding', 'group' => 'MR', 'url' => $firstPlatform ? route($apiNamespace.'.branding', [$client->id, $firstPlatform]) : null, 'platform' => true],
+                        ['key' => 'social-media-research', 'label' => 'Sosial Media Research', 'group' => 'MR', 'url' => $firstPlatform && Route::has($apiNamespace.'.social-media-research') ? route($apiNamespace.'.social-media-research', [$client->id, $firstPlatform]) : null, 'platform' => true],
+                        ['key' => 'advertising-research', 'label' => 'Advertising Research', 'group' => 'MR', 'url' => $firstPlatform && Route::has($apiNamespace.'.advertising-research') ? route($apiNamespace.'.advertising-research', [$client->id, $firstPlatform]) : null, 'platform' => true],
+                        ['key' => 'content-plan', 'label' => 'Content Plan', 'group' => 'CRE', 'url' => $firstPlatform ? route($apiNamespace.'.content-plan', [$client->id, $firstPlatform]) : null, 'platform' => true],
+                        ['key' => 'guide', 'label' => 'Guide', 'group' => 'CRE', 'url' => route('client.content-guide', ['client' => $client->id]), 'platform' => false],
+                        ['key' => 'analisis', 'label' => 'Data Performance', 'group' => 'P', 'url' => in_array('analisis', $availableTabs, true) && $firstPlatform ? route($apiNamespace.'.analisis', [$client->id, $firstPlatform]) : null, 'platform' => true],
+                        ['key' => 'explore', 'label' => 'E', 'group' => 'E', 'url' => Route::has($apiNamespace.'.explore') ? route($apiNamespace.'.explore', [$client->id]) : null, 'platform' => false],
+                        ['key' => 'dokumen', 'label' => 'File Dokumen', 'group' => 'utility', 'url' => route('PDF', ['id_produk' => $client->id, 'division_id' => $workspaceDivisionId]), 'platform' => false],
+                        ['key' => 'timeline', 'label' => 'Timeline', 'group' => 'utility', 'url' => route('client.kpi-timeline', ['client' => $client->id]), 'platform' => false],
                     ])->whereIn('key', $availableTabs)->values();
                 @endphp
 
-                @foreach($tabs as $tab)
-                    <button type="button"
-                        data-workspace-tab="{{ $tab['key'] }}"
-                        data-base-url="{{ $tab['url'] }}"
-                        data-needs-platform="{{ $tab['platform'] ? '1' : '0' }}"
-                        @disabled(!$tab['url'])
-                        class="workspace-tab whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-semibold text-zinc-500 transition hover:bg-white hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-40">
-                        {{ $tab['label'] }}
-                    </button>
-                @endforeach
+                @if($useMrCrepeNavigation ?? false)
+                    <div class="flex gap-2 overflow-x-auto p-2">
+                        @foreach(['MR', 'CRE', 'P', 'E'] as $group)
+                            @if($tabs->where('group', $group)->isNotEmpty())
+                                <button type="button" data-workspace-group="{{ $group }}" class="workspace-group shrink-0 rounded-xl px-5 py-2.5 text-sm font-black tracking-[.12em] text-zinc-500 transition hover:bg-white hover:text-zinc-950">{{ $group }}</button>
+                            @endif
+                        @endforeach
+                        @if($tabs->where('group', 'utility')->isNotEmpty())
+                            <div class="mx-1 w-px shrink-0 bg-zinc-200"></div>
+                            @foreach($tabs->where('group', 'utility') as $tab)
+                                <button type="button" data-workspace-tab="{{ $tab['key'] }}" data-workspace-utility="1" data-base-url="{{ $tab['url'] }}" data-needs-platform="0" class="workspace-tab whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-semibold text-zinc-500 transition">{{ $tab['label'] }}</button>
+                            @endforeach
+                        @endif
+                    </div>
+                    @foreach(['MR', 'CRE', 'P'] as $group)
+                        <div data-workspace-submenu="{{ $group }}" class="hidden flex gap-1 overflow-x-auto border-t border-zinc-200 bg-white p-2 pl-4">
+                            @foreach($tabs->where('group', $group) as $tab)
+                                <button type="button" data-workspace-tab="{{ $tab['key'] }}" data-workspace-parent="{{ $group }}" data-base-url="{{ $tab['url'] }}" data-needs-platform="{{ $tab['platform'] ? '1' : '0' }}" @disabled(!$tab['url']) class="workspace-tab whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-semibold text-zinc-500 transition disabled:cursor-not-allowed disabled:opacity-40">{{ $tab['label'] }}</button>
+                            @endforeach
+                        </div>
+                    @endforeach
+                    @php($emptyTab = $tabs->firstWhere('group', 'E'))
+                    @if($emptyTab)
+                        <button type="button" data-workspace-tab="{{ $emptyTab['key'] }}" data-workspace-parent="E" data-base-url="{{ $emptyTab['url'] }}" data-needs-platform="0" class="hidden"></button>
+                    @endif
+                @else
+                    <div class="flex gap-1 overflow-x-auto p-2">
+                        @foreach($tabs as $tab)
+                            <button type="button" data-workspace-tab="{{ $tab['key'] }}" data-base-url="{{ $tab['url'] }}" data-needs-platform="{{ $tab['platform'] ? '1' : '0' }}" @disabled(!$tab['url']) class="workspace-tab whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-semibold text-zinc-500 transition disabled:cursor-not-allowed disabled:opacity-40">{{ $tab['label'] }}</button>
+                        @endforeach
+                    </div>
+                @endif
             </nav>
 
             @if($platforms->isEmpty())
@@ -118,6 +147,8 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const tabs = Array.from(document.querySelectorAll('[data-workspace-tab]'));
+    const groupButtons = Array.from(document.querySelectorAll('[data-workspace-group]'));
+    const submenus = Array.from(document.querySelectorAll('[data-workspace-submenu]'));
     const platformSelect = document.getElementById('dmWorkspacePlatform');
     const panels = document.getElementById('dmWorkspacePanels');
     const empty = document.getElementById('dmWorkspaceEmpty');
@@ -132,6 +163,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const mirrorPairs = @json($platformMirrorPairs ?? []);
     const mirrorUrl = @json(route('digital-marketing.platform-mirroring', ['id_produk' => $client->id]));
     let activeKey = null;
+
+    function showGroup(group) {
+        groupButtons.forEach(button => button.classList.toggle('is-active', button.dataset.workspaceGroup === group));
+        submenus.forEach(menu => menu.classList.toggle('hidden', menu.dataset.workspaceSubmenu !== group));
+    }
 
     const mirrorModal = document.getElementById('dmMirrorModal');
     function closeMirrorModal() {
@@ -210,6 +246,11 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         button.classList.add('is-active', 'bg-zinc-950', 'text-white');
         button.setAttribute('aria-selected', 'true');
+        if (button.dataset.workspaceParent) {
+            showGroup(button.dataset.workspaceParent);
+        } else if (button.dataset.workspaceUtility === '1') {
+            showGroup(null);
+        }
         panelCache.forEach(panel => panel.classList.add('hidden'));
         empty.classList.add('hidden');
 
@@ -271,6 +312,12 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     tabs.forEach(button => button.addEventListener('click', () => openTab(button)));
+    groupButtons.forEach(button => button.addEventListener('click', function () {
+        const group = button.dataset.workspaceGroup;
+        showGroup(group);
+        const firstTab = tabs.find(tab => tab.dataset.workspaceParent === group && !tab.disabled);
+        if (firstTab) openTab(firstTab);
+    }));
     platformSelect?.addEventListener('change', function () {
         const active = tabs.find(tab => tab.dataset.workspaceTab === activeKey && !tab.disabled)
             || tabs.find(tab => !tab.disabled);

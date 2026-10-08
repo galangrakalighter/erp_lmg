@@ -44,10 +44,16 @@ Route::middleware(['web', 'auth'])
             ->name('market-research');
         Route::get('/branding/{id}/{platform}', [App\Http\Controllers\brandingController::class, 'index'])
             ->name('branding');
+        Route::get('/social-media-research/{id}/{platform}', [App\Http\Controllers\ClientWorkspacePlaceholderController::class, 'show'])
+            ->name('social-media-research');
+        Route::get('/advertising-research/{id}/{platform}', [App\Http\Controllers\ClientWorkspacePlaceholderController::class, 'show'])
+            ->name('advertising-research');
         Route::get('/analisis/{produk}/{platform}', [App\Http\Controllers\AnalisisController::class, 'index'])
             ->name('analisis');
         Route::get('/content-plan/{produk_id}/{platform}', [App\Http\Controllers\ManajemenKontenController::class, 'index'])
             ->name('content-plan');
+        Route::get('/explore/{id}', [App\Http\Controllers\ClientWorkspacePlaceholderController::class, 'show'])
+            ->name('explore');
     });
 
 Route::middleware(['web', 'auth'])
@@ -66,8 +72,11 @@ Route::middleware(['web', 'auth', 'multimedia.client'])
     ->group(function () {
         Route::get('/market-research/{id}/{platform}', [App\Http\Controllers\marketResearchController::class, 'index'])->name('market-research');
         Route::get('/branding/{id}/{platform}', [App\Http\Controllers\brandingController::class, 'index'])->name('branding');
+        Route::get('/social-media-research/{id}/{platform}', [App\Http\Controllers\ClientWorkspacePlaceholderController::class, 'show'])->name('social-media-research');
+        Route::get('/advertising-research/{id}/{platform}', [App\Http\Controllers\ClientWorkspacePlaceholderController::class, 'show'])->name('advertising-research');
         Route::get('/analisis/{produk}/{platform}', [App\Http\Controllers\AnalisisController::class, 'index'])->name('analisis');
         Route::get('/content-plan/{produk_id}/{platform}', [App\Http\Controllers\ManajemenKontenController::class, 'index'])->name('content-plan');
+        Route::get('/explore/{id}', [App\Http\Controllers\ClientWorkspacePlaceholderController::class, 'show'])->name('explore');
     });
 
 Route::post('/updateStatusChecked', [App\Http\Controllers\selectionController::class, 'updateStatus'])->name('selection.updateStatus');

@@ -93,30 +93,6 @@
 
             <div class="mb-3">
 
-                {{-- Brand --}}
-                <div class="mb-2 flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-zinc-950">
-
-                    <svg
-                        class="h-3.5 w-3.5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="1.8"
-                            d="M3 10h18M5 10v9M9 10v9M15 10v9M19 10v9M3 20h18M4 7l8-4 8 4v3H4V7z"
-                        />
-                    </svg>
-
-                    <span>
-                        MR. CREPE
-                    </span>
-
-                </div>
-
-
                 {{-- CMS --}}
                 <a
                     href="{{ route('cms.produk', 'LGTR') }}"

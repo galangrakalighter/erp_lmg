@@ -34,6 +34,8 @@ class DigitalMarketingWorkspaceController extends Controller
             'workspaceDescription' => 'Kelola seluruh area marketing client tanpa berpindah halaman.',
             'workspaceApiNamespace' => 'api.digital-marketing',
             'workspaceDivisionId' => 1,
+            'useMrCrepeNavigation' => true,
+            'workspaceTabs' => ['market-research', 'branding', 'social-media-research', 'advertising-research', 'content-plan', 'guide', 'analisis', 'explore', 'dokumen', 'timeline'],
             'platformMirrorPairs' => $mirroring->activePairs($client->id),
         ]);
     }

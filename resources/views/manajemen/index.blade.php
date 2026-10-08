@@ -4,6 +4,13 @@
     @include('partials.client_native_tables')
 
     <div class="card shadow">
+        <div class="card-body border-bottom py-2">
+            <div class="btn-group d-flex content-source-tabs" role="group" aria-label="Jenis Content Plan">
+                <button type="button" class="btn btn-dark flex-fill" data-content-source="organic">Content Plan Organik</button>
+                <button type="button" class="btn btn-light flex-fill" data-content-source="paid">Content Plan Paid</button>
+            </div>
+        </div>
+
         {{-- CARD HEADER --}}
         <div class="card-header d-flex justify-content-between align-items-center py-3">
             <h6 class="m-0 font-weight-bold text-primary">
@@ -14,13 +21,6 @@
                 <i class="fas fa-plus fa-sm text-white-50 mr-1"></i> Tambah Konten
             </button>
             @endif
-        </div>
-
-        <div class="card-body border-bottom py-2">
-            <div class="btn-group d-flex content-source-tabs" role="group" aria-label="Jenis Content Plan">
-                <button type="button" class="btn btn-dark flex-fill" data-content-source="organic">Content Plan Organik</button>
-                <button type="button" class="btn btn-light flex-fill" data-content-source="paid">Content Plan Paid</button>
-            </div>
         </div>
 
         {{-- FILTER TANGGAL --}}
@@ -71,7 +71,7 @@
                             <th>Tgl Posting</th>
                             <th>Link</th>
                             <th>Status</th>
-                            @if(Auth::user()->isAdmin || $divisi[0]->division_id == 1)
+                            @if(!$multimediaMode && (Auth::user()->isAdmin || $divisi[0]->division_id == 1))
                             <th>Action</th>
                             @endif
                         </tr>
@@ -737,8 +737,8 @@
                 <td>${row.tanggal_posting ? new Date(row.tanggal_posting).toLocaleDateString('id-ID') : '-'}</td>
                 <td>${row.link ? `<a href="${escapeContentPlan(row.link)}" target="_blank" rel="noopener"><i class="fas fa-link"></i></a>` : '-'}</td>
                 <td><span class="badge ${row.nama_status === 'Selesai' ? 'badge-dark' : 'badge-light'}">${escapeContentPlan(row.nama_status)}</span></td>
-                @if(Auth::user()->isAdmin || $divisi[0]->division_id == 1 || $multimediaMode)
-                <td class="text-nowrap"><button class="btn btn-sm btn-warning" onclick="getDataEdit(${Number(row.id)})" title="{{ $multimediaMode ? 'Edit link output' : 'Edit' }}"><i class="fas fa-edit"></i></button>@if(!$multimediaMode) <button class="btn btn-sm btn-danger" onclick="confirmDelete(${Number(row.id)})"><i class="fas fa-trash"></i></button>@endif</td>
+                @if(!$multimediaMode && (Auth::user()->isAdmin || $divisi[0]->division_id == 1))
+                <td class="text-nowrap"><button class="btn btn-sm btn-warning" onclick="getDataEdit(${Number(row.id)})" title="Edit"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-danger" onclick="confirmDelete(${Number(row.id)})"><i class="fas fa-trash"></i></button></td>
                 @endif
             </tr>`).join('') : '<tr><td colspan="17" class="py-4 text-center text-muted">Tidak ada data.</td></tr>';
 
@@ -806,13 +806,6 @@
             syncContentSourceTabs();
             loadContentPlan();
         }));
-        if (multimediaMode) {
-            document.querySelectorAll('#formEditKonten input, #formEditKonten select, #formEditKonten textarea').forEach(function (field) {
-                if (field.name !== 'link' && field.name !== '_token') {
-                    field.disabled = true;
-                }
-            });
-        }
         loadContentPlan().catch(() => {
             document.getElementById('contentPlanRows').innerHTML = '<tr><td colspan="17" class="py-4 text-center text-danger">Data gagal dimuat.</td></tr>';
         });

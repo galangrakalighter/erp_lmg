@@ -30,7 +30,7 @@ class DigitalMarketingWorkspaceController extends Controller
         $workspaceTabs = ['market-research', 'branding', 'social-media-research', 'advertising-research', 'content-plan', 'guide', 'analisis', 'explore', 'dokumen', 'timeline'];
         $workspaceReadOnlyTabs = match ($role) {
             'Digital Marketing' => ['social-media-research', 'advertising-research', 'content-plan', 'guide', 'analisis', 'explore', 'dokumen', 'timeline'],
-            'Sosial Media Spesialis' => ['market-research', 'branding', 'content-plan', 'analisis', 'explore', 'dokumen', 'timeline'],
+            'Sosial Media Spesialis' => ['market-research', 'branding', 'analisis', 'explore', 'dokumen', 'timeline'],
             'Advertising' => ['market-research', 'branding', 'guide', 'analisis', 'explore', 'dokumen', 'timeline'],
             default => [],
         };

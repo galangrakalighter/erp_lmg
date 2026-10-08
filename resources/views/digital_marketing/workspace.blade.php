@@ -109,14 +109,14 @@
                         @if($tabs->where('group', 'utility')->isNotEmpty())
                             <div class="mx-1 w-px shrink-0 bg-zinc-200"></div>
                             @foreach($tabs->where('group', 'utility') as $tab)
-                                <button type="button" data-workspace-tab="{{ $tab['key'] }}" data-workspace-utility="1" data-base-url="{{ $tab['url'] }}" data-needs-platform="0" data-readonly="{{ $tab['readonly'] ? '1' : '0' }}" class="workspace-tab whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-semibold text-zinc-500 transition">{{ $tab['label'] }}@if($tab['readonly']) <span class="ml-1 text-[9px] font-medium opacity-60">Read</span>@endif</button>
+                                <button type="button" data-workspace-tab="{{ $tab['key'] }}" data-workspace-utility="1" data-base-url="{{ $tab['url'] }}" data-needs-platform="0" data-readonly="{{ $tab['readonly'] ? '1' : '0' }}" class="workspace-tab whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-semibold text-zinc-500 transition">{{ $tab['label'] }}</button>
                             @endforeach
                         @endif
                     </div>
                     @foreach(['MR', 'CRE', 'P'] as $group)
                         <div data-workspace-submenu="{{ $group }}" class="hidden flex gap-1 overflow-x-auto border-t border-zinc-200 bg-white p-2 pl-4">
                             @foreach($tabs->where('group', $group) as $tab)
-                                <button type="button" data-workspace-tab="{{ $tab['key'] }}" data-workspace-parent="{{ $group }}" data-base-url="{{ $tab['url'] }}" data-needs-platform="{{ $tab['platform'] ? '1' : '0' }}" data-readonly="{{ $tab['readonly'] ? '1' : '0' }}" @disabled(!$tab['url']) class="workspace-tab whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-semibold text-zinc-500 transition disabled:cursor-not-allowed disabled:opacity-40">{{ $tab['label'] }}@if($tab['readonly']) <span class="ml-1 text-[9px] font-medium opacity-60">Read</span>@endif</button>
+                                <button type="button" data-workspace-tab="{{ $tab['key'] }}" data-workspace-parent="{{ $group }}" data-base-url="{{ $tab['url'] }}" data-needs-platform="{{ $tab['platform'] ? '1' : '0' }}" data-readonly="{{ $tab['readonly'] ? '1' : '0' }}" @disabled(!$tab['url']) class="workspace-tab whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-semibold text-zinc-500 transition disabled:cursor-not-allowed disabled:opacity-40">{{ $tab['label'] }}</button>
                             @endforeach
                         </div>
                     @endforeach
@@ -127,7 +127,7 @@
                 @else
                     <div class="flex gap-1 overflow-x-auto p-2">
                         @foreach($tabs as $tab)
-                            <button type="button" data-workspace-tab="{{ $tab['key'] }}" data-base-url="{{ $tab['url'] }}" data-needs-platform="{{ $tab['platform'] ? '1' : '0' }}" data-readonly="{{ $tab['readonly'] ? '1' : '0' }}" @disabled(!$tab['url']) class="workspace-tab whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-semibold text-zinc-500 transition disabled:cursor-not-allowed disabled:opacity-40">{{ $tab['label'] }}@if($tab['readonly']) <span class="ml-1 text-[9px] font-medium opacity-60">Read</span>@endif</button>
+                            <button type="button" data-workspace-tab="{{ $tab['key'] }}" data-base-url="{{ $tab['url'] }}" data-needs-platform="{{ $tab['platform'] ? '1' : '0' }}" data-readonly="{{ $tab['readonly'] ? '1' : '0' }}" @disabled(!$tab['url']) class="workspace-tab whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-semibold text-zinc-500 transition disabled:cursor-not-allowed disabled:opacity-40">{{ $tab['label'] }}</button>
                         @endforeach
                     </div>
                 @endif

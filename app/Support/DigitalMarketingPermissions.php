@@ -20,4 +20,11 @@ class DigitalMarketingPermissions
     {
         return in_array($role, ['Super Admin', 'Busines Unit Head', 'Digital Marketing Manager'], true);
     }
+
+    public static function canManageContentPlan(string $role, string $contentSource): bool
+    {
+        return self::isManager($role)
+            || ($role === 'Sosial Media Spesialis' && $contentSource === 'organic')
+            || ($role === 'Advertising' && $contentSource === 'paid');
+    }
 }

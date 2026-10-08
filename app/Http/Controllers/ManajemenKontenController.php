@@ -29,7 +29,9 @@ class ManajemenKontenController extends Controller
             'Advertising' => ['paid'],
             default => ['organic', 'paid'],
         };
-        $contentPlanCanManage = DigitalMarketingPermissions::isManager($dmRole) || $dmRole === 'Advertising';
+        $contentPlanCanManage = DigitalMarketingPermissions::isManager($dmRole)
+            || $dmRole === 'Sosial Media Spesialis'
+            || $dmRole === 'Advertising';
         // 1. Ambil data Produk dan Kategori dengan cara yang lebih aman
         $produk = DB::table('produk_client')->where('id', $produk_id)->first();
         if (!$produk) return redirect()->back()->with('error', 'Produk tidak ditemukan');
@@ -149,7 +151,7 @@ class ManajemenKontenController extends Controller
         abort_if($this->isMultimediaUser(), 403, 'Multimedia hanya dapat melihat Content Plan.');
         $dmRole = DigitalMarketingPermissions::role(Auth::user());
         $this->authorizeManagerClient((int) $id, $dmRole);
-        abort_unless(DigitalMarketingPermissions::isManager($dmRole) || ($dmRole === 'Advertising' && $request->input('content_source') === 'paid'), 403);
+        abort_unless(DigitalMarketingPermissions::canManageContentPlan($dmRole, (string) $request->input('content_source')), 403);
         $id = (int)$id;
         // Request yang valuenya diambil dari table yang berbeda
         $arr = ['type', 'strategy', 'pilar', 'hooks',   'status', 'jenis_body', 'jenis_cta'];
@@ -305,7 +307,7 @@ class ManajemenKontenController extends Controller
         abort_if($this->isMultimediaUser(), 403, 'Multimedia hanya dapat melihat Content Plan.');
         $dmRole = DigitalMarketingPermissions::role(Auth::user());
         $this->authorizeManagerClient((int) $data->produk_client_id, $dmRole);
-        abort_unless(DigitalMarketingPermissions::isManager($dmRole) || ($dmRole === 'Advertising' && $data->content_source === 'paid'), 403);
+        abort_unless(DigitalMarketingPermissions::canManageContentPlan($dmRole, (string) $data->content_source), 403);
         $BATAS_HARIAN = (int)$request->pic == 39 ? 480 : 420;
         $otherJobs = DB::table('data_jasa')
                     ->where('pic', (int)$request->pic)
@@ -386,6 +388,10 @@ class ManajemenKontenController extends Controller
             'note'              => 'nullable|string',
             'funneling'         => 'required'
         ]);
+        abort_unless(
+            DigitalMarketingPermissions::canManageContentPlan($dmRole, (string) $request->input('content_source')),
+            403
+        );
 
         try {
             DB::table('data_jasa')->where('id', $id)->update([
@@ -472,7 +478,7 @@ class ManajemenKontenController extends Controller
         $data = DB::table('data_jasa')->where('id', $id)->first();
         $dmRole = DigitalMarketingPermissions::role(Auth::user());
         if ($data) $this->authorizeManagerClient((int) $data->produk_client_id, $dmRole);
-        abort_unless($data && (DigitalMarketingPermissions::isManager($dmRole) || ($dmRole === 'Advertising' && $data->content_source === 'paid')), 403);
+        abort_unless($data && DigitalMarketingPermissions::canManageContentPlan($dmRole, (string) $data->content_source), 403);
         DB::table("data_jasa")->delete($id);
         DB::table("task")->where('id_manajement_konten', $id)->delete();
         return redirect()->back()->with('success', 'Data Berhasil Di Hapus');

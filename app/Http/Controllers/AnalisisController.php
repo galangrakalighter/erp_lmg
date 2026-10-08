@@ -311,7 +311,7 @@ class AnalisisController extends Controller
                 if (! $platformToken || ! $platformAccountId) {
                     return response()->view('analisis.connection-error', [
                         'platform' => 'Threads',
-                        'message' => 'Akun Threads belum terhubung. Buka Dashboard CMS → Client → Edit, lalu hubungkan akun Threads.',
+                        'message' => 'Akun Threads belum terhubung. Buka Manajemen Client → Client → Edit, lalu hubungkan akun Threads.',
                     ], 422);
                 }
 
@@ -364,7 +364,7 @@ class AnalisisController extends Controller
                 if (! $tiktokConnection || blank($tiktokConnection->access_token)) {
                     return response()->view('analisis.connection-error', [
                         'platform' => 'TikTok',
-                        'message' => 'Akun TikTok belum terhubung. Buka Dashboard CMS → Client → Edit, lalu hubungkan akun TikTok.',
+                        'message' => 'Akun TikTok belum terhubung. Buka Manajemen Client → Client → Edit, lalu hubungkan akun TikTok.',
                     ], 422);
                 }
 

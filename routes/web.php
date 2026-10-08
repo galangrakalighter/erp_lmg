@@ -63,6 +63,12 @@ Route::middleware('auth')->group(function () {
         ->name('client.kpi-timeline');
     Route::get('/client/{client}/content-guide', [App\Http\Controllers\ClientContentGuideController::class, 'index'])
         ->name('client.content-guide');
+    Route::post('/client/{client}/content-guide/{section}', [App\Http\Controllers\ClientContentGuideController::class, 'store'])
+        ->name('client.content-guide.store');
+    Route::put('/client/{client}/content-guide/{section}/{item}', [App\Http\Controllers\ClientContentGuideController::class, 'update'])
+        ->name('client.content-guide.update');
+    Route::delete('/client/{client}/content-guide/{section}/{item}', [App\Http\Controllers\ClientContentGuideController::class, 'destroy'])
+        ->name('client.content-guide.destroy');
 
     Route::get('file-master', [App\Http\Controllers\AccountMasterFileController::class, 'index'])->name('file-master.index');
     Route::get('file-master/{owner}', [App\Http\Controllers\AccountMasterFileController::class, 'show'])->name('file-master.show');

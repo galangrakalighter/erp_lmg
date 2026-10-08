@@ -9,7 +9,7 @@
         DIGITAL MARKETING HEADER
     ====================================================== --}}
     @php
-        $dmOpen = ($isMarketingPage && $isDMProduct);
+        $dmOpen = ($isMarketingPage && $isDMProduct) || ($isDMClientManagement ?? false);
     @endphp
 
     <button
@@ -96,7 +96,8 @@
                 {{-- CMS --}}
                 <a
                     href="{{ route('cms.produk', 'LGTR') }}"
-                    class="flex items-center justify-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-zinc-400 transition hover:border-zinc-500 hover:bg-zinc-800 hover:text-white"
+                    data-sidebar-active="{{ ($isDMClientManagement ?? false) ? 'true' : 'false' }}"
+                    class="flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-[10px] font-semibold uppercase tracking-wide transition {{ ($isDMClientManagement ?? false) ? 'border-white bg-white text-zinc-950' : 'border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-500 hover:bg-zinc-800 hover:text-white' }}"
                 >
 
                     <svg
@@ -119,7 +120,7 @@
                         />
                     </svg>
 
-                    Dashboard CMS
+                    Manajemen Client
 
                 </a>
 

@@ -76,7 +76,7 @@ class ProdukController extends Controller
         // dd($usersInDivisi->filter(fn($u) => $u->userDivisions->role_id == 1));
         // $divisions = $usersInDivisi->filter(fn($u) => $u->userDivisions->first()?->role_id == 3)->flatMap->userDivisions;
         return view('cms.produk.index', [
-            'title' => "Produk & Client",
+            'title' => "Manajemen Client",
             'buh'   => $usersInDivisi->filter(fn($u) => $u->userDivisions->first()?->role_id == 1),
             'dm'    => $usersInDivisi->filter(fn($u) => $u->userDivisions->first()?->role_id == 3),
             'ads'   => $usersInDivisi->filter(fn($u) => $u->userDivisions->first()?->role_id == 4),

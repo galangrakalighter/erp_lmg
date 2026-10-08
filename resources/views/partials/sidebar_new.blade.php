@@ -48,15 +48,6 @@
     }
 </style>
 
-@if(request()->routeIs('cms.*'))
-<style>
-    /* Mode CMS: tampilkan hanya navigasi CMS di area menu sidebar. */
-    #sidebarNavigationContent > :not([data-cms-management-nav]) {
-        display: none !important;
-    }
-</style>
-@endif
-
 <aside
     id="accordionSidebar"
     class="fixed inset-y-0 left-0 z-[1100] flex w-[280px] -translate-x-full flex-col border-r border-zinc-800 bg-zinc-950 text-white transition-transform duration-300 ease-out lg:translate-x-0"
@@ -267,6 +258,7 @@
             $isMultimediaProduct = $multimediaProduk->contains('client_id', $currentProduct);
 
             $isBusinessDevWorkspace = Route::is('business-dev.workspace');
+            $isDMClientManagement = Route::is('cms.produk') && request()->route('nama') === 'LGTR';
 
             $isMarketingPage = Route::is([
                 'market_research',
@@ -292,6 +284,7 @@
             $divisiActive =
                 $divisiOpen ||
                 ($isMarketingPage && $isDMProduct) ||
+                $isDMClientManagement ||
                 Route::is('multimedia.workspace') ||
                 Route::is('idme.workspace') ||
                 ($isMCNProduct && $isPdf) ||
@@ -376,93 +369,6 @@
 
             </div>
         </div>
-
-
-        {{-- =================================================
-            CMS MANAGEMENT
-        ================================================== --}}
-        @if(request()->routeIs('cms.*'))
-
-            @php
-                // Ambil kode langsung dari route agar submenu tidak bergantung
-                // pada view composer atau urutan render layout.
-                $cmsProductCode = request()->route('nama') ?: ($activeProductCode ?? null);
-            @endphp
-
-            <div data-cms-management-nav>
-
-            <div class="mb-4 border-t border-zinc-800"></div>
-
-            <div class="mb-2 px-3 text-[9px] font-bold uppercase tracking-[0.18em] text-zinc-600">
-                CMS Management
-            </div>
-
-            @php
-                $cmsMenus = [
-                    ['route' => 'cms.produk', 'label' => 'Client'],
-                    ['route' => 'cms.hook', 'label' => 'Hook'],
-                    ['route' => 'cms.strategy', 'label' => 'Strategy'],
-                    ['route' => 'cms.status', 'label' => 'Status'],
-                    ['route' => 'cms.type', 'label' => 'Type'],
-                    ['route' => 'cms.pilar', 'label' => 'Pilar'],
-                    ['route' => 'cms.body', 'label' => 'Body'],
-                    ['route' => 'cms.cta', 'label' => 'CTA'],
-                    ['route' => 'cms.composition', 'label' => 'Komposisi'],
-                ];
-            @endphp
-
-            <nav class="space-y-1" aria-label="CMS Management">
-
-                @foreach($cmsMenus as $item)
-
-                    @php
-                        $cmsItemActive = request()->routeIs($item['route']);
-                    @endphp
-
-                    <a
-                        href="{{ route($item['route'], ['nama' => $cmsProductCode]) }}"
-                        data-sidebar-active="{{ $cmsItemActive ? 'true' : 'false' }}"
-                        class="flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition
-                        {{ $cmsItemActive
-                            ? 'bg-white font-semibold text-zinc-950'
-                            : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
-                        }}"
-                        style="display:flex !important; visibility:visible !important; opacity:1 !important; min-height:38px; align-items:center; {{ $cmsItemActive ? 'background:#fff; color:#161616;' : 'color:#e4e4e7;' }}"
-                    >
-                        <span class="h-1.5 w-1.5 rounded-full
-                            {{ $cmsItemActive
-                                ? 'bg-zinc-950'
-                                : 'bg-zinc-600'
-                            }}">
-                        </span>
-
-                        {{ $item['label'] }}
-                    </a>
-
-                @endforeach
-
-            </nav>
-
-
-            <a
-                href="{{ route('home') }}"
-                class="mt-3 flex items-center gap-3 rounded-xl border border-zinc-800 px-3 py-2.5 text-sm font-semibold text-zinc-400 transition hover:border-zinc-700 hover:bg-zinc-900 hover:text-white"
-            >
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="1.8"
-                        d="M10 19l-7-7 7-7M3 12h18"
-                    />
-                </svg>
-
-                <span>Kembali</span>
-            </a>
-
-            </div>
-
-        @endif
 
 
         {{-- =================================================
@@ -559,7 +465,7 @@
                                 />
                             </svg>
 
-                            Dashboard CMS
+                            Manajemen Client
                         </a>
 
                     @endif

@@ -171,7 +171,7 @@
                     </svg>
 
                     <span>
-                        Dashboard CMS
+                        Manajemen Client
                     </span>
 
                 </a>

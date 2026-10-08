@@ -7,11 +7,11 @@
         <div class="mt-5 rounded-xl bg-zinc-50 px-4 py-3 text-left text-xs leading-5 text-zinc-600">
             <p class="font-semibold text-zinc-800">Yang dapat Anda lakukan:</p>
             @if(strcasecmp($platform, 'TikTok') === 0)
-                <p class="mt-1">Buka Dashboard CMS → Client → Edit, kemudian hubungkan ulang akun TikTok untuk client ini.</p>
+                <p class="mt-1">Buka Manajemen Client → Client → Edit, kemudian hubungkan ulang akun TikTok untuk client ini.</p>
             @elseif(strcasecmp($platform, 'Threads') === 0)
-                <p class="mt-1">Buka Dashboard CMS → Client → Edit, kemudian hubungkan ulang akun Threads untuk client ini.</p>
+                <p class="mt-1">Buka Manajemen Client → Client → Edit, kemudian hubungkan ulang akun Threads untuk client ini.</p>
             @else
-                <p class="mt-1">Buka Dashboard CMS → Client → Edit, hubungkan ulang Meta, lalu pilih Facebook Page dan akun Instagram yang benar.</p>
+                <p class="mt-1">Buka Manajemen Client → Client → Edit, hubungkan ulang Meta, lalu pilih Facebook Page dan akun Instagram yang benar.</p>
             @endif
         </div>
         <div class="mt-5 flex flex-wrap justify-center gap-2">

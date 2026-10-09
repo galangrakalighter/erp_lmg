@@ -1109,6 +1109,21 @@
 
                 @if($isSuperAdmin)
                 <a
+                    href="{{ route('data-center.index') }}"
+                    class="mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition
+                    {{ Route::is('data-center.*')
+                        ? 'bg-white font-semibold text-zinc-950'
+                        : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
+                    }}"
+                >
+                    <svg class="h-[18px] w-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <rect x="4" y="3" width="16" height="18" rx="2" stroke-width="1.8" />
+                        <path stroke-linecap="round" stroke-width="1.8" d="M8 8h8M8 12h8M8 16h5" />
+                    </svg>
+                    <span>Data Center</span>
+                </a>
+
+                <a
                     href="{{ route('activity-logs.index') }}"
                     class="mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition
                     {{ Route::is('activity-logs.*')

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\DataCenterController;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -18,6 +19,14 @@ Route::middleware('auth')->group(function () {
     Route::get('activity-logs', [ActivityLogController::class, 'index'])
         ->middleware(EnsureUserIsAdmin::class)
         ->name('activity-logs.index');
+
+    Route::middleware(EnsureUserIsAdmin::class)->group(function () {
+        Route::get('data-center', [DataCenterController::class, 'index'])->name('data-center.index');
+        Route::post('data-center', [DataCenterController::class, 'store'])->name('data-center.store');
+        Route::put('data-center/{dataCenter}', [DataCenterController::class, 'update'])->name('data-center.update');
+        Route::delete('data-center/{dataCenter}', [DataCenterController::class, 'destroy'])->name('data-center.destroy');
+        Route::post('data-center/{dataCenter}/reveal', [DataCenterController::class, 'reveal'])->name('data-center.reveal');
+    });
 
     Route::get('monitoring', [App\Http\Controllers\MonitoringController::class, 'index'])
         ->name('monitoring.index');

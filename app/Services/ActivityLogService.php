@@ -15,7 +15,7 @@ use Throwable;
 class ActivityLogService
 {
     private const HIDDEN_KEYS = [
-        'password', 'password_confirmation', 'remember_token', 'token',
+        'password', 'password_confirmation', 'current_password', 'remember_token', 'token',
         'access_token', 'refresh_token', 'api_key', 'secret', 'private_key',
         'authorization',
     ];
@@ -194,7 +194,7 @@ class ActivityLogService
 
     private function targetName(Model $model): ?string
     {
-        foreach (['name', 'nama', 'nama_file', 'nama_task', 'nama_kpi', 'nama_akun', 'nama_perusahaan', 'category', 'title', 'judul', 'original_name', 'filename', 'client_name', 'email'] as $field) {
+        foreach (['name', 'nama', 'account_name', 'nama_file', 'nama_task', 'nama_kpi', 'nama_akun', 'nama_perusahaan', 'category', 'title', 'judul', 'original_name', 'filename', 'client_name', 'email'] as $field) {
             $value = $model->getAttribute($field);
 
             if (is_scalar($value) && (string) $value !== '') {

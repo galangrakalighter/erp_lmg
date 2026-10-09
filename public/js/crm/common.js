@@ -825,9 +825,8 @@
             );
         } catch (error) {
             showRefreshNotice(
-                'error',
-                'Pembaruan data Human gagal',
-                error.message || 'Data Human gagal diperbarui.'
+                'processing',
+                'Pembaruan masih diproses',
             );
         } finally {
             if (elapsedTimer) {

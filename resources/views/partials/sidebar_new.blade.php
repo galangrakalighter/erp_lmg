@@ -296,6 +296,16 @@
         {{-- =================================================
             DIVISI
         ================================================== --}}
+        @php
+            $visibleDivisionMenuIds = $isSuperAdmin
+                ? [1, 3, 5, 7, (int) $multimediaDivisionId]
+                : $myDivisionIds;
+            $hasVisibleDivisionMenu = count(array_intersect(
+                [1, 3, 5, 7, (int) $multimediaDivisionId],
+                $visibleDivisionMenuIds
+            )) > 0;
+        @endphp
+        @if($isSuperAdmin && $hasVisibleDivisionMenu)
         <div class="mb-2">
 
             <button
@@ -352,23 +362,16 @@
             >
 
                 <div class="rounded-xl border border-zinc-800 bg-zinc-900/50 p-2">
-
-                    @include('partials.sidebar_idme')
-
-                    @include('partials.sidebar_digital_marketing')
-
-                    @include('partials.sidebar_multimedia')
-
-                    @include('partials.sidebar_mcn')
-
-                    @include('partials.sidebar_tech')
-
-                    @include('partials.sidebar_commerce')
-
+                    @include('partials.sidebar_division_items')
                 </div>
 
             </div>
         </div>
+        @elseif($hasVisibleDivisionMenu)
+            <div class="mb-2 space-y-1">
+                @include('partials.sidebar_division_items')
+            </div>
+        @endif
 
 
         {{-- =================================================
@@ -556,7 +559,7 @@
         {{-- =================================================
             HUMAN CAPITAL
         ================================================== --}}
-        @if($isSuperAdmin || (int) ($myDivision->id ?? 0) === 4)
+        @if($isSuperAdmin || in_array(4, $myDivisionIds, true))
         @php
             $isHCPage = Route::is([
                 'hc_daily.index',
@@ -761,7 +764,7 @@
         {{-- =================================================
             FINANCE
         ================================================== --}}
-        @if(Auth::user()->isAdmin == true || $myDivision->name == 'Finance')
+        @if($isSuperAdmin || in_array(6, $myDivisionIds, true))
 
             @php
                 $isFinancePage = Route::is([

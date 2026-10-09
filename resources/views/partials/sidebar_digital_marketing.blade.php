@@ -198,24 +198,7 @@
                         $hasClientAccess =
                             in_array($client->client_id, $myClientIds);
 
-                        $isPowerUser =
-                            $isSuperAdmin ||
-                            $myRole->role_name == "Performance & Reporting";
-
-                        /*
-                         * Jika Ecommerce:
-                         * user tetap dapat membuka seluruh client.
-                         */
-                        $canOpen =
-                            $isPowerUser ||
-                            $myDivision->name == "Ecommerce" ||
-                            (
-                                in_array(
-                                    1,
-                                    $myDivision->pluck('id')->toArray()
-                                ) &&
-                                $hasClientAccess
-                            );
+                        $canOpen = $isSuperAdmin || $hasClientAccess;
 
                         $isActiveClient =
                             $isMarketingPage && $currentProduct == $client->client_id;

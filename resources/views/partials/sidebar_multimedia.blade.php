@@ -55,7 +55,7 @@
         @foreach($multimediaProduk as $client)
             @php
                 $hasClientAccess = in_array($client->client_id, $myClientIds);
-                $canOpen = $isSuperAdmin || (($myDivision->name ?? '') === 'Multimedia' && $hasClientAccess);
+                $canOpen = $isSuperAdmin || $hasClientAccess;
                 $isActiveClient = $multimediaOpen && (int) request()->route('id_produk') === (int) $client->client_id;
             @endphp
 

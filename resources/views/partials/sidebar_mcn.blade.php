@@ -274,21 +274,9 @@
                                     $myClientIds
                                 );
 
-                                // Power User
-                                $isPowerUser =
-                                    $isSuperAdmin ||
-                                    $myRole->role_name == "Busines Unit Head";
-
-                                // Permission membuka client
-                                $canOpen =
-                                    $isPowerUser ||
-                                    (
-                                        in_array(
-                                            1,
-                                            $myDivision->pluck('id')->toArray()
-                                        )
-                                        && $hasClientAccess
-                                    );
+                                // Daftar sudah difilter dari server: hanya client PIC
+                                // dan INTERNAL yang sampai ke sidebar user biasa.
+                                $canOpen = $isSuperAdmin || $hasClientAccess;
 
                                 // Active client
                                 $isActiveClient =

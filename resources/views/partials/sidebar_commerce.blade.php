@@ -241,21 +241,7 @@
                                     $myClientIds
                                 );
 
-                                // Power User
-                                $isPowerUser =
-                                    $isSuperAdmin ||
-                                    $myRole->role_name == "Busines Unit Head";
-
-                                // Permission membuka client
-                                $canOpen =
-                                    $isPowerUser ||
-                                    (
-                                        in_array(
-                                            1,
-                                            $myDivision->pluck('id')->toArray()
-                                        )
-                                        && $hasClientAccess
-                                    );
+                                $canOpen = $isSuperAdmin || $hasClientAccess;
 
                                 // Active client
                                 $isActiveClient =

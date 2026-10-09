@@ -762,7 +762,6 @@
         showRefreshNotice(
             'processing',
             'Pembaruan data Human sedang berjalan',
-            'Workflow sedang diproses (00:00). Biasanya membutuhkan 2–5 menit. Jangan tutup halaman ini.'
         );
 
         elapsedTimer = window.setInterval(() => {
@@ -770,11 +769,6 @@
 
             if (label) {
                 label.textContent = `Memperbarui... ${elapsed}`;
-            }
-
-            if (elements.humanRefreshNoticeMessage) {
-                elements.humanRefreshNoticeMessage.textContent =
-                    `Workflow sedang diproses (${elapsed}). Biasanya membutuhkan 2–5 menit. Jangan tutup halaman ini.`;
             }
         }, 1000);
 

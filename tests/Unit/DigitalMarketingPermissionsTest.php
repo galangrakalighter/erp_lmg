@@ -41,7 +41,7 @@ class DigitalMarketingPermissionsTest extends TestCase
             DigitalMarketingPermissions::mirrorScopes('Digital Marketing'),
         );
         $this->assertSame(
-            ['content-plan-organic'],
+            ['social-media-research', 'content-plan-organic'],
             DigitalMarketingPermissions::mirrorScopes('Sosial Media Spesialis'),
         );
         $this->assertSame(
@@ -66,7 +66,7 @@ class DigitalMarketingPermissionsTest extends TestCase
             DigitalMarketingPermissions::readOnlyWorkspaceTabs('Advertising'),
         );
         $this->assertSame(
-            ['market-research', 'branding', 'social-media-research', 'advertising-research', 'analisis', 'explore', 'dokumen', 'timeline'],
+            ['market-research', 'branding', 'advertising-research', 'analisis', 'explore', 'dokumen', 'timeline'],
             DigitalMarketingPermissions::readOnlyWorkspaceTabs('Sosial Media Spesialis'),
         );
     }

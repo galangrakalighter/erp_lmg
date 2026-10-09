@@ -44,7 +44,7 @@ class DigitalMarketingPermissions
 
         return match ($role) {
             'Digital Marketing' => ['market-research', 'branding'],
-            'Sosial Media Spesialis' => ['content-plan-organic'],
+            'Sosial Media Spesialis' => ['social-media-research', 'content-plan-organic'],
             'Advertising' => ['advertising-research', 'content-plan-paid'],
             default => [],
         };
@@ -59,7 +59,7 @@ class DigitalMarketingPermissions
     {
         return match ($role) {
             'Digital Marketing' => ['social-media-research', 'advertising-research', 'content-plan', 'guide', 'analisis', 'explore', 'dokumen', 'timeline'],
-            'Sosial Media Spesialis' => ['market-research', 'branding', 'social-media-research', 'advertising-research', 'analisis', 'explore', 'dokumen', 'timeline'],
+            'Sosial Media Spesialis' => ['market-research', 'branding', 'advertising-research', 'analisis', 'explore', 'dokumen', 'timeline'],
             'Advertising' => ['market-research', 'branding', 'social-media-research', 'guide', 'analisis', 'explore', 'dokumen', 'timeline'],
             default => [],
         };

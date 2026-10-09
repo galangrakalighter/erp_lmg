@@ -706,7 +706,6 @@
         const startedAt = Date.now();
         let elapsedTimer = null;
         let noticeAutoHideTimer = null;
-        let timedSuccessShown = false;
 
         function elapsedText() {
             const elapsedSeconds = Math.floor(
@@ -768,7 +767,6 @@
                 noticeAutoHideTimer = null;
 
                 if (type === 'processing') {
-                    timedSuccessShown = true;
                     window.clearInterval(elapsedTimer);
                     elapsedTimer = null;
                     icon?.classList.remove('animate-spin');
@@ -869,13 +867,8 @@
                     : result.message
             );
         } catch (error) {
-            if (!timedSuccessShown) {
-                showRefreshNotice(
-                    'processing',
-                    'Pembaruan masih diproses',
-                    'Proses n8n masih berjalan dan tidak dianggap gagal.'
-                );
-            }
+            // Biarkan timer awal tetap berjalan. Koneksi yang berakhir lebih
+            // cepat tidak boleh memulai ulang durasi dua menit di UI.
         } finally {
             if (elapsedTimer) {
                 window.clearInterval(elapsedTimer);

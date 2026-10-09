@@ -705,6 +705,8 @@
         const originalLabel = label?.textContent || 'Perbarui Data';
         const startedAt = Date.now();
         let elapsedTimer = null;
+        let noticeAutoHideTimer = null;
+        let timedSuccessShown = false;
 
         function elapsedText() {
             const elapsedSeconds = Math.floor(
@@ -757,6 +759,49 @@
             if (elements.humanRefreshNoticeMessage) {
                 elements.humanRefreshNoticeMessage.textContent = message;
             }
+
+            if (noticeAutoHideTimer) {
+                window.clearTimeout(noticeAutoHideTimer);
+            }
+
+            noticeAutoHideTimer = window.setTimeout(async () => {
+                noticeAutoHideTimer = null;
+
+                if (type === 'processing') {
+                    timedSuccessShown = true;
+                    window.clearInterval(elapsedTimer);
+                    elapsedTimer = null;
+                    icon?.classList.remove('animate-spin');
+                    if (label) {
+                        label.textContent = 'Berhasil Diperbarui';
+                    }
+                    notice.classList.remove(
+                        'border-amber-200',
+                        'bg-amber-50',
+                        'text-amber-800'
+                    );
+                    notice.classList.add(
+                        'border-emerald-200',
+                        'bg-emerald-50',
+                        'text-emerald-800'
+                    );
+
+                    if (elements.humanRefreshNoticeTitle) {
+                        elements.humanRefreshNoticeTitle.textContent =
+                            'Data Human berhasil diperbarui';
+                    }
+
+                    if (elements.humanRefreshNoticeMessage) {
+                        elements.humanRefreshNoticeMessage.textContent =
+                            'Proses telah berjalan selama 2 menit. Tabel Human dimuat ulang secara otomatis.';
+                    }
+
+                    await loadData();
+                    return;
+                }
+
+                notice.classList.add('hidden');
+            }, 120000);
         }
 
         showRefreshNotice(
@@ -824,10 +869,13 @@
                     : result.message
             );
         } catch (error) {
-            showRefreshNotice(
-                'processing',
-                'Pembaruan masih diproses',
-            );
+            if (!timedSuccessShown) {
+                showRefreshNotice(
+                    'processing',
+                    'Pembaruan masih diproses',
+                    'Proses n8n masih berjalan dan tidak dianggap gagal.'
+                );
+            }
         } finally {
             if (elapsedTimer) {
                 window.clearInterval(elapsedTimer);

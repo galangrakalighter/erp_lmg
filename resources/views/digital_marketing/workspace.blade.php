@@ -375,9 +375,9 @@ document.addEventListener('DOMContentLoaded', function () {
             const iframe = activePanel?.querySelector('iframe');
 
             try {
-                const contentUrl = new URL(iframe.contentWindow.location.href);
+                const filters = iframe?.contentWindow?.getContentPlanExportFilters?.() || {};
                 ['start_date', 'end_date', 'content_source'].forEach(key => {
-                    const value = contentUrl.searchParams.get(key);
+                    const value = filters[key];
                     if (value) exportUrl.searchParams.set(key, value);
                     else exportUrl.searchParams.delete(key);
                 });

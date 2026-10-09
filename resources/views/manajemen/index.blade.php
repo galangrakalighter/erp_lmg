@@ -725,6 +725,14 @@
     const requestedContentSource = new URLSearchParams(window.location.search).get('content_source');
     let activeContentSource = allowedContentSources.includes(requestedContentSource) ? requestedContentSource : allowedContentSources[0];
 
+    window.getContentPlanExportFilters = function () {
+        return {
+            start_date: document.querySelector('#filterForm [name="start_date"]')?.value || '',
+            end_date: document.querySelector('#filterForm [name="end_date"]')?.value || '',
+            content_source: activeContentSource || 'organic',
+        };
+    };
+
     let contentPlanData = [];
     let contentPlanCurrentPage = 1;
     const contentPlanPageSize = 10;

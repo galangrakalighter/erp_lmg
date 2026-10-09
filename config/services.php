@@ -52,9 +52,9 @@ return [
     'crm_human_refresh_webhook' => [
         'url' => env(
             'CRM_HUMAN_REFRESH_WEBHOOK_URL',
-            'https://bmglbl3.n8n.bocindonesia.com/webhook/get-human-chat'
+            'https://bmglbl3.n8n.bocindonesia.com/webhook-test/get-human-chat'
         ),
-        'timeout' => (int) env('CRM_HUMAN_REFRESH_WEBHOOK_TIMEOUT', 120),
+        'timeout' => (int) env('CRM_HUMAN_REFRESH_WEBHOOK_TIMEOUT', 600),
     ],
 
     'threads' => [

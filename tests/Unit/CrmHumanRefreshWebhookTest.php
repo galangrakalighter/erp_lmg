@@ -9,12 +9,12 @@ use Tests\TestCase;
 
 class CrmHumanRefreshWebhookTest extends TestCase
 {
-    public function test_it_triggers_the_human_refresh_webhook(): void
+    public function test_it_waits_for_and_returns_the_webhook_summary(): void
     {
         config([
             'services.crm_human_refresh_webhook.url' =>
                 'https://n8n.example.test/webhook/get-human-chat',
-            'services.crm_human_refresh_webhook.timeout' => 10,
+            'services.crm_human_refresh_webhook.timeout' => 600,
         ]);
 
         Http::fake([
@@ -31,11 +31,12 @@ class CrmHumanRefreshWebhookTest extends TestCase
         ]);
 
         $response = (new CRMController())->refreshHumanData();
+        $data = $response->getData(true);
 
         $this->assertSame(200, $response->getStatusCode());
-        $this->assertTrue($response->getData(true)['success']);
-        $this->assertSame(15, $response->getData(true)['summary']['processed']);
-        $this->assertSame(10, $response->getData(true)['summary']['updated']);
+        $this->assertTrue($data['success']);
+        $this->assertSame(15, $data['summary']['processed']);
+        $this->assertSame(10, $data['summary']['updated']);
 
         Http::assertSent(function (Request $request): bool {
             return $request->method() === 'POST'

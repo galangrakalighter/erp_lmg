@@ -701,10 +701,28 @@
         }
 
         const label = button.querySelector('span');
+        const icon = button.querySelector('svg');
         const originalLabel = label?.textContent || 'Perbarui Data';
+        const startedAt = Date.now();
+        let elapsedTimer = null;
+
+        function elapsedText() {
+            const elapsedSeconds = Math.floor(
+                (Date.now() - startedAt) / 1000
+            );
+            const minutes = String(
+                Math.floor(elapsedSeconds / 60)
+            ).padStart(2, '0');
+            const seconds = String(
+                elapsedSeconds % 60
+            ).padStart(2, '0');
+
+            return `${minutes}:${seconds}`;
+        }
 
         button.disabled = true;
         if (label) label.textContent = 'Memperbarui...';
+        icon?.classList.add('animate-spin');
         hideError();
 
         function showRefreshNotice(type, title, message) {
@@ -717,6 +735,9 @@
                 'border-emerald-200',
                 'bg-emerald-50',
                 'text-emerald-800',
+                'border-amber-200',
+                'bg-amber-50',
+                'text-amber-800',
                 'border-rose-200',
                 'bg-rose-50',
                 'text-rose-800'
@@ -724,7 +745,9 @@
             notice.classList.add(
                 ...(type === 'success'
                     ? ['border-emerald-200', 'bg-emerald-50', 'text-emerald-800']
-                    : ['border-rose-200', 'bg-rose-50', 'text-rose-800'])
+                    : type === 'processing'
+                        ? ['border-amber-200', 'bg-amber-50', 'text-amber-800']
+                        : ['border-rose-200', 'bg-rose-50', 'text-rose-800'])
             );
 
             if (elements.humanRefreshNoticeTitle) {
@@ -735,6 +758,25 @@
                 elements.humanRefreshNoticeMessage.textContent = message;
             }
         }
+
+        showRefreshNotice(
+            'processing',
+            'Pembaruan data Human sedang berjalan',
+            'Workflow sedang diproses (00:00). Biasanya membutuhkan 2–5 menit. Jangan tutup halaman ini.'
+        );
+
+        elapsedTimer = window.setInterval(() => {
+            const elapsed = elapsedText();
+
+            if (label) {
+                label.textContent = `Memperbarui... ${elapsed}`;
+            }
+
+            if (elements.humanRefreshNoticeMessage) {
+                elements.humanRefreshNoticeMessage.textContent =
+                    `Workflow sedang diproses (${elapsed}). Biasanya membutuhkan 2–5 menit. Jangan tutup halaman ini.`;
+            }
+        }, 1000);
 
         try {
             const response = await fetch(urls.humanRefresh, {
@@ -756,6 +798,8 @@
                 );
             }
 
+            window.clearInterval(elapsedTimer);
+            elapsedTimer = null;
             await loadData();
 
             const summary = result.summary || {};
@@ -792,8 +836,13 @@
                 error.message || 'Data Human gagal diperbarui.'
             );
         } finally {
+            if (elapsedTimer) {
+                window.clearInterval(elapsedTimer);
+            }
+
             window.setTimeout(() => {
                 button.disabled = false;
+                icon?.classList.remove('animate-spin');
                 if (label) label.textContent = originalLabel;
             }, 1200);
         }

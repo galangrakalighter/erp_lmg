@@ -72,7 +72,7 @@ class CRMController extends Controller
                 ->asJson()
                 ->timeout((int) config(
                     'services.crm_human_refresh_webhook.timeout',
-                    60
+                    600
                 ))
                 ->post($webhookUrl, [
                     'triggered_by' => auth()->id(),
@@ -115,11 +115,9 @@ class CRMController extends Controller
                 'updated',
                 'skipped',
                 'failed',
-            ])->mapWithKeys(function (string $key) use ($webhookData) {
-                return [
-                    $key => max(0, (int) ($webhookData[$key] ?? 0)),
-                ];
-            })->all();
+            ])->mapWithKeys(fn (string $key) => [
+                $key => max(0, (int) ($webhookData[$key] ?? 0)),
+            ])->all();
 
             return response()->json([
                 'success' => true,

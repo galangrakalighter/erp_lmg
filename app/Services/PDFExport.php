@@ -15,7 +15,8 @@ class PDFExport
         $endDate = null,
         array $platforms = [],
         string $contentSource = 'organic',
-        ?PlatformMirroringService $mirroring = null
+        ?PlatformMirroringService $mirroring = null,
+        bool $includeUnscheduled = false
     )
     {
         $startDate = !empty($startDate) ? $startDate : now()->startOfMonth()->toDateString();
@@ -37,7 +38,13 @@ class PDFExport
                 $mirroring->copiedTargetIds((int) $id, 'data_jasa')
             ))
             ->where('data_jasa.content_source', $contentSource)
-            ->whereBetween('data_jasa.tanggal_posting', [$startDate, $endDate]);
+            ->where(function ($query) use ($startDate, $endDate, $includeUnscheduled) {
+                $query->whereBetween('data_jasa.tanggal_posting', [$startDate, $endDate]);
+
+                if ($includeUnscheduled) {
+                    $query->orWhereNull('data_jasa.tanggal_posting');
+                }
+            });
 
         return $query->select(
                 'data_jasa.*', 

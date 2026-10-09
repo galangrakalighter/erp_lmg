@@ -61,6 +61,7 @@ class PDFController extends Controller
             'Platform export tidak valid.'
         );
 
+        $hasDateFilter = $request->filled('start_date') || $request->filled('end_date');
         $startDate = $request->get('start_date') ?: now()->startOfMonth()->toDateString();
         $endDate = $request->get('end_date') ?: now()->endOfMonth()->toDateString();
         $platforms = $platform
@@ -86,7 +87,8 @@ class PDFController extends Controller
                     $endDate,
                     $platforms,
                     $contentSource,
-                    $this->mirroring
+                    $this->mirroring,
+                    ! $hasDateFilter
                 );
                 $kategory = DB::table("kategori_jasa")->where('id', $produk->kategori_jasa_id)->first();
                 $pdf = Pdf::loadView('pdf.manajemen', compact(

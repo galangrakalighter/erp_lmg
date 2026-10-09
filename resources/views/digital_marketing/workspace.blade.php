@@ -21,6 +21,17 @@
         background: #18181b !important;
         color: #ffffff !important;
     }
+    #dmWorkspaceExport.is-exporting {
+        cursor: wait;
+        opacity: .78;
+        pointer-events: none;
+    }
+    #dmWorkspaceExport.is-exporting svg {
+        animation: dm-export-spin .75s linear infinite;
+    }
+    @keyframes dm-export-spin {
+        to { transform: rotate(360deg); }
+    }
 </style>
 <main class="min-h-screen bg-[#f5f5f3] px-4 py-5 sm:px-6 lg:px-8">
     <div class="mx-auto max-w-[1800px] space-y-5">
@@ -352,27 +363,69 @@ document.addEventListener('DOMContentLoaded', function () {
         if (active) openTab(active);
     });
 
-    exportButton?.addEventListener('click', function () {
-        if (activeKey !== 'content-plan') return;
+    exportButton?.addEventListener('click', async function (event) {
+        event.preventDefault();
+        if (exportButton.classList.contains('is-exporting')) return;
 
-        const activePanel = Array.from(panels.children)
-            .find(panel => !panel.classList.contains('hidden'));
-        const iframe = activePanel?.querySelector('iframe');
+        const exportUrl = new URL(exportButton.href);
 
-        if (!iframe?.contentWindow) return;
+        if (activeKey === 'content-plan') {
+            const activePanel = Array.from(panels.children)
+                .find(panel => !panel.classList.contains('hidden'));
+            const iframe = activePanel?.querySelector('iframe');
+
+            try {
+                const contentUrl = new URL(iframe.contentWindow.location.href);
+                ['start_date', 'end_date', 'content_source'].forEach(key => {
+                    const value = contentUrl.searchParams.get(key);
+                    if (value) exportUrl.searchParams.set(key, value);
+                    else exportUrl.searchParams.delete(key);
+                });
+            } catch (error) {
+                // Gunakan filter default jika isi iframe belum dapat dibaca.
+            }
+        }
+
+        const originalContent = exportButton.innerHTML;
+        exportButton.classList.add('is-exporting');
+        exportButton.setAttribute('aria-disabled', 'true');
+        exportButton.innerHTML = `
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="9" stroke-opacity=".25" stroke-width="2"></circle>
+                <path d="M21 12a9 9 0 0 0-9-9" stroke-width="2" stroke-linecap="round"></path>
+            </svg>
+            Menyiapkan PDF...
+        `;
 
         try {
-            const contentUrl = new URL(iframe.contentWindow.location.href);
-            const exportUrl = new URL(exportButton.href);
-
-            ['start_date', 'end_date', 'content_source'].forEach(key => {
-                const value = contentUrl.searchParams.get(key);
-                if (value) exportUrl.searchParams.set(key, value);
+            const response = await fetch(exportUrl.toString(), {
+                headers: { 'Accept': 'application/pdf' },
+                credentials: 'same-origin',
             });
+            if (!response.ok) throw new Error('PDF tidak dapat dibuat.');
 
-            exportButton.href = exportUrl.toString();
+            const blob = await response.blob();
+            const disposition = response.headers.get('Content-Disposition') || '';
+            const encodedName = disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+            const regularName = disposition.match(/filename="?([^";]+)"?/i)?.[1];
+            const fileName = encodedName
+                ? decodeURIComponent(encodedName)
+                : (regularName || 'content-plan.pdf');
+            const objectUrl = URL.createObjectURL(blob);
+            const downloadLink = document.createElement('a');
+            downloadLink.href = objectUrl;
+            downloadLink.download = fileName;
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            downloadLink.remove();
+            setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
         } catch (error) {
-            // Export tetap dapat berjalan dengan filter default.
+            window.alert(error.message || 'PDF tidak dapat dibuat. Silakan coba kembali.');
+        } finally {
+            exportButton.innerHTML = originalContent;
+            exportButton.classList.remove('is-exporting');
+            exportButton.removeAttribute('aria-disabled');
+            window.stopEnhancedLoading?.();
         }
     });
 

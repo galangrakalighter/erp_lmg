@@ -285,7 +285,13 @@ document.addEventListener('DOMContentLoaded', function () {
         if (exportButton) {
             const exportUrl = exportUrls[activeKey];
             exportButton.classList.toggle('hidden', !exportUrl);
-            if (exportUrl) exportButton.href = exportUrl;
+            if (exportUrl) {
+                const parsedExportUrl = new URL(exportUrl, window.location.origin);
+                if (platformSelect) {
+                    parsedExportUrl.searchParams.set('platform', platformSelect.value);
+                }
+                exportButton.href = parsedExportUrl.toString();
+            }
         }
 
         if (updateHistory) {
@@ -344,6 +350,30 @@ document.addEventListener('DOMContentLoaded', function () {
         const active = tabs.find(tab => tab.dataset.workspaceTab === activeKey && !tab.disabled)
             || tabs.find(tab => !tab.disabled);
         if (active) openTab(active);
+    });
+
+    exportButton?.addEventListener('click', function () {
+        if (activeKey !== 'content-plan') return;
+
+        const activePanel = Array.from(panels.children)
+            .find(panel => !panel.classList.contains('hidden'));
+        const iframe = activePanel?.querySelector('iframe');
+
+        if (!iframe?.contentWindow) return;
+
+        try {
+            const contentUrl = new URL(iframe.contentWindow.location.href);
+            const exportUrl = new URL(exportButton.href);
+
+            ['start_date', 'end_date', 'content_source'].forEach(key => {
+                const value = contentUrl.searchParams.get(key);
+                if (value) exportUrl.searchParams.set(key, value);
+            });
+
+            exportButton.href = exportUrl.toString();
+        } catch (error) {
+            // Export tetap dapat berjalan dengan filter default.
+        }
     });
 
     const params = new URLSearchParams(window.location.search);

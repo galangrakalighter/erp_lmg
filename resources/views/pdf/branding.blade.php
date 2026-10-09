@@ -3,10 +3,10 @@
 <head>
     <title>Branding Strategy Report</title>
     <style>
-        @page { size: A4 portrait; margin: 1cm; }
+        @page { size: A4 landscape; margin: 1cm; }
         body { font-family: sans-serif; font-size: 9pt; color: #333; }
         .header { text-align: center; border-bottom: 2px solid #4e73df; padding-bottom: 10px; margin-bottom: 20px; }
-        .section-title { background: #4e73df; color: white; padding: 6px; font-weight: bold; margin-top: 15px; margin-bottom: 10px; text-transform: uppercase; }
+        .section-title { background: #4e73df; color: white; padding: 6px; font-weight: bold; margin-top: 15px; margin-bottom: 10px; text-transform: uppercase; page-break-after: avoid; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 15px; table-layout: fixed; }
         th, td { border: 1px solid #ccc; padding: 6px; text-align: left; vertical-align: top; word-wrap: break-word; }
         th { background-color: #f8f9fc; color: #333; font-size: 8pt; }
@@ -23,12 +23,12 @@
 
     <div class="header">
         <h2>Laporan Strategi Branding</h2>
-        <p>Project: {{ $produk->nama_produk ?? 'Brand Strategy' }}</p>
+        <p>Client: {{ $produk->nama }} · Platform: {{ $platform ?: 'Semua Platform' }}</p>
     </div>
 
     <div class="section-title text-center">Brand Identify</div>
     <div class="img-container">
-        @if($data['data'][7] && $data['data'][7]->identify)
+        @if($data['data'][7] && $data['data'][7]->identify && is_file(public_path('storage/' . $data['data'][7]->identify)))
             <img src="{{ public_path('storage/' . $data['data'][7]->identify) }}">
         @else
             <p style="color: #999; padding: 50px 0;">Gambar Brand Identify Tidak Tersedia</p>
@@ -53,7 +53,7 @@
 
     <div class="section-title text-center">Moodboard</div>
     <div class="img-container">
-        @if($data['data'][8] && $data['data'][8]->moodboard)
+        @if($data['data'][8] && $data['data'][8]->moodboard && is_file(public_path('storage/' . $data['data'][8]->moodboard)))
             <img src="{{ public_path('storage/' . $data['data'][8]->moodboard) }}">
         @else
             <p style="color: #999; padding: 100px 0;">Gambar Moodboard Tidak Tersedia</p>

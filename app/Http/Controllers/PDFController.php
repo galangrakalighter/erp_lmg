@@ -17,42 +17,100 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Support\DigitalMarketingPermissions;
+use App\Services\PlatformMirroringService;
 class PDFController extends Controller
 {
     protected $pdf;
     protected $ledgerService;
+    protected $mirroring;
 
-    public function __construct(PDFExport $pdf, LedgerService $ledgerService)
+    public function __construct(
+        PDFExport $pdf,
+        LedgerService $ledgerService,
+        PlatformMirroringService $mirroring
+    )
     {
         $this->pdf = $pdf;
         $this->ledgerService = $ledgerService;
+        $this->mirroring = $mirroring;
     }
 
     public function exportPDF(Request $request, $id, $halaman){
-        $produk = DB::table('produk_client')->where('id', (int)$id)->first();
-        $startDate = $request->get('start_date');
-        $endDate = $request->get('end_date');
+        $produk = ProdukClient::findOrFail((int) $id);
+        abort_unless(in_array($halaman, ['Manajemen Konten', 'Branding', 'Market Research'], true), 404);
+
+        $request->validate([
+            'platform' => ['nullable', 'string', 'max:100'],
+            'start_date' => ['nullable', 'date_format:Y-m-d'],
+            'end_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:start_date'],
+            'content_source' => ['nullable', Rule::in(['organic', 'paid'])],
+        ]);
+
+        $availablePlatforms = collect(data_get($produk->access_token, 'platform', []))
+            ->filter(fn ($value) => is_string($value) && trim($value) !== '')
+            ->map(fn ($value) => trim($value));
+        $requestedPlatform = trim((string) $request->query('platform', ''));
+        $platform = $requestedPlatform !== ''
+            ? $availablePlatforms->first(
+                fn ($value) => strcasecmp($value, $requestedPlatform) === 0
+            )
+            : $availablePlatforms->first();
+        abort_if(
+            $requestedPlatform !== '' && blank($platform),
+            422,
+            'Platform export tidak valid.'
+        );
+
+        $startDate = $request->get('start_date') ?: now()->startOfMonth()->toDateString();
+        $endDate = $request->get('end_date') ?: now()->endOfMonth()->toDateString();
+        $platforms = $platform
+            ? $this->mirroring->platforms(
+                $produk->id,
+                $platform,
+                match ($halaman) {
+                    'Market Research' => 'market-research',
+                    'Branding' => 'branding',
+                    default => $request->query('content_source') === 'paid'
+                        ? 'content-plan-paid'
+                        : 'content-plan-organic',
+                }
+            )
+            : [];
+
         switch ($halaman) {
             case "Manajemen Konten":
-                $data = $this->pdf->getDataManajemen($produk->id, $startDate, $endDate);
+                $contentSource = $request->query('content_source') === 'paid' ? 'paid' : 'organic';
+                $data = $this->pdf->getDataManajemen(
+                    $produk->id,
+                    $startDate,
+                    $endDate,
+                    $platforms,
+                    $contentSource,
+                    $this->mirroring
+                );
                 $kategory = DB::table("kategori_jasa")->where('id', $produk->kategori_jasa_id)->first();
-                $pdf = Pdf::loadView('pdf.manajemen', compact('data', 'kategory'))
+                $pdf = Pdf::loadView('pdf.manajemen', compact(
+                    'data', 'kategory', 'produk', 'platform', 'startDate', 'endDate', 'contentSource'
+                ))
                 ->setPaper('a4', 'landscape');
                 break;
             case "Branding":
-                $data = $this->pdf->getDataBranding($produk->id);
-                $pdf = Pdf::loadView('pdf.branding', compact('data'))
+                $data = $this->pdf->getDataBranding($produk->id, $platforms, $this->mirroring);
+                $pdf = Pdf::loadView('pdf.branding', compact('data', 'produk', 'platform'))
                 ->setPaper('a4', 'landscape');
                 break;
             case "Market Research":
-                $data = $this->pdf->getDataMarket($produk->id);
-                $pdf = Pdf::loadView('pdf.market', compact('data'))
+                $data = $this->pdf->getDataMarket($produk->id, $platforms, $this->mirroring);
+                $pdf = Pdf::loadView('pdf.market', compact('data', 'produk', 'platform'))
                 ->setPaper('a4', 'landscape');
                 break;
-            default:
-            break;
         }
-        return $pdf->download($halaman.' '. $produk->nama .'.pdf');
+
+        $fileName = collect([$halaman, $produk->nama, $platform])
+            ->filter()
+            ->implode(' ');
+
+        return $pdf->download($fileName.'.pdf');
     }
 
     public function exportGeneralJournal(Request $request){

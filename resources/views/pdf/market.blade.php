@@ -25,8 +25,8 @@
 
         /* Layout Kolom untuk Halaman 1 */
         .row { width: 100%; clear: both; }
-        .col-6 { width: 49%; float: left; }
-        .spacer { width: 2%; float: left; }
+        .col-6 { width: 100%; float: none; }
+        .spacer { display: none; }
         .clearfix::after { content: ""; clear: both; display: table; }
 
         .section-title {
@@ -37,6 +37,7 @@
             margin-top: 10px;
             margin-bottom: 5px;
             text-transform: uppercase;
+            page-break-after: avoid;
         }
         
         table {
@@ -71,6 +72,11 @@
     </style>
 </head>
 <body>
+
+    <div class="header">
+        <h2>Laporan Market Research</h2>
+        <p>Client: {{ $produk->nama }} · Platform: {{ $platform ?: 'Semua Platform' }}</p>
+    </div>
 
     <div class="row clearfix">
         <div class="col-6">

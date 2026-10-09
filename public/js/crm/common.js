@@ -96,6 +96,31 @@
                 'addLeadButton'
             ),
 
+        refreshHumanButton:
+            document.getElementById(
+                'refreshHumanButton'
+            ),
+
+        humanRefreshNotice:
+            document.getElementById(
+                'humanRefreshNotice'
+            ),
+
+        humanRefreshNoticeTitle:
+            document.getElementById(
+                'humanRefreshNoticeTitle'
+            ),
+
+        humanRefreshNoticeMessage:
+            document.getElementById(
+                'humanRefreshNoticeMessage'
+            ),
+
+        humanRefreshNoticeClose:
+            document.getElementById(
+                'humanRefreshNoticeClose'
+            ),
+
         startDateContext:
             document.getElementById(
                 'startDateContext'
@@ -122,6 +147,7 @@
         human: app.dataset.humanUrl,
         meeting: app.dataset.meetingUrl,
         crud: app.dataset.crudUrl,
+        humanRefresh: app.dataset.humanRefreshUrl,
     };
 
     const state = {
@@ -381,6 +407,14 @@
                 : 'Chat';
 
         elements.dateTypeField?.classList.toggle('hidden', isMeeting);
+        elements.refreshHumanButton?.classList.toggle(
+            'hidden',
+            state.activeTab !== 'human'
+        );
+        elements.addButton?.classList.toggle(
+            'hidden',
+            state.activeTab !== 'ai'
+        );
 
         if (elements.startDateContext) {
             elements.startDateContext.textContent = dateContext;
@@ -656,6 +690,112 @@
             );
         } finally {
             clearTimeout(timeoutId);
+        }
+    }
+
+    async function refreshHumanData() {
+        const button = elements.refreshHumanButton;
+
+        if (!button || !urls.humanRefresh || button.disabled) {
+            return;
+        }
+
+        const label = button.querySelector('span');
+        const originalLabel = label?.textContent || 'Perbarui Data';
+
+        button.disabled = true;
+        if (label) label.textContent = 'Memperbarui...';
+        hideError();
+
+        function showRefreshNotice(type, title, message) {
+            const notice = elements.humanRefreshNotice;
+
+            if (!notice) return;
+
+            notice.classList.remove(
+                'hidden',
+                'border-emerald-200',
+                'bg-emerald-50',
+                'text-emerald-800',
+                'border-rose-200',
+                'bg-rose-50',
+                'text-rose-800'
+            );
+            notice.classList.add(
+                ...(type === 'success'
+                    ? ['border-emerald-200', 'bg-emerald-50', 'text-emerald-800']
+                    : ['border-rose-200', 'bg-rose-50', 'text-rose-800'])
+            );
+
+            if (elements.humanRefreshNoticeTitle) {
+                elements.humanRefreshNoticeTitle.textContent = title;
+            }
+
+            if (elements.humanRefreshNoticeMessage) {
+                elements.humanRefreshNoticeMessage.textContent = message;
+            }
+        }
+
+        try {
+            const response = await fetch(urls.humanRefresh, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document
+                        .querySelector('meta[name="csrf-token"]')
+                        ?.getAttribute('content') || '',
+                },
+            });
+
+            const result = await response.json().catch(() => ({}));
+
+            if (!response.ok || !result.success) {
+                throw new Error(
+                    result.message || 'Data Human gagal diperbarui.'
+                );
+            }
+
+            await loadData();
+
+            const summary = result.summary || {};
+            const details = [
+                Number(summary.processed) > 0
+                    ? `${summary.processed} diproses`
+                    : null,
+                Number(summary.created) > 0
+                    ? `${summary.created} ditambahkan`
+                    : null,
+                Number(summary.updated) > 0
+                    ? `${summary.updated} diperbarui`
+                    : null,
+                Number(summary.skipped) > 0
+                    ? `${summary.skipped} dilewati`
+                    : null,
+                Number(summary.failed) > 0
+                    ? `${summary.failed} gagal`
+                    : null,
+            ].filter(Boolean);
+
+            if (label) label.textContent = 'Berhasil Diperbarui';
+            showRefreshNotice(
+                'success',
+                'Pembaruan data Human selesai',
+                details.length > 0
+                    ? `${result.message} ${details.join(', ')}.`
+                    : result.message
+            );
+        } catch (error) {
+            showRefreshNotice(
+                'error',
+                'Pembaruan data Human gagal',
+                error.message || 'Data Human gagal diperbarui.'
+            );
+        } finally {
+            window.setTimeout(() => {
+                button.disabled = false;
+                if (label) label.textContent = originalLabel;
+            }, 1200);
         }
     }
 
@@ -1158,11 +1298,6 @@
 
                     showTab(tab);
 
-                    elements.addButton?.classList.toggle(
-                        'hidden',
-                        tab === 'meeting'
-                    );
-
                     if (
                         tab === 'meeting' ||
                         previousTab === 'meeting'
@@ -1240,6 +1375,18 @@
         ?.addEventListener(
             'click',
             openCreateLead
+        );
+
+    elements.refreshHumanButton
+        ?.addEventListener(
+            'click',
+            refreshHumanData
+        );
+
+    elements.humanRefreshNoticeClose
+        ?.addEventListener(
+            'click',
+            () => elements.humanRefreshNotice?.classList.add('hidden')
         );
 
     elements.form

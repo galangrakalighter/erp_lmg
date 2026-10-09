@@ -236,6 +236,7 @@
     data-history-url="{{ url('/api/crm/history') }}"
     data-human-history-url="{{ url('/api/crm/human/history') }}"
     data-human-checklist-url="{{ url('/api/crm/human') }}"
+    data-human-refresh-url="{{ route('crm.human.refresh-data') }}"
     class="min-h-screen"
 >
     <div class="mx-auto max-w-[1600px]">
@@ -262,11 +263,23 @@
                 </div>
             </div>
 
-            <button
-                type="button"
-                id="addLeadButton"
-                class="inline-flex w-fit items-center justify-center gap-2 rounded-lg bg-zinc-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-950 focus:ring-offset-2"
-            >
+            <div class="flex flex-wrap items-center gap-2">
+                <button
+                    type="button"
+                    id="refreshHumanButton"
+                    class="hidden inline-flex w-fit items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-5 py-3 text-sm font-semibold text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-50 disabled:cursor-wait disabled:opacity-60"
+                >
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 11a8.1 8.1 0 0 0-14.9-4M4 5v5h5M4 13a8.1 8.1 0 0 0 14.9 4M20 19v-5h-5" />
+                    </svg>
+                    <span>Perbarui Data</span>
+                </button>
+
+                <button
+                    type="button"
+                    id="addLeadButton"
+                    class="inline-flex w-fit items-center justify-center gap-2 rounded-lg bg-zinc-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-950 focus:ring-offset-2"
+                >
                 <svg
                     class="h-4 w-4"
                     viewBox="0 0 24 24"
@@ -278,7 +291,8 @@
                 </svg>
 
                 Tambah Lead
-            </button>
+                </button>
+            </div>
         </div>
 
 

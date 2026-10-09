@@ -49,6 +49,14 @@ return [
         'timeout' => (int) env('CRM_PURCHASE_WEBHOOK_TIMEOUT', 10),
     ],
 
+    'crm_human_refresh_webhook' => [
+        'url' => env(
+            'CRM_HUMAN_REFRESH_WEBHOOK_URL',
+            'https://bmglbl3.n8n.bocindonesia.com/webhook/get-human-chat'
+        ),
+        'timeout' => (int) env('CRM_HUMAN_REFRESH_WEBHOOK_TIMEOUT', 120),
+    ],
+
     'threads' => [
         'client_id' => env('THREADS_CLIENT_ID'),
         'client_secret' => env('THREADS_CLIENT_SECRET'),

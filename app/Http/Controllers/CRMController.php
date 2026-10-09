@@ -51,6 +51,95 @@ class CRMController extends Controller
             ->header('Expires', '0');
     }
 
+    /**
+     * Trigger the n8n workflow that refreshes CRM Human data.
+     */
+    public function refreshHumanData()
+    {
+        $webhookUrl = trim((string) config(
+            'services.crm_human_refresh_webhook.url'
+        ));
+
+        if ($webhookUrl === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Webhook pembaruan CRM Human belum dikonfigurasi.',
+            ], 503);
+        }
+
+        try {
+            $webhookResponse = Http::acceptJson()
+                ->asJson()
+                ->timeout((int) config(
+                    'services.crm_human_refresh_webhook.timeout',
+                    60
+                ))
+                ->post($webhookUrl, [
+                    'triggered_by' => auth()->id(),
+                    'triggered_at' => now('Asia/Jakarta')->toIso8601String(),
+                ]);
+
+            if (!$webhookResponse->successful()) {
+                Log::warning('Webhook pembaruan CRM Human ditolak', [
+                    'status' => $webhookResponse->status(),
+                    'response' => $webhookResponse->body(),
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Webhook gagal memperbarui data Human.',
+                ], 502);
+            }
+
+            $webhookData = $webhookResponse->json();
+
+            if (is_array($webhookData) && array_is_list($webhookData)) {
+                $webhookData = $webhookData[0] ?? [];
+            }
+
+            $webhookData = is_array($webhookData)
+                ? $webhookData
+                : [];
+
+            if (($webhookData['success'] ?? true) === false) {
+                return response()->json([
+                    'success' => false,
+                    'message' => (string) ($webhookData['message'] ??
+                        'Workflow gagal memperbarui data Human.'),
+                ], 502);
+            }
+
+            $summary = collect([
+                'processed',
+                'created',
+                'updated',
+                'skipped',
+                'failed',
+            ])->mapWithKeys(function (string $key) use ($webhookData) {
+                return [
+                    $key => max(0, (int) ($webhookData[$key] ?? 0)),
+                ];
+            })->all();
+
+            return response()->json([
+                'success' => true,
+                'message' => (string) ($webhookData['message'] ??
+                    'Data Human berhasil diperbarui.'),
+                'summary' => $summary,
+                'finished_at' => now('Asia/Jakarta')->toIso8601String(),
+            ]);
+        } catch (\Throwable $exception) {
+            Log::error('Webhook pembaruan CRM Human gagal dihubungi', [
+                'message' => $exception->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak dapat menghubungi layanan pembaruan data Human.',
+            ], 502);
+        }
+    }
+
     public function aiData(Request $request)
     {
         try {

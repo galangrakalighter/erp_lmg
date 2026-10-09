@@ -99,6 +99,8 @@ Route::middleware('auth')->group(function () {
         ->name('manajemen_user.lock');
     Route::resource('manajemen_user', App\Http\Controllers\UserController::class);
 
+    Route::post('crm/human/refresh-data', [App\Http\Controllers\CRMController::class, 'refreshHumanData'])
+        ->name('crm.human.refresh-data');
     Route::resource('crm', App\Http\Controllers\CRMController::class);
 
     Route::get('master-folder', [App\Http\Controllers\MasterFolderController::class, 'index'])->name('master-folder.index');

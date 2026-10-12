@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Privacy Policy - Lighter Media Group</title>
-    <link rel="icon" type="image/jpeg" href="{{ asset('img/logo.jpg') }}?v=2">
+    <link rel="icon" type="image/jpeg" href="{{ asset('img/logo.jpg') }}?v=3">
     @vite(['resources/css/app.css'])
 </head>
 <body class="bg-[#F3F4F6] antialiased">

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Terms & Privacy Policy</title>
-    <link rel="icon" type="image/jpeg" href="{{ asset('img/logo.jpg') }}?v=2">
+    <link rel="icon" type="image/jpeg" href="{{ asset('img/logo.jpg') }}?v=3">
     <style>
         body { font-family: sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
         h1 { border-bottom: 2px solid #eee; padding-bottom: 10px; }

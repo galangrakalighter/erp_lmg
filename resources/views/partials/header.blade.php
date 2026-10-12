@@ -11,7 +11,7 @@
     <meta name="robots" content="noindex, nofollow">
 
     <title>ERP | {{ $title }}</title>
-    <link rel="icon" type="image/jpeg" href="{{ asset('img/logo.jpg') }}?v=2">
+    <link rel="icon" type="image/jpeg" href="{{ asset('img/logo.jpg') }}?v=3">
 
     <!-- Custom fonts for this template-->
     <link href="{{ asset('vendor/fontawesome-free/css/all.min.css') }}" rel="stylesheet" type="text/css">

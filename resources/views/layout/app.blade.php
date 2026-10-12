@@ -13,7 +13,7 @@
 
     <title>ERP | {{ $title ?? 'Dashboard' }}</title>
 
-    <link rel="icon" type="image/jpeg" href="{{ asset('img/logo.jpg') }}?v=2">
+    <link rel="icon" type="image/jpeg" href="{{ asset('img/logo.jpg') }}?v=3">
 
     {{-- =========================================================
         TAILWIND / VITE

@@ -274,8 +274,8 @@
                                     $myClientIds
                                 );
 
-                                // Daftar sudah difilter dari server: hanya client PIC
-                                // dan INTERNAL yang sampai ke sidebar user biasa.
+                                // Daftar sudah difilter dari server: hanya client
+                                // eksternal yang ditangani user biasa.
                                 $canOpen = $isSuperAdmin || $hasClientAccess;
 
                                 // Active client

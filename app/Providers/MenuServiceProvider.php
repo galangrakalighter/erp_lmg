@@ -86,6 +86,8 @@ class MenuServiceProvider extends ServiceProvider
                 ->leftJoin('kategori_jasa', 'kategori_jasa.id', '=', 'produk_client.kategori_jasa_id')
                 ->whereIn('client_division.division_id', $visibleSidebarDivisionIds)
                 ->where('client_division.status', 1)
+                ->whereRaw("LOWER(TRIM(produk_client.nama)) <> 'internal'")
+                ->whereRaw("LOWER(TRIM(COALESCE(kategori_jasa.category, ''))) NOT LIKE 'internal%'")
                 // Sidebar dan IDME menggunakan relasi client_division yang sama.
                 // Keberadaan PIC tidak menentukan apakah client tercatat pada
                 // sebuah divisi; PIC hanya menentukan hak buka untuk user biasa.
@@ -98,23 +100,8 @@ class MenuServiceProvider extends ServiceProvider
                 ->orderBy('produk_client.nama')
                 ->get();
 
-            $internalClientIds = $sidebarProducts
-                ->filter(function ($client) {
-                    $name = strtolower(trim((string) $client->nama));
-                    $category = strtolower(trim((string) ($client->kategori_jasa_category ?? '')));
-
-                    return $name === 'internal' || str_starts_with($category, 'internal');
-                })
-                ->pluck('client_id')
-                ->map(fn ($id) => (int) $id)
-                ->unique()
-                ->values()
-                ->all();
-
             if (! $isSuperAdmin) {
-                // User biasa hanya melihat client yang ditangani. INTERNAL selalu
-                // tersedia sebagai workspace bersama walaupun tidak menjadi PIC.
-                $myClientIds = array_values(array_unique(array_merge($myClientIds, $internalClientIds)));
+                // User biasa hanya melihat client eksternal yang ditangani.
                 $sidebarProducts = $sidebarProducts
                     ->whereIn('client_id', $myClientIds)
                     ->values();
@@ -140,6 +127,8 @@ class MenuServiceProvider extends ServiceProvider
                 ->join('divisions', 'divisions.id', '=', 'client_division.division_id')
                 ->leftJoin('kategori_jasa', 'kategori_jasa.id', '=', 'produk_client.kategori_jasa_id')
                 ->whereRaw("LOWER(TRIM(divisions.name)) <> 'finance'")
+                ->whereRaw("LOWER(TRIM(produk_client.nama)) <> 'internal'")
+                ->whereRaw("LOWER(TRIM(COALESCE(kategori_jasa.category, ''))) NOT LIKE 'internal%'")
                 ->select('produk_client.*')
                 ->groupBy('produk_client.id')
                 ->havingRaw('COUNT(DISTINCT client_division.division_id) > 1')

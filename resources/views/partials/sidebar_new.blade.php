@@ -50,7 +50,7 @@
 
 <aside
     id="accordionSidebar"
-    class="fixed inset-y-0 left-0 z-[1100] flex w-[280px] -translate-x-full flex-col border-r border-zinc-800 bg-zinc-950 text-white transition-transform duration-300 ease-out lg:translate-x-0"
+    class="fixed inset-y-0 left-0 z-[1100] flex w-64 -translate-x-full flex-col border-r border-zinc-800 bg-zinc-950 text-white transition-transform duration-200 ease-out lg:translate-x-0"
 >
 
     {{-- =====================================================

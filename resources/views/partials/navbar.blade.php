@@ -9,7 +9,7 @@
         <button
             id="sidebarToggleTop"
             type="button"
-            class="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-100 hover:text-zinc-950"
+            class="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-700 transition-colors hover:border-zinc-300 hover:bg-zinc-100 hover:text-zinc-950"
             aria-label="Buka atau tutup sidebar"
             aria-controls="accordionSidebar"
             aria-expanded="true"
@@ -163,7 +163,7 @@
             <button
                 id="userDropdownButton"
                 type="button"
-                class="flex items-center gap-2 rounded-xl border border-transparent px-2 py-1.5 transition hover:border-zinc-200 hover:bg-white"
+                class="flex items-center gap-2 rounded-lg border border-transparent px-2 py-1.5 transition-colors hover:border-zinc-200 hover:bg-white"
                 aria-expanded="false"
                 aria-haspopup="true"
             >
@@ -222,7 +222,7 @@
             ================================================== --}}
             <div
                 id="userDropdownMenu"
-                class="absolute right-0 top-full z-[1200] mt-2 hidden w-64 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xl shadow-zinc-950/10"
+                class="absolute right-0 top-full z-[1200] mt-2 hidden w-64 overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)]"
             >
 
                 {{-- User Info --}}

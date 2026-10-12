@@ -16,7 +16,7 @@ use Throwable;
 class DashboardController extends Controller
 {
     public function index(Request $request){
-        $title = "Dashbard";
+        $title = "Dashboard";
         $dashboardData = $this->executiveDashboardData($request);
 
         switch (Auth::user()->jabatan) {

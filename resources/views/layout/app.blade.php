@@ -74,7 +74,6 @@
                 system-ui,
                 -apple-system,
                 BlinkMacSystemFont,
-                "Segoe UI",
                 sans-serif;
         }
 
@@ -111,7 +110,7 @@
         #accordionSidebar {
             position: fixed;
             inset: 0 auto 0 0;
-            width: 270px;
+            width: 256px;
             height: 100vh;
             z-index: 1100;
 
@@ -124,8 +123,8 @@
             border-right: 1px solid rgba(255, 255, 255, 0.08);
 
             transition:
-                width 0.3s ease,
-                transform 0.3s ease;
+                width 0.18s ease,
+                transform 0.18s ease;
         }
 
         #accordionSidebar::-webkit-scrollbar {
@@ -137,15 +136,15 @@
         ====================================================== */
 
         #content-wrapper {
-            width: calc(100% - 270px);
-            margin-left: 270px;
+            width: calc(100% - 256px);
+            margin-left: 256px;
             min-height: 100vh;
 
             background: #f5f5f3;
 
             transition:
-                margin-left 0.3s ease,
-                width 0.3s ease;
+                margin-left 0.18s ease,
+                width 0.18s ease;
         }
 
         #content {
@@ -206,12 +205,8 @@
 
             min-height: 76px;
 
-            background: rgba(250, 250, 250, 0.88);
-
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
-
-            border-bottom: 1px solid rgba(228, 228, 231, 0.9);
+            background: #fafafa;
+            border-bottom: 1px solid #e4e4e7;
         }
 
         /* =====================================================
@@ -234,22 +229,20 @@
             background: #fff;
 
             border: 1px solid #e4e4e7;
-            border-radius: 16px;
+            border-radius: 10px;
 
             box-shadow:
                 0 1px 2px rgba(0, 0, 0, 0.02);
 
             transition:
-                border-color 0.2s ease,
-                box-shadow 0.2s ease,
-                transform 0.2s ease;
+                border-color 0.15s ease,
+                box-shadow 0.15s ease;
         }
 
         .lmg-card:hover {
             border-color: #d4d4d8;
 
-            box-shadow:
-                0 10px 30px rgba(0, 0, 0, 0.04);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         }
 
         /* =====================================================
@@ -554,25 +547,22 @@
             background: #fff;
 
             border: 1px solid #e4e4e7;
-            border-radius: 18px;
+            border-radius: 10px;
 
-            box-shadow:
-                0 30px 80px rgba(0, 0, 0, 0.20);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 
             overflow: hidden;
 
-            animation: modalIn 0.2s ease-out;
+            animation: modalIn 0.15s ease-out;
         }
 
         @keyframes modalIn {
             from {
                 opacity: 0;
-                transform: translateY(10px) scale(0.98);
             }
 
             to {
                 opacity: 1;
-                transform: translateY(0) scale(1);
             }
         }
 
@@ -596,53 +586,23 @@
             justify-content: center;
 
             border: 0;
-            border-radius: 999px;
+            border-radius: 10px;
 
             background: #09090b;
             color: #fff;
 
             cursor: pointer;
 
-            box-shadow:
-                0 12px 30px rgba(0, 0, 0, 0.20);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 
             transition:
-                transform 0.2s ease,
-                box-shadow 0.2s ease,
-                background 0.2s ease;
+                box-shadow 0.15s ease,
+                background 0.15s ease;
         }
 
         .floating-ai-btn:hover {
-            transform: translateY(-3px);
-
             background: #18181b;
-
-            box-shadow:
-                0 18px 40px rgba(0, 0, 0, 0.25);
-        }
-
-        .floating-ai-btn::after {
-            content: "";
-
-            position: absolute;
-            inset: -5px;
-
-            border: 1px solid rgba(9, 9, 11, 0.15);
-            border-radius: 999px;
-
-            animation: aiPulse 2.5s infinite;
-        }
-
-        @keyframes aiPulse {
-            0% {
-                transform: scale(1);
-                opacity: 0.8;
-            }
-
-            100% {
-                transform: scale(1.35);
-                opacity: 0;
-            }
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
         }
 
         .ai-assistant-panel {
@@ -662,14 +622,13 @@
             background: #fff;
 
             border: 1px solid #e4e4e7;
-            border-radius: 18px;
+            border-radius: 10px;
 
             overflow: hidden;
 
-            box-shadow:
-                0 25px 70px rgba(0, 0, 0, 0.16);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 
-            animation: aiOpen 0.25s ease;
+            animation: aiOpen 0.15s ease;
         }
 
         .ai-assistant-panel.active {
@@ -679,12 +638,10 @@
         @keyframes aiOpen {
             from {
                 opacity: 0;
-                transform: translateY(15px) scale(0.97);
             }
 
             to {
                 opacity: 1;
-                transform: translateY(0) scale(1);
             }
         }
 
@@ -878,7 +835,6 @@
 
         #sendAiMessage:hover {
             background: #27272a;
-            transform: translateY(-1px);
         }
 
         /* =====================================================
@@ -900,7 +856,7 @@
         @media (max-width: 1024px) {
 
             #accordionSidebar {
-                width: 270px;
+                width: 256px;
 
                 transform: translateX(-100%);
             }

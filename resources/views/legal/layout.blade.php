@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="index,follow">
     <title>@yield('title') · Lighter Media Group</title>
+    <link rel="icon" type="image/jpeg" href="{{ asset('img/logo.jpg') }}?v=2">
     <style>
         :root { color-scheme: light; --ink:#18181b; --muted:#71717a; --line:#e4e4e7; --paper:#fff; --wash:#f4f4f5; }
         * { box-sizing:border-box; }

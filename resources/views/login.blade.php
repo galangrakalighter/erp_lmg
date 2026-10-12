@@ -9,6 +9,7 @@
     <meta name="author" content="Lighter Media Group">
 
     <title>ERP - Login</title>
+    <link rel="icon" type="image/jpeg" href="{{ asset('img/logo.jpg') }}?v=2">
 
     {{-- Google Font --}}
 

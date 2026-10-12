@@ -30,7 +30,12 @@
 
         if (input.type !== 'date' && input.dataset.datePicker === undefined) return false;
 
-        return true;
+        // This helper is intended for report/list filters only. Initialising every
+        // date field also replaces transactional inputs (journal date, due date,
+        // payroll date, etc.) with a read-only Flatpickr alternative input.
+        // Keep ordinary form dates native and editable unless they explicitly opt
+        // in through data-date-picker or match one of the known filter patterns.
+        return input.dataset.datePicker !== undefined || usesFilterDefault(input);
     }
 
     function usesFilterDefault(input) {

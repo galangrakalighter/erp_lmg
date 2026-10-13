@@ -479,6 +479,7 @@
                                                 data-divisi="{{ $role->division_id }}"
                                                 data-level="{{ $role->level }}"
                                                 data-parent="{{ $role->parent_id }}"
+                                                data-role-name="{{ $role->role_name }}"
                                             >
                                                 {{ strtoupper(str_replace('_', ' ', $role->role_name)) }}
                                             </option>
@@ -757,6 +758,7 @@
                                                 data-divisi="{{ $role->division_id }}"
                                                 data-level="{{ $role->level }}"
                                                 data-parent="{{ $role->parent_id }}"
+                                                data-role-name="{{ $role->role_name }}"
                                             >
                                                 {{ strtoupper(str_replace('_', ' ', $role->role_name)) }}
                                             </option>
@@ -2573,6 +2575,8 @@
 
         const parentRoleId =
             $('#modal_role option:selected').data('parent');
+        const selectedRoleName =
+            $('#modal_role option:selected').data('role-name');
 
 
         const $parentSelect =
@@ -2656,7 +2660,9 @@
 
                 return (
                     ud &&
-                    String(ud.role_id) === String(parentRoleId)
+                    (selectedRoleName === 'Content Creator'
+                        ? String(ud.role_id) === String(parentRoleId)
+                        : parseInt(ud.level) < selectedLevel)
                 );
 
             });
@@ -3022,6 +3028,7 @@
 
         const roleId = $('#edit_role').val();
         const parentRoleId = $('#edit_role option:selected').data('parent');
+        const selectedRoleName = $('#edit_role option:selected').data('role-name');
 
 
         const currentUserId =
@@ -3092,7 +3099,9 @@
 
                 return (
                     ud &&
-                    String(ud.role_id) === String(parentRoleId) &&
+                    (selectedRoleName === 'Content Creator'
+                        ? String(ud.role_id) === String(parentRoleId)
+                        : parseInt(ud.level) < selectedLevel) &&
                     String(user.id) !==
                     String(currentUserId)
                 );

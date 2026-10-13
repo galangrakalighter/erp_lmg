@@ -243,7 +243,7 @@ class UserController extends Controller
         $parentId = $this->validatedParentId($request, $role);
         $exists = User::where('email', $request->email)->exists();
         if ($exists) {
-            return redirect()->back()->with('error', 'Email Sudah Terdaftar Di Sistem');
+            return redirect()->back()->withInput()->with('error', 'Email Sudah Terdaftar Di Sistem');
         }
 
         DB::beginTransaction();
@@ -282,7 +282,7 @@ class UserController extends Controller
             return redirect()->back()->with('success', 'Berhasil Membuat Akun');
         } catch (\Throwable $th) {
             DB::rollback();
-            return redirect()->back()->with('error', 'Terjadi Kesalahan: ' . $th->getMessage());
+            return redirect()->back()->withInput()->with('error', 'Terjadi Kesalahan: ' . $th->getMessage());
         }
 
     }
@@ -453,15 +453,19 @@ class UserController extends Controller
             ]);
         }
 
-        $isValidParent = UserDivision::query()
+        $parentQuery = UserDivision::query()
             ->where('user_id', $request->integer('parent_id'))
-            ->where('division_id', $request->integer('divisi_id'))
-            ->where('role_id', $role->parent_id)
-            ->exists();
+            ->where('division_id', $request->integer('divisi_id'));
+
+        $isValidParent = $role->role_name === 'Content Creator'
+            ? $parentQuery->where('role_id', $role->parent_id)->exists()
+            : $parentQuery->whereHas('role', fn ($query) => $query->where('level', '<', $role->level))->exists();
 
         if (! $isValidParent) {
             throw ValidationException::withMessages([
-                'parent_id' => 'Atasan harus berasal dari divisi yang sama dan memiliki role atasan yang sesuai.',
+                'parent_id' => $role->role_name === 'Content Creator'
+                    ? 'Atasan Content Creator harus memiliki role Digital Marketing.'
+                    : 'Atasan harus berasal dari divisi yang sama dan memiliki level yang lebih tinggi.',
             ]);
         }
 

@@ -637,6 +637,16 @@ Route Daily Work di `api.php` menggunakan middleware `web` dan `auth`. Middlewar
 
 Pada operasi tambah dan edit, `start_time` atau jam mulai wajib diisi dengan format `HH:mm`. Validasi diterapkan pada form dan API.
 
+### Reset daily otomatis
+
+Perintah `php artisan task:reset-daily` dijadwalkan setiap hari pukul **01.00 WIB** melalui `routes/console.php`. Scheduler tetap membutuhkan satu proses pemicu yang selalu aktif:
+
+- Pada Docker, service `scheduler` di `docker-compose.yml` menjalankan `php artisan schedule:work` secara otomatis.
+- Pada server Linux tanpa Docker, tambahkan cron `* * * * * cd /lokasi/aplikasi && php artisan schedule:run >> /dev/null 2>&1`.
+- Pada Laragon/Windows, buat satu Windows Task Scheduler yang menjalankan `php artisan schedule:run` dari folder aplikasi setiap satu menit. PHP CLI yang dipilih harus sama dengan PHP yang digunakan Laragon.
+
+Gunakan `php artisan schedule:list` untuk memastikan jadwal tampil sebagai `0 1 * * *` dengan zona waktu `Asia/Jakarta`.
+
 ### Alur pemuatan data
 
 ```mermaid

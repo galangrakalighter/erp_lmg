@@ -10,6 +10,18 @@ services:
     networks:
       - laravel
 
+  scheduler:
+    build: .
+    container_name: laravel_scheduler
+    command: php artisan schedule:work
+    restart: unless-stopped
+    volumes:
+      - .:/var/www
+    depends_on:
+      - db
+    networks:
+      - laravel
+
   web:
     image: nginx:alpine
     container_name: laravel_nginx
@@ -32,8 +44,13 @@ services:
       POSTGRES_PASSWORD: Lmg140818
     ports:
       - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
     networks:
       - laravel
 
 networks:
   laravel:
+
+volumes:
+  postgres_data:

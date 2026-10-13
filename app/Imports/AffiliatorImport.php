@@ -3,6 +3,7 @@
 namespace App\Imports;
 
 use App\Models\Social_Creator;
+use Illuminate\Database\Eloquent\Model;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
@@ -19,7 +20,7 @@ class AffiliatorImport implements ToModel, WithHeadingRow, WithChunkReading
         return 4;
     }
 
-    public function model(array $row)
+    public function model(array $row): Model|array|null
     {
         $rawCategory = $row['kategory'] ?? null;
         $categoryArray = !empty($rawCategory) ? array_map('trim', explode(',', str_replace("\n", ",", $rawCategory))) : [];

@@ -103,10 +103,12 @@ Route::middleware('auth')->group(function () {
     // Export PDF
     Route::get('/exportPDF/{id}/{halaman}', [App\Http\Controllers\PDFController::class, 'exportPDF'])->name('invoice.download');
 
-    // MANAJEMEN USER
-    Route::patch('manajemen_user/{user}/lock', [App\Http\Controllers\UserController::class, 'toggleLock'])
-        ->name('manajemen_user.lock');
-    Route::resource('manajemen_user', App\Http\Controllers\UserController::class);
+    // MANAJEMEN USER — hanya admin yang boleh melihat maupun mengubah akun.
+    Route::middleware(EnsureUserIsAdmin::class)->group(function () {
+        Route::patch('manajemen_user/{user}/lock', [App\Http\Controllers\UserController::class, 'toggleLock'])
+            ->name('manajemen_user.lock');
+        Route::resource('manajemen_user', App\Http\Controllers\UserController::class);
+    });
 
     Route::post('crm/human/refresh-data', [App\Http\Controllers\CRMController::class, 'refreshHumanData'])
         ->name('crm.human.refresh-data');

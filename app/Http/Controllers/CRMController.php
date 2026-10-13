@@ -2441,9 +2441,6 @@ class CRMController extends Controller
         private const HUMAN_HISTORY_WEBHOOK =
             'https://bmglbl3.n8n.bocindonesia.com/webhook/get-data-history';
 
-        private const WAHA_API_KEY =
-            'i6cpQScyiUj7qE0kOkDayJbxi5zD6REo';
-
         public function humanHistory($id)
             {
                 try {
@@ -3740,9 +3737,22 @@ class CRMController extends Controller
                         ], 403);
                     }
 
+                    $wahaApiKey = trim((string) config(
+                        'services.waha.api_key'
+                    ));
+
+                    if ($wahaApiKey === '') {
+                        Log::error('WAHA_API_KEY belum dikonfigurasi.');
+
+                        return response()->json([
+                            'success' => false,
+                            'message' =>
+                                'Layanan media WhatsApp belum dikonfigurasi.',
+                        ], 503);
+                    }
+
                     $headers = [
-                        'X-Api-Key' =>
-                            self::WAHA_API_KEY,
+                        'X-Api-Key' => $wahaApiKey,
                         'Accept' => '*/*',
                     ];
 

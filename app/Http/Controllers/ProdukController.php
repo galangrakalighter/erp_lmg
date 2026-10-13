@@ -905,7 +905,7 @@ class ProdukController extends Controller
             )->setPaper('a4', 'portrait')->output();
 
             abort_unless(
-                Storage::disk('public')->put($path, $pdfContent),
+                Storage::disk('local')->put($path, $pdfContent),
                 500,
                 'Dokumen bawaan client gagal dibuat.'
             );

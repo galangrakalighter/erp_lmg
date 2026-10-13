@@ -20,6 +20,8 @@ use App\Support\DigitalMarketingPermissions;
 use App\Services\PlatformMirroringService;
 class PDFController extends Controller
 {
+    private const CLIENT_DOCUMENT_DISK = 'local';
+
     protected $pdf;
     protected $ledgerService;
     protected $mirroring;
@@ -286,7 +288,7 @@ class PDFController extends Controller
         $path = $request->file('pdf')->storeAs(
             $folder,
             $filename,
-            'public'
+            self::CLIENT_DOCUMENT_DISK
         );
 
         // Simpan ke database
@@ -336,7 +338,7 @@ class PDFController extends Controller
         )->setPaper('a4', 'portrait')->output();
 
         abort_unless(
-            Storage::disk('public')->put($path, $pdfContent),
+            Storage::disk(self::CLIENT_DOCUMENT_DISK)->put($path, $pdfContent),
             500,
             'Dokumen gagal disimpan.'
         );
@@ -372,9 +374,9 @@ class PDFController extends Controller
             ]);
         }
 
-        abort_unless(Storage::disk('public')->exists($file->location), 404, 'File PDF tidak ditemukan.');
+        abort_unless(Storage::disk(self::CLIENT_DOCUMENT_DISK)->exists($file->location), 404, 'File PDF tidak ditemukan.');
 
-        return Storage::disk('public')->response($file->location, $file->nama_file.'.pdf', [
+        return Storage::disk(self::CLIENT_DOCUMENT_DISK)->response($file->location, $file->nama_file.'.pdf', [
             'Content-Type' => 'application/pdf',
         ]);
     }
@@ -392,9 +394,9 @@ class PDFController extends Controller
         $this->ensureFileAccessible($file);
 
         abort_unless($file->is_pinned && (int) $version->file_pdf_id === (int) $file->id, 404);
-        abort_unless(Storage::disk('public')->exists($version->location), 404, 'File versi tidak ditemukan.');
+        abort_unless(Storage::disk(self::CLIENT_DOCUMENT_DISK)->exists($version->location), 404, 'File versi tidak ditemukan.');
 
-        return Storage::disk('public')->response(
+        return Storage::disk(self::CLIENT_DOCUMENT_DISK)->response(
             $version->location,
             pathinfo($version->nama_file, PATHINFO_FILENAME).' - v'.$version->version_number.'.pdf',
             ['Content-Type' => 'application/pdf']
@@ -438,7 +440,7 @@ class PDFController extends Controller
                 : $path;
 
             abort_unless(
-                Storage::disk('public')->put($newPath, $pdfContent),
+                Storage::disk(self::CLIENT_DOCUMENT_DISK)->put($newPath, $pdfContent),
                 500,
                 'Dokumen gagal diperbarui.'
             );
@@ -449,8 +451,8 @@ class PDFController extends Controller
         if ($request->hasFile('pdf')) {
 
             // Hapus file lama
-            if (! $file->is_pinned && Storage::disk('public')->exists($file->location)) {
-                Storage::disk('public')->delete($file->location);
+            if (! $file->is_pinned && Storage::disk(self::CLIENT_DOCUMENT_DISK)->exists($file->location)) {
+                Storage::disk(self::CLIENT_DOCUMENT_DISK)->delete($file->location);
             }
 
             $folder = 'pdf/'.$file->client.($file->division_id ? '/'.$file->division_id : '');
@@ -460,7 +462,7 @@ class PDFController extends Controller
             $path = $request->file('pdf')->storeAs(
                 $folder,
                 $filename,
-                'public'
+                self::CLIENT_DOCUMENT_DISK
             );
             $editorContent = null;
             $isGeneratedDocument = false;
@@ -490,7 +492,7 @@ class PDFController extends Controller
             });
         } catch (\Throwable $exception) {
             if ($file->is_pinned && $path !== $previousPath) {
-                Storage::disk('public')->delete($path);
+                Storage::disk(self::CLIENT_DOCUMENT_DISK)->delete($path);
             }
             throw $exception;
         }
@@ -506,8 +508,8 @@ class PDFController extends Controller
         abort_if($file->is_system_template, 403, 'Dokumen bawaan client tidak dapat dihapus.');
 
         // Hapus file fisik
-        if (Storage::disk('public')->exists($file->location)) {
-            Storage::disk('public')->delete($file->location);
+        if (Storage::disk(self::CLIENT_DOCUMENT_DISK)->exists($file->location)) {
+            Storage::disk(self::CLIENT_DOCUMENT_DISK)->delete($file->location);
         }
 
         // Hapus data database

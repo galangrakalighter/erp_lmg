@@ -17,6 +17,8 @@ use Yajra\DataTables\Facades\DataTables;
 class UserController extends Controller
 {
     public function index(){
+        $this->ensureAdmin();
+
         $title = "Manajemen User";
         $currentUser = Auth::user();
 
@@ -76,6 +78,8 @@ class UserController extends Controller
 
     public function getUsersJson() 
     {
+        $this->ensureAdmin();
+
         $users = User::with(['userDivisions.division', 'userDivisions.role', 'userDivisions.parent', 'userClients.client'])
             ->where(function ($query) {
                 $query->where('isAdmin', false)
@@ -218,6 +222,8 @@ class UserController extends Controller
     }
 
     public function store(Request $request){
+        $this->ensureAdmin();
+
         $request->merge(['email' => Str::lower(trim((string) $request->input('email')))]);
         $isLmg = in_array((string) $request->input('divisi_id'), ['lmg', 'idme'], true);
         $request->validate([
@@ -282,6 +288,8 @@ class UserController extends Controller
     }
 
     public function update($id, Request $request){
+        $this->ensureAdmin();
+
         $user = User::findOrFail($id);
         $request->merge(['email' => Str::lower(trim((string) $request->input('email')))]);
         $isLmg = in_array((string) $request->input('divisi_id'), ['lmg', 'idme'], true);
@@ -372,6 +380,8 @@ class UserController extends Controller
     }
 
     public function destroy($id){
+        $this->ensureAdmin();
+
         try {
             $user = User::findOrFail($id);
 
@@ -460,6 +470,8 @@ class UserController extends Controller
 
     public function toggleLock(User $user)
     {
+        $this->ensureAdmin();
+
         if (Auth::id() === $user->id) {
             return redirect()->back()->with('error', 'Akun yang sedang digunakan tidak dapat dikunci.');
         }
@@ -475,6 +487,11 @@ class UserController extends Controller
             'success',
             $user->is_locked ? 'Akun berhasil dikunci.' : 'Kunci akun berhasil dibuka.'
         );
+    }
+
+    private function ensureAdmin(): void
+    {
+        abort_unless((bool) Auth::user()?->isAdmin, 403, 'Manajemen user hanya dapat diakses oleh admin.');
     }
 
     public function getUserDivision(Request $request){

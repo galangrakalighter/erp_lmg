@@ -464,7 +464,7 @@ class UserController extends Controller
         if (! $isValidParent) {
             throw ValidationException::withMessages([
                 'parent_id' => $role->role_name === 'Content Creator'
-                    ? 'Atasan Content Creator harus memiliki role Digital Marketing.'
+                    ? 'Atasan Content Creator harus memiliki role Digital Marketing Manager.'
                     : 'Atasan harus berasal dari divisi yang sama dan memiliki level yang lebih tinggi.',
             ]);
         }

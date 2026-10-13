@@ -26,11 +26,13 @@ function initHierarchy(){
         if(ids && ids.length){
 
             $('#select-dm').prop('disabled',false);
+            $('#select-dmm').prop('disabled',false);
 
             $('#select-ads').prop('disabled',false);
             $('#select-smm').prop('disabled',false);
 
             filterOptions('select-dm',ids);
+            filterOptions('select-dmm',ids);
 
             filterOptions('select-ads',ids);
             filterOptions('select-smm',ids);
@@ -39,16 +41,16 @@ function initHierarchy(){
 
             resetSelect([
                 'select-dm',
+                'select-dmm',
                 'select-ads',
-                'select-smm',
-                'select-cc'
+                'select-smm'
             ]);
 
         }
 
     });
 
-    $('#select-dm').change(function(){
+    $('#select-dmm').change(function(){
 
         let ids=$(this).val();
 
@@ -59,7 +61,12 @@ function initHierarchy(){
 
         }else{
 
-            resetSelect(['select-cc']);
+            $('#select-cc')
+                .prop('disabled',false)
+                .find('option')
+                .prop('disabled',false);
+
+            $('#select-cc').trigger('change.select2');
 
         }
 

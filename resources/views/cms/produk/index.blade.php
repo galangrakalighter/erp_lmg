@@ -27,6 +27,7 @@
                             <th scope="col">Client</th>
                             <th scope="col">Status</th>
                             <th scope="col">BUH</th>
+                            <th scope="col">Digital Marketing Manager</th>
                             <th scope="col">Digital Marketing</th>
                             <th scope="col">Advertising</th>
                             <th scope="col">Sosial Media Spesialis</th>
@@ -277,6 +278,27 @@
 
                             {{-- Digital Marketing --}}
                             <div>
+                                <label for="select-dmm" class="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-900">
+                                    <span class="h-1.5 w-1.5 rounded-full bg-zinc-700"></span>
+                                    Digital Marketing Manager
+                                </label>
+                                <select name="dmm_ids[]" id="select-dmm" class="form-control select2-multiple" multiple data-placeholder="Pilih Digital Marketing Manager" disabled>
+                                    @foreach ($dmm as $manager)
+                                        @php
+                                            $parentId = $manager->userDivisions->firstWhere('division_id', $divisi)?->parent_id;
+                                        @endphp
+                                        <option value="{{ $manager->id }}" data-parent="{{ $parentId }}">
+                                            {{ $manager->email }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <p class="mt-2 text-[11px] leading-5 text-zinc-400">
+                                    Pilih manager yang membawahi tim Digital Marketing dan Content Creator.
+                                </p>
+                            </div>
+
+                            {{-- Digital Marketing --}}
+                            <div>
                                 <label
                                     for="select-dm"
                                     class="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-900"
@@ -376,18 +398,18 @@
                                     <span class="h-1.5 w-1.5 rounded-full bg-zinc-600"></span>
                                     Content Creator (CC)
                                 </label>
-                                <select name="cc_ids[]" id="select-cc" class="form-control select2-multiple" multiple data-placeholder="Pilih Content Creator" disabled>
+                                <select name="cc_ids[]" id="select-cc" class="form-control select2-multiple" multiple data-placeholder="Pilih Content Creator">
                                     @foreach ($cc as $creator)
                                         @php
                                             $parentId = $creator->userDivisions->firstWhere('division_id', $divisi)?->parent_id;
                                         @endphp
-                                        <option value="{{ $creator->id }}" data-parent="{{ $parentId }}" @disabled(! $parentId)>
+                                        <option value="{{ $creator->id }}" data-parent="{{ $parentId }}">
                                             {{ $creator->email }}
                                         </option>
                                     @endforeach
                                 </select>
                                 <p class="mt-2 text-[11px] leading-5 text-zinc-400">
-                                    Pilihan mengikuti Digital Marketing yang menjadi atasannya.
+                                    Pilihan mengikuti Digital Marketing Manager yang menjadi atasannya.
                                 </p>
                             </div>
 

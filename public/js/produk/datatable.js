@@ -25,6 +25,10 @@ function initClientTable() {
             render: data => renderBadges(data, 'badge-primary')
         },
         {
+            data: 'dmm',
+            render: data => renderBadges(data, 'badge-primary')
+        },
+        {
             data: 'dm',
             render: data => renderBadges(data, 'badge-info')
         },

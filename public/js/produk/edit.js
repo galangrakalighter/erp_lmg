@@ -356,6 +356,15 @@ function buildEditModalHtml(res){
                     </select>
                 </div>
                 <div class="col-md-6 form-group">
+                    <label class="font-weight-bold small text-primary">Digital Marketing Manager</label>
+                    <select name="dmm_ids[]" id="edit-select-dmm" class="form-control select2-multiple" multiple data-placeholder="Pilih Digital Marketing Manager">
+                        ${(opt.dmm || []).map(u => {
+                            const isSelected = currentTeams.some(t => (t.id || t) == u.id);
+                            return `<option value="${u.id}" data-parent="${u.parent != null ? u.parent : ''}" ${isSelected ? 'selected' : ''}>${u.name}</option>`;
+                        }).join('')}
+                    </select>
+                </div>
+                <div class="col-md-6 form-group">
                     <label class="font-weight-bold small text-warning">Digital Marketer (DM)</label>
                     <select name="dm_ids[]" id="edit-select-dm" class="form-control select2-multiple" multiple data-placeholder="Pilih DM">
                         ${(opt.dm || []).map(u => {
@@ -387,7 +396,7 @@ function buildEditModalHtml(res){
                     <select name="cc_ids[]" id="edit-select-cc" class="form-control select2-multiple" multiple data-placeholder="Pilih Content Creator">
                         ${(opt.cc || []).map(u => {
                             const isSelected = currentTeams.some(t => (t.id || t) == u.id);
-                            return `<option value="${u.id}" data-parent="${u.parent || ''}" ${isSelected ? 'selected' : ''} ${u.parent ? '' : 'disabled'}>${u.name}</option>`;
+                            return `<option value="${u.id}" data-parent="${u.parent || ''}" ${isSelected ? 'selected' : ''}>${u.name}</option>`;
                         }).join('')}
                     </select>
                 </div>
@@ -607,6 +616,7 @@ function bindEditHierarchyEvent(){
 // Deklarasi ini menggantikan setupEditHierarchy lama di atas.
 function setupEditHierarchy() {
     const $buh = $('#edit-select-buh');
+    const $dmm = $('#edit-select-dmm');
     const $dm = $('#edit-select-dm');
     const $ads = $('#edit-select-ads');
     const $smm = $('#edit-select-smm');
@@ -641,9 +651,10 @@ function setupEditHierarchy() {
             const $option = $(this);
             const parentId = $option.attr('data-parent');
 
-            // Content Creator wajib memiliki user Digital Marketing sebagai atasan.
+            // User lama yang belum memiliki parent tetap dapat ditugaskan ke
+            // client. Filter parent diterapkan setelah relasinya tersedia.
             if (parentId === undefined || parentId === null || parentId === '') {
-                $option.prop('disabled', $select.is($cc));
+                $option.prop('disabled', false);
                 return;
             }
 
@@ -664,43 +675,47 @@ function setupEditHierarchy() {
 
         if (buhIds.length === 0) {
             disableAndClear($dm);
+            disableAndClear($dmm);
             disableAndClear($ads);
             disableAndClear($smm);
-            disableAndClear($cc);
             return;
         }
 
         $dm.prop('disabled', false);
+        $dmm.prop('disabled', false);
         $ads.prop('disabled', false);
         $smm.prop('disabled', false);
 
         filterByParent($dm, buhIds);
+        filterByParent($dmm, buhIds);
         filterByParent($ads, buhIds);
         filterByParent($smm, buhIds);
     };
 
-    const refreshFromDm = function () {
-        const dmIds = normalizeIds($dm.val());
+    const refreshFromManager = function () {
+        const managerIds = normalizeIds($dmm.val());
 
-        if (dmIds.length === 0) {
-            disableAndClear($cc);
+        if (managerIds.length === 0) {
+            $cc.prop('disabled', false);
+            $cc.find('option').prop('disabled', false);
+            refreshSelect2($cc);
             return;
         }
 
         $cc.prop('disabled', false);
-        filterByParent($cc, dmIds);
+        filterByParent($cc, managerIds);
     };
 
     $buh
         .off('change.editHierarchy')
         .on('change.editHierarchy', refreshFromBuh);
-    $dm
+    $dmm
         .off('change.editHierarchy')
-        .on('change.editHierarchy', refreshFromDm);
+        .on('change.editHierarchy', refreshFromManager);
 
     // Terapkan kondisi awal berdasarkan data selected dari API.
     refreshFromBuh();
-    refreshFromDm();
+    refreshFromManager();
 }
 
 function setupEditPlatform(){

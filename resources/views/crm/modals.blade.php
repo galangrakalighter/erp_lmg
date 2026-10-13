@@ -168,11 +168,15 @@
                                 Layanan
                             </label>
 
-                            <input
-                                type="text"
+                            <select
                                 id="leadLayanan"
                                 class="block w-full rounded-lg border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950"
                             >
+                                <option value="">Pilih Layanan</option>
+                                <option value="LGTR Digital Marketing">LGTR Digital Marketing</option>
+                                <option value="EIKYOO MCN">EIKYOO MCN</option>
+                                <option value="Lighter Tech">Lighter Tech</option>
+                            </select>
                         </div>
 
 
@@ -219,6 +223,10 @@
 
                                 <option value="2">
                                     Meeting Schedule
+                                </option>
+
+                                <option value="3">
+                                    Meeting Confirmed
                                 </option>
                             </select>
                         </div>

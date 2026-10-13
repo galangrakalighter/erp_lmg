@@ -1096,8 +1096,10 @@
         );
 
         setFormValue(
-            'leadStatus',
-            lead.status
+            state.activeTab === 'ai'
+                ? 'leadAiStatus'
+                : 'leadStatus',
+            lead.status ?? ''
         );
 
         setFormValue(
@@ -1240,7 +1242,9 @@
                 || 'warm',
 
             status:
-                formValue('leadStatus'),
+                state.activeTab === 'ai'
+                    ? formValue('leadAiStatus')
+                    : formValue('leadStatus'),
 
             sosial_media: {
                 instagram:

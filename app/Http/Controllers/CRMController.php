@@ -34,6 +34,12 @@ class CRMController extends Controller
         '6283100475454'
     ];
 
+    private const CRM_SERVICES = [
+        'LGTR Digital Marketing',
+        'EIKYOO MCN',
+        'Lighter Tech',
+    ];
+
     /**
      * Display a listing of the resource.
      */
@@ -256,13 +262,7 @@ class CRMController extends Controller
                 })
                 ->values();
 
-            $services = CRM::query()
-                ->whereNotNull('layanan')
-                ->distinct()
-                ->orderBy('layanan')
-                ->pluck('layanan')
-                ->filter()
-                ->values();
+            $services = collect(self::CRM_SERVICES);
 
             \Log::info('API CRM AI selesai', [
                 'total' => $leads->count(),
@@ -576,13 +576,7 @@ class CRMController extends Controller
                 })
                 ->values();
 
-            $services = CRM_HUMAN::query()
-                ->whereNotNull('layanan')
-                ->distinct()
-                ->orderBy('layanan')
-                ->pluck('layanan')
-                ->filter()
-                ->values();
+            $services = collect(self::CRM_SERVICES);
 
             /*
              * Selalu kirim seluruh pilihan status Human,
@@ -810,13 +804,17 @@ class CRMController extends Controller
         });
     }
 
-    private function aiStatusLabel($status): string
+    private function aiStatusLabel($status): ?string
     {
+        if ($status === null || $status === '') {
+            return null;
+        }
+
         return match ((int) $status) {
             1 => 'In Progress',
             2 => 'Meeting Scheduled',
             3 => 'Meeting Confirmed',
-            default => 'Unknown',
+            default => null,
         };
     }
 
@@ -2213,8 +2211,7 @@ class CRMController extends Controller
             ],
             'layanan' => [
                 'nullable',
-                'string',
-                'max:255',
+                Rule::in(self::CRM_SERVICES),
             ],
             'kebutuhan' => [
                 'nullable',
@@ -2240,6 +2237,10 @@ class CRMController extends Controller
         if ($type === 'ai') {
             return $request->validate(
                 array_merge($commonRules, [
+                    'status' => [
+                        'nullable',
+                        Rule::in(['1', '2', '3', 1, 2, 3]),
+                    ],
                     'email' => [
                         'nullable',
                         'email',

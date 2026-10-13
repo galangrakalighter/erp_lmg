@@ -160,6 +160,12 @@
             human: [],
             meeting: [],
         },
+
+        pagination: {
+            human: null,
+        },
+
+        humanPage: 1,
     };
 
     function escapeHtml(value) {
@@ -462,6 +468,11 @@
                 }
             });
 
+        if (state.activeTab === 'human') {
+            url.searchParams.set('page', String(state.humanPage));
+            url.searchParams.set('per_page', '25');
+        }
+
         return url.toString();
     }
 
@@ -582,7 +593,8 @@
         try {
             renderer(
                 state.data[activeTab],
-                helpers
+                helpers,
+                state.pagination[activeTab] || null
             );
         } catch (error) {
             console.error(
@@ -662,6 +674,13 @@
 
             state.data[requestedTab] =
                 result.data || [];
+
+            if (requestedTab === 'human') {
+                state.pagination.human = result.pagination || null;
+                state.humanPage = Number(
+                    result.pagination?.current_page || 1
+                );
+            }
 
             fillFilters(result);
             renderCurrentTab();
@@ -820,11 +839,19 @@
                 method: 'POST',
                 headers: {
                     Accept: 'application/json',
+                    'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
                     'X-CSRF-TOKEN': document
                         .querySelector('meta[name="csrf-token"]')
                         ?.getAttribute('content') || '',
                 },
+                body: JSON.stringify({
+                    start_date: elements.startDate?.value || null,
+                    end_date: elements.endDate?.value || null,
+                    date_field: elements.dateField?.value || 'chat',
+                    layanan: elements.service?.value || null,
+                    stage: elements.status?.value || null,
+                }),
             });
 
             const result = await response.json().catch(() => ({}));
@@ -881,6 +908,22 @@
             }, 1200);
         }
     }
+
+    window.CRMChangeHumanPage = function (page) {
+        const nextPage = Number(page);
+
+        if (
+            state.activeTab !== 'human' ||
+            !Number.isInteger(nextPage) ||
+            nextPage < 1 ||
+            nextPage === state.humanPage
+        ) {
+            return;
+        }
+
+        state.humanPage = nextPage;
+        loadData();
+    };
 
     function formValue(id) {
         const field =
@@ -1413,6 +1456,9 @@
             'submit',
             event => {
                 event.preventDefault();
+                if (state.activeTab === 'human') {
+                    state.humanPage = 1;
+                }
                 loadData();
             }
         );
@@ -1433,6 +1479,10 @@
 
                 elements.status.value =
                     '';
+
+                if (state.activeTab === 'human') {
+                    state.humanPage = 1;
+                }
 
                 loadData();
             }

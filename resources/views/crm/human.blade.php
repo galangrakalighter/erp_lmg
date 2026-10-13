@@ -37,4 +37,5 @@
             <tbody id="humanTableBody"><tr><td colspan="15" class="px-6 py-12 text-center text-zinc-400">Data Human sedang dimuat...</td></tr></tbody>
         </table>
     </div>
+    <div id="humanPagination" class="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 px-4 py-4 sm:px-6" aria-label="Pagination CRM Human"></div>
 </div>

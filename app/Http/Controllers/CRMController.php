@@ -54,8 +54,16 @@ class CRMController extends Controller
     /**
      * Trigger the n8n workflow that refreshes CRM Human data.
      */
-    public function refreshHumanData()
+    public function refreshHumanData(Request $request)
     {
+        $filters = $request->validate([
+            'start_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            'date_field' => ['nullable', Rule::in(['chat', 'first_chat'])],
+            'layanan' => ['nullable', 'string', 'max:255'],
+            'stage' => ['nullable', 'string', 'max:255'],
+        ]);
+
         $webhookUrl = trim((string) config(
             'services.crm_human_refresh_webhook.url'
         ));
@@ -77,6 +85,14 @@ class CRMController extends Controller
                 ->post($webhookUrl, [
                     'triggered_by' => auth()->id(),
                     'triggered_at' => now('Asia/Jakarta')->toIso8601String(),
+                    // Kirim filter aktif ke n8n agar pembaruan tidak lagi
+                    // selalu mengambil rentang data default workflow.
+                    'filters' => $filters,
+                    'start_date' => $filters['start_date'] ?? null,
+                    'end_date' => $filters['end_date'] ?? null,
+                    'date_field' => $filters['date_field'] ?? 'chat',
+                    'layanan' => $filters['layanan'] ?? null,
+                    'stage' => $filters['stage'] ?? null,
                 ]);
 
             if (!$webhookResponse->successful()) {
@@ -323,6 +339,7 @@ class CRMController extends Controller
             $dateColumn = $dateField === 'first_chat'
                 ? 'created_at'
                 : 'tanggal_chat';
+            $perPage = min(100, max(10, (int) $request->input('per_page', 25)));
 
             $query = CRM_HUMAN::query()
                 ->whereNotNull(
@@ -362,11 +379,13 @@ class CRMController extends Controller
             /*
             * Ambil data Human terlebih dahulu.
             */
-            $humanLeads = $query
+            $humanPaginator = $query
                 ->orderByDesc(
                     $dateColumn
                 )
-                ->get();
+                ->paginate($perPage, ['*'], 'page');
+
+            $humanLeads = $humanPaginator->getCollection();
 
             /*
             * Ambil seluruh id_proteksi yang valid.
@@ -602,7 +621,7 @@ class CRMController extends Controller
             return response()->json([
                 'success' => true,
                 'total' =>
-                    $leads->count(),
+                    $humanPaginator->total(),
 
                 'total_sumber_ai' =>
                     $totalSumberAi,
@@ -625,6 +644,15 @@ class CRMController extends Controller
                 ],
 
                 'data' => $leads,
+
+                'pagination' => [
+                    'current_page' => $humanPaginator->currentPage(),
+                    'last_page' => $humanPaginator->lastPage(),
+                    'per_page' => $humanPaginator->perPage(),
+                    'total' => $humanPaginator->total(),
+                    'from' => $humanPaginator->firstItem(),
+                    'to' => $humanPaginator->lastItem(),
+                ],
             ]);
         } catch (\Throwable $e) {
             \Log::error(

@@ -412,11 +412,45 @@ window.CRMRenderers =
         `;
     }
 
+    function renderPagination(container, pagination) {
+        if (!container) {
+            return;
+        }
+
+        const currentPage = Number(pagination?.current_page || 1);
+        const lastPage = Number(pagination?.last_page || 1);
+        const total = Number(pagination?.total || 0);
+        const from = pagination?.from || 0;
+        const to = pagination?.to || 0;
+
+        if (!total) {
+            container.innerHTML = '';
+            return;
+        }
+
+        const buttonClass = 'rounded-lg border px-3 py-2 text-sm font-medium transition';
+        const disabledClass = 'cursor-not-allowed border-zinc-100 bg-zinc-50 text-zinc-300';
+        const enabledClass = 'border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50';
+
+        container.innerHTML = `
+            <p class="text-sm text-zinc-500">Menampilkan ${from}–${to} dari ${total} data</p>
+            <div class="flex items-center gap-2">
+                <button type="button" data-human-page="${currentPage - 1}" ${currentPage <= 1 ? 'disabled' : ''} class="${buttonClass} ${currentPage <= 1 ? disabledClass : enabledClass}">Sebelumnya</button>
+                <span class="px-2 text-sm font-medium text-zinc-700">Halaman ${currentPage} / ${lastPage}</span>
+                <button type="button" data-human-page="${currentPage + 1}" ${currentPage >= lastPage ? 'disabled' : ''} class="${buttonClass} ${currentPage >= lastPage ? disabledClass : enabledClass}">Berikutnya</button>
+            </div>
+        `;
+    }
+
     window.CRMRenderers.human =
-        function (data, helpers) {
+        function (data, helpers, pagination) {
             const body =
                 document.getElementById(
                     'humanTableBody'
+                );
+            const paginationContainer =
+                document.getElementById(
+                    'humanPagination'
                 );
 
             if (!body) {
@@ -444,6 +478,11 @@ window.CRMRenderers =
                         </td>
                     </tr>
                 `;
+
+                renderPagination(
+                    paginationContainer,
+                    pagination
+                );
 
                 return;
             }
@@ -486,7 +525,7 @@ window.CRMRenderers =
                                 : ''
                         }">
                             <td class="align-middle">
-                                ${index + 1}
+                                ${Number(pagination?.from || 1) + index}
                             </td>
 
                             <td class="align-middle">
@@ -886,11 +925,31 @@ window.CRMRenderers =
                     <td><div class="crm-actions">${value(26)}</div></td>
                 `;
             });
+
+            renderPagination(
+                paginationContainer,
+                pagination
+            );
         };
 
     document.addEventListener(
         'click',
         function (event) {
+            const paginationButton =
+                event.target.closest(
+                    '[data-human-page]'
+                );
+
+            if (paginationButton && !paginationButton.disabled) {
+                window.CRMChangeHumanPage?.(
+                    Number(
+                        paginationButton.dataset
+                            .humanPage
+                    )
+                );
+                return;
+            }
+
             const detailButton =
                 event.target.closest(
                     '.human-show-detail'

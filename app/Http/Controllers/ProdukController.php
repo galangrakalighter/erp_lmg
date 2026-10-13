@@ -54,6 +54,7 @@ class ProdukController extends Controller
                         'buh' => $teams->filter(fn ($u) => $this->hasRoleInDivision($u, $divisiId, 'Busines Unit Head'))->pluck('email'),
                         'ads' => $teams->filter(fn ($u) => $this->hasRoleInDivision($u, $divisiId, 'Advertising'))->pluck('email'),
                         'dm' => $teams->filter(fn ($u) => $this->hasRoleInDivision($u, $divisiId, 'Digital Marketing'))->pluck('email'),
+                        'smm' => $teams->filter(fn ($u) => $this->hasRoleInDivision($u, $divisiId, 'Sosial Media Spesialis'))->pluck('email'),
                         'cc' => $teams->filter(fn ($u) => $this->hasRoleInDivision($u, $divisiId, 'Content Creator'))->pluck('email'),
                         'team_ids' => $teams->pluck('id')->toArray(),
                     ];
@@ -78,6 +79,7 @@ class ProdukController extends Controller
             'buh' => $usersInDivisi->filter(fn ($u) => $this->hasRoleInDivision($u, $divisiId, 'Busines Unit Head')),
             'dm' => $usersInDivisi->filter(fn ($u) => $this->hasRoleInDivision($u, $divisiId, 'Digital Marketing')),
             'ads' => $usersInDivisi->filter(fn ($u) => $this->hasRoleInDivision($u, $divisiId, 'Advertising')),
+            'smm' => $usersInDivisi->filter(fn ($u) => $this->hasRoleInDivision($u, $divisiId, 'Sosial Media Spesialis')),
             'cc' => $usersInDivisi->filter(fn ($u) => $this->hasRoleInDivision($u, $divisiId, 'Content Creator')),
             'nama'  => $nama,
             'role'  => $RoleSekarang,
@@ -146,6 +148,9 @@ class ProdukController extends Controller
                     return ['id' => $u->id, 'name' => $u->name, 'parent' => $u->userDivisions->firstWhere('division_id', $divisionId)?->parent_id ?? 0];
                 }),
                 'ads' => $usersForRole('Advertising')->map(function ($u) use ($divisionId) {
+                    return ['id' => $u->id, 'name' => $u->name, 'parent' => $u->userDivisions->firstWhere('division_id', $divisionId)?->parent_id ?? 0];
+                }),
+                'smm' => $usersForRole('Sosial Media Spesialis')->map(function ($u) use ($divisionId) {
                     return ['id' => $u->id, 'name' => $u->name, 'parent' => $u->userDivisions->firstWhere('division_id', $divisionId)?->parent_id ?? 0];
                 }),
                 'ccm' => $usersForRole('Content Creator Manager')->map(function ($u) use ($divisionId) {
@@ -258,6 +263,7 @@ class ProdukController extends Controller
                 ->merge(collect($request->input('buh_ids', [])))
                 ->merge(collect($request->input('dm_ids', [])))
                 ->merge(collect($request->input('ads_ids', [])))
+                ->merge(collect($request->input('smm_ids', [])))
                 ->merge(collect($request->input('ccm_ids', [])))
                 ->merge(collect($request->input('cc_ids', [])));
 
@@ -451,6 +457,7 @@ class ProdukController extends Controller
                 ->merge(collect($request->input('buh_ids', [])))
                 ->merge(collect($request->input('dm_ids', [])))
                 ->merge(collect($request->input('ads_ids', [])))
+                ->merge(collect($request->input('smm_ids', [])))
                 ->merge(collect($request->input('ccm_ids', [])))
                 ->merge(collect($request->input('cc_ids', [])));
 

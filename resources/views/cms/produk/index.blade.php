@@ -29,6 +29,7 @@
                             <th scope="col">BUH</th>
                             <th scope="col">Digital Marketing</th>
                             <th scope="col">Advertising</th>
+                            <th scope="col">Sosial Media Spesialis</th>
                             <th scope="col">Content Creator</th>
 
                             @if ($role == 'Busines Unit Head' || $role == 'Super Admin')
@@ -345,6 +346,27 @@
 
                                 <p class="mt-2 text-[11px] leading-5 text-zinc-400">
                                     Pilih tim advertising yang terlibat dalam produk jasa.
+                                </p>
+                            </div>
+
+                            {{-- Content Creator --}}
+                            <div>
+                                <label for="select-smm" class="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-900">
+                                    <span class="h-1.5 w-1.5 rounded-full bg-zinc-500"></span>
+                                    Sosial Media Spesialis
+                                </label>
+                                <select name="smm_ids[]" id="select-smm" class="form-control select2-multiple" multiple data-placeholder="Pilih Sosial Media Spesialis" disabled>
+                                    @foreach ($smm as $specialist)
+                                        @php
+                                            $parentId = $specialist->userDivisions->firstWhere('division_id', $divisi)?->parent_id;
+                                        @endphp
+                                        <option value="{{ $specialist->id }}" data-parent="{{ $parentId }}">
+                                            {{ $specialist->email }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <p class="mt-2 text-[11px] leading-5 text-zinc-400">
+                                    Pilih spesialis sosial media yang menangani client.
                                 </p>
                             </div>
 

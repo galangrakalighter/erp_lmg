@@ -33,6 +33,10 @@ function initClientTable() {
             render: data => renderBadges(data, 'badge-dark')
         },
         {
+            data: 'smm',
+            render: data => renderBadges(data, 'badge-info')
+        },
+        {
             data: 'cc',
             render: data => renderBadges(data, 'badge-secondary')
         }

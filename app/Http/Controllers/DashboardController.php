@@ -212,6 +212,8 @@ class DashboardController extends Controller
         $allUser = UserDivision::join('users', 'users.id', '=', 'user_division.user_id')->where('user_division.parent_id', $user->id)->orWhere('user_division.user_id', $user->id)->select('users.id', 'users.email')->get();
         if($user->isAdmin == true){
             $allUser = User::unlocked()->where('isAdmin', false)->get();
+        } elseif ($role === 'Advertising') {
+            $allUser = collect([(object) ['id' => $user->id, 'email' => $user->email]]);
         }
         $divisiId = $user->isAdmin == false ? $divisi[0]->division_id : null;
         $produk =  DB::table('client_division')
@@ -252,6 +254,8 @@ class DashboardController extends Controller
         $listBawahan = UserDivision::join('users', 'users.id', '=', 'user_division.user_id')->where('user_division.parent_id', $user->id)->orWhere('user_division.user_id', $user->id)->select('users.id', 'users.email')->get();
         if($user->isAdmin == true){
             $listBawahan = User::unlocked()->where('isAdmin', false)->get();
+        } elseif ($role === 'Advertising') {
+            $listBawahan = collect([(object) ['id' => $user->id, 'email' => $user->email]]);
         }
 
         if($role == 'Super Admin'){

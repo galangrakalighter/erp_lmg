@@ -267,7 +267,7 @@ class UserController extends Controller
                 ]);
             }
 
-            if (!$isLmg && ! $this->isFinanceDivision((int) $request->divisi_id) && $request->has('subordinate_ids') && is_array($request->subordinate_ids)) {
+            if (!$isLmg && $role->role_name !== 'Advertising' && ! $this->isFinanceDivision((int) $request->divisi_id) && $request->has('subordinate_ids') && is_array($request->subordinate_ids)) {
                 foreach ($request->subordinate_ids as $subordinateId) {
                     $subordinate = User::unlocked()->find($subordinateId);
                     if ($subordinate) {
@@ -360,7 +360,7 @@ class UserController extends Controller
             // 4. Update Hierarki Bawahan
             // Langkah A: Lepas semua bawahan lama yang sebelumnya melapor ke user ini
             // Langkah B: Set bawahan baru berdasarkan pilihan di modal
-            if (!$isLmg && ! $this->isFinanceDivision((int) $request->divisi_id) && $request->has('subordinate_ids') && is_array($request->subordinate_ids)) {
+            if (!$isLmg && $level->role_name !== 'Advertising' && ! $this->isFinanceDivision((int) $request->divisi_id) && $request->has('subordinate_ids') && is_array($request->subordinate_ids)) {
                 $unlockedSubordinateIds = User::unlocked()
                     ->whereIn('id', $request->subordinate_ids)
                     ->pluck('id');

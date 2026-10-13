@@ -374,6 +374,15 @@ function buildEditModalHtml(res){
                     </select>
                 </div>
                 <div class="col-md-6 form-group">
+                    <label class="font-weight-bold small text-info">Sosial Media Spesialis</label>
+                    <select name="smm_ids[]" id="edit-select-smm" class="form-control select2-multiple" multiple data-placeholder="Pilih Sosial Media Spesialis">
+                        ${(opt.smm || []).map(u => {
+                            const isSelected = currentTeams.some(t => (t.id || t) == u.id);
+                            return `<option value="${u.id}" data-parent="${u.parent != null ? u.parent : ''}" ${isSelected ? 'selected' : ''}>${u.name}</option>`;
+                        }).join('')}
+                    </select>
+                </div>
+                <div class="col-md-6 form-group">
                     <label class="font-weight-bold small text-secondary">Content Creator (CC)</label>
                     <select name="cc_ids[]" id="edit-select-cc" class="form-control select2-multiple" multiple data-placeholder="Pilih Content Creator">
                         ${(opt.cc || []).map(u => {
@@ -600,6 +609,7 @@ function setupEditHierarchy() {
     const $buh = $('#edit-select-buh');
     const $dm = $('#edit-select-dm');
     const $ads = $('#edit-select-ads');
+    const $smm = $('#edit-select-smm');
     const $cc = $('#edit-select-cc');
 
     const normalizeIds = function (ids) {
@@ -655,15 +665,18 @@ function setupEditHierarchy() {
         if (buhIds.length === 0) {
             disableAndClear($dm);
             disableAndClear($ads);
+            disableAndClear($smm);
             disableAndClear($cc);
             return;
         }
 
         $dm.prop('disabled', false);
         $ads.prop('disabled', false);
+        $smm.prop('disabled', false);
 
         filterByParent($dm, buhIds);
         filterByParent($ads, buhIds);
+        filterByParent($smm, buhIds);
     };
 
     const refreshFromDm = function () {

@@ -215,7 +215,9 @@ class HCOverviewController extends Controller
         }
 
         // Batasi data untuk non-admin
-        if (!$user->isAdmin) {
+        if (!$user->isAdmin && $RoleSekarang === 'Advertising') {
+            $query->whereHas('pics', fn ($picQuery) => $picQuery->where('users.id', $user->id));
+        } elseif (!$user->isAdmin) {
             $query->where(function ($q) use ($user) {
                 $q->whereHas('pics', function ($qq) use ($user) {
                     $qq->where('users.id', $user->id);
@@ -293,7 +295,17 @@ class HCOverviewController extends Controller
     }
 
     public function getKPIDataDaily(Request $request, $id, $id_user){
-        $kpis = KPI::with('pics')->where('project', $id)->get();
+        $user = $request->user();
+        abort_unless($user && (int) $id_user === (int) $user->id, 403);
+        $user->loadMissing('userDivisions.role');
+
+        $kpis = KPI::with('pics')
+            ->where('project', $id)
+            ->when(
+                ! $user->isAdmin && $user->userDivisions->first()?->role?->role_name === 'Advertising',
+                fn ($query) => $query->whereHas('pics', fn ($pics) => $pics->where('users.id', $user->id))
+            )
+            ->get();
 
         $result = $kpis->map(function($kpi) {
             return [
@@ -537,6 +549,10 @@ class HCOverviewController extends Controller
     public function list_client(Request $request){
         $title = "Client Progress Monitor";
         $readOnly = $request->boolean('readonly');
+        $currentUser = $request->user();
+        $currentUser->loadMissing('userDivisions.role');
+        $advertisingSelfOnly = ! $currentUser->isAdmin
+            && $currentUser->userDivisions->first()?->role?->role_name === 'Advertising';
 
         $userHandledClients = Auth::user()->clients->pluck('id')->toArray(); // Contoh isinya: [13, 14]
 
@@ -558,7 +574,7 @@ class HCOverviewController extends Controller
             }
             $projects = $project->get()
             ->groupBy('id')
-            ->map(function ($clientRows) use ($internalIds) {
+            ->map(function ($clientRows) use ($internalIds, $advertisingSelfOnly, $currentUser) {
                 $client = $clientRows->first();
                 $divisions = $internalIds->contains($client->id)
                     ? collect(['Internal'])
@@ -569,15 +585,14 @@ class HCOverviewController extends Controller
                 }
 
                 // Hitung total task milik client ini
-                $totalKPI = KPI::where('project', $client->id)->count();
-                $totalTask = Task::where('project', $client->id)->whereNot('status', 5)->count();
+                $kpiQuery = KPI::where('project', $client->id)
+                    ->when($advertisingSelfOnly, fn ($query) => $query->whereHas(
+                        'pics', fn ($pics) => $pics->where('users.id', $currentUser->id)
+                    ));
+                $totalKPI = (clone $kpiQuery)->count();
                 
                 // Hitung task yang sudah DONE (status 4)
-                $doneTask = Task::where('project', $client->id)
-                    ->where('status', 4)
-                    ->count();
-
-                $doneKPI = KPI::where('project', $client->id)->where('status', 1)->count();
+                $doneKPI = (clone $kpiQuery)->where('status', 1)->count();
 
                 // Hitung persentase
                 $percentage = ($totalKPI > 0) ? round(($doneKPI / $totalKPI) * 100) : 0;
@@ -604,6 +619,12 @@ class HCOverviewController extends Controller
     }
 
     public function getDataDashboardBawahan(Request $request, $id) {
+        $user = $request->user();
+        $user?->loadMissing('userDivisions.role');
+        if (! $user?->isAdmin && $user?->userDivisions->first()?->role?->role_name === 'Advertising') {
+            abort_unless((int) $id === (int) $user->id, 403);
+        }
+
         $type = $request->query('type', 'monthly');
         $now = Carbon::now();
         $currentYear = $now->year;

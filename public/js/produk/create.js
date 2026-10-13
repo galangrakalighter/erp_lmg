@@ -28,16 +28,20 @@ function initHierarchy(){
             $('#select-dm').prop('disabled',false);
 
             $('#select-ads').prop('disabled',false);
+            $('#select-smm').prop('disabled',false);
 
             filterOptions('select-dm',ids);
 
             filterOptions('select-ads',ids);
+            filterOptions('select-smm',ids);
 
         }else{
 
             resetSelect([
                 'select-dm',
-                'select-ads'
+                'select-ads',
+                'select-smm',
+                'select-cc'
             ]);
 
         }

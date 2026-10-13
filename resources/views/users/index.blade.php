@@ -839,7 +839,7 @@
 
                                 </div>
 
-                                <div>
+                                <div id="edit_subordinate_panel">
 
                                     <p class="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
                                         Tarik Bawahan
@@ -2605,6 +2605,13 @@
 
         $panel.removeClass('hidden');
 
+        const hasSubordinates = selectedRoleName !== 'Advertising';
+        $subPanel.toggleClass('hidden', !hasSubordinates);
+        $subSelect.prop('disabled', !hasSubordinates);
+        if (!hasSubordinates) {
+            $subSelect.val(null).trigger('change');
+        }
+
         const isFinance = isFinancePlacement(divisiId);
         const requiresParent = isFinance || selectedLevel > 1;
         $parentPanel.toggleClass('hidden', !requiresParent);
@@ -3050,6 +3057,9 @@
         const $parentPanel =
             $('#edit_parent_panel');
 
+        const $subPanel =
+            $('#edit_subordinate_panel');
+
 
         if (
             !divisiId ||
@@ -3068,6 +3078,13 @@
         $panel.removeClass(
             'hidden'
         );
+
+        const hasSubordinates = selectedRoleName !== 'Advertising';
+        $subPanel.toggleClass('hidden', !hasSubordinates);
+        $subSelect.prop('disabled', !hasSubordinates);
+        if (!hasSubordinates) {
+            $subSelect.val(null).trigger('change');
+        }
 
         const isFinance = isFinancePlacement(divisiId);
         const requiresParent = isFinance || selectedLevel > 1;

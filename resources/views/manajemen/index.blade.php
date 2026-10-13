@@ -17,7 +17,7 @@
                 <i class="fas fa-tasks mr-2"></i>Manajemen Konten {{ $produk->nama }}
             </h6>
             @if(!$multimediaMode && $contentPlanCanManage)
-            <button type="button" class="btn btn-primary btn-sm shadow-sm" data-toggle="modal" data-target="#tambahModal">
+            <button type="button" id="contentPlanCreateButton" class="btn btn-primary btn-sm shadow-sm" data-toggle="modal" data-target="#tambahModal">
                 <i class="fas fa-plus fa-sm text-white-50 mr-1"></i> Tambah Konten
             </button>
             @endif
@@ -73,7 +73,7 @@
                             <th>Link</th>
                             <th>Status</th>
                             @if(!$multimediaMode && $contentPlanCanManage)
-                            <th>Action</th>
+                            <th id="contentPlanActionHeader">Action</th>
                             @endif
                         </tr>
                     </thead>
@@ -724,6 +724,7 @@
     const allowedContentSources = @json($allowedContentSources);
     const requestedContentSource = new URLSearchParams(window.location.search).get('content_source');
     let activeContentSource = allowedContentSources.includes(requestedContentSource) ? requestedContentSource : allowedContentSources[0];
+    const canManageActiveContentSource = () => !isContentCreator || activeContentSource === 'organic';
 
     window.getContentPlanExportFilters = function () {
         return {
@@ -768,7 +769,7 @@
                 <td>${row.link ? `<a href="${escapeContentPlan(row.link)}" target="_blank" rel="noopener"><i class="fas fa-link"></i></a>` : '-'}</td>
                 <td><span class="badge ${row.nama_status === 'Selesai' ? 'badge-dark' : 'badge-light'}">${escapeContentPlan(row.nama_status)}</span></td>
                 @if(!$multimediaMode && $contentPlanCanManage)
-                <td class="text-nowrap"><button class="btn btn-sm btn-warning" onclick="getDataEdit(${Number(row.id)})" title="Edit"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-danger" onclick="confirmDelete(${Number(row.id)})"><i class="fas fa-trash"></i></button></td>
+                ${canManageActiveContentSource() ? `<td class="text-nowrap"><button class="btn btn-sm btn-warning" onclick="getDataEdit(${Number(row.id)})" title="Edit"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-danger" onclick="confirmDelete(${Number(row.id)})"><i class="fas fa-trash"></i></button></td>` : ''}
                 @endif
             </tr>`).join('') : '<tr><td colspan="17" class="py-4 text-center text-muted">Tidak ada data.</td></tr>';
 
@@ -833,6 +834,8 @@
                 });
             });
             document.getElementById('contentPlanTimeHeader')?.classList.toggle('d-none', activeContentSource !== 'organic');
+            document.getElementById('contentPlanCreateButton')?.classList.toggle('d-none', !canManageActiveContentSource());
+            document.getElementById('contentPlanActionHeader')?.classList.toggle('d-none', !canManageActiveContentSource());
             const resetLink = document.getElementById('contentPlanReset');
             if (resetLink) resetLink.href = `${window.location.pathname}?content_source=${activeContentSource}`;
         };

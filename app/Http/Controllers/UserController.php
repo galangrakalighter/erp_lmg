@@ -448,12 +448,12 @@ class UserController extends Controller
         $isValidParent = UserDivision::query()
             ->where('user_id', $request->integer('parent_id'))
             ->where('division_id', $request->integer('divisi_id'))
-            ->whereHas('role', fn ($query) => $query->where('level', '<', $role->level))
+            ->where('role_id', $role->parent_id)
             ->exists();
 
         if (! $isValidParent) {
             throw ValidationException::withMessages([
-                'parent_id' => 'Atasan harus berasal dari divisi yang sama dan memiliki level yang lebih tinggi.',
+                'parent_id' => 'Atasan harus berasal dari divisi yang sama dan memiliki role atasan yang sesuai.',
             ]);
         }
 

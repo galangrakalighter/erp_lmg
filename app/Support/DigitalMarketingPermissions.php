@@ -29,6 +29,7 @@ class DigitalMarketingPermissions
     public static function canManageContentPlan(string $role, string $contentSource): bool
     {
         return self::isManager($role)
+            || ($role === 'Content Creator' && $contentSource === 'organic')
             || ($role === 'Sosial Media Spesialis' && $contentSource === 'organic')
             || ($role === 'Advertising' && $contentSource === 'paid');
     }
@@ -46,6 +47,7 @@ class DigitalMarketingPermissions
             'Digital Marketing' => ['market-research', 'branding'],
             'Sosial Media Spesialis' => ['social-media-research', 'content-plan-organic'],
             'Advertising' => ['advertising-research', 'content-plan-paid'],
+            'Content Creator' => ['content-plan-organic'],
             default => [],
         };
     }
@@ -61,6 +63,7 @@ class DigitalMarketingPermissions
             'Digital Marketing' => ['social-media-research', 'advertising-research', 'content-plan', 'guide', 'analisis', 'explore', 'dokumen', 'timeline'],
             'Sosial Media Spesialis' => ['market-research', 'branding', 'advertising-research', 'analisis', 'explore', 'dokumen', 'timeline'],
             'Advertising' => ['market-research', 'branding', 'social-media-research', 'guide', 'analisis', 'explore', 'dokumen', 'timeline'],
+            'Content Creator' => ['market-research', 'branding', 'social-media-research', 'advertising-research', 'guide', 'analisis', 'explore', 'dokumen', 'timeline'],
             default => [],
         };
     }

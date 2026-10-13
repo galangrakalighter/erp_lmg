@@ -19,6 +19,8 @@ class DigitalMarketingPermissionsTest extends TestCase
             ['Advertising', 'organic', false],
             ['Digital Marketing', 'organic', false],
             ['Digital Marketing', 'paid', false],
+            ['Content Creator', 'organic', true],
+            ['Content Creator', 'paid', false],
         ];
     }
 
@@ -48,6 +50,10 @@ class DigitalMarketingPermissionsTest extends TestCase
             ['advertising-research', 'content-plan-paid'],
             DigitalMarketingPermissions::mirrorScopes('Advertising'),
         );
+        $this->assertSame(
+            ['content-plan-organic'],
+            DigitalMarketingPermissions::mirrorScopes('Content Creator'),
+        );
     }
 
     public function test_workspace_tabs_follow_the_final_role_matrix(): void
@@ -68,6 +74,10 @@ class DigitalMarketingPermissionsTest extends TestCase
         $this->assertSame(
             ['market-research', 'branding', 'advertising-research', 'analisis', 'explore', 'dokumen', 'timeline'],
             DigitalMarketingPermissions::readOnlyWorkspaceTabs('Sosial Media Spesialis'),
+        );
+        $this->assertSame(
+            ['market-research', 'branding', 'social-media-research', 'advertising-research', 'guide', 'analisis', 'explore', 'dokumen', 'timeline'],
+            DigitalMarketingPermissions::readOnlyWorkspaceTabs('Content Creator'),
         );
     }
 }

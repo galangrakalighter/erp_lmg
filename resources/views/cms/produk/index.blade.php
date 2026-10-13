@@ -29,6 +29,7 @@
                             <th scope="col">BUH</th>
                             <th scope="col">Digital Marketing</th>
                             <th scope="col">Advertising</th>
+                            <th scope="col">Content Creator</th>
 
                             @if ($role == 'Busines Unit Head' || $role == 'Super Admin')
                                 <th scope="col">Aksi</th>
@@ -344,6 +345,27 @@
 
                                 <p class="mt-2 text-[11px] leading-5 text-zinc-400">
                                     Pilih tim advertising yang terlibat dalam produk jasa.
+                                </p>
+                            </div>
+
+                            {{-- Content Creator --}}
+                            <div>
+                                <label for="select-cc" class="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-900">
+                                    <span class="h-1.5 w-1.5 rounded-full bg-zinc-600"></span>
+                                    Content Creator (CC)
+                                </label>
+                                <select name="cc_ids[]" id="select-cc" class="form-control select2-multiple" multiple data-placeholder="Pilih Content Creator" disabled>
+                                    @foreach ($cc as $creator)
+                                        @php
+                                            $parentId = $creator->userDivisions->firstWhere('division_id', $divisi)?->parent_id;
+                                        @endphp
+                                        <option value="{{ $creator->id }}" data-parent="{{ $parentId }}" @disabled(! $parentId)>
+                                            {{ $creator->email }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <p class="mt-2 text-[11px] leading-5 text-zinc-400">
+                                    Pilihan mengikuti Digital Marketing yang menjadi atasannya.
                                 </p>
                             </div>
 

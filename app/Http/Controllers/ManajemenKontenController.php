@@ -29,9 +29,8 @@ class ManajemenKontenController extends Controller
             'Advertising' => ['paid'],
             default => ['organic', 'paid'],
         };
-        $contentPlanCanManage = DigitalMarketingPermissions::isManager($dmRole)
-            || $dmRole === 'Sosial Media Spesialis'
-            || $dmRole === 'Advertising';
+        $contentPlanCanManage = DigitalMarketingPermissions::canManageContentPlan($dmRole, 'organic')
+            || DigitalMarketingPermissions::canManageContentPlan($dmRole, 'paid');
         // 1. Ambil data Produk dan Kategori dengan cara yang lebih aman
         $produk = DB::table('produk_client')->where('id', $produk_id)->first();
         if (!$produk) return redirect()->back()->with('error', 'Produk tidak ditemukan');

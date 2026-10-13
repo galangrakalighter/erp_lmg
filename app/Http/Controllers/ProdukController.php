@@ -51,12 +51,10 @@ class ProdukController extends Controller
                         'nama'     => $client->nama,
                         'category' => $client->category,
                         'status'   => $client->division_status,
-                        // Filter berdasarkan ID Role yang benar
-                        'buh'      => $teams->filter(fn($u) => $u->userDivisions->first()?->role_id == 1)->pluck('email'),
-                        'ads'       => $teams->filter(fn($u) => $u->userDivisions->first()?->role_id == 4)->pluck('email'),
-                        'dm'      => $teams->filter(fn($u) => $u->userDivisions->first()?->role_id == 3)->pluck('email'),
-                        'ccm'       => $teams->filter(fn($u) => $u->userDivisions->first()?->role_id == 5)->pluck('email'), 
-                        'cc'       => $teams->filter(fn($u) => $u->userDivisions->first()?->role_id == 9)->pluck('email'), 
+                        'buh' => $teams->filter(fn ($u) => $this->hasRoleInDivision($u, $divisiId, 'Busines Unit Head'))->pluck('email'),
+                        'ads' => $teams->filter(fn ($u) => $this->hasRoleInDivision($u, $divisiId, 'Advertising'))->pluck('email'),
+                        'dm' => $teams->filter(fn ($u) => $this->hasRoleInDivision($u, $divisiId, 'Digital Marketing'))->pluck('email'),
+                        'cc' => $teams->filter(fn ($u) => $this->hasRoleInDivision($u, $divisiId, 'Content Creator'))->pluck('email'),
                         'team_ids' => $teams->pluck('id')->toArray(),
                     ];
                 });
@@ -77,11 +75,10 @@ class ProdukController extends Controller
         // $divisions = $usersInDivisi->filter(fn($u) => $u->userDivisions->first()?->role_id == 3)->flatMap->userDivisions;
         return view('cms.produk.index', [
             'title' => "Manajemen Client",
-            'buh'   => $usersInDivisi->filter(fn($u) => $u->userDivisions->first()?->role_id == 1),
-            'dm'    => $usersInDivisi->filter(fn($u) => $u->userDivisions->first()?->role_id == 3),
-            'ads'   => $usersInDivisi->filter(fn($u) => $u->userDivisions->first()?->role_id == 4),
-            'ccm'    => $usersInDivisi->filter(fn($u) => $u->userDivisions->first()?->role_id == 5),
-            'cc'    => $usersInDivisi->filter(fn($u) => $u->userDivisions->first()?->role_id == 9),
+            'buh' => $usersInDivisi->filter(fn ($u) => $this->hasRoleInDivision($u, $divisiId, 'Busines Unit Head')),
+            'dm' => $usersInDivisi->filter(fn ($u) => $this->hasRoleInDivision($u, $divisiId, 'Digital Marketing')),
+            'ads' => $usersInDivisi->filter(fn ($u) => $this->hasRoleInDivision($u, $divisiId, 'Advertising')),
+            'cc' => $usersInDivisi->filter(fn ($u) => $this->hasRoleInDivision($u, $divisiId, 'Content Creator')),
             'nama'  => $nama,
             'role'  => $RoleSekarang,
             'divisi' => $divisiId,
@@ -152,6 +149,9 @@ class ProdukController extends Controller
                     return ['id' => $u->id, 'name' => $u->name, 'parent' => $u->userDivisions->firstWhere('division_id', $divisionId)?->parent_id ?? 0];
                 }),
                 'ccm' => $usersForRole('Content Creator Manager')->map(function ($u) use ($divisionId) {
+                    return ['id' => $u->id, 'name' => $u->name, 'parent' => $u->userDivisions->firstWhere('division_id', $divisionId)?->parent_id ?? 0];
+                }),
+                'cc' => $usersForRole('Content Creator')->map(function ($u) use ($divisionId) {
                     return ['id' => $u->id, 'name' => $u->name, 'parent' => $u->userDivisions->firstWhere('division_id', $divisionId)?->parent_id ?? 0];
                 }),
             ];
@@ -734,7 +734,7 @@ class ProdukController extends Controller
         if ($requestedDivisionName === 'multimedia') {
             $return['divisionLabel'] = 'Multimedia';
             $return['level2Label'] = 'Content Creator Manager';
-            $return['level3Label'] = 'Content Creator';
+            $return['level3Label'] = 'Tim Multimedia';
 
             return view('cms.produk.division.ecommerce', $return);
         }
@@ -1058,6 +1058,14 @@ class ProdukController extends Controller
         return (int) ($user->userDivisions
             ->first(fn ($membership) => (int) $membership->division_id === $divisionId)
             ?->role?->level ?? 0);
+    }
+
+    private function hasRoleInDivision(User $user, int $divisionId, string $roleName): bool
+    {
+        return $user->userDivisions->contains(
+            fn ($membership) => (int) $membership->division_id === $divisionId
+                && $membership->role?->role_name === $roleName
+        );
     }
 
     private function validateDivisionTeamIds(\Illuminate\Support\Collection $userIds, int $divisionId): \Illuminate\Support\Collection

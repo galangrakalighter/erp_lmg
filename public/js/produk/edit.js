@@ -373,6 +373,15 @@ function buildEditModalHtml(res){
                         }).join('')}
                     </select>
                 </div>
+                <div class="col-md-6 form-group">
+                    <label class="font-weight-bold small text-secondary">Content Creator (CC)</label>
+                    <select name="cc_ids[]" id="edit-select-cc" class="form-control select2-multiple" multiple data-placeholder="Pilih Content Creator">
+                        ${(opt.cc || []).map(u => {
+                            const isSelected = currentTeams.some(t => (t.id || t) == u.id);
+                            return `<option value="${u.id}" data-parent="${u.parent || ''}" ${isSelected ? 'selected' : ''} ${u.parent ? '' : 'disabled'}>${u.name}</option>`;
+                        }).join('')}
+                    </select>
+                </div>
             </div>
         </div>
 
@@ -591,6 +600,7 @@ function setupEditHierarchy() {
     const $buh = $('#edit-select-buh');
     const $dm = $('#edit-select-dm');
     const $ads = $('#edit-select-ads');
+    const $cc = $('#edit-select-cc');
 
     const normalizeIds = function (ids) {
         return (ids || [])
@@ -621,10 +631,9 @@ function setupEditHierarchy() {
             const $option = $(this);
             const parentId = $option.attr('data-parent');
 
-            // Data tanpa parent tetap ditampilkan agar perbedaan data API
-            // tidak menyebabkan seluruh pilihan terkunci.
+            // Content Creator wajib memiliki user Digital Marketing sebagai atasan.
             if (parentId === undefined || parentId === null || parentId === '') {
-                $option.prop('disabled', false);
+                $option.prop('disabled', $select.is($cc));
                 return;
             }
 
@@ -646,6 +655,7 @@ function setupEditHierarchy() {
         if (buhIds.length === 0) {
             disableAndClear($dm);
             disableAndClear($ads);
+            disableAndClear($cc);
             return;
         }
 
@@ -656,12 +666,28 @@ function setupEditHierarchy() {
         filterByParent($ads, buhIds);
     };
 
+    const refreshFromDm = function () {
+        const dmIds = normalizeIds($dm.val());
+
+        if (dmIds.length === 0) {
+            disableAndClear($cc);
+            return;
+        }
+
+        $cc.prop('disabled', false);
+        filterByParent($cc, dmIds);
+    };
+
     $buh
         .off('change.editHierarchy')
         .on('change.editHierarchy', refreshFromBuh);
+    $dm
+        .off('change.editHierarchy')
+        .on('change.editHierarchy', refreshFromDm);
 
     // Terapkan kondisi awal berdasarkan data selected dari API.
     refreshFromBuh();
+    refreshFromDm();
 }
 
 function setupEditPlatform(){

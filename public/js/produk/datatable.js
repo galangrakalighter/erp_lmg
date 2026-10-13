@@ -31,6 +31,10 @@ function initClientTable() {
         {
             data: 'ads',
             render: data => renderBadges(data, 'badge-dark')
+        },
+        {
+            data: 'cc',
+            render: data => renderBadges(data, 'badge-secondary')
         }
     ];
 

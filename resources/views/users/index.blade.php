@@ -2656,7 +2656,7 @@
 
                 return (
                     ud &&
-                    parseInt(ud.level) < selectedLevel
+                    String(ud.role_id) === String(parentRoleId)
                 );
 
             });
@@ -3092,7 +3092,7 @@
 
                 return (
                     ud &&
-                    parseInt(ud.level) < selectedLevel &&
+                    String(ud.role_id) === String(parentRoleId) &&
                     String(user.id) !==
                     String(currentUserId)
                 );

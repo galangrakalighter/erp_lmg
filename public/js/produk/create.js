@@ -44,6 +44,23 @@ function initHierarchy(){
 
     });
 
+    $('#select-dm').change(function(){
+
+        let ids=$(this).val();
+
+        if(ids && ids.length){
+
+            $('#select-cc').prop('disabled',false);
+            filterOptions('select-cc',ids);
+
+        }else{
+
+            resetSelect(['select-cc']);
+
+        }
+
+    });
+
 
 }
 

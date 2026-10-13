@@ -1005,8 +1005,8 @@
                     ></p>
 
                     <p class="mx-auto mt-4 max-w-sm text-xs leading-5 text-zinc-400">
-                        Akun akan dihilangkan dari daftar dan tidak dapat login,
-                        tetapi seluruh datanya tetap tersimpan di database.
+                        Akun akan dihapus permanen dari database. Jika hanya ingin
+                        mencegah login sementara, gunakan fitur Kunci Akun.
                     </p>
 
                 </div>

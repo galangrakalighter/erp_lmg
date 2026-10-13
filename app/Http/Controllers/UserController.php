@@ -389,9 +389,17 @@ class UserController extends Controller
                 return redirect()->back()->with('error', 'Akun yang sedang digunakan tidak dapat dihapus.');
             }
 
-            $user->delete();
+            DB::transaction(function () use ($user) {
+                // Jangan ikut menghapus penempatan user yang sebelumnya berada
+                // di bawah akun ini saat foreign key parent diproses.
+                UserDivision::where('parent_id', $user->id)->update(['parent_id' => null]);
 
-            return redirect()->back()->with('success', 'Akun disembunyikan. Data akun tetap tersimpan di database.');
+                // Akun yang ingin dinonaktifkan cukup memakai fitur kunci.
+                // Tombol hapus berarti penghapusan permanen, bukan soft delete.
+                $user->forceDelete();
+            });
+
+            return redirect()->back()->with('success', 'Akun berhasil dihapus permanen.');
 
         } catch (\Throwable $th) {
             return redirect()->back()->with('error', 'Gagal menghapus user: ' . $th->getMessage());

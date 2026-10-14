@@ -4,11 +4,24 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\CRMController;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\MarketingAnalyticsController;
+use App\Http\Middleware\RequireMarketingMcpToken;
 
 
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
+
+Route::middleware(['auth:sanctum', RequireMarketingMcpToken::class, 'throttle:60,1'])
+    ->prefix('marketing-mcp')
+    ->name('api.marketing-mcp.')
+    ->group(function () {
+        Route::get('/clients', [MarketingAnalyticsController::class, 'clients'])->name('clients');
+        Route::get('/clients/{client}/data-availability', [MarketingAnalyticsController::class, 'dataAvailability'])
+            ->whereNumber('client')->name('data-availability');
+        Route::get('/clients/{client}/performance-summary', [MarketingAnalyticsController::class, 'performanceSummary'])
+            ->whereNumber('client')->name('performance-summary');
+    });
 
 Route::middleware(['web', 'auth'])->get(
     '/selectable-users',

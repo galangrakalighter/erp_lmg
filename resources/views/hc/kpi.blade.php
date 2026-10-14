@@ -677,63 +677,27 @@
         document.querySelectorAll('.stat-card').forEach(function (item) {
             item.classList.remove(
                 'border-zinc-950',
-                'bg-zinc-950',
-                'text-white'
+                'ring-1',
+                'ring-zinc-950'
             );
 
             item.classList.add(
                 'border-zinc-200',
                 'bg-white'
             );
-
-            const title = item.querySelector('.stat-title');
-            const desc = item.querySelector('.stat-desc');
-            const number = item.querySelector('.stat-number');
-
-            if (title) {
-                title.classList.remove('text-white');
-                title.classList.add('text-zinc-500');
-            }
-
-            if (desc) {
-                desc.classList.remove('text-zinc-400');
-                desc.classList.add('text-zinc-500');
-            }
-
-            if (number) {
-                number.classList.remove('text-white');
-            }
         });
 
         // Active card
         if (currentFilter !== 'all' && card) {
             card.classList.remove(
-                'border-zinc-200',
-                'bg-white'
+                'border-zinc-200'
             );
 
             card.classList.add(
                 'border-zinc-950',
-                'bg-zinc-950'
+                'ring-1',
+                'ring-zinc-950'
             );
-
-            const title = card.querySelector('.stat-title');
-            const desc = card.querySelector('.stat-desc');
-            const number = card.querySelector('.stat-number');
-
-            if (title) {
-                title.classList.remove('text-zinc-500');
-                title.classList.add('text-white');
-            }
-
-            if (desc) {
-                desc.classList.remove('text-zinc-400');
-                desc.classList.add('text-zinc-400');
-            }
-
-            if (number) {
-                number.classList.add('text-white');
-            }
         }
 
         renderAktivitas(1);
@@ -1507,7 +1471,8 @@
 
                 card.classList.remove(
                     'border-zinc-950',
-                    'bg-zinc-950'
+                    'ring-1',
+                    'ring-zinc-950'
                 );
 
                 card.classList.add(
@@ -1515,46 +1480,6 @@
                     'bg-white'
                 );
 
-                const title =
-                    card.querySelector(
-                        '.stat-title'
-                    );
-
-                const desc =
-                    card.querySelector(
-                        '.stat-desc'
-                    );
-
-                const number =
-                    card.querySelector(
-                        '.stat-number'
-                    );
-
-                if (title) {
-                    title.classList.remove(
-                        'text-white'
-                    );
-
-                    title.classList.add(
-                        'text-zinc-500'
-                    );
-                }
-
-                if (desc) {
-                    desc.classList.remove(
-                        'text-zinc-400'
-                    );
-
-                    desc.classList.add(
-                        'text-zinc-500'
-                    );
-                }
-
-                if (number) {
-                    number.classList.remove(
-                        'text-white'
-                    );
-                }
             });
 
 

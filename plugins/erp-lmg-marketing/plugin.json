@@ -1,0 +1,20 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "erp-lmg-marketing",
+  "version": "0.1.0",
+  "description": "Private read-only marketing analytics for ERP LMG.",
+  "author": { "name": "Lighter Media Group" },
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "ERP LMG Marketing",
+        "shortDescription": "Analitik marketing privat",
+        "longDescription": "Read-only access to authorized ERP LMG clients, marketing data availability, and stored performance summaries.",
+        "developerName": "Lighter Media Group",
+        "category": "Productivity",
+        "capabilities": ["Tools"],
+        "defaultPrompt": "Analisis data marketing ERP LMG yang dapat saya akses."
+      }
+    }
+  }
+}

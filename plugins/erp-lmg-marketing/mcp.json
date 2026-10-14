@@ -1,0 +1,15 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "erp-lmg-marketing": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${PLUGIN_ROOT}/server/index.mjs"],
+      "cwd": "${PLUGIN_ROOT}",
+      "env": {
+        "ERP_LMG_API_URL": "${ERP_LMG_API_URL}",
+        "ERP_LMG_SANCTUM_TOKEN": "${ERP_LMG_SANCTUM_TOKEN}"
+      }
+    }
+  }
+}

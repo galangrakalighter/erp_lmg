@@ -181,9 +181,18 @@
                     <svg class="sidebar-chevron h-4 w-4 text-zinc-600 transition-transform duration-200 {{ $isPerformanceWorkspace ? 'rotate-180' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 9l6 6 6-6" /></svg>
                 </button>
                 <div id="collapsePerformanceWorkspace" class="{{ $isPerformanceWorkspace ? '' : 'hidden' }} mt-1 space-y-1 pl-3">
-                    <a href="{{ route('overview.dashboard_kpi') }}" class="block rounded-lg px-3 py-2 text-xs transition {{ Route::is('overview.dashboard_kpi', 'overview.dashboard') ? 'bg-white font-semibold text-zinc-950' : 'text-zinc-500 hover:bg-zinc-900 hover:text-white' }}">Dashboard</a>
-                    <a href="{{ route('hc_overview.list') }}" class="block rounded-lg px-3 py-2 text-xs transition {{ Route::is('hc_overview.*') && !request()->boolean('readonly') ? 'bg-white font-semibold text-zinc-950' : 'text-zinc-500 hover:bg-zinc-900 hover:text-white' }}">Overview</a>
-                    <a href="{{ route('hc_daily.index') }}" class="block rounded-lg px-3 py-2 text-xs transition {{ Route::is('hc_daily.index') ? 'bg-white font-semibold text-zinc-950' : 'text-zinc-500 hover:bg-zinc-900 hover:text-white' }}">Daily Work</a>
+                    <a href="{{ route('overview.dashboard_kpi') }}" class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs transition {{ Route::is('overview.dashboard_kpi', 'overview.dashboard') ? 'bg-white font-semibold text-zinc-950' : 'text-zinc-500 hover:bg-zinc-900 hover:text-white' }}">
+                        <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 5.5A1.5 1.5 0 015.5 4h4A1.5 1.5 0 0111 5.5v4A1.5 1.5 0 019.5 11h-4A1.5 1.5 0 014 9.5v-4zM13 5.5A1.5 1.5 0 0114.5 4h4A1.5 1.5 0 0120 5.5v4a1.5 1.5 0 01-1.5 1.5h-4A1.5 1.5 0 0113 9.5v-4zM4 14.5A1.5 1.5 0 015.5 13h4a1.5 1.5 0 011.5 1.5v4A1.5 1.5 0 019.5 20h-4A1.5 1.5 0 014 18.5v-4zM13 14.5a1.5 1.5 0 011.5-1.5h4a1.5 1.5 0 011.5 1.5v4a1.5 1.5 0 01-1.5 1.5h-4a1.5 1.5 0 01-1.5-1.5v-4z" /></svg>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="{{ route('hc_overview.list') }}" class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs transition {{ Route::is('hc_overview.*') && !request()->boolean('readonly') ? 'bg-white font-semibold text-zinc-950' : 'text-zinc-500 hover:bg-zinc-900 hover:text-white' }}">
+                        <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 19V9m5 10V5m5 14v-7m5 7V8M3 19h18" /></svg>
+                        <span>Overview</span>
+                    </a>
+                    <a href="{{ route('hc_daily.index') }}" class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs transition {{ Route::is('hc_daily.index') ? 'bg-white font-semibold text-zinc-950' : 'text-zinc-500 hover:bg-zinc-900 hover:text-white' }}">
+                        <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 4h8m-7 0v2h6V4m-8 1H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1M8 12l2 2 4-4m-6 8h8" /></svg>
+                        <span>Daily Work</span>
+                    </a>
                 </div>
             </div>
 
@@ -672,24 +681,26 @@
 
                         <a
                             href="{{ route('overview.dashboard_kpi') }}"
-                            class="block rounded-lg px-3 py-2 text-xs transition
+                            class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs transition
                             {{ Route::is('overview.dashboard_kpi')
                                 ? 'bg-white font-semibold text-zinc-950'
                                 : 'text-zinc-500 hover:bg-zinc-900 hover:text-white'
                             }}"
                         >
-                            Dashboard
+                            <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 5.5A1.5 1.5 0 015.5 4h4A1.5 1.5 0 0111 5.5v4A1.5 1.5 0 019.5 11h-4A1.5 1.5 0 014 9.5v-4zM13 5.5A1.5 1.5 0 0114.5 4h4A1.5 1.5 0 0120 5.5v4a1.5 1.5 0 01-1.5 1.5h-4A1.5 1.5 0 0113 9.5v-4zM4 14.5A1.5 1.5 0 015.5 13h4a1.5 1.5 0 011.5 1.5v4A1.5 1.5 0 019.5 20h-4A1.5 1.5 0 014 18.5v-4zM13 14.5a1.5 1.5 0 011.5-1.5h4a1.5 1.5 0 011.5 1.5v4a1.5 1.5 0 01-1.5 1.5h-4a1.5 1.5 0 01-1.5-1.5v-4z" /></svg>
+                            <span>Dashboard</span>
                         </a>
 
                         <a
                             href="{{ route('hc_overview.list', ['readonly' => 1]) }}"
-                            class="block rounded-lg px-3 py-2 text-xs transition
+                            class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs transition
                             {{ Route::is('hc_overview.list')
                                 ? 'bg-white font-semibold text-zinc-950'
                                 : 'text-zinc-500 hover:bg-zinc-900 hover:text-white'
                             }}"
                         >
-                            Overview
+                            <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 19V9m5 10V5m5 14v-7m5 7V8M3 19h18" /></svg>
+                            <span>Overview</span>
                         </a>
 
                     </div>
@@ -731,24 +742,26 @@
 
                         <a
                             href="{{ route('overview.dashboard') }}"
-                            class="block rounded-lg px-3 py-2 text-xs transition
+                            class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs transition
                             {{ Route::is('overview.dashboard')
                                 ? 'bg-white font-semibold text-zinc-950'
                                 : 'text-zinc-500 hover:bg-zinc-900 hover:text-white'
                             }}"
                         >
-                            Dashboard
+                            <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 5.5A1.5 1.5 0 015.5 4h4A1.5 1.5 0 0111 5.5v4A1.5 1.5 0 019.5 11h-4A1.5 1.5 0 014 9.5v-4zM13 5.5A1.5 1.5 0 0114.5 4h4A1.5 1.5 0 0120 5.5v4a1.5 1.5 0 01-1.5 1.5h-4A1.5 1.5 0 0113 9.5v-4zM4 14.5A1.5 1.5 0 015.5 13h4a1.5 1.5 0 011.5 1.5v4A1.5 1.5 0 019.5 20h-4A1.5 1.5 0 014 18.5v-4zM13 14.5a1.5 1.5 0 011.5-1.5h4a1.5 1.5 0 011.5 1.5v4a1.5 1.5 0 01-1.5 1.5h-4a1.5 1.5 0 01-1.5-1.5v-4z" /></svg>
+                            <span>Dashboard</span>
                         </a>
 
                         <a
                             href="{{ route('hc_daily.index') }}"
-                            class="block rounded-lg px-3 py-2 text-xs transition
+                            class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs transition
                             {{ Route::is('hc_daily.index')
                                 ? 'bg-white font-semibold text-zinc-950'
                                 : 'text-zinc-500 hover:bg-zinc-900 hover:text-white'
                             }}"
                         >
-                            Daily Work
+                            <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 4h8m-7 0v2h6V4m-8 1H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1M8 12l2 2 4-4m-6 8h8" /></svg>
+                            <span>Daily Work</span>
                         </a>
 
                     </div>

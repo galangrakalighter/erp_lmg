@@ -20,6 +20,7 @@ Aplikasi internal berbasis Laravel untuk mengelola operasional Lighter Media Gro
 ## Daftar isi
 
 - [Teknologi](#teknologi)
+- [MCP Marketing Analytics](#mcp-marketing-analytics)
 - [Menjalankan aplikasi](#menjalankan-aplikasi)
 - [Gambaran alur aplikasi](#gambaran-alur-aplikasi)
 - [Login dan logout](#login-dan-logout)
@@ -54,6 +55,14 @@ Aplikasi internal berbasis Laravel untuk mengelola operasional Lighter Media Gro
 - Tailwind CSS 4
 - Vite 7
 - JavaScript
+
+## MCP Marketing Analytics
+
+Repository ini menyertakan MCP privat dan read-only untuk menganalisis data marketing yang sudah tersimpan di ERP LMG. MCP menggunakan identitas pengguna dari personal access token Laravel Sanctum dan menerapkan aturan akses client Digital Marketing yang sama dengan ERP.
+
+Kemampuan yang tersedia meliputi daftar client, ketersediaan data, ringkasan dan tren performa, content plan, content mix, ranking konten, serta performa paid. MCP tidak terhubung langsung ke database, tidak memanggil API platform sosial, dan tidak membuat atau memperbarui snapshot.
+
+Dokumentasi konfigurasi, kontrak tool, format respons, batasan data, keamanan, dan pengujian tersedia di [`plugins/erp-lmg-marketing/README.md`](plugins/erp-lmg-marketing/README.md).
 
 ## Menjalankan aplikasi
 

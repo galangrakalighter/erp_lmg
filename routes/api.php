@@ -21,6 +21,16 @@ Route::middleware(['auth:sanctum', RequireMarketingMcpToken::class, 'throttle:60
             ->whereNumber('client')->name('data-availability');
         Route::get('/clients/{client}/performance-summary', [MarketingAnalyticsController::class, 'performanceSummary'])
             ->whereNumber('client')->name('performance-summary');
+        Route::get('/clients/{client}/content-plan', [MarketingAnalyticsController::class, 'contentPlan'])
+            ->whereNumber('client')->name('content-plan');
+        Route::get('/clients/{client}/content-mix', [MarketingAnalyticsController::class, 'contentMix'])
+            ->whereNumber('client')->name('content-mix');
+        Route::get('/clients/{client}/performance-trend', [MarketingAnalyticsController::class, 'performanceTrend'])
+            ->whereNumber('client')->name('performance-trend');
+        Route::get('/clients/{client}/top-content', [MarketingAnalyticsController::class, 'topContent'])
+            ->whereNumber('client')->name('top-content');
+        Route::get('/clients/{client}/paid-performance', [MarketingAnalyticsController::class, 'paidPerformance'])
+            ->whereNumber('client')->name('paid-performance');
     });
 
 Route::middleware(['web', 'auth'])->get(

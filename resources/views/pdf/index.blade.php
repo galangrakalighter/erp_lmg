@@ -231,7 +231,7 @@ body.lmg-embedded .lmg-pdf-table-scroll {
 
                             <td>
 
-                                @if(!$readOnly)
+                                @if(!$readOnly && (!$item->is_pinned || $canEditPinnedDocuments))
                                 <button class="btn btn-warning btn-sm"
                                         data-toggle="modal"
                                         data-target="#editModal_{{ $item->id }}">
@@ -247,7 +247,7 @@ body.lmg-embedded .lmg-pdf-table-scroll {
                                 </button>
                                 @endif
 
-                                @if(!$readOnly && !$item->is_system_template)
+                                @if(!$readOnly && !$item->is_pinned && !$item->is_system_template)
                                 <button class="btn btn-danger btn-sm"
                                         data-toggle="modal"
                                         data-target="#hapusModal_{{ $item->id }}">
@@ -416,6 +416,7 @@ body.lmg-embedded .lmg-pdf-table-scroll {
 
 @foreach($clients as $item)
 
+@if(!$item->is_pinned || $canEditPinnedDocuments)
 <div class="modal fade" id="editModal_{{ $item->id }}">
 
     <div class="modal-dialog {{ $item->is_generated_document ? 'modal-xl' : 'modal-lg' }}">
@@ -524,6 +525,7 @@ body.lmg-embedded .lmg-pdf-table-scroll {
     </div>
 
 </div>
+@endif
 
 @if($item->is_pinned)
 <div class="modal fade" id="historyModal_{{ $item->id }}" tabindex="-1" role="dialog" aria-hidden="true">
@@ -565,7 +567,7 @@ body.lmg-embedded .lmg-pdf-table-scroll {
 
 {{-- ==================== MODAL HAPUS ==================== --}}
 
-@unless($item->is_system_template)
+@if(!$item->is_pinned && !$item->is_system_template)
 <div class="modal fade" id="hapusModal_{{ $item->id }}">
 
     <div class="modal-dialog">
@@ -617,7 +619,7 @@ body.lmg-embedded .lmg-pdf-table-scroll {
     </div>
 
 </div>
-@endunless
+@endif
 
 @endforeach
 </div>

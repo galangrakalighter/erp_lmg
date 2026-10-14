@@ -9,8 +9,10 @@ class targetAudienceController extends Controller
 {
     public function index() {
         $title = "Target Audience";
-        $produk = DB::table('produk_client')->get();
+        $visibleClientIds = \App\Models\ProdukClient::query()->visibleTo(auth()->user())->pluck('produk_client.id');
+        $produk = DB::table('produk_client')->whereIn('id', $visibleClientIds)->get();
         $data = TargetAudience::join('produk_client', 'produk_client.id', '=', 'target_audience.produk_client_id')
+        ->whereIn('produk_client.id', $visibleClientIds)
         ->select('target_audience.*', 'produk_client.nama')
         ->get();
         // dd($data);

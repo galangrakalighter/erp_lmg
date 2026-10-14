@@ -227,7 +227,7 @@ class DashboardController extends Controller
             }
             $client = $produk->where('client_division.status', 1)->select('produk_client.id as id_client', 'produk_client.nama as nama_client')
             ->get();
-            $internalProjects = ProdukClient::query()->internal()->where('status', 1)
+            $internalProjects = ProdukClient::query()->visibleTo($user)->internal()->where('status', 1)
                 ->select('id as id_client', 'nama as nama_client')->get();
             $client = $client->concat($internalProjects)->unique('id_client')->values();
         

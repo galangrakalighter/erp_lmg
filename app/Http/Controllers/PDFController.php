@@ -16,7 +16,6 @@ use Carbon\Carbon;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
-use App\Support\DigitalMarketingPermissions;
 use App\Services\PlatformMirroringService;
 class PDFController extends Controller
 {
@@ -262,9 +261,11 @@ class PDFController extends Controller
             ->whereIn('id', FilePdf::where('client', $id)->where('division_id', $divisionId)->whereNotNull('uploaded_by')->select('uploaded_by'))
             ->orderBy('name')->get(['id', 'name', 'email']);
         $selectedUploaderId = $request->integer('uploaded_by') ?: null;
-        $readOnly = $request->boolean('readonly');
+        // Semua user yang dapat membuka client boleh mengelola dokumen biasa.
+        $readOnly = false;
+        $canEditPinnedDocuments = $this->canEditPinnedDocuments();
 
-        return view('pdf.index', compact('clients', 'title', 'id', 'divisionId', 'divisionName', 'uploaders', 'selectedUploaderId', 'readOnly'));
+        return view('pdf.index', compact('clients', 'title', 'id', 'divisionId', 'divisionName', 'uploaders', 'selectedUploaderId', 'readOnly', 'canEditPinnedDocuments'));
     }
 
     public function store(Request $request)
@@ -408,6 +409,11 @@ class PDFController extends Controller
         $file = FilePDF::findOrFail($id);
         $this->ensureFileAccessible($file);
         $this->authorizeDocumentMutation((int) $file->client, (int) $file->division_id);
+        abort_if(
+            $file->is_pinned && ! $this->canEditPinnedDocuments(),
+            403,
+            'Empat dokumen utama hanya dapat diedit oleh COO, CEO, atau CFO.'
+        );
 
         $request->validate([
             'nama_file' => 'required|string|max:255',
@@ -505,7 +511,7 @@ class PDFController extends Controller
         $file = FilePDF::findOrFail($id);
         $this->ensureFileAccessible($file);
         $this->authorizeDocumentMutation((int) $file->client, (int) $file->division_id);
-        abort_if($file->is_system_template, 403, 'Dokumen bawaan client tidak dapat dihapus.');
+        abort_if($file->is_pinned || $file->is_system_template, 403, 'Empat dokumen utama client tidak dapat dihapus.');
 
         // Hapus file fisik
         if (Storage::disk(self::CLIENT_DOCUMENT_DISK)->exists($file->location)) {
@@ -546,21 +552,12 @@ class PDFController extends Controller
 
     private function authorizeDocumentMutation(int $clientId, int $divisionId): void
     {
-        $isDigitalMarketing = DB::table('divisions')
-            ->where('id', $divisionId)
-            ->whereRaw("LOWER(TRIM(name)) = 'digital marketing'")
-            ->exists();
-
-        if (! $isDigitalMarketing) {
-            return;
-        }
-
         $this->ensureClientDivision($clientId, $divisionId);
-        abort_unless(
-            DigitalMarketingPermissions::isManager(DigitalMarketingPermissions::role(Auth::user())),
-            403,
-            'File Dokumen hanya dapat diubah oleh Business Unit Head atau Digital Marketing Manager.'
-        );
+    }
+
+    private function canEditPinnedDocuments(): bool
+    {
+        return in_array(strtolower(trim((string) Auth::user()?->jabatan)), ['coo', 'ceo', 'cfo'], true);
     }
 
     private function ensureFileAccessible(FilePdf $file): void

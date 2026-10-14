@@ -6,10 +6,10 @@
       "command": "node",
       "args": ["${PLUGIN_ROOT}/server/index.mjs"],
       "cwd": "${PLUGIN_ROOT}",
-      "env": {
-        "ERP_LMG_API_URL": "${ERP_LMG_API_URL}",
-        "ERP_LMG_SANCTUM_TOKEN": "${ERP_LMG_SANCTUM_TOKEN}"
-      }
+      "env_vars": [
+        "ERP_LMG_API_URL",
+        "ERP_LMG_SANCTUM_TOKEN"
+      ]
     }
   }
 }

@@ -9,8 +9,10 @@ class positioningController extends Controller
 {
     public function index(){
         $title = "Target Audience";
-        $produk = DB::table('produk_client')->get();
+        $visibleClientIds = \App\Models\ProdukClient::query()->visibleTo(auth()->user())->pluck('produk_client.id');
+        $produk = DB::table('produk_client')->whereIn('id', $visibleClientIds)->get();
         $data = Positioning::join('produk_client', 'produk_client.id', '=', 'positioning.produk_client_id')
+        ->whereIn('produk_client.id', $visibleClientIds)
         ->select('positioning.*', 'produk_client.nama')
         ->get();
         

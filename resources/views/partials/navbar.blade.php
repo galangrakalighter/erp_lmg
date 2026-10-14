@@ -259,6 +259,16 @@
                         <span>Profil Saya</span>
                     </a>
 
+                    <a
+                        href="{{ route('codex-connection.index') }}"
+                        class="mb-1 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-950"
+                    >
+                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 9h8M8 13h5m-8 8 3.5-3H18a3 3 0 0 0 3-3V6a3 3 0 0 0-3-3H6a3 3 0 0 0-3 3v9a3 3 0 0 0 2 2.83V21Z"/></svg>
+                        </span>
+                        <span>Hubungkan Codex</span>
+                    </a>
+
                     <button
                         type="button"
                         id="logoutButton"

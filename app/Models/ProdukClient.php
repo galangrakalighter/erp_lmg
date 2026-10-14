@@ -47,6 +47,31 @@ class ProdukClient extends Model
         });
     }
 
+    /** Batasi user Advertising ke client yang ditugaskan kepadanya. */
+    public function scopeVisibleTo(Builder $query, ?User $user): Builder
+    {
+        if (! $user || $user->isAdmin) {
+            return $query;
+        }
+
+        $isAdvertising = $user->userDivisions()
+            ->whereHas('role', fn (Builder $role) => $role->where('role_name', 'Advertising'))
+            ->exists();
+
+        if (! $isAdvertising) {
+            return $query;
+        }
+
+        return $query->where(function (Builder $visible) use ($user) {
+            $visible->whereExists(function ($subquery) use ($user) {
+                $subquery->selectRaw('1')
+                    ->from('user_client')
+                    ->whereColumn('user_client.client_id', 'produk_client.id')
+                    ->where('user_client.user_id', $user->id);
+            })->orWhereRaw("LOWER(TRIM(produk_client.nama)) = 'internal'");
+        });
+    }
+
     public function getIsInternalAttribute(): bool
     {
         if (strtolower(trim((string) $this->nama)) === 'internal') {

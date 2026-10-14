@@ -9,8 +9,10 @@ class segmentasiController extends Controller
 {
     public function index() {
         $title = "Segmentasi";
-        $produk = DB::table('produk_client')->get();
+        $visibleClientIds = \App\Models\ProdukClient::query()->visibleTo(auth()->user())->pluck('produk_client.id');
+        $produk = DB::table('produk_client')->whereIn('id', $visibleClientIds)->get();
         $data = Segmentasi::join('produk_client', 'produk_client.id', '=', 'segmentasi.produk_client_id')
+        ->whereIn('produk_client.id', $visibleClientIds)
         ->select('segmentasi.*', 'produk_client.nama')
         ->get();
         return view('cms_market.segmentasi.index', compact(

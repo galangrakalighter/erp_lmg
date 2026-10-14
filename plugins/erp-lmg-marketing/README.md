@@ -42,6 +42,8 @@ Proses MCP tidak mempunyai koneksi database langsung. Validasi, authentication, 
 | `ERP_LMG_API_URL` | Ya | Base URL ERP, misalnya `https://erp.example.com` |
 | `ERP_LMG_SANCTUM_TOKEN` | Ya | Personal Sanctum token pengguna |
 
+Setiap pengguna membuat token miliknya sendiri melalui menu **Profil → Hubungkan Codex** di ERP. Token hanya ditampilkan satu kali, memiliki ability `marketing:read`, berlaku 90 hari, dan dapat dicabut kembali dari halaman yang sama. Jangan berbagi token antar-pengguna.
+
 PowerShell:
 
 ```powershell
@@ -59,6 +61,32 @@ node ./plugins/erp-lmg-marketing/server/index.mjs
 ```
 
 Jangan menyimpan token di repository, file contoh, log, atau dokumentasi publik. Konfigurasi MCP tersedia di [`mcp.json`](mcp.json), sedangkan metadata plugin tersedia di [`plugin.json`](plugin.json).
+
+## Instalasi personal di Codex Desktop
+
+Repository menyediakan marketplace lokal di direktori `plugins`. Tambahkan marketplace tanpa mengubah marketplace lain:
+
+```powershell
+codex plugin marketplace add <repo-root>\plugins
+codex plugin add erp-lmg-marketing@erp-lmg-local
+```
+
+Setelah instalasi:
+
+1. Pastikan `ERP_LMG_API_URL` dan `ERP_LMG_SANCTUM_TOKEN` tersedia pada environment yang menjalankan Codex Desktop.
+2. Tutup dan buka kembali Codex Desktop agar environment dan plugin dimuat ulang.
+3. Jalankan `codex plugin list --json` dan pastikan `erp-lmg-marketing@erp-lmg-local` berstatus installed serta enabled.
+4. Mulai chat baru dan tanyakan: “Client marketing apa saja yang boleh saya akses?”
+
+Untuk memperbarui source lokal, edit package di repository lalu restart/reload Codex. Jika Codex menggunakan cache versi, hapus dan pasang kembali melalui CLI; jangan mengedit cache plugin secara langsung.
+
+Untuk mencabut akses:
+
+```powershell
+codex plugin remove erp-lmg-marketing@erp-lmg-local
+```
+
+Setelah itu cabut personal Sanctum token melalui proses administrasi ERP. Menghapus plugin saja tidak otomatis mencabut token.
 
 ## Tool yang tersedia
 
@@ -250,6 +278,19 @@ curl --get 'https://erp.example.com/api/marketing-mcp/clients/123/performance-tr
 | `429` | Batas request terlampaui |
 
 MCP meneruskan pesan error API sebagai hasil tool `isError: true` tanpa memasukkan bearer token ke respons.
+
+## Troubleshooting startup
+
+| Gejala | Pemeriksaan |
+|---|---|
+| Plugin tidak muncul | Jalankan `codex plugin marketplace list --json`, lalu restart Codex Desktop |
+| Server gagal startup | Pastikan `node --version` tersedia dan `server/index.mjs` ada di package |
+| Token belum dikonfigurasi | Atur `ERP_LMG_SANCTUM_TOKEN` pada environment Codex, bukan di package |
+| HTTP `401` | Token tidak valid atau sudah dicabut |
+| HTTP `403` | Ability bukan `marketing:read`, akun terkunci, atau client tidak diizinkan |
+| HTTP `422` | Periksa tanggal, platform, source, metric, limit, atau pagination |
+| Connection refused/timeout | Pastikan ERP aktif dan `ERP_LMG_API_URL` dapat dijangkau dari komputer ini |
+| Tool belum terlihat setelah update | Restart Codex Desktop dan periksa kembali status plugin |
 
 ## Batasan data
 

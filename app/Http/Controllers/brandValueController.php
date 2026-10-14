@@ -12,9 +12,11 @@ class brandValueController extends Controller
     public function index()
     {
         $title = "Brand Value";
-        $produk = DB::table("produk_client")->where('status', 1)->get();
+        $visibleClientIds = \App\Models\ProdukClient::query()->visibleTo(auth()->user())->pluck('produk_client.id');
+        $produk = DB::table("produk_client")->whereIn('id', $visibleClientIds)->where('status', 1)->get();
         $data = DB::table('brand_value')
                 ->join('produk_client', 'produk_client.id', '=', 'brand_value.produk_client_id')
+                ->whereIn('produk_client.id', $visibleClientIds)
                 ->select("produk_client.nama", 'brand_value.*')
                 ->get();
         return view("cms_branding.value", compact('title', 'data', 'produk'));

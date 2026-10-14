@@ -68,15 +68,15 @@ class DigitalMarketingPermissionsTest extends TestCase
         );
         $this->assertContains('branding', DigitalMarketingPermissions::workspaceTabs('Digital Marketing'));
         $this->assertSame(
-            ['market-research', 'branding', 'social-media-research', 'guide', 'analisis', 'explore', 'dokumen', 'timeline'],
+            ['market-research', 'branding', 'social-media-research', 'guide', 'analisis', 'explore', 'timeline'],
             DigitalMarketingPermissions::readOnlyWorkspaceTabs('Advertising'),
         );
         $this->assertSame(
-            ['market-research', 'branding', 'advertising-research', 'analisis', 'explore', 'dokumen', 'timeline'],
+            ['market-research', 'branding', 'advertising-research', 'analisis', 'explore', 'timeline'],
             DigitalMarketingPermissions::readOnlyWorkspaceTabs('Sosial Media Spesialis'),
         );
         $this->assertSame(
-            ['market-research', 'branding', 'social-media-research', 'advertising-research', 'guide', 'analisis', 'explore', 'dokumen', 'timeline'],
+            ['market-research', 'branding', 'social-media-research', 'advertising-research', 'guide', 'analisis', 'explore', 'timeline'],
             DigitalMarketingPermissions::readOnlyWorkspaceTabs('Content Creator'),
         );
     }

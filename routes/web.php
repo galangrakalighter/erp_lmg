@@ -53,6 +53,15 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/profile', [App\Http\Controllers\ProfileController::class, 'show'])->name('profile.show');
     Route::put('/profile', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
+    Route::get('/profile/codex', [App\Http\Controllers\CodexConnectionController::class, 'index'])
+        ->name('codex-connection.index');
+    Route::post('/profile/codex/tokens', [App\Http\Controllers\CodexConnectionController::class, 'store'])
+        ->middleware('throttle:5,1')
+        ->name('codex-connection.store');
+    Route::delete('/profile/codex/tokens/{token}', [App\Http\Controllers\CodexConnectionController::class, 'destroy'])
+        ->whereNumber('token')
+        ->middleware('throttle:10,1')
+        ->name('codex-connection.destroy');
 
     Route::get('/digital-marketing/client/{id_produk}', [App\Http\Controllers\DigitalMarketingWorkspaceController::class, 'show'])
         ->name('digital-marketing.workspace');

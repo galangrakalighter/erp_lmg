@@ -563,7 +563,8 @@ class HCOverviewController extends Controller
 
         // 2. Query ProdukClient hanya untuk ID yang ada di array tersebut
         $internalIds = ProdukClient::query()->internal()->pluck('id');
-        $project = ProdukClient::leftJoin('client_division', 'client_division.client_id', 'produk_client.id')
+        $project = ProdukClient::visibleTo($currentUser)
+            ->leftJoin('client_division', 'client_division.client_id', 'produk_client.id')
             ->leftJoin('divisions', 'divisions.id', '=', 'client_division.division_id')
             ->select('produk_client.id', 'produk_client.nama as nama_client', 'divisions.name as nama_divisi');
             if(Auth::user()->isAdmin == false){

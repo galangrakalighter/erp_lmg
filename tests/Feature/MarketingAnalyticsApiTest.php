@@ -26,6 +26,8 @@ class MarketingAnalyticsApiTest extends TestCase
         $this->auditLog = $this->mock(ActivityLogService::class, function (MockInterface $mock): void {
             $mock->shouldReceive('record')->zeroOrMoreTimes();
             $mock->shouldReceive('recordModelEvent')->zeroOrMoreTimes();
+            $mock->shouldReceive('hasRecordedActivity')->zeroOrMoreTimes()->andReturn(false);
+            $mock->shouldReceive('hasRecordedCrud')->zeroOrMoreTimes()->andReturn(false);
         });
 
         $this->user = User::query()->create([
@@ -65,6 +67,60 @@ class MarketingAnalyticsApiTest extends TestCase
         $token = $this->user->createToken('wrong-scope', ['unrelated:read'])->plainTextToken;
 
         $this->withToken($token)->getJson('/api/marketing-mcp/clients')->assertForbidden();
+    }
+
+    public function test_authenticated_user_can_create_a_personal_codex_token(): void
+    {
+        $response = $this->actingAs($this->user)->postJson('/profile/codex/tokens', [
+            'device_name' => 'Laptop Marketing',
+            'current_password' => 'password',
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('device_name', 'Laptop Marketing')
+            ->assertJsonPath('abilities.0', 'marketing:read')
+            ->assertJsonStructure(['token', 'api_url', 'expires_at']);
+
+        $token = $this->user->tokens()->sole();
+        $this->assertSame('codex-erp-lmg: Laptop Marketing', $token->name);
+        $this->assertTrue($token->can('marketing:read'));
+        $this->assertNotNull($token->expires_at);
+    }
+
+    public function test_codex_token_creation_requires_the_current_password(): void
+    {
+        $this->actingAs($this->user)->from('/profile/codex')->post('/profile/codex/tokens', [
+            'device_name' => 'Laptop Marketing',
+            'current_password' => 'incorrect-password',
+        ])->assertRedirect('/profile/codex')
+            ->assertSessionHasErrors('current_password');
+
+        $this->assertCount(0, $this->user->tokens()->get());
+    }
+
+    public function test_user_can_only_revoke_their_own_codex_token(): void
+    {
+        $ownToken = $this->user->createToken('codex-erp-lmg: Own laptop', ['marketing:read'])->accessToken;
+        $otherUser = User::query()->create([
+            'name' => 'Other User',
+            'email' => 'other@example.test',
+            'password' => Hash::make('password'),
+            'isAdmin' => false,
+            'is_locked' => false,
+        ]);
+        $otherToken = $otherUser->createToken('codex-erp-lmg: Other laptop', ['marketing:read'])->accessToken;
+
+        $this->actingAs($this->user)
+            ->delete("/profile/codex/tokens/{$otherToken->id}")
+            ->assertNotFound();
+
+        $this->assertDatabaseHas('personal_access_tokens', ['id' => $otherToken->id]);
+
+        $this->actingAs($this->user)
+            ->delete("/profile/codex/tokens/{$ownToken->id}")
+            ->assertRedirect(route('codex-connection.index'));
+
+        $this->assertDatabaseMissing('personal_access_tokens', ['id' => $ownToken->id]);
     }
 
     public function test_client_list_is_paginated_and_excludes_unassigned_clients(): void

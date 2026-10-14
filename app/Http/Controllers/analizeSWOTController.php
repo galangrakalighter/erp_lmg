@@ -9,8 +9,10 @@ class analizeSWOTController extends Controller
 {
     public function index() {
         $title = "Analisa SWOT";
-        $produk = DB::table('produk_client')->get();
+        $visibleClientIds = \App\Models\ProdukClient::query()->visibleTo(auth()->user())->pluck('produk_client.id');
+        $produk = DB::table('produk_client')->whereIn('id', $visibleClientIds)->get();
         $data = Swot::join('produk_client', 'produk_client.id', '=', 'analize_swot.produk_client_id')
+        ->whereIn('produk_client.id', $visibleClientIds)
         ->select('analize_swot.*', 'produk_client.nama')
         ->get();
         return view('cms_market.swot.index', compact(

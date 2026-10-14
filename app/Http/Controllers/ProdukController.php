@@ -32,6 +32,7 @@ class ProdukController extends Controller
         $RoleSekarang = Auth::user()->isAdmin == false ? DB::table('roles')->where('id', $divisi[0]->role_id)->value('role_name') : "Super Admin";
         if ($request->ajax()) {
             $data = ProdukClient::with(['teams.userDivisions.role'])
+                ->visibleTo(Auth::user())
                 ->external()
                 ->join('client_division', 'client_division.client_id', '=', 'produk_client.id')
                 ->leftJoin('kategori_jasa', 'kategori_jasa.id', '=', 'produk_client.kategori_jasa_id')
@@ -778,6 +779,7 @@ class ProdukController extends Controller
         $user = User::findOrFail($user);
 
         $query = ProdukClient::with(['teams.userDivisions.role'])
+            ->visibleTo(Auth::user())
             ->external()
             ->join('client_division', 'client_division.client_id', '=', 'produk_client.id')
             ->where('client_division.division_id', $divisi)

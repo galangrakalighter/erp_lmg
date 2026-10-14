@@ -124,6 +124,14 @@
             </div>
         </form>
     </div>
+
+    <div class="mt-6 flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:px-8">
+        <div>
+            <p class="text-sm font-semibold text-zinc-950">Hubungkan ke Codex</p>
+            <p class="mt-1 max-w-2xl text-xs leading-5 text-zinc-500">Buat koneksi personal untuk membaca data marketing ERP yang memang boleh Anda akses.</p>
+        </div>
+        <a href="{{ route('codex-connection.index') }}" class="inline-flex shrink-0 items-center justify-center rounded-lg bg-[#161616] px-5 py-2.5 text-xs font-semibold text-white transition hover:bg-zinc-800">Kelola koneksi Codex</a>
+    </div>
 </div>
 @endsection
 

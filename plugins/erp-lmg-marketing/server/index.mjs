@@ -18,6 +18,38 @@ const requiredPeriod = {
 const platforms = ["facebook", "instagram", "tiktok", "threads", "google", "youtube"];
 const metrics = ["posts", "reach", "impressions", "engagement", "likes", "comments", "shares", "clicks", "spend", "views", "followers", "followers_gained", "saves", "reactions"];
 const topContentMetrics = ["reach", "impressions", "engagement", "likes", "comments", "shares", "clicks", "spend"];
+const paginationSchema = {
+  oneOf: [
+    { type: "null" },
+    {
+      type: "object",
+      required: ["page", "per_page", "total", "last_page"],
+      properties: {
+        page: { type: "integer" }, per_page: { type: "integer" },
+        total: { type: "integer" }, last_page: { type: "integer" },
+      },
+      additionalProperties: true,
+    },
+  ],
+};
+const responseSchema = {
+  type: "object",
+  required: ["data", "pagination", "meta"],
+  properties: {
+    data: {},
+    pagination: paginationSchema,
+    meta: { type: "object", additionalProperties: true },
+  },
+  additionalProperties: true,
+};
+const clientResponseSchema = {
+  ...responseSchema,
+  required: ["client_id", "data", "pagination", "meta"],
+  properties: {
+    client_id: { type: "integer" },
+    ...responseSchema.properties,
+  },
+};
 
 const tools = [
   {
@@ -128,6 +160,10 @@ const tools = [
     },
   },
 ];
+
+for (const tool of tools) {
+  tool.outputSchema = tool.name === "marketing_list_clients" ? responseSchema : clientResponseSchema;
+}
 
 async function callApi(path, args) {
   if (!token) throw new Error("ERP_LMG_SANCTUM_TOKEN belum dikonfigurasi.");

@@ -8,8 +8,9 @@ class analize4PController extends Controller
 {
     public function index(){
         $title = 'Analisa 4P';
-        $produk = DB::table('produk_client')->get();
-        $data = DB::table('analize_4p')->join('produk_client', 'produk_client.id', '=', 'analize_4p.produk_client_id')->select('analize_4p.*', 'produk_client.nama')->get();
+        $visibleClientIds = \App\Models\ProdukClient::query()->visibleTo(auth()->user())->pluck('produk_client.id');
+        $produk = DB::table('produk_client')->whereIn('id', $visibleClientIds)->get();
+        $data = DB::table('analize_4p')->join('produk_client', 'produk_client.id', '=', 'analize_4p.produk_client_id')->whereIn('produk_client.id', $visibleClientIds)->select('analize_4p.*', 'produk_client.nama')->get();
         // dd($data);
         return view('cms_market.4p.index', compact(
             'title',

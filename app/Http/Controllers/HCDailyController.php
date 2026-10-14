@@ -406,6 +406,7 @@ class HCDailyController extends Controller
             'form_division_id' => $formContext['division_id'],
             'division_locked' => $formContext['division_locked'],
             'projects' => ProdukClient::query()
+                ->visibleTo($currentUser)
                 ->leftJoin('client_division', 'client_division.client_id', '=', 'produk_client.id')
                 ->leftJoin('kategori_jasa', 'kategori_jasa.id', '=', 'produk_client.kategori_jasa_id')
                 ->select('produk_client.id', 'produk_client.nama', 'client_division.division_id')
@@ -602,7 +603,9 @@ class HCDailyController extends Controller
             'PIC hanya dapat dipilih dari diri sendiri atau bawahan Anda.'
         );
 
-        $project = ProdukClient::query()->findOrFail($data['project_id']);
+        $project = ProdukClient::query()
+            ->visibleTo(Auth::user())
+            ->findOrFail($data['project_id']);
         $projectMatchesDivision = $project->is_internal || DB::table('client_division')
             ->where('client_id', $data['project_id'])
             ->where('division_id', $data['division_id'])

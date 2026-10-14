@@ -60,10 +60,10 @@ class DigitalMarketingPermissions
     public static function readOnlyWorkspaceTabs(string $role): array
     {
         return match ($role) {
-            'Digital Marketing' => ['social-media-research', 'advertising-research', 'content-plan', 'guide', 'analisis', 'explore', 'dokumen', 'timeline'],
-            'Sosial Media Spesialis' => ['market-research', 'branding', 'advertising-research', 'analisis', 'explore', 'dokumen', 'timeline'],
-            'Advertising' => ['market-research', 'branding', 'social-media-research', 'guide', 'analisis', 'explore', 'dokumen', 'timeline'],
-            'Content Creator' => ['market-research', 'branding', 'social-media-research', 'advertising-research', 'guide', 'analisis', 'explore', 'dokumen', 'timeline'],
+            'Digital Marketing' => ['social-media-research', 'advertising-research', 'content-plan', 'guide', 'analisis', 'explore', 'timeline'],
+            'Sosial Media Spesialis' => ['market-research', 'branding', 'advertising-research', 'analisis', 'explore', 'timeline'],
+            'Advertising' => ['market-research', 'branding', 'social-media-research', 'guide', 'analisis', 'explore', 'timeline'],
+            'Content Creator' => ['market-research', 'branding', 'social-media-research', 'advertising-research', 'guide', 'analisis', 'explore', 'timeline'],
             default => [],
         };
     }

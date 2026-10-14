@@ -2904,6 +2904,7 @@ Target:"
     <script>
         (function () {
             const selectableUsersUrl = @json(route('api.selectable-users'));
+            const currentUserIsAdmin = @json((bool) Auth::user()->isAdmin);
             const userSelector = [
                 'select[name="email"]',
                 'select[name="user_id"]',
@@ -2950,7 +2951,9 @@ Target:"
 
                 if (currentEmptyOption) return currentEmptyOption.textContent;
 
-                return select.required ? '-- Pilih pengguna --' : 'Semua pengguna';
+                return select.required
+                    ? '-- Pilih pengguna --'
+                    : (currentUserIsAdmin ? 'Semua Pengguna' : 'Semua Bawahan');
             }
 
             async function populateUserSelect(select, divisionId) {

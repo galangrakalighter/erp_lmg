@@ -2946,6 +2946,8 @@ Target:"
                 const currentEmptyOption = Array.from(select.options)
                     .find(function (option) { return option.value === ''; });
 
+                console.log(select.options);
+
                 if (currentEmptyOption) return currentEmptyOption.textContent;
 
                 return select.required ? '-- Pilih pengguna --' : 'Semua pengguna';
@@ -2956,6 +2958,7 @@ Target:"
 
                 const selected = selectedValues(select);
                 const label = defaultLabel(select);
+                const selfOnly = select.dataset.userSelfOnly === 'true';
                 const requestedDivision = divisionId === undefined ? divisionFor(select) : divisionId;
                 const url = new URL(selectableUsersUrl, window.location.origin);
 
@@ -2975,7 +2978,7 @@ Target:"
                     const users = await response.json();
                     select.replaceChildren();
 
-                    if (!select.multiple) {
+                    if (!select.multiple && !selfOnly) {
                         select.add(new Option(label, ''));
                     }
 

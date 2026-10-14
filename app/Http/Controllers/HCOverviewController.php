@@ -16,6 +16,7 @@ use App\Models\ProdukClient;
 use Carbon\CarbonPeriod;
 use Carbon\Carbon;
 use Illuminate\Validation\Rule;
+use App\Support\DashboardAccess;
 class HCOverviewController extends Controller
 {
     /**
@@ -198,7 +199,7 @@ class HCOverviewController extends Controller
     {
         $user = $request->user();
         abort_unless($user && (int) $id_user === (int) $user->id, 403);
-        $user->loadMissing('userDivisions');
+        $user->loadMissing('userDivisions.role');
         $division = $user->userDivisions->first();
 
         $query = KPI::with(['pics.userDivisions.role', 'pics.userDivisions.division']);
@@ -215,7 +216,7 @@ class HCOverviewController extends Controller
         }
 
         // Batasi data untuk non-admin
-        if (!$user->isAdmin && $RoleSekarang === 'Advertising') {
+        if (DashboardAccess::isSelfOnly($user)) {
             $query->whereHas('pics', fn ($picQuery) => $picQuery->where('users.id', $user->id));
         } elseif (!$user->isAdmin) {
             $query->where(function ($q) use ($user) {
@@ -302,7 +303,7 @@ class HCOverviewController extends Controller
         $kpis = KPI::with('pics')
             ->where('project', $id)
             ->when(
-                ! $user->isAdmin && $user->userDivisions->first()?->role?->role_name === 'Advertising',
+                DashboardAccess::isSelfOnly($user),
                 fn ($query) => $query->whereHas('pics', fn ($pics) => $pics->where('users.id', $user->id))
             )
             ->get();
@@ -551,8 +552,7 @@ class HCOverviewController extends Controller
         $readOnly = $request->boolean('readonly');
         $currentUser = $request->user();
         $currentUser->loadMissing('userDivisions.role');
-        $advertisingSelfOnly = ! $currentUser->isAdmin
-            && $currentUser->userDivisions->first()?->role?->role_name === 'Advertising';
+        $selfOnly = DashboardAccess::isSelfOnly($currentUser);
 
         $userHandledClients = Auth::user()->clients->pluck('id')->toArray(); // Contoh isinya: [13, 14]
 
@@ -574,7 +574,7 @@ class HCOverviewController extends Controller
             }
             $projects = $project->get()
             ->groupBy('id')
-            ->map(function ($clientRows) use ($internalIds, $advertisingSelfOnly, $currentUser) {
+            ->map(function ($clientRows) use ($internalIds, $selfOnly, $currentUser) {
                 $client = $clientRows->first();
                 $divisions = $internalIds->contains($client->id)
                     ? collect(['Internal'])
@@ -586,7 +586,7 @@ class HCOverviewController extends Controller
 
                 // Hitung total task milik client ini
                 $kpiQuery = KPI::where('project', $client->id)
-                    ->when($advertisingSelfOnly, fn ($query) => $query->whereHas(
+                    ->when($selfOnly, fn ($query) => $query->whereHas(
                         'pics', fn ($pics) => $pics->where('users.id', $currentUser->id)
                     ));
                 $totalKPI = (clone $kpiQuery)->count();
@@ -621,8 +621,14 @@ class HCOverviewController extends Controller
     public function getDataDashboardBawahan(Request $request, $id) {
         $user = $request->user();
         $user?->loadMissing('userDivisions.role');
-        if (! $user?->isAdmin && $user?->userDivisions->first()?->role?->role_name === 'Advertising') {
+        if ($user && DashboardAccess::isSelfOnly($user)) {
             abort_unless((int) $id === (int) $user->id, 403);
+        } elseif ($user && ! $user->isAdmin) {
+            $allowedUserIds = UserDivision::where('parent_id', $user->id)
+                ->orWhere('user_id', $user->id)
+                ->pluck('user_id')
+                ->map(fn ($userId) => (int) $userId);
+            abort_unless($allowedUserIds->contains((int) $id), 403);
         }
 
         $type = $request->query('type', 'monthly');

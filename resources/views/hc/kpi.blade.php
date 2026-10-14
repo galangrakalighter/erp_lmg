@@ -46,13 +46,18 @@
                 {{-- User --}}
                 <select
                     id="filterUser"
+                    data-user-self-only="{{ $selfOnly ? 'true' : 'false' }}"
                     onchange="loadStats()"
                     class="h-10 min-w-[170px] rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-700 outline-none transition focus:border-zinc-950 focus:ring-1 focus:ring-zinc-950"
                 >
-                    <option value="">Semua Bawahan</option>
+                    @unless($selfOnly)
+                        <option value="">
+                            {{ Auth::user()->isAdmin ? 'Semua Pengguna' : 'Semua Bawahan' }}
+                        </option>
+                    @endunless
 
                     @foreach($listBawahan as $bawahan)
-                        <option value="{{ $bawahan->id }}">
+                        <option value="{{ $bawahan->id }}" @selected($selfOnly && $bawahan->id == Auth::id())>
                             {{ $bawahan->email }}
                         </option>
                     @endforeach
@@ -1475,7 +1480,7 @@
         ) {
             document.getElementById(
                 'filterUser'
-            ).value = '';
+            ).value = @json($selfOnly ? (string) Auth::id() : '');
         }
 
 

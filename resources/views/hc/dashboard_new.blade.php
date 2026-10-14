@@ -61,13 +61,18 @@
                     <div class="relative">
                         <select
                             id="filter-pic"
+                            data-user-self-only="{{ $selfOnly ? 'true' : 'false' }}"
                             onchange="loadTaskStats()"
                             class="h-10 min-w-[170px] appearance-none rounded-xl border border-zinc-200 bg-white pl-4 pr-10 text-sm text-zinc-700 outline-none transition focus:border-zinc-950 focus:ring-0"
                         >
-                            <option value="all">Semua Bawahan</option>
+                            @unless($selfOnly)
+                                <option value="all">
+                                    {{ Auth::user()->isAdmin ? 'Semua Pengguna' : 'Semua Bawahan' }}
+                                </option>
+                            @endunless
 
                             @foreach($allUser as $u)
-                                <option value="{{ $u->id }}">
+                                <option value="{{ $u->id }}" @selected($selfOnly && $u->id == Auth::id())>
                                     {{ $u->email }}
                                 </option>
                             @endforeach
@@ -452,13 +457,18 @@
                                 <div class="relative">
                                     <select
                                         id="filter-active-task-pic"
+                                        data-user-self-only="{{ $selfOnly ? 'true' : 'false' }}"
                                         class="h-10 w-full appearance-none rounded-xl border border-zinc-200 bg-white px-3 pr-8 text-xs text-zinc-600 outline-none focus:border-zinc-950 focus:ring-0"
                                         onchange="loadActiveTask()"
                                     >
-                                        <option value="all">Semua User</option>
+                                        @unless($selfOnly)
+                                            <option value="all">
+                                                {{ Auth::user()->isAdmin ? 'Semua Pengguna' : 'Semua Bawahan' }}
+                                            </option>
+                                        @endunless
 
                                         @foreach($allUser as $u)
-                                            <option value="{{ $u->id }}">
+                                            <option value="{{ $u->id }}" @selected($selfOnly && $u->id == Auth::id())>
                                                 {{ $u->email }}
                                             </option>
                                         @endforeach
@@ -614,13 +624,18 @@
                         <div class="relative">
                             <select
                                 id="filter-user-activity"
+                                data-user-self-only="{{ $selfOnly ? 'true' : 'false' }}"
                                 class="h-9 w-[105px] appearance-none rounded-lg border border-zinc-200 bg-white px-3 pr-7 text-xs text-zinc-600 outline-none focus:border-zinc-950 focus:ring-0"
                                 onchange="loadTaskStats()"
                             >
-                                <option value="all">Semua</option>
+                                @unless($selfOnly)
+                                    <option value="all">
+                                        {{ Auth::user()->isAdmin ? 'Semua Pengguna' : 'Semua Bawahan' }}
+                                    </option>
+                                @endunless
 
                                 @foreach($allUser as $u)
-                                    <option value="{{ $u->id }}">
+                                    <option value="{{ $u->id }}" @selected($selfOnly && $u->id == Auth::id())>
                                         {{ $u->email }}
                                     </option>
                                 @endforeach
@@ -700,13 +715,18 @@
                         <div class="relative">
                             <select
                                 id="filter-user-timer"
+                                data-user-self-only="{{ $selfOnly ? 'true' : 'false' }}"
                                 class="h-9 w-[105px] appearance-none rounded-lg border border-zinc-200 bg-white px-3 pr-7 text-xs text-zinc-600 outline-none focus:border-zinc-950 focus:ring-0"
                                 onchange="loadTaskStats()"
                             >
-                                <option value="all">Semua</option>
+                                @unless($selfOnly)
+                                    <option value="all">
+                                        {{ Auth::user()->isAdmin ? 'Semua Pengguna' : 'Semua Bawahan' }}
+                                    </option>
+                                @endunless
 
                                 @foreach($allUser as $u)
-                                    <option value="{{ $u->id }}">
+                                    <option value="{{ $u->id }}" @selected($selfOnly && $u->id == Auth::id())>
                                         {{ $u->email }}
                                     </option>
                                 @endforeach
@@ -921,6 +941,12 @@
 
         if (!filterEl || !userSelect) return;
 
+        if (@json($selfOnly)) {
+            userSelect.value = String(@json(Auth::id()));
+            loadActiveTask();
+            return;
+        }
+
         let divisiId = 'all';
 
         if (filterEl.type === 'checkbox') {
@@ -943,7 +969,7 @@
             const users = await response.json();
 
             userSelect.innerHTML = `
-                <option value="all">Semua User</option>
+                <option value="all">{{ Auth::user()->isAdmin ? 'Semua Pengguna' : 'Semua Bawahan' }}</option>
             `;
 
             users.forEach(u => {
@@ -1921,7 +1947,7 @@
 
 
         if (filterPic) {
-            filterPic.value = 'all';
+            filterPic.value = @json($selfOnly ? (string) Auth::id() : 'all');
             filterPic.disabled = false;
         }
 
@@ -1934,11 +1960,11 @@
         }
 
         if (filterActivity) {
-            filterActivity.value = 'all';
+            filterActivity.value = @json($selfOnly ? (string) Auth::id() : 'all');
         }
 
         if (filterTimer) {
-            filterTimer.value = 'all';
+            filterTimer.value = @json($selfOnly ? (string) Auth::id() : 'all');
         }
 
 
@@ -2002,7 +2028,7 @@
 
 
         if (activePic) {
-            activePic.value = 'all';
+            activePic.value = @json($selfOnly ? (string) Auth::id() : 'all');
         }
 
 

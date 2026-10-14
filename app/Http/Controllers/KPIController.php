@@ -4,11 +4,14 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use App\Support\DashboardAccess;
 class KPIController extends Controller
 {
     public function getKpiStats(Request $request) 
     {
-        $isAdmin = Auth::user()->isAdmin == true;
+        $user = Auth::user();
+        $isAdmin = $user->isAdmin == true;
+        $selfOnly = DashboardAccess::isSelfOnly($user);
 
         // 1. Base Query (Filter User/Project saja, TANPA filter tanggal)
         if ($isAdmin) {
@@ -23,24 +26,27 @@ class KPIController extends Controller
             }else {
                 $baseQuery = \App\Models\KPI::query();
             }
+        } elseif ($selfOnly) {
+            $baseQuery = \App\Models\KPI::whereHas('pics', function ($query) use ($user) {
+                $query->where('users.id', $user->id);
+            });
         } else {
-            // Non-admin: 
-            // 1. Tampilkan jika dia adalah PIC (kpis)
-            // 2. ATAU Tampilkan jika KPI tersebut memiliki divisi yang sama dengan miliknya
-            $userDivisions = Auth::user()->userDivisions()->pluck('division_id')->toArray();
+            $allowedUserIds = \App\Models\userDivision::where('parent_id', $user->id)
+                ->orWhere('user_id', $user->id)
+                ->pluck('user_id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+            $requestedUserId = (int) $request->user_id;
 
-            $baseQuery = \App\Models\KPI::where(function($q) use ($request, $userDivisions) {
-                // Kondisi A: Jika ada filter user_id dari request, pakai itu
-                if ($request->filled('user_id') && $request->user_id !== 'all') {
-                    $q->whereHas('pics', function($sub) use ($request) {
-                        $sub->where('user_id', $request->user_id);
+            $baseQuery = \App\Models\KPI::where(function($q) use ($request, $allowedUserIds, $requestedUserId) {
+                if ($request->filled('user_id') && $request->user_id !== 'all' && in_array($requestedUserId, $allowedUserIds, true)) {
+                    $q->whereHas('pics', function($sub) use ($requestedUserId) {
+                        $sub->where('user_id', $requestedUserId);
                     });
                 } else {
-                    // Kondisi B: Default (jika tidak ada filter user_id)
-                    // Tampilkan KPI miliknya sendiri ATAU KPI yang divisinya cocok
-                    $q->whereHas('pics', function($sub) {
-                        $sub->where('user_id', Auth::id());
-                    })->orWhereIn('divisi', $userDivisions);
+                    $q->whereHas('pics', function($sub) use ($allowedUserIds) {
+                        $sub->whereIn('user_id', $allowedUserIds);
+                    });
                 }
             });
         }
@@ -113,6 +119,8 @@ class KPIController extends Controller
         // 1. Logika penentuan akses user
         if ($user->isAdmin) {
             $allowedUserIds = \App\Models\User::unlocked()->where('isAdmin', false)->pluck('id')->toArray();
+        } elseif (DashboardAccess::isSelfOnly($user)) {
+            $allowedUserIds = [$user->id];
         } else {
             $allowedUserIds = \App\Models\userDivision::where('parent_id', $user->id)
                 ->orWhere('user_id', $user->id)
@@ -270,6 +278,7 @@ class KPIController extends Controller
 
     public function getActiveTask(Request $request) 
     {
+        $user = $request->user();
         $today = now()->toDateString();
         $divisiId = $request->input('divisi_id');
         $userId = $request->input('user_id');
@@ -277,6 +286,19 @@ class KPIController extends Controller
         $query = \App\Models\Task::query()->with('user')->where('status', 1)
                                 ->whereDate('tanggal_mulai', '<=', $today)
                                 ->whereDate('tanggal_deadline', '>=', $today);
+
+        $allowedUserIds = null;
+        if ($user->isAdmin) {
+            // Admin dapat melihat seluruh pengguna.
+        } elseif (DashboardAccess::isSelfOnly($user)) {
+            $allowedUserIds = collect([$user->id]);
+            $query->where('pic', $user->id);
+        } else {
+            $allowedUserIds = \App\Models\userDivision::where('parent_id', $user->id)
+                ->orWhere('user_id', $user->id)
+                ->pluck('user_id');
+            $query->whereIn('pic', $allowedUserIds);
+        }
 
         // Filter Divisi
         if ($divisiId && $divisiId !== 'all') {
@@ -289,7 +311,7 @@ class KPIController extends Controller
         }
 
         // Filter User
-        if ($userId && $userId !== 'all') {
+        if ($userId && $userId !== 'all' && ($user->isAdmin || $allowedUserIds->contains((int) $userId))) {
             $query->whereHas('user', fn($q) => $q->where('id', $userId));
         }
 

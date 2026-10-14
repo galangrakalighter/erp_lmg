@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Yajra\DataTables\Facades\DataTables;
+use App\Support\DashboardAccess;
 
 class UserController extends Controller
 {
@@ -155,7 +156,9 @@ class UserController extends Controller
 
         $query = User::query()->unlocked()->orderBy('email');
 
-        if (! $currentUser->isAdmin) {
+        if (DashboardAccess::isSelfOnly($currentUser)) {
+            $query->whereKey($currentUser->id);
+        } elseif (! $currentUser->isAdmin) {
             $query->whereIn('id', $this->visibleUserIds($currentUser->id));
         }
 
@@ -507,14 +510,27 @@ class UserController extends Controller
     }
 
     public function getUserDivision(Request $request){
+        $actor = $request->user();
         $divisiId = $request->input('divisi_id');
-        if($divisiId != 'all'){
-            $allUser = User::unlocked()->whereHas('userDivisions', function($user) use ($divisiId) {
-                $user->where('division_id', $divisiId);
-            })->get();
-        }else{
-            $allUser = User::unlocked()->where('isAdmin', false)->get();
+
+        if (DashboardAccess::isSelfOnly($actor)) {
+            return response()->json([$actor->only(['id', 'name', 'email'])]);
         }
+
+        $allUser = User::unlocked()
+            ->where('isAdmin', false)
+            ->when(! $actor->isAdmin, function ($query) use ($actor) {
+                $allowedUserIds = UserDivision::where('parent_id', $actor->id)
+                    ->orWhere('user_id', $actor->id)
+                    ->pluck('user_id');
+                $query->whereIn('id', $allowedUserIds);
+            })
+            ->when($divisiId !== 'all', function ($query) use ($divisiId) {
+                $query->whereHas('userDivisions', function ($divisionQuery) use ($divisiId) {
+                    $divisionQuery->where('division_id', $divisiId);
+                });
+            })
+            ->get(['id', 'name', 'email']);
 
         return response()->json($allUser);
     }

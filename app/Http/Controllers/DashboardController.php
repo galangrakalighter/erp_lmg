@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Division;
 use App\Models\userDivision as UserDivision;
 use App\Models\ProdukClient;
+use App\Support\DashboardAccess;
 use App\Models\AuditTrail;
 use App\Services\TrialBalanceService;
 use Illuminate\Support\Carbon;
@@ -209,10 +210,11 @@ class DashboardController extends Controller
 
         $divisi = User::find(Auth::user()->id)->userDivisions;
         $role = $user->isAdmin == false ? DB::table('roles')->where('id', $divisi[0]['role_id'])->value('role_name') : "Super Admin";
+        $selfOnly = DashboardAccess::isSelfOnly($user);
         $allUser = UserDivision::join('users', 'users.id', '=', 'user_division.user_id')->where('user_division.parent_id', $user->id)->orWhere('user_division.user_id', $user->id)->select('users.id', 'users.email')->get();
         if($user->isAdmin == true){
             $allUser = User::unlocked()->where('isAdmin', false)->get();
-        } elseif ($role === 'Advertising') {
+        } elseif ($selfOnly) {
             $allUser = collect([(object) ['id' => $user->id, 'email' => $user->email]]);
         }
         $divisiId = $user->isAdmin == false ? $divisi[0]->division_id : null;
@@ -235,7 +237,7 @@ class DashboardController extends Controller
             $divisiList = DB::table('divisions')->where('id', $divisiId)->get();
         }
 
-        return view('hc.dashboard_new', compact('title', 'allUser', 'role', 'client', 'divisiId', 'divisiList'));
+        return view('hc.dashboard_new', compact('title', 'allUser', 'role', 'client', 'divisiId', 'divisiList', 'selfOnly'));
     }
 
     public function kpi_dashboard(){
@@ -251,10 +253,11 @@ class DashboardController extends Controller
 
         $divisi = User::find(Auth::user()->id)->userDivisions;
         $role = $user->isAdmin == false ? DB::table('roles')->where('id', $divisi[0]['role_id'])->value('role_name') : "Super Admin";
+        $selfOnly = DashboardAccess::isSelfOnly($user);
         $listBawahan = UserDivision::join('users', 'users.id', '=', 'user_division.user_id')->where('user_division.parent_id', $user->id)->orWhere('user_division.user_id', $user->id)->select('users.id', 'users.email')->get();
         if($user->isAdmin == true){
             $listBawahan = User::unlocked()->where('isAdmin', false)->get();
-        } elseif ($role === 'Advertising') {
+        } elseif ($selfOnly) {
             $listBawahan = collect([(object) ['id' => $user->id, 'email' => $user->email]]);
         }
 
@@ -264,7 +267,7 @@ class DashboardController extends Controller
             $listDivisi = Division::where('id', $divisi[0]->division_id)->get();
         }
         
-        return view('hc.kpi', compact('title', 'listProject', 'listBawahan', 'listDivisi'));
+        return view('hc.kpi', compact('title', 'listProject', 'listBawahan', 'listDivisi', 'selfOnly'));
     }
 
     public function finance_dashboard(Request $request, $id, TrialBalanceService $trialBalanceService){

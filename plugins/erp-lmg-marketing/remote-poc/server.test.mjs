@@ -4,7 +4,7 @@ import { endpointForTool, tools } from '../server/index.mjs';
 import { createRemoteMcpServer, SERVER_NAME, SERVER_VERSION } from './server.mjs';
 
 const expectedTools = [
-  'marketing_list_clients', 'marketing_get_data_availability', 'marketing_get_performance_summary',
+  'marketing_list_clients', 'marketing_get_division_client_summary', 'marketing_get_data_availability', 'marketing_get_performance_summary',
   'marketing_get_content_plan', 'marketing_get_content_mix', 'marketing_get_performance_trend',
   'marketing_get_top_content', 'marketing_get_paid_performance', 'marketing_get_market_research',
   'marketing_get_brand_guidelines', 'marketing_get_content_calendar', 'marketing_get_tasks',
@@ -14,6 +14,7 @@ const expectedTools = [
 ];
 const expectedEndpoints = {
   marketing_list_clients: '/api/oauth-marketing-mcp/clients',
+  marketing_get_division_client_summary: '/api/oauth-marketing-mcp/division-client-summary',
   marketing_get_data_availability: '/api/oauth-marketing-mcp/clients/123/data-availability',
   marketing_get_performance_summary: '/api/oauth-marketing-mcp/clients/123/performance-summary',
   marketing_get_content_plan: '/api/oauth-marketing-mcp/clients/123/content-plan',
@@ -64,7 +65,7 @@ async function rpc(base, body, token) {
 test('initialize succeeds with production identity and health remains available', async () => {
   const base = await harness();
   const health = await fetch(`${base}/health`).then((response) => response.json());
-  assert.deepEqual(health, { status: 'ok', service: SERVER_NAME, version: SERVER_VERSION, tools: 19 });
+  assert.deepEqual(health, { status: 'ok', service: SERVER_NAME, version: SERVER_VERSION, tools: 20 });
   const result = await rpc(base, { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18' } });
   assert.equal(result.response.status, 200);
   assert.equal(result.body.result.serverInfo.name, 'erp-lmg-digital-marketing');
@@ -80,7 +81,7 @@ test('tools/list without token returns OAuth challenge in header and MCP metadat
   assert.deepEqual(result.body.error.data._meta['mcp/www_authenticate'], [challenge]);
 });
 
-test('tools/list exposes exactly the expected 19 read-only tools', async () => {
+test('tools/list exposes exactly the expected 20 read-only tools', async () => {
   const base = await harness();
   const result = await rpc(base, { jsonrpc: '2.0', id: 3, method: 'tools/list' }, 'safe-test-token');
   assert.deepEqual(result.body.result.tools.map((tool) => tool.name), expectedTools);

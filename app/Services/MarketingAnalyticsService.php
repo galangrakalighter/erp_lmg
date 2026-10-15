@@ -55,6 +55,11 @@ class MarketingAnalyticsService
         $this->access->assertClientAccess($user, $clientId);
     }
 
+    public function divisionClientSummary(Authenticatable $user): array
+    {
+        return $this->access->divisionClientSummary($user);
+    }
+
     public function dataAvailability(int $clientId, array $filters): array
     {
         [$start, $end] = $this->period($filters);

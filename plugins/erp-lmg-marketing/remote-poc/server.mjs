@@ -135,7 +135,7 @@ export function createRemoteMcpServer(options = {}) {
           protocolVersion: message.params?.protocolVersion ?? '2025-06-18',
           capabilities: { tools: { listChanged: false } },
           serverInfo: { name: SERVER_NAME, version: SERVER_VERSION },
-          instructions: 'Read-only ERP LMG Digital Marketing. Use only authorized returned data and never invent unavailable figures.',
+          instructions: "Read-only ERP LMG Digital Marketing. Use marketing_list_clients for 'clients I can access' and marketing_get_division_client_summary for division-wide client totals. Never present a restricted personal count as the division total.",
         },
       });
     }

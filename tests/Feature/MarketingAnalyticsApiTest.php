@@ -226,6 +226,76 @@ class MarketingAnalyticsApiTest extends TestCase
             ->assertOk();
     }
 
+    public function test_admin_and_digital_marketing_leader_can_view_division_client_totals(): void
+    {
+        DB::table('produk_client')->where('id', $this->deniedClient)->update(['status' => 0]);
+
+        $admin = User::query()->create([
+            'name' => 'Summary Admin', 'email' => 'summary-admin@example.test',
+            'password' => Hash::make('password'), 'isAdmin' => true, 'is_locked' => false,
+        ]);
+        $adminToken = $admin->createToken('summary-admin', ['marketing:read'])->plainTextToken;
+        $this->withToken($adminToken)->getJson('/api/marketing-mcp/division-client-summary')->assertOk()
+            ->assertJsonPath('data.division_name', 'Digital Marketing')
+            ->assertJsonPath('data.total_clients', 2)
+            ->assertJsonPath('data.active_clients', 1)
+            ->assertJsonPath('data.inactive_clients', 1)
+            ->assertJsonPath('data.accessible_clients', 2)
+            ->assertJsonPath('data.scope', 'division');
+
+        $divisionId = DB::table('divisions')->where('name', 'Digital Marketing')->value('id');
+        $managerRole = DB::table('roles')->insertGetId([
+            'division_id' => $divisionId, 'role_name' => 'Digital Marketing Manager', 'level' => 2,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('user_division')->where('user_id', $this->user->id)->update(['role_id' => $managerRole]);
+        $this->withMarketingToken()->getJson('/api/marketing-mcp/division-client-summary')->assertOk()
+            ->assertJsonPath('data.total_clients', 2)
+            ->assertJsonPath('data.accessible_clients', 2)
+            ->assertJsonPath('data.scope', 'division');
+    }
+
+    public function test_regular_staff_receives_explicitly_restricted_division_summary_via_oauth(): void
+    {
+        $this->mockPassportResourceServer();
+        Passport::actingAs(OAuthUser::query()->findOrFail($this->user->id), ['marketing:read'], 'oauth-api');
+
+        $this->getJson('/api/oauth-marketing-mcp/division-client-summary')->assertOk()
+            ->assertJsonPath('data.total_clients', null)
+            ->assertJsonPath('data.active_clients', null)
+            ->assertJsonPath('data.inactive_clients', null)
+            ->assertJsonPath('data.accessible_clients', 1)
+            ->assertJsonPath('data.scope', 'user_access_only')
+            ->assertJsonPath('meta.completeness.status', 'restricted')
+            ->assertJsonFragment(['access_note' => 'Akses terbatas: total seluruh Divisi Digital Marketing hanya tersedia untuk admin atau pimpinan yang memiliki akses tingkat divisi.']);
+    }
+
+    public function test_other_division_user_cannot_read_digital_marketing_division_summary(): void
+    {
+        $otherDivision = DB::table('divisions')->insertGetId(['name' => 'Finance', 'created_at' => now(), 'updated_at' => now()]);
+        $otherRole = DB::table('roles')->insertGetId([
+            'division_id' => $otherDivision, 'role_name' => 'Finance Manager', 'level' => 2,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $otherUser = User::query()->create([
+            'name' => 'Finance Summary User', 'email' => 'finance-summary@example.test',
+            'password' => Hash::make('password'), 'isAdmin' => false, 'is_locked' => false,
+        ]);
+        DB::table('user_division')->insert([
+            'user_id' => $otherUser->id, 'division_id' => $otherDivision, 'role_id' => $otherRole,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $token = $otherUser->createToken('finance-summary', ['marketing:read'])->plainTextToken;
+
+        $this->withToken($token)->getJson('/api/marketing-mcp/division-client-summary')->assertForbidden();
+    }
+
+    public function test_division_client_summary_requires_authentication(): void
+    {
+        $this->getJson('/api/marketing-mcp/division-client-summary')->assertUnauthorized();
+        $this->getJson('/api/oauth-marketing-mcp/division-client-summary')->assertUnauthorized();
+    }
+
     public function test_inactive_client_division_assignment_denies_project_access(): void
     {
         DB::table('client_division')->where('client_id', $this->allowedClient)->update(['status' => 0]);
@@ -498,7 +568,7 @@ class MarketingAnalyticsApiTest extends TestCase
         $routes = collect(Route::getRoutes()->getRoutes())
             ->filter(fn ($route) => str_starts_with($route->uri(), 'api/marketing-mcp/'));
 
-        $this->assertCount(19, $routes);
+        $this->assertCount(20, $routes);
         foreach ($routes as $route) {
             $this->assertSame(['GET', 'HEAD'], $route->methods());
         }
@@ -645,7 +715,7 @@ class MarketingAnalyticsApiTest extends TestCase
             ->filter(fn ($route) => str_starts_with($route->uri(), 'api/marketing-mcp/')
                 || str_starts_with($route->uri(), 'api/oauth-marketing-mcp/'));
 
-        $this->assertCount(38, $routes);
+        $this->assertCount(40, $routes);
         foreach ($routes as $route) {
             $this->assertSame(['GET', 'HEAD'], $route->methods(), $route->uri());
         }

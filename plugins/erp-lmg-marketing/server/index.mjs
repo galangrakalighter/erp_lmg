@@ -55,7 +55,7 @@ const clientResponseSchema = {
 export const tools = [
   {
     name: "marketing_list_clients",
-    description: "List only ERP LMG marketing clients authorized for the authenticated Sanctum user.",
+    description: "List only ERP LMG marketing clients accessible to the authenticated user. Use this for 'clients I can access', not for division-wide totals.",
     inputSchema: {
       type: "object",
       properties: {
@@ -65,6 +65,11 @@ export const tools = [
       },
       additionalProperties: false,
     },
+  },
+  {
+    name: "marketing_get_division_client_summary",
+    description: "Return the Digital Marketing division client total for admin or division-wide leaders; ordinary staff receive an explicit restricted scope and only their accessible-client count. Use this for 'Digital Marketing division clients'.",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
   },
   {
     name: "marketing_get_data_availability",
@@ -266,12 +271,13 @@ export const tools = [
 ];
 
 for (const tool of tools) {
-  tool.outputSchema = tool.name === "marketing_list_clients" ? responseSchema : clientResponseSchema;
+  tool.outputSchema = ["marketing_list_clients", "marketing_get_division_client_summary"].includes(tool.name) ? responseSchema : clientResponseSchema;
   tool.annotations = { readOnlyHint: true, destructiveHint: false, openWorldHint: false };
 }
 
 const toolPaths = {
   marketing_list_clients: "/clients",
+  marketing_get_division_client_summary: "/division-client-summary",
   marketing_get_data_availability: "/clients/{client_id}/data-availability",
   marketing_get_performance_summary: "/clients/{client_id}/performance-summary",
   marketing_get_content_plan: "/clients/{client_id}/content-plan",

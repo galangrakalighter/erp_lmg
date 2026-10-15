@@ -54,6 +54,23 @@ class MarketingAnalyticsController extends Controller
         ]);
     }
 
+    public function divisionClientSummary(Request $request): JsonResponse
+    {
+        $this->validateAllowedQueryKeys($request, []);
+        $result = $this->analytics->divisionClientSummary($request->user());
+        $this->audit($request, 'marketing_get_division_client_summary', null, []);
+
+        return response()->json([
+            'data' => $result,
+            'pagination' => null,
+            'meta' => [
+                'source' => $result['source'],
+                'freshness' => ['as_of' => $result['as_of']],
+                'completeness' => ['status' => $result['scope'] === 'division' ? 'complete' : 'restricted'],
+            ],
+        ]);
+    }
+
     public function dataAvailability(Request $request, int $client): JsonResponse
     {
         $filters = $this->analyticsFilters($request);

@@ -33,6 +33,8 @@ Route::get('/user', function (Request $request) {
 
 $marketingMcpRoutes = function (): void {
     Route::get('/clients', [MarketingAnalyticsController::class, 'clients'])->name('clients');
+    Route::get('/division-client-summary', [MarketingAnalyticsController::class, 'divisionClientSummary'])
+        ->name('division-client-summary');
     Route::get('/clients/{client}/data-availability', [MarketingAnalyticsController::class, 'dataAvailability'])
         ->whereNumber('client')->name('data-availability');
     Route::get('/clients/{client}/performance-summary', [MarketingAnalyticsController::class, 'performanceSummary'])

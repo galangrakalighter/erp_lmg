@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -87,11 +88,46 @@ class CodexConnectionController extends Controller
         return redirect()->route('codex-connection.index')->with('success', 'Koneksi Codex berhasil dicabut.');
     }
 
+    public function destroyOAuth(Request $request, string $client, ActivityLogService $activityLog)
+    {
+        $tokenIds = DB::table('oauth_access_tokens')
+            ->join('oauth_clients', 'oauth_clients.id', '=', 'oauth_access_tokens.client_id')
+            ->where('oauth_access_tokens.user_id', $request->user()->getAuthIdentifier())
+            ->where('oauth_access_tokens.client_id', $client)
+            ->where('oauth_clients.provider', 'oauth_users')
+            ->where('oauth_access_tokens.revoked', false)
+            ->pluck('oauth_access_tokens.id');
+
+        abort_if($tokenIds->isEmpty(), 404);
+
+        DB::transaction(function () use ($tokenIds): void {
+            DB::table('oauth_refresh_tokens')
+                ->whereIn('access_token_id', $tokenIds)
+                ->update(['revoked' => true]);
+            DB::table('oauth_access_tokens')
+                ->whereIn('id', $tokenIds)
+                ->update(['revoked' => true]);
+        });
+
+        $activityLog->record([
+            'action' => 'DELETE',
+            'module' => 'marketing_mcp_connection',
+            'description' => 'Mencabut koneksi OAuth aplikasi AI',
+            'target_type' => 'oauth_client',
+            'context' => ['revoked_token_count' => $tokenIds->count()],
+        ]);
+
+        return redirect()->route('ai-connections.index')->with('success', 'Koneksi aplikasi AI berhasil dicabut.');
+    }
+
     private function render(Request $request, ?string $newToken = null, ?string $deviceName = null)
     {
         return response()->view('profile.codex-connection', [
-            'title' => 'Hubungkan Codex',
+            'title' => 'Koneksi AI',
             'tokens' => $this->tokens($request),
+            'oauthConnections' => $this->oauthConnections($request),
+            'chatGptAppUrl' => $this->safeChatGptAppUrl(),
+            'mcpUrl' => rtrim((string) config('marketing-mcp.resource'), '/'),
             'newToken' => $newToken,
             'deviceName' => $deviceName,
             'apiUrl' => rtrim((string) config('app.url'), '/'),
@@ -105,5 +141,36 @@ class CodexConnectionController extends Controller
             ->where('name', 'like', self::TOKEN_PREFIX.'%')
             ->latest()
             ->get();
+    }
+
+    private function oauthConnections(Request $request)
+    {
+        return DB::table('oauth_access_tokens')
+            ->join('oauth_clients', 'oauth_clients.id', '=', 'oauth_access_tokens.client_id')
+            ->where('oauth_access_tokens.user_id', $request->user()->getAuthIdentifier())
+            ->where('oauth_clients.provider', 'oauth_users')
+            ->where('oauth_access_tokens.revoked', false)
+            ->where(function ($query): void {
+                $query->whereNull('oauth_access_tokens.expires_at')
+                    ->orWhere('oauth_access_tokens.expires_at', '>', now());
+            })
+            ->groupBy('oauth_clients.id', 'oauth_clients.name')
+            ->orderByDesc(DB::raw('MAX(oauth_access_tokens.created_at)'))
+            ->get([
+                'oauth_clients.id as client_id',
+                'oauth_clients.name',
+                DB::raw('MAX(oauth_access_tokens.created_at) as connected_at'),
+                DB::raw('MAX(oauth_access_tokens.expires_at) as expires_at'),
+                DB::raw('COUNT(oauth_access_tokens.id) as active_token_count'),
+            ]);
+    }
+
+    private function safeChatGptAppUrl(): ?string
+    {
+        $url = trim((string) config('services.chatgpt.erp_app_url'));
+
+        return filter_var($url, FILTER_VALIDATE_URL) && Str::startsWith($url, ['https://chatgpt.com/', 'https://www.chatgpt.com/'])
+            ? $url
+            : null;
     }
 }

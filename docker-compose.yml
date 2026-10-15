@@ -32,6 +32,24 @@ services:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
     depends_on:
       - app
+      - mcp
+    networks:
+      - laravel
+
+  mcp:
+    image: node:22-alpine
+    container_name: erp_lmg_marketing_mcp
+    command: node /app/plugins/erp-lmg-marketing/remote-poc/server.mjs
+    restart: unless-stopped
+    working_dir: /app
+    environment:
+      ERP_LMG_API_URL: http://web
+      MCP_PUBLIC_URL: https://erp.lightermediagroup.com
+      MCP_OAUTH_ISSUER: https://erp.lightermediagroup.com
+      MCP_HOST: 0.0.0.0
+      MCP_PORT: 8787
+    volumes:
+      - .:/app:ro
     networks:
       - laravel
 
@@ -39,9 +57,9 @@ services:
     image: postgres:18
     container_name: laravel_pgsql
     environment:
-      POSTGRES_DB: erp_lmg
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: Lmg140818
+      POSTGRES_DB: ${DB_DATABASE:-erp_lmg}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD wajib diisi pada file .env}
     ports:
       - "5432:5432"
     volumes:

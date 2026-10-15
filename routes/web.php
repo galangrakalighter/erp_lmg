@@ -1,11 +1,18 @@
 <?php
 
+use App\Http\Controllers\OAuthDiscoveryController;
+
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\DataCenterController;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/.well-known/oauth-protected-resource', [OAuthDiscoveryController::class, 'protectedResource'])
+    ->name('oauth.discovery.protected-resource');
+Route::get('/.well-known/oauth-authorization-server', [OAuthDiscoveryController::class, 'authorizationServer'])
+    ->name('oauth.discovery.authorization-server');
 
 Route::get('/terms-privacy-policy', function () {
     return redirect()->route('legal.privacy');
@@ -55,6 +62,8 @@ Route::middleware('auth')->group(function () {
     Route::put('/profile', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
     Route::get('/profile/codex', [App\Http\Controllers\CodexConnectionController::class, 'index'])
         ->name('codex-connection.index');
+    Route::get('/profile/ai-connections', [App\Http\Controllers\CodexConnectionController::class, 'index'])
+        ->name('ai-connections.index');
     Route::post('/profile/codex/tokens', [App\Http\Controllers\CodexConnectionController::class, 'store'])
         ->middleware('throttle:5,1')
         ->name('codex-connection.store');
@@ -62,6 +71,10 @@ Route::middleware('auth')->group(function () {
         ->whereNumber('token')
         ->middleware('throttle:10,1')
         ->name('codex-connection.destroy');
+    Route::delete('/profile/ai-connections/oauth/{client}', [App\Http\Controllers\CodexConnectionController::class, 'destroyOAuth'])
+        ->whereUuid('client')
+        ->middleware('throttle:10,1')
+        ->name('ai-connections.oauth.destroy');
 
     Route::get('/digital-marketing/client/{id_produk}', [App\Http\Controllers\DigitalMarketingWorkspaceController::class, 'show'])
         ->name('digital-marketing.workspace');

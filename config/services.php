@@ -79,6 +79,10 @@ return [
         'api_key' => env('YOUTUBE_API_KEY'),
     ],
 
+    'chatgpt' => [
+        'erp_app_url' => env('CHATGPT_ERP_APP_URL'),
+    ],
+
     'waha' => [
         'api_key' => env('WAHA_API_KEY'),
     ],

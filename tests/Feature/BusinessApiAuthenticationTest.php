@@ -16,8 +16,9 @@ class BusinessApiAuthenticationTest extends TestCase
 
         foreach ($apiRoutes as $route) {
             $middleware = $route->gatherMiddleware();
-            $requiresAuthentication = in_array('auth', $middleware, true)
-                || in_array('auth:sanctum', $middleware, true);
+            $requiresAuthentication = collect($middleware)->contains(
+                fn (string $name): bool => $name === 'auth' || str_starts_with($name, 'auth:'),
+            );
 
             $this->assertTrue(
                 $requiresAuthentication,

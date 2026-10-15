@@ -6,6 +6,8 @@ use App\Http\Middleware\EnsureUserIsAdmin;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\MarketingAnalyticsController;
 use App\Http\Middleware\RequireMarketingMcpToken;
+use App\Http\Middleware\EnsureOAuthAccountIsUnlocked;
+use Laravel\Passport\Http\Middleware\CheckToken;
 
 
 Route::get('/user', function (Request $request) {
@@ -32,6 +34,16 @@ Route::middleware(['auth:sanctum', RequireMarketingMcpToken::class, 'throttle:60
         Route::get('/clients/{client}/paid-performance', [MarketingAnalyticsController::class, 'paidPerformance'])
             ->whereNumber('client')->name('paid-performance');
     });
+
+// Remote MCP OAuth POC: deliberately exposes only the first read-only tool.
+Route::middleware([
+    'auth:oauth-api',
+    CheckToken::using('marketing:read'),
+    EnsureOAuthAccountIsUnlocked::class,
+    'throttle:60,1',
+])->prefix('oauth-marketing-mcp')->name('api.oauth-marketing-mcp.')->group(function () {
+    Route::get('/clients', [MarketingAnalyticsController::class, 'clients'])->name('clients');
+});
 
 Route::middleware(['web', 'auth'])->get(
     '/selectable-users',

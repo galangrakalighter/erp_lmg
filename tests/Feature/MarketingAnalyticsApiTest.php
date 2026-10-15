@@ -3,13 +3,17 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Models\OAuthUser;
 use App\Services\ActivityLogService;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Route;
 use Mockery\MockInterface;
+use Laravel\Passport\Passport;
+use League\OAuth2\Server\ResourceServer;
 use Tests\TestCase;
 
 class MarketingAnalyticsApiTest extends TestCase
@@ -60,6 +64,95 @@ class MarketingAnalyticsApiTest extends TestCase
         $this->actingAs($this->user)
             ->getJson('/api/marketing-mcp/clients')
             ->assertForbidden();
+    }
+
+    public function test_oauth_discovery_describes_pkce_and_read_only_scope(): void
+    {
+        $this->getJson('/.well-known/oauth-protected-resource')
+            ->assertOk()
+            ->assertJsonPath('scopes_supported.0', 'marketing:read')
+            ->assertJsonPath('scopes_supported.1', 'offline_access')
+            ->assertJsonPath('authorization_servers.0', config('marketing-mcp.issuer'));
+
+        $this->getJson('/.well-known/oauth-authorization-server')
+            ->assertOk()
+            ->assertJsonPath('code_challenge_methods_supported.0', 'S256')
+            ->assertJsonPath('token_endpoint_auth_methods_supported.0', 'none')
+            ->assertJsonPath('grant_types_supported.0', 'authorization_code')
+            ->assertJsonPath('scopes_supported.1', 'offline_access');
+
+        $route = collect(Route::getRoutes()->getRoutes())
+            ->first(fn ($route) => $route->uri() === 'api/oauth-marketing-mcp/clients');
+        $this->assertNotNull($route);
+        $this->assertSame(['GET', 'HEAD'], $route->methods());
+    }
+
+    public function test_oauth_poc_lists_only_clients_accessible_to_the_connected_user(): void
+    {
+        $this->mockPassportResourceServer();
+        $oauthUser = OAuthUser::query()->findOrFail($this->user->id);
+        Passport::actingAs($oauthUser, ['marketing:read'], 'oauth-api');
+
+        $this->getJson('/api/oauth-marketing-mcp/clients')
+            ->assertOk()
+            ->assertJsonPath('pagination.total', 1)
+            ->assertJsonPath('data.0.id', $this->allowedClient)
+            ->assertJsonMissing(['id' => $this->deniedClient]);
+    }
+
+    public function test_oauth_poc_rejects_a_token_without_marketing_scope(): void
+    {
+        $this->mockPassportResourceServer();
+        $oauthUser = OAuthUser::query()->findOrFail($this->user->id);
+        Passport::actingAs($oauthUser, [], 'oauth-api');
+
+        $this->getJson('/api/oauth-marketing-mcp/clients')->assertForbidden();
+    }
+
+    public function test_ai_connection_page_lists_and_revokes_only_the_users_oauth_connection(): void
+    {
+        $clientId = (string) \Illuminate\Support\Str::uuid();
+        DB::table('oauth_clients')->insert([
+            'id' => $clientId,
+            'name' => 'ERP LMG ChatGPT Local',
+            'provider' => 'oauth_users',
+            'redirect_uris' => json_encode(['http://127.0.0.1:8400/callback']),
+            'grant_types' => json_encode(['authorization_code', 'refresh_token']),
+            'revoked' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('oauth_access_tokens')->insert([
+            'id' => 'access-token-owned',
+            'user_id' => $this->user->id,
+            'client_id' => $clientId,
+            'scopes' => json_encode(['marketing:read', 'offline_access']),
+            'revoked' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+            'expires_at' => now()->addHour(),
+        ]);
+        DB::table('oauth_refresh_tokens')->insert([
+            'id' => 'refresh-token-owned',
+            'access_token_id' => 'access-token-owned',
+            'revoked' => false,
+            'expires_at' => now()->addMonth(),
+        ]);
+
+        $request = Request::create('/profile/ai-connections');
+        $request->setUserResolver(fn () => $this->user);
+        $controller = app(\App\Http\Controllers\CodexConnectionController::class);
+        $method = new \ReflectionMethod($controller, 'oauthConnections');
+        $connections = $method->invoke($controller, $request);
+        $this->assertCount(1, $connections);
+        $this->assertSame('ERP LMG ChatGPT Local', $connections->first()->name);
+
+        $this->actingAs($this->user)
+            ->delete("/profile/ai-connections/oauth/{$clientId}")
+            ->assertRedirect(route('ai-connections.index'));
+
+        $this->assertDatabaseHas('oauth_access_tokens', ['id' => 'access-token-owned', 'revoked' => true]);
+        $this->assertDatabaseHas('oauth_refresh_tokens', ['id' => 'refresh-token-owned', 'revoked' => true]);
     }
 
     public function test_token_requires_marketing_read_ability(): void
@@ -590,9 +683,14 @@ class MarketingAnalyticsApiTest extends TestCase
         return $this->withToken($token);
     }
 
+    private function mockPassportResourceServer(): void
+    {
+        $this->app->instance(ResourceServer::class, \Mockery::mock(ResourceServer::class));
+    }
+
     private function createContractSchema(): void
     {
-        foreach (['platform_mirror_copies', 'analysis_snapshots', 'data_jasa', 'jenis_cta', 'jenis_body', 'hooks', 'pilar', 'strategy', 'type_produk', 'status', 'user_client', 'client_division', 'user_division', 'roles', 'divisions', 'produk_client', 'kategori_jasa', 'personal_access_tokens', 'users'] as $table) {
+        foreach (['oauth_refresh_tokens', 'oauth_access_tokens', 'oauth_clients', 'platform_mirror_copies', 'analysis_snapshots', 'data_jasa', 'jenis_cta', 'jenis_body', 'hooks', 'pilar', 'strategy', 'type_produk', 'status', 'user_client', 'client_division', 'user_division', 'roles', 'divisions', 'produk_client', 'kategori_jasa', 'personal_access_tokens', 'users'] as $table) {
             Schema::dropIfExists($table);
         }
 
@@ -616,6 +714,31 @@ class MarketingAnalyticsApiTest extends TestCase
             $table->timestamp('last_used_at')->nullable();
             $table->timestamp('expires_at')->nullable();
             $table->timestamps();
+        });
+        Schema::create('oauth_clients', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->string('name');
+            $table->string('provider')->nullable();
+            $table->text('redirect_uris');
+            $table->text('grant_types');
+            $table->boolean('revoked')->default(false);
+            $table->timestamps();
+        });
+        Schema::create('oauth_access_tokens', function (Blueprint $table): void {
+            $table->string('id', 80)->primary();
+            $table->unsignedBigInteger('user_id')->nullable()->index();
+            $table->uuid('client_id');
+            $table->string('name')->nullable();
+            $table->text('scopes')->nullable();
+            $table->boolean('revoked')->default(false);
+            $table->timestamps();
+            $table->dateTime('expires_at')->nullable();
+        });
+        Schema::create('oauth_refresh_tokens', function (Blueprint $table): void {
+            $table->string('id', 80)->primary();
+            $table->string('access_token_id', 80)->index();
+            $table->boolean('revoked')->default(false);
+            $table->dateTime('expires_at')->nullable();
         });
         Schema::create('kategori_jasa', function (Blueprint $table): void {
             $table->id();

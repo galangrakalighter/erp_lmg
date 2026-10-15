@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\User;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -27,7 +27,7 @@ class MarketingAnalyticsService
         'spend', 'impressions', 'reach', 'clicks', 'engagement', 'leads', 'conversions',
     ];
 
-    public function accessibleClients(User $user, array $filters): LengthAwarePaginator
+    public function accessibleClients(Authenticatable $user, array $filters): LengthAwarePaginator
     {
         $query = $this->accessibleClientQuery($user)
             ->leftJoin('kategori_jasa', 'kategori_jasa.id', '=', 'produk_client.kategori_jasa_id')
@@ -46,7 +46,7 @@ class MarketingAnalyticsService
             ->paginate((int) $filters['per_page'], ['*'], 'page', (int) $filters['page']);
     }
 
-    public function assertClientAccess(User $user, int $clientId): void
+    public function assertClientAccess(Authenticatable $user, int $clientId): void
     {
         abort_unless($this->accessibleClientQuery($user)->where('produk_client.id', $clientId)->exists(), 403);
     }
@@ -710,7 +710,7 @@ class MarketingAnalyticsService
         ];
     }
 
-    private function accessibleClientQuery(User $user): Builder
+    private function accessibleClientQuery(Authenticatable $user): Builder
     {
         $query = DB::table('produk_client');
         if ($user->isAdmin) {

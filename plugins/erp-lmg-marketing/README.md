@@ -14,6 +14,8 @@ MCP privat dan read-only untuk mengakses analitik marketing ERP LMG melalui Lara
 - Metadata respons mencakup periode, freshness, sumber, dan kelengkapan.
 - Deduplikasi platform mirror pada operasi agregasi.
 - Tidak membaca atau mengembalikan password, token OAuth, atau credential platform.
+- Pencarian lintas riset, branding, content calendar, task, approval, metadata aset, dan campaign tetap dibatasi pada satu client terotorisasi.
+- Analisis campaign, paid versus organic, perbandingan periode, serta ATL/TTL/BTL tidak mengisi angka atau klasifikasi yang tidak tersedia.
 
 ## Arsitektur
 
@@ -174,6 +176,24 @@ Merangkum paid snapshot yang tersimpan tanpa memanggil Meta Ads atau platform ek
 
 CTR, CPC, CPM, CPL, CPA, dan ROAS hanya dihitung jika seluruh komponen tersedia dan pembagi tidak nol. Spend tidak digabungkan jika currency hilang atau berbeda. Engagement tidak dianggap conversion.
 
+### Tool Digital Marketing lengkap
+
+| Tool | Kegunaan |
+|---|---|
+| `marketing_get_market_research` | 4P, SWOT, segmentasi, target audience, dan positioning |
+| `marketing_get_brand_guidelines` | Identitas, visual, value, tagline, tone of voice, dan content pillar |
+| `marketing_get_content_calendar` | Kalender, platform, copy notes, hashtag, PIC, dan deadline |
+| `marketing_get_tasks` | Task, PIC, status, estimasi, dan deadline |
+| `marketing_get_approvals` | Metadata approval dan revisi yang tersedia |
+| `marketing_get_assets` | Metadata dokumen/aset tanpa lokasi atau isi file |
+| `marketing_list_campaigns` | Campaign organik/paid, budget, dan target jika tersimpan |
+| `marketing_get_performance_metrics` | Paid versus organic, reach, impressions, engagement, clicks, spend, leads, conversions, CTR, CPC, dan CPM |
+| `marketing_compare_periods` | Perbandingan dua periode; baseline nol tidak menghasilkan persentase palsu |
+| `marketing_analyze_channels` | ATL/TTL/BTL atau kategori lain hanya dari klasifikasi tersimpan |
+| `marketing_search` | Pencarian lintas dataset terotorisasi dengan periode dan pagination |
+
+`marketing_search` mewajibkan `client_id`, `q` sepanjang 2–100 karakter, `start_date`, dan `end_date`. Filter opsionalnya adalah `platform`, `source`, `page`, dan `per_page`. Isi/binary dokumen, lokasi penyimpanan, credential, token, dan password tidak menjadi indeks atau hasil pencarian.
+
 ## Platform dan metrik
 
 Platform:
@@ -254,6 +274,17 @@ Token harus berupa personal access token dengan ability `marketing:read`, dimili
 | GET | `/api/marketing-mcp/clients/{client}/performance-trend` | `marketing_get_performance_trend` |
 | GET | `/api/marketing-mcp/clients/{client}/top-content` | `marketing_get_top_content` |
 | GET | `/api/marketing-mcp/clients/{client}/paid-performance` | `marketing_get_paid_performance` |
+| GET | `/api/marketing-mcp/clients/{client}/market-research` | `marketing_get_market_research` |
+| GET | `/api/marketing-mcp/clients/{client}/brand-guidelines` | `marketing_get_brand_guidelines` |
+| GET | `/api/marketing-mcp/clients/{client}/content-calendar` | `marketing_get_content_calendar` |
+| GET | `/api/marketing-mcp/clients/{client}/tasks` | `marketing_get_tasks` |
+| GET | `/api/marketing-mcp/clients/{client}/approvals` | `marketing_get_approvals` |
+| GET | `/api/marketing-mcp/clients/{client}/assets` | `marketing_get_assets` |
+| GET | `/api/marketing-mcp/clients/{client}/campaigns` | `marketing_list_campaigns` |
+| GET | `/api/marketing-mcp/clients/{client}/performance-metrics` | `marketing_get_performance_metrics` |
+| GET | `/api/marketing-mcp/clients/{client}/period-comparison` | `marketing_compare_periods` |
+| GET | `/api/marketing-mcp/clients/{client}/channel-analysis` | `marketing_analyze_channels` |
+| GET | `/api/marketing-mcp/clients/{client}/search` | `marketing_search` |
 
 Contoh request API:
 
@@ -317,7 +348,7 @@ node --check plugins/erp-lmg-marketing/server/index.mjs
 php artisan route:list --path=api/marketing-mcp --method=GET
 ```
 
-Contract test mencakup authentication, authorization antar-client, validasi, pagination, data kosong, JSON rusak, gap snapshot, ranking, perhitungan paid, currency, attribution, platform mirror, audit log aman, dan verifikasi read-only.
+Contract test mencakup admin/non-admin, division dan client berbeda, authentication, authorization antar-client, dokumen/aset, validasi, pagination, periode, data kosong/rusak/tidak lengkap, pencarian, pertanyaan marketing nyata, ranking, perhitungan paid, currency, attribution, platform mirror, audit log aman, dan verifikasi read-only.
 
 ## Struktur file
 
@@ -332,7 +363,10 @@ plugins/erp-lmg-marketing/
 app/
 ├── Http/Controllers/Api/MarketingAnalyticsController.php
 ├── Http/Middleware/RequireMarketingMcpToken.php
-└── Services/MarketingAnalyticsService.php
+├── Services/MarketingAnalyticsService.php
+├── Services/DigitalMarketingDataService.php
+├── Services/CampaignAnalyticsService.php
+└── Services/MarketingSearchService.php
 
 routes/api.php
 tests/Feature/MarketingAnalyticsApiTest.php

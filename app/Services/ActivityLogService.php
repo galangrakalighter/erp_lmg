@@ -2,24 +2,24 @@
 
 namespace App\Services;
 
+use App\Models\AccountMasterFile;
+use App\Models\FilePdf;
+use App\Models\MasterFolder;
+use App\Models\MasterFolderFile;
+use App\Models\ProdukClient;
+use App\Support\SensitiveData;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Throwable;
 
 class ActivityLogService
 {
-    private const HIDDEN_KEYS = [
-        'password', 'password_confirmation', 'current_password', 'remember_token', 'token',
-        'access_token', 'refresh_token', 'api_key', 'secret', 'private_key',
-        'authorization',
-    ];
-
     private array $pending = [];
 
     private bool $flushRegistered = false;
@@ -96,7 +96,7 @@ class ActivityLogService
             Log::debug('Konteks activity log tidak dapat dilengkapi.', [
                 'model' => $model::class,
                 'id' => $model->getKey(),
-                'error' => $exception->getMessage(),
+                'exception' => $exception::class,
             ]);
         }
         $oldData = $event === 'updated'
@@ -134,7 +134,7 @@ class ActivityLogService
                 $warningKey = 'activity_log.firestore_warning.'.now()->format('YmdHi');
                 if (cache()->add($warningKey, true, now()->addMinute())) {
                     Log::warning('Gagal menyimpan activity log ke Firestore.', [
-                        'error' => $exception->getMessage(),
+                        'exception' => $exception::class,
                         'action' => $activity['action'] ?? null,
                         'module' => $activity['module'] ?? null,
                         'user_id' => $activity['user_id'] ?? null,
@@ -207,7 +207,7 @@ class ActivityLogService
 
     private function modelContext(Model $model): array
     {
-        if ($model instanceof \App\Models\MasterFolderFile) {
+        if ($model instanceof MasterFolderFile) {
             $folder = $model->folder()->first();
 
             return [
@@ -220,7 +220,7 @@ class ActivityLogService
             ];
         }
 
-        if ($model instanceof \App\Models\MasterFolder) {
+        if ($model instanceof MasterFolder) {
             return [
                 'kind' => 'master_folder',
                 'folder_id' => $model->getKey(),
@@ -229,7 +229,7 @@ class ActivityLogService
             ];
         }
 
-        if ($model instanceof \App\Models\AccountMasterFile) {
+        if ($model instanceof AccountMasterFile) {
             $owner = $model->owner()->first();
 
             return [
@@ -242,8 +242,8 @@ class ActivityLogService
             ];
         }
 
-        if ($model instanceof \App\Models\FilePdf) {
-            $client = \App\Models\ProdukClient::query()->find($model->client);
+        if ($model instanceof FilePdf) {
+            $client = ProdukClient::query()->find($model->client);
 
             return [
                 'kind' => 'client_file',
@@ -258,12 +258,12 @@ class ActivityLogService
         $context = ['kind' => 'model'];
         $clientId = $this->numericAttribute($model, ['client_id', 'produk_client_id', 'id_produk', 'project']);
 
-        if ($model instanceof \App\Models\ProdukClient) {
+        if ($model instanceof ProdukClient) {
             $clientId = (int) $model->getKey();
         }
 
         if ($clientId) {
-            $clientName = $model instanceof \App\Models\ProdukClient
+            $clientName = $model instanceof ProdukClient
                 ? $model->nama
                 : DB::table('produk_client')->where('id', $clientId)->value('nama');
             $context['client_id'] = $clientId;
@@ -387,14 +387,6 @@ class ActivityLogService
 
     private function isSensitiveKey(string $key): bool
     {
-        $normalized = strtolower($key);
-
-        foreach (self::HIDDEN_KEYS as $hidden) {
-            if ($normalized === $hidden || str_ends_with($normalized, '_'.$hidden)) {
-                return true;
-            }
-        }
-
-        return false;
+        return SensitiveData::isSensitiveKey($key);
     }
 }

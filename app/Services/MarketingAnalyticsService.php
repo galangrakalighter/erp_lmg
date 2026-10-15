@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use Illuminate\Contracts\Auth\Authenticatable;
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -11,6 +11,10 @@ use Illuminate\Support\Facades\DB;
 
 class MarketingAnalyticsService
 {
+    public function __construct(
+        private readonly MarketingAccessService $access,
+    ) {}
+
     public const MAX_PERIOD_DAYS = 366;
 
     public const ALLOWED_METRICS = [
@@ -29,7 +33,7 @@ class MarketingAnalyticsService
 
     public function accessibleClients(Authenticatable $user, array $filters): LengthAwarePaginator
     {
-        $query = $this->accessibleClientQuery($user)
+        $query = $this->access->accessibleClientQuery($user)
             ->leftJoin('kategori_jasa', 'kategori_jasa.id', '=', 'produk_client.kategori_jasa_id')
             ->select('produk_client.id', 'produk_client.nama', 'produk_client.status', 'kategori_jasa.category')
             ->distinct();
@@ -48,7 +52,7 @@ class MarketingAnalyticsService
 
     public function assertClientAccess(Authenticatable $user, int $clientId): void
     {
-        abort_unless($this->accessibleClientQuery($user)->where('produk_client.id', $clientId)->exists(), 403);
+        $this->access->assertClientAccess($user, $clientId);
     }
 
     public function dataAvailability(int $clientId, array $filters): array
@@ -60,7 +64,7 @@ class MarketingAnalyticsService
             ->where('client_id', $clientId)
             ->whereBetween('snapshot_date', [$start->toDateString(), $end->toDateString()])
             ->when($platform, fn (Builder $query) => $query->whereRaw('LOWER(platform) = ?', [$platform]))
-            ->selectRaw("LOWER(platform) as platform, LOWER(source) as source, COUNT(*) as record_count, MIN(snapshot_date) as first_date, MAX(snapshot_date) as last_date, MAX(captured_at) as last_captured_at")
+            ->selectRaw('LOWER(platform) as platform, LOWER(source) as source, COUNT(*) as record_count, MIN(snapshot_date) as first_date, MAX(snapshot_date) as last_date, MAX(captured_at) as last_captured_at')
             ->groupByRaw('LOWER(platform), LOWER(source)')
             ->get()
             ->map(fn ($row) => [
@@ -82,7 +86,7 @@ class MarketingAnalyticsService
             ->where('produk_client_id', $clientId)
             ->whereBetween('tanggal_posting', [$start->toDateString(), $end->toDateString()])
             ->when($platform, fn (Builder $query) => $query->whereRaw('LOWER(platform) = ?', [$platform]))
-            ->selectRaw("LOWER(data_jasa.platform) as platform, LOWER(data_jasa.content_source) as source, COUNT(DISTINCT data_jasa.id) as record_count, COUNT(DISTINCT CASE WHEN mirror_copy.id IS NOT NULL THEN data_jasa.id END) as mirrored_record_count, MIN(data_jasa.tanggal_posting) as first_date, MAX(data_jasa.tanggal_posting) as last_date, MAX(data_jasa.updated_at) as last_updated_at")
+            ->selectRaw('LOWER(data_jasa.platform) as platform, LOWER(data_jasa.content_source) as source, COUNT(DISTINCT data_jasa.id) as record_count, COUNT(DISTINCT CASE WHEN mirror_copy.id IS NOT NULL THEN data_jasa.id END) as mirrored_record_count, MIN(data_jasa.tanggal_posting) as first_date, MAX(data_jasa.tanggal_posting) as last_date, MAX(data_jasa.updated_at) as last_updated_at')
             ->groupByRaw('LOWER(data_jasa.platform), LOWER(data_jasa.content_source)')
             ->get()
             ->map(fn ($row) => [
@@ -710,46 +714,6 @@ class MarketingAnalyticsService
         ];
     }
 
-    private function accessibleClientQuery(Authenticatable $user): Builder
-    {
-        $query = DB::table('produk_client');
-        if ($user->isAdmin) {
-            return $query;
-        }
-
-        $divisionId = DB::table('divisions')->whereRaw('LOWER(TRIM(name)) = ?', ['digital marketing'])->value('id');
-        if (! $divisionId) {
-            return $query->whereRaw('1 = 0');
-        }
-
-        $assignment = DB::table('user_division')
-            ->join('roles', 'roles.id', '=', 'user_division.role_id')
-            ->where('user_division.user_id', $user->id)
-            ->where('user_division.division_id', $divisionId)
-            ->select('roles.role_name')
-            ->first();
-        if (! $assignment) {
-            return $query->whereRaw('1 = 0');
-        }
-
-        $query->whereExists(function ($subquery) use ($divisionId): void {
-            $subquery->selectRaw('1')->from('client_division')
-                ->whereColumn('client_division.client_id', 'produk_client.id')
-                ->where('client_division.division_id', $divisionId)
-                ->where('client_division.status', 1);
-        });
-
-        if ($assignment->role_name !== 'Busines Unit Head') {
-            $query->whereExists(function ($subquery) use ($user): void {
-                $subquery->selectRaw('1')->from('user_client')
-                    ->whereColumn('user_client.client_id', 'produk_client.id')
-                    ->where('user_client.user_id', $user->id);
-            });
-        }
-
-        return $query;
-    }
-
     private function period(array $filters): array
     {
         $end = CarbonImmutable::parse($filters['end_date'] ?? now('Asia/Jakarta')->toDateString(), 'Asia/Jakarta')->endOfDay();
@@ -779,10 +743,12 @@ class MarketingAnalyticsService
             $key = (string) $key;
             if (! in_array($key, self::ALLOWED_METRICS, true)) {
                 $ignoredKeys[] = $key;
+
                 continue;
             }
             if (! is_numeric($value)) {
                 $invalidKeys[] = $key;
+
                 continue;
             }
             $values[$key] = (float) $value;

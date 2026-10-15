@@ -11,13 +11,13 @@
       "interface": {
         "displayName": "ERP LMG Marketing",
         "shortDescription": "Analitik marketing ERP LMG",
-        "longDescription": "Read-only access to marketing data for ERP LMG clients authorized for the connected ERP user.",
+        "longDescription": "Read-only search and analysis of research, branding, content, workflow, assets, campaigns, and performance for ERP LMG clients authorized for the connected user.",
         "developerName": "Lighter Media Group",
         "category": "Productivity",
         "capabilities": [
           "Tools"
         ],
-        "defaultPrompt": "Tampilkan daftar client ERP LMG yang dapat saya akses.",
+        "defaultPrompt": "Tampilkan client ERP LMG yang dapat saya akses dan bantu analisis marketing tanpa mengarang data.",
         "logo": "./assets/icon.svg",
         "composerIcon": "./assets/icon.svg"
       }

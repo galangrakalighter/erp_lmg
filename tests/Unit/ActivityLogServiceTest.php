@@ -36,7 +36,10 @@ class ActivityLogServiceTest extends TestCase
                     && $log['user_id'] === '123'
                     && $log['divisi'] === 2
                     && $log['ip_address'] === '192.168.1.10'
-                    && $log['new_data']['password'] === '[REDACTED]';
+                    && $log['new_data']['password'] === '[REDACTED]'
+                    && $log['new_data']['oauthClientSecret'] === '[REDACTED]'
+                    && $log['new_data']['nested']['authorizationCode'] === '[REDACTED]'
+                    && $log['new_data']['nested']['safe_code'] === 'public-value';
             }));
 
         $service = new ActivityLogService($firestore, $request);
@@ -44,7 +47,15 @@ class ActivityLogServiceTest extends TestCase
             'action' => 'CREATE',
             'module' => 'clients',
             'description' => 'Menambahkan client',
-            'new_data' => ['name' => 'Client A', 'password' => 'secret-value'],
+            'new_data' => [
+                'name' => 'Client A',
+                'password' => 'secret-value',
+                'oauthClientSecret' => 'oauth-secret',
+                'nested' => [
+                    'authorizationCode' => 'authorization-secret',
+                    'safe_code' => 'public-value',
+                ],
+            ],
         ], $user);
         $service->flush();
 

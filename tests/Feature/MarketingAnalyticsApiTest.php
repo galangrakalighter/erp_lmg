@@ -2,25 +2,30 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
+use App\Http\Controllers\CodexConnectionController;
 use App\Models\OAuthUser;
+use App\Models\User;
 use App\Services\ActivityLogService;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Route;
-use Mockery\MockInterface;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Laravel\Passport\Passport;
 use League\OAuth2\Server\ResourceServer;
+use Mockery\MockInterface;
 use Tests\TestCase;
 
 class MarketingAnalyticsApiTest extends TestCase
 {
     private User $user;
+
     private int $allowedClient;
+
     private int $deniedClient;
+
     private MockInterface $auditLog;
 
     protected function setUp(): void
@@ -56,7 +61,13 @@ class MarketingAnalyticsApiTest extends TestCase
 
     public function test_routes_require_a_personal_sanctum_token(): void
     {
-        $this->getJson('/api/marketing-mcp/clients')->assertUnauthorized();
+        $this->getJson('/api/marketing-mcp/clients')
+            ->assertUnauthorized()
+            ->assertJsonStructure(['error' => ['code', 'message'], 'meta' => ['request_id']])
+            ->assertJsonPath('error.code', 'unauthenticated')
+            ->assertHeader('Cache-Control', 'no-store, private')
+            ->assertHeader('Pragma', 'no-cache')
+            ->assertHeader('X-Content-Type-Options', 'nosniff');
         $this->getJson('/api/marketing-mcp/clients/1/performance-trend?start_date=2026-10-01&end_date=2026-10-14')->assertUnauthorized();
         $this->getJson('/api/marketing-mcp/clients/1/top-content?start_date=2026-10-01&end_date=2026-10-14&metric=reach')->assertUnauthorized();
         $this->getJson('/api/marketing-mcp/clients/1/paid-performance?start_date=2026-10-01&end_date=2026-10-14')->assertUnauthorized();
@@ -109,9 +120,124 @@ class MarketingAnalyticsApiTest extends TestCase
         $this->getJson('/api/oauth-marketing-mcp/clients')->assertForbidden();
     }
 
+    public function test_oauth_identity_can_use_every_read_only_tool_for_an_authorized_project(): void
+    {
+        $this->mockPassportResourceServer();
+        $oauthUser = OAuthUser::query()->findOrFail($this->user->id);
+        Passport::actingAs($oauthUser, ['marketing:read'], 'oauth-api');
+
+        foreach ($this->oauthProjectToolUrls($this->allowedClient) as $url) {
+            $this->getJson($url)->assertOk();
+        }
+    }
+
+    public function test_oauth_identity_cannot_cross_into_another_users_client_or_project(): void
+    {
+        $otherUser = User::query()->create([
+            'name' => 'Other Marketing User',
+            'email' => 'other-marketing@example.test',
+            'password' => Hash::make('password'),
+            'isAdmin' => false,
+            'is_locked' => false,
+        ]);
+        $divisionId = DB::table('divisions')->where('name', 'Digital Marketing')->value('id');
+        $roleId = DB::table('roles')->where('division_id', $divisionId)->value('id');
+        DB::table('user_division')->insert([
+            'user_id' => $otherUser->id,
+            'division_id' => $divisionId,
+            'role_id' => $roleId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('user_client')->insert([
+            'user_id' => $otherUser->id,
+            'client_id' => $this->deniedClient,
+            'assigned_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->mockPassportResourceServer();
+        Passport::actingAs(OAuthUser::query()->findOrFail($otherUser->id), ['marketing:read'], 'oauth-api');
+
+        $this->getJson('/api/oauth-marketing-mcp/clients')
+            ->assertOk()
+            ->assertJsonPath('pagination.total', 1)
+            ->assertJsonPath('data.0.id', $this->deniedClient)
+            ->assertJsonMissing(['id' => $this->allowedClient]);
+
+        foreach ($this->oauthProjectToolUrls($this->allowedClient) as $url) {
+            $this->getJson($url)->assertForbidden();
+        }
+    }
+
+    public function test_oauth_identity_is_rejected_when_the_account_is_locked(): void
+    {
+        $this->user->forceFill(['is_locked' => true])->save();
+        $this->mockPassportResourceServer();
+        Passport::actingAs(OAuthUser::query()->findOrFail($this->user->id), ['marketing:read'], 'oauth-api');
+
+        $this->getJson('/api/oauth-marketing-mcp/clients')->assertStatus(423);
+    }
+
+    public function test_role_must_belong_to_the_same_division_as_the_assignment(): void
+    {
+        $digitalMarketingDivision = DB::table('divisions')->where('name', 'Digital Marketing')->value('id');
+        $otherDivision = DB::table('divisions')->insertGetId([
+            'name' => 'Other Division',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $foreignHeadRole = DB::table('roles')->insertGetId([
+            'division_id' => $otherDivision,
+            'role_name' => 'Busines Unit Head',
+            'level' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('user_division')->where('user_id', $this->user->id)->delete();
+        DB::table('user_division')->insert([
+            'user_id' => $this->user->id,
+            'division_id' => $digitalMarketingDivision,
+            'role_id' => $foreignHeadRole,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->withMarketingToken()->getJson('/api/marketing-mcp/clients')
+            ->assertOk()
+            ->assertJsonPath('pagination.total', 0);
+    }
+
+    public function test_digital_marketing_manager_has_division_wide_project_access(): void
+    {
+        $divisionId = DB::table('divisions')->where('name', 'Digital Marketing')->value('id');
+        $managerRole = DB::table('roles')->insertGetId([
+            'division_id' => $divisionId,
+            'role_name' => 'Digital Marketing Manager',
+            'level' => 2,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('user_division')->where('user_id', $this->user->id)->update(['role_id' => $managerRole]);
+
+        $this->withMarketingToken()
+            ->getJson("/api/marketing-mcp/clients/{$this->deniedClient}/data-availability")
+            ->assertOk();
+    }
+
+    public function test_inactive_client_division_assignment_denies_project_access(): void
+    {
+        DB::table('client_division')->where('client_id', $this->allowedClient)->update(['status' => 0]);
+
+        $this->withMarketingToken()
+            ->getJson("/api/marketing-mcp/clients/{$this->allowedClient}/data-availability")
+            ->assertForbidden();
+    }
+
     public function test_ai_connection_page_lists_and_revokes_only_the_users_oauth_connection(): void
     {
-        $clientId = (string) \Illuminate\Support\Str::uuid();
+        $clientId = (string) Str::uuid();
         DB::table('oauth_clients')->insert([
             'id' => $clientId,
             'name' => 'ERP LMG ChatGPT Local',
@@ -141,7 +267,7 @@ class MarketingAnalyticsApiTest extends TestCase
 
         $request = Request::create('/profile/ai-connections');
         $request->setUserResolver(fn () => $this->user);
-        $controller = app(\App\Http\Controllers\CodexConnectionController::class);
+        $controller = app(CodexConnectionController::class);
         $method = new \ReflectionMethod($controller, 'oauthConnections');
         $connections = $method->invoke($controller, $request);
         $this->assertCount(1, $connections);
@@ -160,6 +286,84 @@ class MarketingAnalyticsApiTest extends TestCase
         $token = $this->user->createToken('wrong-scope', ['unrelated:read'])->plainTextToken;
 
         $this->withToken($token)->getJson('/api/marketing-mcp/clients')->assertForbidden();
+    }
+
+    public function test_admin_can_read_all_clients_without_division_or_client_assignment(): void
+    {
+        $admin = User::query()->create([
+            'name' => 'Marketing Admin',
+            'email' => 'marketing-admin@example.test',
+            'password' => Hash::make('password'),
+            'isAdmin' => true,
+            'is_locked' => false,
+        ]);
+        $token = $admin->createToken('admin-readiness-test', ['marketing:read'])->plainTextToken;
+
+        $this->withToken($token)->getJson('/api/marketing-mcp/clients')
+            ->assertOk()
+            ->assertJsonPath('pagination.total', 2)
+            ->assertJsonFragment(['id' => $this->allowedClient])
+            ->assertJsonFragment(['id' => $this->deniedClient]);
+        $this->withToken($token)->getJson("/api/marketing-mcp/clients/{$this->deniedClient}/search?q=launch&start_date=2026-10-01&end_date=2026-10-14")
+            ->assertOk();
+    }
+
+    public function test_non_admin_from_another_division_cannot_cross_into_digital_marketing_clients(): void
+    {
+        $otherUser = User::query()->create([
+            'name' => 'Other Division User',
+            'email' => 'other-division@example.test',
+            'password' => Hash::make('password'),
+            'isAdmin' => false,
+            'is_locked' => false,
+        ]);
+        $otherDivision = DB::table('divisions')->insertGetId([
+            'name' => 'Finance',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $otherRole = DB::table('roles')->insertGetId([
+            'division_id' => $otherDivision,
+            'role_name' => 'Finance Manager',
+            'level' => 2,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('user_division')->insert([
+            'user_id' => $otherUser->id,
+            'division_id' => $otherDivision,
+            'role_id' => $otherRole,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('user_client')->insert([
+            'user_id' => $otherUser->id,
+            'client_id' => $this->allowedClient,
+            'assigned_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $token = $otherUser->createToken('cross-division-test', ['marketing:read'])->plainTextToken;
+
+        $this->withToken($token)->getJson('/api/marketing-mcp/clients')
+            ->assertOk()
+            ->assertJsonPath('pagination.total', 0);
+        $this->withToken($token)
+            ->getJson("/api/marketing-mcp/clients/{$this->allowedClient}/data-availability")
+            ->assertForbidden();
+        $this->withToken($token)
+            ->getJson("/api/marketing-mcp/clients/{$this->allowedClient}/search?q=launch&start_date=2026-10-01&end_date=2026-10-14")
+            ->assertForbidden();
+    }
+
+    public function test_soft_deleted_account_cannot_reuse_an_existing_token(): void
+    {
+        $token = $this->user->createToken('before-deactivation', ['marketing:read'])->plainTextToken;
+        $this->user->delete();
+
+        $this->withToken($token)->getJson('/api/marketing-mcp/clients')
+            ->assertUnauthorized()
+            ->assertJsonPath('error.code', 'unauthenticated');
     }
 
     public function test_authenticated_user_can_create_a_personal_codex_token(): void
@@ -294,7 +498,7 @@ class MarketingAnalyticsApiTest extends TestCase
         $routes = collect(Route::getRoutes()->getRoutes())
             ->filter(fn ($route) => str_starts_with($route->uri(), 'api/marketing-mcp/'));
 
-        $this->assertCount(8, $routes);
+        $this->assertCount(19, $routes);
         foreach ($routes as $route) {
             $this->assertSame(['GET', 'HEAD'], $route->methods());
         }
@@ -348,6 +552,13 @@ class MarketingAnalyticsApiTest extends TestCase
         $this->withToken($token)->getJson("/api/marketing-mcp/clients/{$this->allowedClient}/performance-summary?start_date=not-a-date")
             ->assertUnprocessable();
         $this->withToken($token)->getJson('/api/marketing-mcp/clients?page=0&per_page=101')->assertUnprocessable();
+        $this->withToken($token)->getJson('/api/marketing-mcp/clients?access_token=should-never-be-accepted')
+            ->assertUnprocessable()
+            ->assertJsonPath('error.code', 'validation_failed')
+            ->assertJsonMissing(['should-never-be-accepted']);
+        $this->withToken($token)->getJson("/api/marketing-mcp/clients/{$this->allowedClient}/performance-summary?start_date=2026-10-14&end_date=2026-10-01")
+            ->assertUnprocessable()
+            ->assertJsonPath('error.code', 'validation_failed');
         $this->withToken($token)->getJson("/api/marketing-mcp/clients?search=' OR 1=1 --")
             ->assertOk()
             ->assertJsonPath('pagination.total', 0);
@@ -428,12 +639,31 @@ class MarketingAnalyticsApiTest extends TestCase
         $this->assertSame($before['plans'], DB::table('data_jasa')->get()->map(fn ($row) => (array) $row)->all());
     }
 
+    public function test_all_marketing_mcp_routes_are_read_only_and_use_the_same_success_contract(): void
+    {
+        $routes = collect(Route::getRoutes()->getRoutes())
+            ->filter(fn ($route) => str_starts_with($route->uri(), 'api/marketing-mcp/')
+                || str_starts_with($route->uri(), 'api/oauth-marketing-mcp/'));
+
+        $this->assertCount(38, $routes);
+        foreach ($routes as $route) {
+            $this->assertSame(['GET', 'HEAD'], $route->methods(), $route->uri());
+        }
+
+        $this->withMarketingToken()->getJson('/api/marketing-mcp/clients')
+            ->assertOk()
+            ->assertJsonStructure(['data', 'pagination', 'meta'])
+            ->assertHeader('Cache-Control', 'no-store, private')
+            ->assertHeader('X-Request-Id');
+    }
+
     public function test_audit_log_does_not_store_raw_search_input(): void
     {
         $this->withMarketingToken()->getJson('/api/marketing-mcp/clients?search=secret-value')->assertOk();
 
         $this->auditLog->shouldHaveReceived('record')->withArgs(function (array $activity): bool {
             $filters = data_get($activity, 'context.filters', []);
+
             return data_get($activity, 'context.tool') === 'marketing_list_clients'
                 && ($filters['search_applied'] ?? false) === true
                 && ! array_key_exists('search', $filters)
@@ -645,6 +875,184 @@ class MarketingAnalyticsApiTest extends TestCase
             ->assertJsonPath('meta.completeness.status', 'partial');
     }
 
+    public function test_phase_two_tools_return_only_authorized_read_only_digital_marketing_data(): void
+    {
+        DB::table('analize_4p')->insert([
+            'produk_client_id' => $this->allowedClient, 'nama_analisis' => 'Product', 'type' => 'Strength',
+            'platform' => 'Instagram', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('target_audience')->insert([
+            'produk_client_id' => $this->allowedClient, 'indikator' => 'Primary', 'usia' => '25-34',
+            'platform' => 'Instagram', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('gaya_komunikasi')->insert([
+            'produk_client_id' => $this->allowedClient, 'gaya_bicara' => 'Friendly', 'gaya_bahasa' => 'Simple',
+            'platform' => 'Instagram', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('brand_tagline')->insert([
+            'produk_client_id' => $this->allowedClient, 'nama_tagline' => 'Grow together',
+            'nama_hashtagline' => '#GrowTogether', 'platform' => 'Instagram', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $refs = $this->contentReferences();
+        DB::table('pilar')->where('id', $refs['pilar_id'])->update([
+            'kategori_id' => DB::table('produk_client')->where('id', $this->allowedClient)->value('kategori_jasa_id'),
+            'status' => 1, 'fungsi_singkat' => 'Educate audiences', 'contoh' => 'Tutorial',
+        ]);
+        $planId = $this->insertContentPlan($this->allowedClient, $refs, [
+            'inspirasi' => 'Customer question', 'note' => 'Draft copy without credentials',
+            'tanggal_mulai' => '2026-10-01', 'tanggal_deadline' => '2026-10-04',
+        ]);
+        $divisionId = DB::table('divisions')->where('name', 'Digital Marketing')->value('id');
+        DB::table('task')->insert([
+            'nama_task' => 'Review content', 'divisi' => $divisionId, 'pic' => $this->user->id,
+            'priority' => 1, 'menit' => 30, 'id_manajement_konten' => $planId,
+            'tanggal_mulai' => '2026-10-02', 'tanggal_deadline' => '2026-10-04', 'status' => 2,
+            'project' => $this->allowedClient, 'tanggal_approve' => '2026-10-04', 'tanggal_revisi' => '2026-10-03',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $fileId = DB::table('file_pdf')->insertGetId([
+            'nama_file' => 'Brand Guide', 'client' => $this->allowedClient, 'division_id' => $divisionId,
+            'uploaded_by' => $this->user->id, 'location' => 'private/secret/path.pdf', 'is_pinned' => true,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('file_pdf_versions')->insert([
+            'file_pdf_id' => $fileId, 'version_number' => 1, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $before = collect(['analize_4p', 'target_audience', 'gaya_komunikasi', 'brand_tagline', 'data_jasa', 'task', 'file_pdf', 'file_pdf_versions'])
+            ->mapWithKeys(fn (string $table) => [$table => DB::table($table)->get()->map(fn ($row) => (array) $row)->all()]);
+
+        $base = "/api/marketing-mcp/clients/{$this->allowedClient}";
+        $this->withMarketingToken()->getJson($base.'/market-research?platform=instagram')->assertOk()
+            ->assertJsonFragment(['section' => 'target_audience', 'usia' => '25-34'])
+            ->assertJsonPath('meta.competitor_data.status', 'unavailable');
+        $this->withMarketingToken()->getJson($base.'/brand-guidelines?platform=instagram')->assertOk()
+            ->assertJsonFragment(['section' => 'tone_of_voice', 'value' => 'Friendly'])
+            ->assertJsonFragment(['section' => 'content_pillar', 'value' => 'Education']);
+        $period = 'start_date=2026-10-01&end_date=2026-10-14';
+        $this->withMarketingToken()->getJson($base.'/content-calendar?'.$period)->assertOk()
+            ->assertJsonPath('data.0.hashtags.0', '#GrowTogether')
+            ->assertJsonPath('data.0.caption', null)
+            ->assertJsonPath('meta.caption_availability.status', 'unavailable');
+        $this->withMarketingToken()->getJson($base.'/tasks?'.$period)->assertOk()
+            ->assertJsonPath('data.0.pic_name', 'Marketing User')
+            ->assertJsonMissingPath('data.0.email');
+        $this->withMarketingToken()->getJson($base.'/approvals?'.$period)->assertOk()
+            ->assertJsonPath('data.0.approved_at', '2026-10-04')
+            ->assertJsonPath('meta.history_availability.status', 'partial');
+        $this->withMarketingToken()->getJson($base.'/assets')->assertOk()
+            ->assertJsonPath('data.0.version_count', 1)
+            ->assertJsonMissingPath('data.0.location')
+            ->assertJsonMissing(['private/secret/path.pdf']);
+
+        foreach (['market-research', 'brand-guidelines', 'assets'] as $tool) {
+            $this->withMarketingToken()->getJson("/api/marketing-mcp/clients/{$this->deniedClient}/{$tool}")->assertForbidden();
+        }
+        $this->withMarketingToken()->getJson($base.'/tasks?start_date=2025-01-01&end_date=2026-10-14')->assertUnprocessable();
+        $this->withMarketingToken()->getJson($base.'/assets?per_page=101')->assertUnprocessable();
+        $this->withMarketingToken()->getJson($base.'/market-research?credential=secret-value')
+            ->assertUnprocessable()->assertJsonMissing(['secret-value']);
+
+        foreach ($before as $table => $rows) {
+            $this->assertSame($rows, DB::table($table)->get()->map(fn ($row) => (array) $row)->all(), $table);
+        }
+    }
+
+    public function test_campaign_performance_comparison_and_channel_analysis_use_only_stored_numbers(): void
+    {
+        $paidCurrent = [
+            'id' => 'ad-1', 'campaign_id' => 'campaign-1', 'campaign' => 'Launch', 'title' => 'Paid launch',
+            'date' => '2026-10-10', 'budget' => 1500, 'target' => 'lead_generation', 'currency' => 'IDR',
+            'classification' => 'TTL',
+            'metrics' => ['reach' => 800, 'impressions' => 1000, 'engagement' => 40, 'clicks' => 20, 'spend' => 100, 'leads' => 4, 'conversions' => 2, 'token' => 'never-return'],
+        ];
+        $organicCurrent = [
+            'id' => 'post-1', 'title' => 'Organic launch', 'date' => '2026-10-11', 'classification' => 'BTL',
+            'metrics' => ['reach' => 500, 'impressions' => 600, 'engagement' => 60, 'clicks' => 10, 'spend' => 'not-a-number'],
+        ];
+        $this->insertSnapshot('2026-09-30', ['impressions' => 800, 'clicks' => 8, 'spend' => 80, 'leads' => 2, 'conversions' => 1, 'currency' => 'IDR'], [$paidCurrent], 'paid');
+        $this->insertSnapshot('2026-10-10', ['reach' => 800, 'impressions' => 1000, 'engagement' => 40, 'clicks' => 20, 'spend' => 100, 'leads' => 4, 'conversions' => 2, 'currency' => 'IDR'], [$paidCurrent], 'paid');
+        $this->insertSnapshot('2026-10-11', ['reach' => 500, 'impressions' => 600, 'engagement' => 60, 'clicks' => 10], [$organicCurrent], 'organic');
+
+        $before = DB::table('analysis_snapshots')->orderBy('id')->get()->map(fn ($row) => (array) $row)->all();
+        $base = "/api/marketing-mcp/clients/{$this->allowedClient}";
+        $period = 'start_date=2026-10-01&end_date=2026-10-14';
+
+        $this->withMarketingToken()->getJson($base.'/campaigns?'.$period.'&campaign_id=campaign-1')->assertOk()
+            ->assertJsonPath('data.0.campaign', 'Launch')
+            ->assertJsonPath('data.0.budget', 1500)
+            ->assertJsonPath('data.0.target', 'lead_generation')
+            ->assertJsonPath('data.0.metrics.ctr', 2)
+            ->assertJsonMissing(['never-return']);
+        $this->withMarketingToken()->getJson($base.'/performance-metrics?'.$period)->assertOk()
+            ->assertJsonPath('pagination', null)
+            ->assertJsonFragment(['ctr' => 2, 'cpc' => 5, 'cpm' => 100])
+            ->assertJsonPath('paid_vs_organic.0.platform', 'instagram');
+        $this->withMarketingToken()->getJson($base.'/period-comparison?'.$period.'&compare_start_date=2026-09-17&compare_end_date=2026-09-30')->assertOk()
+            ->assertJsonPath('pagination', null)
+            ->assertJsonPath('data.0.metrics.clicks.current', 20)
+            ->assertJsonPath('data.0.metrics.clicks.comparison', 8)
+            ->assertJsonPath('data.0.metrics.clicks.change_percent', 150);
+        $this->withMarketingToken()->getJson($base.'/channel-analysis?'.$period)->assertOk()
+            ->assertJsonPath('pagination', null)
+            ->assertJsonFragment(['classification' => 'TTL', 'classification_source' => 'stored'])
+            ->assertJsonFragment(['classification' => 'BTL', 'classification_source' => 'stored']);
+
+        foreach (['campaigns', 'performance-metrics', 'period-comparison', 'channel-analysis'] as $tool) {
+            $query = $period.($tool === 'period-comparison' ? '&compare_start_date=2026-09-17&compare_end_date=2026-09-30' : '');
+            $this->withMarketingToken()->getJson("/api/marketing-mcp/clients/{$this->deniedClient}/{$tool}?{$query}")->assertForbidden();
+        }
+        $this->withMarketingToken()->getJson($base.'/performance-metrics?'.$period.'&credential=secret')->assertUnprocessable()->assertJsonMissing(['secret']);
+        $this->withMarketingToken()->getJson($base.'/period-comparison?'.$period.'&compare_start_date=2026-10-10&compare_end_date=2026-10-01')->assertUnprocessable();
+        $this->assertSame($before, DB::table('analysis_snapshots')->orderBy('id')->get()->map(fn ($row) => (array) $row)->all());
+    }
+
+    public function test_cross_dataset_search_is_authorized_paginated_safe_and_handles_incomplete_data(): void
+    {
+        DB::table('analize_4p')->insert([
+            'produk_client_id' => $this->allowedClient, 'nama_analisis' => 'Launch market opportunity',
+            'type' => 'promotion', 'platform' => 'Instagram', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $refs = $this->contentReferences();
+        $this->insertContentPlan($this->allowedClient, $refs, [
+            'judul' => 'Launch October', 'tanggal_posting' => '2026-10-10', 'note' => 'Safe campaign copy',
+        ]);
+        DB::table('file_pdf')->insert([
+            'nama_file' => 'Launch Brand Guide', 'client' => $this->allowedClient,
+            'location' => 'private/credentials/launch-secret.pdf', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $this->insertSnapshot('2026-10-10', ['reach' => 100], 'not-json', 'paid');
+
+        $base = "/api/marketing-mcp/clients/{$this->allowedClient}/search";
+        $query = 'q=launch&start_date=2026-10-01&end_date=2026-10-14&per_page=2';
+        $response = $this->withMarketingToken()->getJson($base.'?'.$query)->assertOk()
+            ->assertJsonPath('pagination.page', 1)
+            ->assertJsonPath('pagination.per_page', 2)
+            ->assertJsonPath('pagination.total', 3)
+            ->assertJsonPath('meta.datasets_searched.asset_metadata', 1)
+            ->assertJsonMissing(['private/credentials/launch-secret.pdf'])
+            ->assertJsonMissing(['not-json']);
+        $this->assertCount(2, $response->json('data'));
+        $this->withMarketingToken()->getJson($base.'?'.$query.'&page=2')->assertOk()
+            ->assertJsonPath('pagination.page', 2)
+            ->assertJsonCount(1, 'data');
+
+        $this->withMarketingToken()->getJson("/api/marketing-mcp/clients/{$this->deniedClient}/search?{$query}")->assertForbidden();
+        $this->withMarketingToken()->getJson($base.'?q=x&start_date=2026-10-01&end_date=2026-10-14')->assertUnprocessable();
+        $this->withMarketingToken()->getJson($base.'?q=launch&start_date=2025-01-01&end_date=2026-10-14')->assertUnprocessable();
+        $this->withMarketingToken()->getJson($base.'?q=launch&start_date=2026-10-01&end_date=2026-10-14&per_page=101')->assertUnprocessable();
+        $this->withMarketingToken()->getJson($base.'?q=launch&start_date=2026-10-01&end_date=2026-10-14&credential=secret-value')
+            ->assertUnprocessable()->assertJsonMissing(['secret-value']);
+
+        $this->auditLog->shouldHaveReceived('record')->withArgs(function (array $activity): bool {
+            $filters = data_get($activity, 'context.filters', []);
+
+            return data_get($activity, 'context.tool') === 'marketing_search'
+                && ($filters['query_applied'] ?? false) === true
+                && ! array_key_exists('q', $filters)
+                && ! str_contains(json_encode($activity), 'launch');
+        })->atLeast()->once();
+    }
+
     private function insertSnapshot(string $date, array|string $metrics, array|string $items = [], string $source = 'organic', string $platform = 'instagram'): void
     {
         DB::table('analysis_snapshots')->insert([
@@ -680,7 +1088,35 @@ class MarketingAnalyticsApiTest extends TestCase
     private function withMarketingToken(): static
     {
         $token = $this->user->createToken('marketing-mcp-test', ['marketing:read'])->plainTextToken;
+
         return $this->withToken($token);
+    }
+
+    /** @return list<string> */
+    private function oauthProjectToolUrls(int $clientId): array
+    {
+        $period = 'start_date=2026-10-01&end_date=2026-10-14';
+
+        return [
+            "/api/oauth-marketing-mcp/clients/{$clientId}/data-availability",
+            "/api/oauth-marketing-mcp/clients/{$clientId}/performance-summary",
+            "/api/oauth-marketing-mcp/clients/{$clientId}/content-plan?{$period}",
+            "/api/oauth-marketing-mcp/clients/{$clientId}/content-mix?{$period}",
+            "/api/oauth-marketing-mcp/clients/{$clientId}/performance-trend?{$period}",
+            "/api/oauth-marketing-mcp/clients/{$clientId}/top-content?{$period}&metric=reach",
+            "/api/oauth-marketing-mcp/clients/{$clientId}/paid-performance?{$period}",
+            "/api/oauth-marketing-mcp/clients/{$clientId}/market-research",
+            "/api/oauth-marketing-mcp/clients/{$clientId}/brand-guidelines",
+            "/api/oauth-marketing-mcp/clients/{$clientId}/content-calendar?{$period}",
+            "/api/oauth-marketing-mcp/clients/{$clientId}/tasks?{$period}",
+            "/api/oauth-marketing-mcp/clients/{$clientId}/approvals?{$period}",
+            "/api/oauth-marketing-mcp/clients/{$clientId}/assets",
+            "/api/oauth-marketing-mcp/clients/{$clientId}/campaigns?{$period}",
+            "/api/oauth-marketing-mcp/clients/{$clientId}/performance-metrics?{$period}",
+            "/api/oauth-marketing-mcp/clients/{$clientId}/period-comparison?{$period}",
+            "/api/oauth-marketing-mcp/clients/{$clientId}/channel-analysis?{$period}",
+            "/api/oauth-marketing-mcp/clients/{$clientId}/search?q=launch&{$period}",
+        ];
     }
 
     private function mockPassportResourceServer(): void
@@ -690,7 +1126,7 @@ class MarketingAnalyticsApiTest extends TestCase
 
     private function createContractSchema(): void
     {
-        foreach (['oauth_refresh_tokens', 'oauth_access_tokens', 'oauth_clients', 'platform_mirror_copies', 'analysis_snapshots', 'data_jasa', 'jenis_cta', 'jenis_body', 'hooks', 'pilar', 'strategy', 'type_produk', 'status', 'user_client', 'client_division', 'user_division', 'roles', 'divisions', 'produk_client', 'kategori_jasa', 'personal_access_tokens', 'users'] as $table) {
+        foreach (['file_pdf_versions', 'file_pdf', 'task', 'alat_branding', 'moodboard', 'audio_brand', 'komposisi', 'gaya_komunikasi', 'brand_tagline', 'brand_value', 'brand_image', 'brand_identify', 'positioning', 'target_audience', 'segmentasi', 'analize_swot', 'analize_4p', 'oauth_refresh_tokens', 'oauth_access_tokens', 'oauth_clients', 'platform_mirror_copies', 'analysis_snapshots', 'data_jasa', 'jenis_cta', 'jenis_body', 'hooks', 'pilar', 'strategy', 'type_produk', 'status', 'user_client', 'client_division', 'user_division', 'roles', 'divisions', 'produk_client', 'kategori_jasa', 'personal_access_tokens', 'users'] as $table) {
             Schema::dropIfExists($table);
         }
 
@@ -795,13 +1231,24 @@ class MarketingAnalyticsApiTest extends TestCase
                 $table->string($label);
             });
         }
+        Schema::table('pilar', function (Blueprint $table): void {
+            $table->unsignedBigInteger('kategori_id')->nullable();
+            $table->integer('status')->default(1);
+            $table->string('fungsi_singkat')->nullable();
+            $table->string('contoh')->nullable();
+            $table->timestamps();
+        });
         Schema::create('data_jasa', function (Blueprint $table): void {
             $table->id();
             $table->unsignedBigInteger('produk_client_id');
             $table->string('judul')->nullable();
+            $table->string('inspirasi')->nullable();
+            $table->text('note')->nullable();
             $table->string('platform')->nullable();
             $table->string('content_source')->default('organic');
             $table->date('tanggal_posting')->nullable();
+            $table->date('tanggal_mulai')->nullable();
+            $table->date('tanggal_deadline')->nullable();
             $table->time('jam_posting')->nullable();
             $table->unsignedBigInteger('type_produk_id')->nullable();
             $table->unsignedBigInteger('strategy_id')->nullable();
@@ -832,6 +1279,77 @@ class MarketingAnalyticsApiTest extends TestCase
             $table->string('source_platform');
             $table->unsignedBigInteger('target_id');
             $table->string('target_platform');
+            $table->timestamps();
+        });
+        foreach ([
+            'analize_4p' => ['nama_analisis', 'type'],
+            'analize_swot' => ['strenght', 'weakness', 'oportunity', 'threat'],
+            'segmentasi' => ['usia', 'gender', 'negara', 'wilayah', 'gaya_hidup', 'status_sosial', 'minat', 'penggunaan', 'loyalitas', 'manfaat'],
+            'target_audience' => ['indikator', 'usia', 'gender', 'negara', 'wilayah', 'pekerjaan', 'gaya_hidup', 'status_sosial', 'penggunaan', 'manfaat'],
+            'positioning' => ['indikator', 'deskripsi'],
+        ] as $tableName => $fields) {
+            Schema::create($tableName, function (Blueprint $table) use ($fields): void {
+                $table->id();
+                $table->unsignedBigInteger('produk_client_id');
+                foreach ($fields as $field) {
+                    $table->text($field)->nullable();
+                }
+                $table->string('platform')->nullable();
+                $table->timestamps();
+            });
+        }
+        foreach ([
+            'brand_identify' => ['identify'], 'brand_image' => ['nama_image'], 'brand_value' => ['nama_value'],
+            'brand_tagline' => ['nama_tagline', 'nama_hashtagline'], 'gaya_komunikasi' => ['gaya_bicara', 'gaya_bahasa'],
+            'komposisi' => ['type_komposisi', 'komposisi'], 'audio_brand' => ['nama_audio'],
+            'moodboard' => ['moodboard'], 'alat_branding' => ['nama_alat'],
+        ] as $tableName => $fields) {
+            Schema::create($tableName, function (Blueprint $table) use ($fields): void {
+                $table->id();
+                $table->unsignedBigInteger('produk_client_id');
+                foreach ($fields as $field) {
+                    $table->text($field)->nullable();
+                }
+                $table->string('platform')->nullable();
+                $table->timestamps();
+            });
+        }
+        Schema::create('task', function (Blueprint $table): void {
+            $table->id();
+            $table->string('nama_task');
+            $table->string('jira')->nullable();
+            $table->unsignedBigInteger('divisi');
+            $table->unsignedBigInteger('pic');
+            $table->integer('priority')->default(0);
+            $table->integer('menit')->default(0);
+            $table->unsignedBigInteger('id_manajement_konten')->nullable();
+            $table->unsignedBigInteger('id_kpi')->nullable();
+            $table->date('tanggal_mulai');
+            $table->date('tanggal_deadline');
+            $table->integer('status')->default(0);
+            $table->unsignedBigInteger('project');
+            $table->time('jam_mulai')->nullable();
+            $table->date('tanggal_approve')->nullable();
+            $table->date('tanggal_revisi')->nullable();
+            $table->timestamps();
+        });
+        Schema::create('file_pdf', function (Blueprint $table): void {
+            $table->id();
+            $table->string('nama_file');
+            $table->unsignedBigInteger('client');
+            $table->unsignedBigInteger('division_id')->nullable();
+            $table->unsignedBigInteger('uploaded_by')->nullable();
+            $table->string('location');
+            $table->boolean('is_generated_document')->default(false);
+            $table->boolean('is_system_template')->default(false);
+            $table->boolean('is_pinned')->default(false);
+            $table->integer('pin_order')->nullable();
+            $table->timestamps();
+        });
+        Schema::create('file_pdf_versions', function (Blueprint $table): void {
+            $table->id();
+            $table->unsignedBigInteger('file_pdf_id');
+            $table->integer('version_number');
             $table->timestamps();
         });
     }

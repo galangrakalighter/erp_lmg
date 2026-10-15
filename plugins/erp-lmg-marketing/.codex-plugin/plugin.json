@@ -1,6 +1,6 @@
 {
   "name": "erp-lmg-marketing",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Private read-only marketing analyst for authorized ERP LMG data.",
   "author": {
     "name": "Lighter Media Group"
@@ -9,7 +9,7 @@
   "interface": {
     "displayName": "ERP LMG Marketing",
     "shortDescription": "Analitik marketing ERP LMG",
-    "longDescription": "Read-only marketing analysis for authorized ERP LMG clients, content plans, stored performance snapshots, trends, top content, and paid performance.",
+    "longDescription": "Read-only research, branding, content, workflow, asset, campaign, and performance analysis for authorized ERP LMG clients.",
     "developerName": "Lighter Media Group",
     "category": "Productivity",
     "capabilities": ["Tools"],

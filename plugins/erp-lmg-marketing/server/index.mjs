@@ -159,6 +159,109 @@ const tools = [
       }, additionalProperties: false,
     },
   },
+  {
+    name: "marketing_get_market_research",
+    description: "Read market research, segmentation, target audience, positioning, and available competitor status for one authorized client.",
+    inputSchema: {
+      type: "object", required: ["client_id"],
+      properties: { client_id: { type: "integer", minimum: 1 }, platform: { type: "string", enum: platforms }, ...pagination },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "marketing_get_brand_guidelines",
+    description: "Read branding, tone of voice, hashtag, and content-pillar records for one authorized client.",
+    inputSchema: {
+      type: "object", required: ["client_id"],
+      properties: { client_id: { type: "integer", minimum: 1 }, platform: { type: "string", enum: platforms }, ...pagination },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "marketing_get_content_calendar",
+    description: "Read content calendar metadata, copy notes, hashtags, platform, PIC, and deadlines without exposing credentials.",
+    inputSchema: {
+      type: "object", required: ["client_id", "start_date", "end_date"],
+      properties: { client_id: { type: "integer", minimum: 1 }, platform: { type: "string", enum: platforms }, source: { type: "string", enum: ["organic", "paid"] }, ...requiredPeriod, ...pagination },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "marketing_get_tasks",
+    description: "Read Digital Marketing task, PIC, status, estimate, and deadline data for one authorized client.",
+    inputSchema: {
+      type: "object", required: ["client_id", "start_date", "end_date"],
+      properties: { client_id: { type: "integer", minimum: 1 }, pic_id: { type: "integer", minimum: 1 }, status: { type: "integer", minimum: 0 }, ...requiredPeriod, ...pagination },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "marketing_get_approvals",
+    description: "Read the latest available approval and revision metadata for one authorized client.",
+    inputSchema: {
+      type: "object", required: ["client_id", "start_date", "end_date"],
+      properties: { client_id: { type: "integer", minimum: 1 }, ...requiredPeriod, ...pagination },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "marketing_get_assets",
+    description: "Read safe document and asset metadata; never returns storage location, binary content, or uploader email.",
+    inputSchema: {
+      type: "object", required: ["client_id"],
+      properties: { client_id: { type: "integer", minimum: 1 }, division_id: { type: "integer", minimum: 1 }, ...pagination },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "marketing_list_campaigns",
+    description: "List organic and paid campaign/content snapshot items, including budget and target only when explicitly stored.",
+    inputSchema: {
+      type: "object", required: ["client_id", "start_date", "end_date"],
+      properties: { client_id: { type: "integer", minimum: 1 }, platform: { type: "string", enum: platforms }, source: { type: "string", enum: ["organic", "paid"] }, campaign_id: { type: "string", maxLength: 100 }, ...requiredPeriod, ...pagination },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "marketing_get_performance_metrics",
+    description: "Read stored reach, impressions, engagement, clicks, spend, leads, conversions, CTR, CPC, and CPM by platform and source.",
+    inputSchema: {
+      type: "object", required: ["client_id", "start_date", "end_date"],
+      properties: { client_id: { type: "integer", minimum: 1 }, platform: { type: "string", enum: platforms }, source: { type: "string", enum: ["organic", "paid"] }, ...requiredPeriod },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "marketing_compare_periods",
+    description: "Compare two stored performance periods without treating missing values as zero; defaults to the immediately preceding equal-length period.",
+    inputSchema: {
+      type: "object", required: ["client_id", "start_date", "end_date"],
+      properties: {
+        client_id: { type: "integer", minimum: 1 }, platform: { type: "string", enum: platforms }, source: { type: "string", enum: ["organic", "paid"] },
+        compare_start_date: { type: "string", format: "date" }, compare_end_date: { type: "string", format: "date" }, ...requiredPeriod,
+      }, additionalProperties: false,
+    },
+  },
+  {
+    name: "marketing_analyze_channels",
+    description: "Analyze ATL, TTL, BTL, or other classifications only when those labels are explicitly stored in snapshot items.",
+    inputSchema: {
+      type: "object", required: ["client_id", "start_date", "end_date"],
+      properties: { client_id: { type: "integer", minimum: 1 }, platform: { type: "string", enum: platforms }, source: { type: "string", enum: ["organic", "paid"] }, ...requiredPeriod },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "marketing_search",
+    description: "Search authorized market research, branding, content, tasks, approvals, asset metadata, and campaign snapshot data for one client.",
+    inputSchema: {
+      type: "object", required: ["client_id", "q", "start_date", "end_date"],
+      properties: {
+        client_id: { type: "integer", minimum: 1 }, q: { type: "string", minLength: 2, maxLength: 100 },
+        platform: { type: "string", enum: platforms }, source: { type: "string", enum: ["organic", "paid"] }, ...requiredPeriod, ...pagination,
+      }, additionalProperties: false,
+    },
+  },
 ];
 
 for (const tool of tools) {
@@ -179,7 +282,7 @@ async function callApi(path, args) {
   });
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const error = new Error(body.message || `ERP LMG API merespons HTTP ${response.status}.`);
+    const error = new Error(body?.error?.message || body.message || `ERP LMG API merespons HTTP ${response.status}.`);
     error.status = response.status;
     throw error;
   }
@@ -195,6 +298,17 @@ async function invoke(name, args = {}) {
   if (name === "marketing_get_performance_trend") return callApi(`/api/marketing-mcp/clients/${Number(args.client_id)}/performance-trend`, args);
   if (name === "marketing_get_top_content") return callApi(`/api/marketing-mcp/clients/${Number(args.client_id)}/top-content`, args);
   if (name === "marketing_get_paid_performance") return callApi(`/api/marketing-mcp/clients/${Number(args.client_id)}/paid-performance`, args);
+  if (name === "marketing_get_market_research") return callApi(`/api/marketing-mcp/clients/${Number(args.client_id)}/market-research`, args);
+  if (name === "marketing_get_brand_guidelines") return callApi(`/api/marketing-mcp/clients/${Number(args.client_id)}/brand-guidelines`, args);
+  if (name === "marketing_get_content_calendar") return callApi(`/api/marketing-mcp/clients/${Number(args.client_id)}/content-calendar`, args);
+  if (name === "marketing_get_tasks") return callApi(`/api/marketing-mcp/clients/${Number(args.client_id)}/tasks`, args);
+  if (name === "marketing_get_approvals") return callApi(`/api/marketing-mcp/clients/${Number(args.client_id)}/approvals`, args);
+  if (name === "marketing_get_assets") return callApi(`/api/marketing-mcp/clients/${Number(args.client_id)}/assets`, args);
+  if (name === "marketing_list_campaigns") return callApi(`/api/marketing-mcp/clients/${Number(args.client_id)}/campaigns`, args);
+  if (name === "marketing_get_performance_metrics") return callApi(`/api/marketing-mcp/clients/${Number(args.client_id)}/performance-metrics`, args);
+  if (name === "marketing_compare_periods") return callApi(`/api/marketing-mcp/clients/${Number(args.client_id)}/period-comparison`, args);
+  if (name === "marketing_analyze_channels") return callApi(`/api/marketing-mcp/clients/${Number(args.client_id)}/channel-analysis`, args);
+  if (name === "marketing_search") return callApi(`/api/marketing-mcp/clients/${Number(args.client_id)}/search`, args);
   throw new Error(`Tool tidak dikenal: ${name}`);
 }
 
@@ -202,7 +316,7 @@ async function handle(message) {
   const { id, method, params = {} } = message;
   if (method === "notifications/initialized") return null;
   if (method === "initialize") {
-    return { jsonrpc: "2.0", id, result: { protocolVersion: params.protocolVersion || "2025-06-18", capabilities: { tools: { listChanged: false } }, serverInfo: { name: "erp-lmg-marketing", version: "0.1.0" } } };
+    return { jsonrpc: "2.0", id, result: { protocolVersion: params.protocolVersion || "2025-06-18", capabilities: { tools: { listChanged: false } }, serverInfo: { name: "erp-lmg-marketing", version: "0.2.0" } } };
   }
   if (method === "tools/list") return { jsonrpc: "2.0", id, result: { tools } };
   if (method === "tools/call") {

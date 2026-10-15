@@ -1,6 +1,6 @@
-# Remote MCP OAuth POC
+# Remote MCP OAuth — ERP LMG Digital Marketing
 
-Tahap 2 hanya mengekspos `marketing_list_clients`. Server lokal stdio yang sudah ada tidak diubah.
+Remote MCP produksi mengekspos 19 tool Digital Marketing read-only. Definisi tool, schema, annotation, validator, dan pemetaan endpoint dipakai bersama dengan transport stdio dari `../server/index.mjs`. Transport HTTP selalu meneruskan bearer token pengguna ke endpoint `/api/oauth-marketing-mcp`; endpoint Sanctum tidak digunakan.
 
 ## Persiapan ERP
 
@@ -13,7 +13,7 @@ Tahap 2 hanya mengekspos `marketing_list_clients`. Server lokal stdio yang sudah
 
 Jangan menjalankan migrasi atau membuat client langsung di produksi sebelum backup dan pemeriksaan konfigurasi.
 
-## Menjalankan POC
+## Menjalankan server
 
 Konfigurasi Docker menjalankan server Node sebagai service `mcp`. Nginx meneruskan endpoint publik `https://erp.lightermediagroup.com/mcp` ke service tersebut. Integrasi lokal stdio tetap tidak berubah.
 
@@ -22,7 +22,24 @@ Endpoint discovery OAuth berada di:
 - `/.well-known/oauth-protected-resource`
 - `/.well-known/oauth-authorization-server`
 
-Endpoint ERP yang dilindungi OAuth berada di `/api/oauth-marketing-mcp/clients`.
+Endpoint ERP yang dilindungi OAuth berada di bawah `/api/oauth-marketing-mcp`. Laravel tetap menentukan akses client berdasarkan identitas OAuth, role, division, dan assignment pengguna.
+
+Server menyediakan:
+
+- `POST /mcp`
+- `GET /health`
+
+Nama server: `erp-lmg-digital-marketing`. Versi: `1.0.0`.
+
+## Pengujian kontrak
+
+```bash
+node --check plugins/erp-lmg-marketing/server/index.mjs
+node --check plugins/erp-lmg-marketing/remote-poc/server.mjs
+node --test --test-isolation=none plugins/erp-lmg-marketing/remote-poc/server.test.mjs
+```
+
+Suite memeriksa 19 tool, annotation read-only, mapping endpoint OAuth, forwarding token tanpa kebocoran, challenge OAuth, validasi input, timeout, non-JSON, serta error Laravel 401/403/404/422/500.
 
 ## Smoke test OAuth lokal
 

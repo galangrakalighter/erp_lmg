@@ -77,6 +77,9 @@ const server = http.createServer(async (request, response) => {
       params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'local-smoke', version: '1' } },
     });
     const tools = await rpc(tokens.access_token, { jsonrpc: '2.0', id: 2, method: 'tools/list' });
+    if (tools.tools?.length !== 19) {
+      throw new Error(`Remote MCP mengembalikan ${tools.tools?.length ?? 0} tool; diharapkan 19.`);
+    }
     const result = await rpc(tokens.access_token, {
       jsonrpc: '2.0', id: 3, method: 'tools/call',
       params: { name: 'marketing_list_clients', arguments: { page: 1, per_page: 5 } },

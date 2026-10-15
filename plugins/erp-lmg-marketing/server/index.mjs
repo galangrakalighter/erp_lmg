@@ -1,4 +1,5 @@
 import readline from "node:readline";
+import { pathToFileURL } from "node:url";
 
 const apiUrl = (process.env.ERP_LMG_API_URL || "http://127.0.0.1:8000").replace(/\/$/, "");
 const token = process.env.ERP_LMG_SANCTUM_TOKEN || "";
@@ -51,7 +52,7 @@ const clientResponseSchema = {
   },
 };
 
-const tools = [
+export const tools = [
   {
     name: "marketing_list_clients",
     description: "List only ERP LMG marketing clients authorized for the authenticated Sanctum user.",
@@ -266,6 +267,86 @@ const tools = [
 
 for (const tool of tools) {
   tool.outputSchema = tool.name === "marketing_list_clients" ? responseSchema : clientResponseSchema;
+  tool.annotations = { readOnlyHint: true, destructiveHint: false, openWorldHint: false };
+}
+
+const toolPaths = {
+  marketing_list_clients: "/clients",
+  marketing_get_data_availability: "/clients/{client_id}/data-availability",
+  marketing_get_performance_summary: "/clients/{client_id}/performance-summary",
+  marketing_get_content_plan: "/clients/{client_id}/content-plan",
+  marketing_get_content_mix: "/clients/{client_id}/content-mix",
+  marketing_get_performance_trend: "/clients/{client_id}/performance-trend",
+  marketing_get_top_content: "/clients/{client_id}/top-content",
+  marketing_get_paid_performance: "/clients/{client_id}/paid-performance",
+  marketing_get_market_research: "/clients/{client_id}/market-research",
+  marketing_get_brand_guidelines: "/clients/{client_id}/brand-guidelines",
+  marketing_get_content_calendar: "/clients/{client_id}/content-calendar",
+  marketing_get_tasks: "/clients/{client_id}/tasks",
+  marketing_get_approvals: "/clients/{client_id}/approvals",
+  marketing_get_assets: "/clients/{client_id}/assets",
+  marketing_list_campaigns: "/clients/{client_id}/campaigns",
+  marketing_get_performance_metrics: "/clients/{client_id}/performance-metrics",
+  marketing_compare_periods: "/clients/{client_id}/period-comparison",
+  marketing_analyze_channels: "/clients/{client_id}/channel-analysis",
+  marketing_search: "/clients/{client_id}/search",
+};
+
+export function endpointForTool(name, args = {}, prefix = "/api/marketing-mcp") {
+  const template = toolPaths[name];
+  if (!template) throw new Error(`Tool tidak dikenal: ${name}`);
+  return `${prefix}${template.replace("{client_id}", String(args.client_id ?? ""))}`;
+}
+
+export function validateToolArguments(name, args = {}) {
+  const tool = tools.find((candidate) => candidate.name === name);
+  if (!tool) return [`Tool tidak dikenal: ${name}`];
+  if (!args || typeof args !== "object" || Array.isArray(args)) return ["Arguments harus berupa object."];
+  const errors = [];
+  const schema = tool.inputSchema;
+  for (const required of schema.required ?? []) {
+    if (args[required] === undefined || args[required] === null || args[required] === "") errors.push(`${required} wajib diisi.`);
+  }
+  if (schema.additionalProperties === false) {
+    for (const key of Object.keys(args)) if (!(key in schema.properties)) errors.push(`Parameter tidak dikenal: ${key}.`);
+  }
+  for (const [key, value] of Object.entries(args)) {
+    const rule = schema.properties[key];
+    if (!rule || value === undefined || value === null) continue;
+    if (rule.type === "integer" && !Number.isInteger(value)) errors.push(`${key} harus berupa integer.`);
+    if (rule.type === "string" && typeof value !== "string") errors.push(`${key} harus berupa string.`);
+    if (rule.type === "array" && !Array.isArray(value)) errors.push(`${key} harus berupa array.`);
+    if (rule.minimum !== undefined && typeof value === "number" && value < rule.minimum) errors.push(`${key} minimal ${rule.minimum}.`);
+    if (rule.maximum !== undefined && typeof value === "number" && value > rule.maximum) errors.push(`${key} maksimal ${rule.maximum}.`);
+    if (rule.minLength !== undefined && typeof value === "string" && value.length < rule.minLength) errors.push(`${key} minimal ${rule.minLength} karakter.`);
+    if (rule.maxLength !== undefined && typeof value === "string" && value.length > rule.maxLength) errors.push(`${key} maksimal ${rule.maxLength} karakter.`);
+    if (rule.enum && !rule.enum.includes(value)) errors.push(`${key} tidak termasuk nilai yang diizinkan.`);
+    if (rule.format === "date" && typeof value === "string" && !validDate(value)) errors.push(`${key} harus berformat YYYY-MM-DD yang valid.`);
+    if (Array.isArray(value)) {
+      if (rule.maxItems !== undefined && value.length > rule.maxItems) errors.push(`${key} maksimal ${rule.maxItems} item.`);
+      if (rule.uniqueItems && new Set(value).size !== value.length) errors.push(`${key} tidak boleh berisi duplikasi.`);
+      if (rule.items?.enum && value.some((item) => !rule.items.enum.includes(item))) errors.push(`${key} berisi nilai yang tidak diizinkan.`);
+      if (rule.items?.type === "string" && value.some((item) => typeof item !== "string")) errors.push(`${key} harus berisi string.`);
+    }
+  }
+  validatePeriod(args.start_date, args.end_date, "periode", errors);
+  if ((args.compare_start_date && !args.compare_end_date) || (!args.compare_start_date && args.compare_end_date)) errors.push("compare_start_date dan compare_end_date harus digunakan bersama.");
+  validatePeriod(args.compare_start_date, args.compare_end_date, "periode pembanding", errors);
+  return errors;
+}
+
+function validDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const parsed = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(parsed.valueOf()) && parsed.toISOString().slice(0, 10) === value;
+}
+
+function validatePeriod(start, end, label, errors) {
+  if (!start || !end || !validDate(start) || !validDate(end)) return;
+  const startMs = Date.parse(`${start}T00:00:00Z`);
+  const endMs = Date.parse(`${end}T00:00:00Z`);
+  if (endMs < startMs) errors.push(`Tanggal akhir ${label} tidak boleh sebelum tanggal awal.`);
+  if (Math.floor((endMs - startMs) / 86_400_000) + 1 > 366) errors.push(`${label} maksimal 366 hari.`);
 }
 
 async function callApi(path, args) {
@@ -290,26 +371,9 @@ async function callApi(path, args) {
 }
 
 async function invoke(name, args = {}) {
-  if (name === "marketing_list_clients") return callApi("/api/marketing-mcp/clients", args);
-  if (name === "marketing_get_data_availability") return callApi(`/api/marketing-mcp/clients/${Number(args.client_id)}/data-availability`, args);
-  if (name === "marketing_get_performance_summary") return callApi(`/api/marketing-mcp/clients/${Number(args.client_id)}/performance-summary`, args);
-  if (name === "marketing_get_content_plan") return callApi(`/api/marketing-mcp/clients/${Number(args.client_id)}/content-plan`, args);
-  if (name === "marketing_get_content_mix") return callApi(`/api/marketing-mcp/clients/${Number(args.client_id)}/content-mix`, args);
-  if (name === "marketing_get_performance_trend") return callApi(`/api/marketing-mcp/clients/${Number(args.client_id)}/performance-trend`, args);
-  if (name === "marketing_get_top_content") return callApi(`/api/marketing-mcp/clients/${Number(args.client_id)}/top-content`, args);
-  if (name === "marketing_get_paid_performance") return callApi(`/api/marketing-mcp/clients/${Number(args.client_id)}/paid-performance`, args);
-  if (name === "marketing_get_market_research") return callApi(`/api/marketing-mcp/clients/${Number(args.client_id)}/market-research`, args);
-  if (name === "marketing_get_brand_guidelines") return callApi(`/api/marketing-mcp/clients/${Number(args.client_id)}/brand-guidelines`, args);
-  if (name === "marketing_get_content_calendar") return callApi(`/api/marketing-mcp/clients/${Number(args.client_id)}/content-calendar`, args);
-  if (name === "marketing_get_tasks") return callApi(`/api/marketing-mcp/clients/${Number(args.client_id)}/tasks`, args);
-  if (name === "marketing_get_approvals") return callApi(`/api/marketing-mcp/clients/${Number(args.client_id)}/approvals`, args);
-  if (name === "marketing_get_assets") return callApi(`/api/marketing-mcp/clients/${Number(args.client_id)}/assets`, args);
-  if (name === "marketing_list_campaigns") return callApi(`/api/marketing-mcp/clients/${Number(args.client_id)}/campaigns`, args);
-  if (name === "marketing_get_performance_metrics") return callApi(`/api/marketing-mcp/clients/${Number(args.client_id)}/performance-metrics`, args);
-  if (name === "marketing_compare_periods") return callApi(`/api/marketing-mcp/clients/${Number(args.client_id)}/period-comparison`, args);
-  if (name === "marketing_analyze_channels") return callApi(`/api/marketing-mcp/clients/${Number(args.client_id)}/channel-analysis`, args);
-  if (name === "marketing_search") return callApi(`/api/marketing-mcp/clients/${Number(args.client_id)}/search`, args);
-  throw new Error(`Tool tidak dikenal: ${name}`);
+  const errors = validateToolArguments(name, args);
+  if (errors.length) throw new Error(errors.join(" "));
+  return callApi(endpointForTool(name, args), args);
 }
 
 async function handle(message) {
@@ -330,13 +394,15 @@ async function handle(message) {
   return { jsonrpc: "2.0", id, error: { code: -32601, message: `Method tidak didukung: ${method}` } };
 }
 
-const input = readline.createInterface({ input: process.stdin, crlfDelay: Infinity });
-input.on("line", async (line) => {
-  if (!line.trim()) return;
-  try {
-    const response = await handle(JSON.parse(line));
-    if (response) process.stdout.write(`${JSON.stringify(response)}\n`);
-  } catch (error) {
-    process.stdout.write(`${JSON.stringify({ jsonrpc: "2.0", id: null, error: { code: -32700, message: error.message } })}\n`);
-  }
-});
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const input = readline.createInterface({ input: process.stdin, crlfDelay: Infinity });
+  input.on("line", async (line) => {
+    if (!line.trim()) return;
+    try {
+      const response = await handle(JSON.parse(line));
+      if (response) process.stdout.write(`${JSON.stringify(response)}\n`);
+    } catch (error) {
+      process.stdout.write(`${JSON.stringify({ jsonrpc: "2.0", id: null, error: { code: -32700, message: error.message } })}\n`);
+    }
+  });
+}

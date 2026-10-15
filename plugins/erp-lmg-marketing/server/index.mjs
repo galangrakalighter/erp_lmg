@@ -53,6 +53,10 @@ const clientResponseSchema = {
 };
 
 export const tools = [
+  { name: "marketing_request_content_plan_confirmation", description: "Request a short-lived confirmation token for a content plan mutation. The token is returned only to the caller and must be supplied to the matching mutation.", inputSchema: { type: "object", required: ["action", "client_id", "payload"], properties: { action: { type: "string", enum: ["create", "update", "archive"] }, client_id: { type: "integer", minimum: 1 }, object_id: { type: "integer", minimum: 0 }, payload: { type: "object" } }, additionalProperties: false }, write: true },
+  { name: "marketing_create_content_plan", description: "Create a content plan after server-side authorization and confirmation.", inputSchema: { type: "object", required: ["client_id", "confirmation_token", "judul", "type_produk_id", "strategy_id", "pilar_id", "hooks_id", "body_id", "cta_id", "priority", "menit"], properties: { client_id: { type: "integer", minimum: 1 }, confirmation_token: { type: "string", minLength: 64, maxLength: 64 }, judul: { type: "string", maxLength: 255 }, type_produk_id: { type: "integer", minimum: 1 }, strategy_id: { type: "integer", minimum: 1 }, pilar_id: { type: "integer", minimum: 1 }, hooks_id: { type: "integer", minimum: 1 }, body_id: { type: "integer", minimum: 1 }, cta_id: { type: "integer", minimum: 1 }, priority: { type: "integer", minimum: 0, maximum: 100 }, menit: { type: "integer", minimum: 0, maximum: 10000 }, platform: { type: "string", maxLength: 50 }, note: { type: "string", maxLength: 10000 } }, additionalProperties: false }, write: true },
+  { name: "marketing_update_content_plan", description: "Update an authorized content plan after confirmation.", inputSchema: { type: "object", required: ["content_plan_id", "client_id", "confirmation_token"], properties: { content_plan_id: { type: "integer", minimum: 1 }, client_id: { type: "integer", minimum: 1 }, confirmation_token: { type: "string", minLength: 64, maxLength: 64 }, judul: { type: "string", maxLength: 255 }, note: { type: "string", maxLength: 10000 }, platform: { type: "string", maxLength: 50 }, priority: { type: "integer", minimum: 0, maximum: 100 }, menit: { type: "integer", minimum: 0, maximum: 10000 } }, additionalProperties: false }, write: true },
+  { name: "marketing_archive_content_plan", description: "Soft archive an authorized content plan after confirmation.", inputSchema: { type: "object", required: ["content_plan_id", "client_id", "confirmation_token", "reason"], properties: { content_plan_id: { type: "integer", minimum: 1 }, client_id: { type: "integer", minimum: 1 }, confirmation_token: { type: "string", minLength: 64, maxLength: 64 }, reason: { type: "string", minLength: 5, maxLength: 500 } }, additionalProperties: false }, write: true },
   {
     name: "account_get_client_profile",
     description: "Read the authorized client's safe profile, status, division and project summary.",
@@ -317,10 +321,16 @@ export const tools = [
 
 for (const tool of tools) {
   tool.outputSchema = ["marketing_list_clients", "marketing_get_division_client_summary", "account_get_client_profile", "account_list_client_contacts", "account_get_client_brief", "account_get_client_needs", "account_get_client_project_status", "account_get_client_milestones", "account_get_client_documents_history", "account_get_client_summary", "account_search_client_data"].includes(tool.name) ? responseSchema : clientResponseSchema;
-  tool.annotations = { readOnlyHint: true, destructiveHint: false, openWorldHint: false };
+  tool.annotations = tool.write
+    ? { readOnlyHint: false, destructiveHint: tool.name.includes('_archive_'), openWorldHint: false }
+    : { readOnlyHint: true, destructiveHint: false, openWorldHint: false };
 }
 
 const toolPaths = {
+  marketing_request_content_plan_confirmation: "/content-plans/confirmation",
+  marketing_create_content_plan: "/content-plans",
+  marketing_update_content_plan: "/content-plans/{content_plan_id}",
+  marketing_archive_content_plan: "/content-plans/{content_plan_id}/archive",
   account_get_client_profile: "/clients/{client_id}/profile",
   account_list_client_contacts: "/clients/{client_id}/contacts",
   account_get_client_brief: "/clients/{client_id}/brief",
@@ -355,7 +365,7 @@ const toolPaths = {
 export function endpointForTool(name, args = {}, prefix = "/api/marketing-mcp") {
   const template = toolPaths[name];
   if (!template) throw new Error(`Tool tidak dikenal: ${name}`);
-  return `${prefix}${template.replace("{client_id}", String(args.client_id ?? ""))}`;
+  return `${prefix}${template.replace(/\{([^}]+)\}/g, (_, key) => encodeURIComponent(String(args[key] ?? "")))}`;
 }
 
 export function validateToolArguments(name, args = {}) {

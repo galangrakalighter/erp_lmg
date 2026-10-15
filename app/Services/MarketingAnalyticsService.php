@@ -646,7 +646,7 @@ class MarketingAnalyticsService
             $join->on('mirror_copy.client_id', '=', 'data_jasa.produk_client_id')
                 ->where('mirror_copy.table_name', '=', 'data_jasa')
                 ->on('mirror_copy.target_id', '=', 'data_jasa.id');
-        })->where('data_jasa.produk_client_id', $clientId)->whereNull('mirror_copy.id')
+        })->where('data_jasa.produk_client_id', $clientId)->whereNull('mirror_copy.id')->whereNull('data_jasa.archived_at')
             ->whereBetween('data_jasa.tanggal_posting', [$start->toDateString(), $end->toDateString()])
             ->get(['data_jasa.id', 'data_jasa.judul', 'data_jasa.tanggal_posting', 'data_jasa.platform']);
     }
@@ -680,7 +680,7 @@ class MarketingAnalyticsService
                     ->where('mirror_copy.table_name', '=', 'data_jasa')
                     ->on('mirror_copy.target_id', '=', 'data_jasa.id');
             })
-            ->where('data_jasa.produk_client_id', $clientId)->whereNull('mirror_copy.id')
+            ->where('data_jasa.produk_client_id', $clientId)->whereNull('mirror_copy.id')->whereNull('data_jasa.archived_at')
             ->whereBetween('data_jasa.tanggal_posting', [$start->toDateString(), $end->toDateString()])
             ->when($platform, fn (Builder $query) => $query->whereRaw('LOWER(data_jasa.platform) = ?', [$platform]))
             ->when($source, fn (Builder $query) => $query->whereRaw('LOWER(data_jasa.content_source) = ?', [$source]))

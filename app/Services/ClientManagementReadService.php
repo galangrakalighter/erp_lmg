@@ -43,7 +43,7 @@ class ClientManagementReadService
     public function brief(Authenticatable $user, int $clientId): array
     {
         $this->access->assertClientAccess($user, $clientId);
-        $items = Schema::hasTable('data_jasa') ? DB::table('data_jasa')->where('produk_client_id', $clientId)
+        $items = Schema::hasTable('data_jasa') ? DB::table('data_jasa')->where('produk_client_id', $clientId)->whereNull('archived_at')
             ->orderByDesc('updated_at')->limit(100)->get(['id', 'judul', 'inspirasi', 'note', 'platform', 'tanggal_mulai', 'tanggal_deadline']) : collect();
         return ['client_id' => $clientId, 'briefs' => $items->map(fn ($item) => (array) $item)->values(),
             'scope' => 'client', 'source' => 'data_jasa', 'as_of' => now('Asia/Jakarta')->toIso8601String()];
@@ -134,7 +134,7 @@ class ClientManagementReadService
         $like = '%' . addcslashes($query, '%_\\') . '%';
         $results = collect();
         if (Schema::hasTable('data_jasa')) {
-            $results = $results->merge(DB::table('data_jasa')->where('produk_client_id', $clientId)->where(function ($q) use ($like) {
+            $results = $results->merge(DB::table('data_jasa')->where('produk_client_id', $clientId)->whereNull('archived_at')->where(function ($q) use ($like) {
                 $q->where('judul', 'like', $like)->orWhere('inspirasi', 'like', $like)->orWhere('note', 'like', $like);
             })->limit(50)->get(['id', 'judul as title', 'platform'])->map(fn ($r) => ['type' => 'brief', 'id' => (int) $r->id, 'title' => $r->title, 'platform' => $r->platform]));
         }
@@ -159,8 +159,8 @@ class ClientManagementReadService
     {
         $summary = ['content_plans' => 0, 'latest_deadline' => null];
         if (Schema::hasTable('data_jasa')) {
-            $summary['content_plans'] = DB::table('data_jasa')->where('produk_client_id', $clientId)->count();
-            $summary['latest_deadline'] = DB::table('data_jasa')->where('produk_client_id', $clientId)->max('tanggal_deadline');
+            $summary['content_plans'] = DB::table('data_jasa')->where('produk_client_id', $clientId)->whereNull('archived_at')->count();
+            $summary['latest_deadline'] = DB::table('data_jasa')->where('produk_client_id', $clientId)->whereNull('archived_at')->max('tanggal_deadline');
         }
         if (Schema::hasTable('task')) {
             $summary['tasks'] = DB::table('task')->where('project', $clientId)->count();

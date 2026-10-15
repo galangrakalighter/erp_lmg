@@ -63,14 +63,16 @@ function queryFor(args) {
 }
 
 async function callLaravel(fetchImpl, config, token, name, args) {
-  const path = endpointForTool(name, args, '/api/oauth-marketing-mcp');
+  const path = endpointForTool(name, args, tools.find((tool) => tool.name === name)?.write ? '/api/oauth-marketing-crud' : '/api/oauth-marketing-mcp');
   const url = new URL(path, config.apiBase);
-  url.search = queryFor(args).toString();
+  const isWrite = tools.find((tool) => tool.name === name)?.write === true;
+  url.search = isWrite ? '' : queryFor(args).toString();
   let response;
   try {
     response = await fetchImpl(url, {
-      method: 'GET',
+      method: isWrite ? (name.includes('create') ? 'POST' : name.includes('update') ? 'PATCH' : 'POST') : 'GET',
       headers: { authorization: `Bearer ${token}`, accept: 'application/json' },
+      ...(isWrite ? { headers: { authorization: `Bearer ${token}`, accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(args) } : {}),
       signal: AbortSignal.timeout(config.timeoutMs),
     });
   } catch (error) {

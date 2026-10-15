@@ -91,6 +91,7 @@ class DigitalMarketingDataService
                     ->on('mirror_copy.target_id', '=', 'data_jasa.id');
             })
             ->where('data_jasa.produk_client_id', $clientId)->whereNull('mirror_copy.id')
+            ->whereNull('data_jasa.archived_at')
             ->whereBetween('data_jasa.tanggal_posting', [$start->toDateString(), $end->toDateString()])
             ->when($platform, fn (Builder $query) => $query->whereRaw('LOWER(data_jasa.platform) = ?', [$platform]))
             ->when($source, fn (Builder $query) => $query->whereRaw('LOWER(data_jasa.content_source) = ?', [$source]))

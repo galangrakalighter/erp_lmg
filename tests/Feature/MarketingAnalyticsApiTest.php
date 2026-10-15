@@ -1328,6 +1328,10 @@ class MarketingAnalyticsApiTest extends TestCase
             $table->unsignedBigInteger('cta_id')->nullable();
             $table->unsignedBigInteger('status_id')->nullable();
             $table->unsignedBigInteger('pic')->nullable();
+            $table->unsignedInteger('priority')->nullable();
+            $table->unsignedInteger('menit')->nullable();
+            $table->timestamp('archived_at')->nullable()->index();
+            $table->unsignedBigInteger('archived_by')->nullable();
             $table->timestamps();
         });
         Schema::create('analysis_snapshots', function (Blueprint $table): void {

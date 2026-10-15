@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AnalisisController;
 use App\Http\Controllers\Api\MarketingAnalyticsController;
+use App\Http\Controllers\Api\ContentPlanCrudController;
 use App\Http\Controllers\BarangClientController;
 use App\Http\Controllers\BlacklistController;
 use App\Http\Controllers\brandingController;
@@ -103,6 +104,19 @@ Route::middleware([
     EnsureOAuthAccountIsUnlocked::class,
     'throttle:60,1',
 ])->prefix('oauth-marketing-mcp')->name('api.oauth-marketing-mcp.')->group($marketingMcpRoutes);
+
+Route::middleware([
+    ProtectMarketingMcpResponse::class,
+    'auth:oauth-api',
+    CheckToken::using('marketing:write'),
+    EnsureOAuthAccountIsUnlocked::class,
+    'throttle:30,1',
+])->prefix('oauth-marketing-crud')->name('api.oauth-marketing-crud.')->group(function (): void {
+    Route::post('/content-plans', [ContentPlanCrudController::class, 'store'])->name('content-plans.store');
+    Route::post('/content-plans/confirmation', [ContentPlanCrudController::class, 'confirmation'])->name('content-plans.confirmation');
+    Route::patch('/content-plans/{contentPlan}', [ContentPlanCrudController::class, 'update'])->whereNumber('contentPlan')->name('content-plans.update');
+    Route::post('/content-plans/{contentPlan}/archive', [ContentPlanCrudController::class, 'archive'])->whereNumber('contentPlan')->name('content-plans.archive');
+});
 
 Route::middleware(['web', 'auth'])->get(
     '/selectable-users',

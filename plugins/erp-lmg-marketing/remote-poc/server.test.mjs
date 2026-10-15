@@ -4,6 +4,7 @@ import { endpointForTool, tools } from '../server/index.mjs';
 import { createRemoteMcpServer, SERVER_NAME, SERVER_VERSION } from './server.mjs';
 
 const expectedTools = [
+  'marketing_request_content_plan_confirmation', 'marketing_create_content_plan', 'marketing_update_content_plan', 'marketing_archive_content_plan',
   'account_get_client_profile', 'account_list_client_contacts', 'account_get_client_brief', 'account_get_client_needs',
   'account_get_client_project_status', 'account_get_client_milestones',
   'account_get_client_documents_history',
@@ -17,6 +18,10 @@ const expectedTools = [
   'marketing_search',
 ];
 const expectedEndpoints = {
+  marketing_request_content_plan_confirmation: '/api/oauth-marketing-crud/content-plans/confirmation',
+  marketing_create_content_plan: '/api/oauth-marketing-crud/content-plans',
+  marketing_update_content_plan: '/api/oauth-marketing-crud/content-plans/123',
+  marketing_archive_content_plan: '/api/oauth-marketing-crud/content-plans/123/archive',
   account_get_client_profile: '/api/oauth-marketing-mcp/clients/123/profile',
   account_list_client_contacts: '/api/oauth-marketing-mcp/clients/123/contacts',
   account_get_client_brief: '/api/oauth-marketing-mcp/clients/123/brief',
@@ -25,7 +30,7 @@ const expectedEndpoints = {
   account_get_client_milestones: '/api/oauth-marketing-mcp/clients/123/milestones',
   account_get_client_documents_history: '/api/oauth-marketing-mcp/clients/123/documents-history',
   account_get_client_summary: '/api/oauth-marketing-mcp/clients/123/summary',
-  account_search_client_data: '/api/oauth-marketing-mcp/clients/123/account-search?q=launch',
+  account_search_client_data: '/api/oauth-marketing-mcp/clients/123/account-search',
   marketing_list_clients: '/api/oauth-marketing-mcp/clients',
   marketing_get_division_client_summary: '/api/oauth-marketing-mcp/division-client-summary',
   marketing_get_data_availability: '/api/oauth-marketing-mcp/clients/123/data-availability',
@@ -78,7 +83,7 @@ async function rpc(base, body, token) {
 test('initialize succeeds with production identity and health remains available', async () => {
   const base = await harness();
   const health = await fetch(`${base}/health`).then((response) => response.json());
-  assert.deepEqual(health, { status: 'ok', service: SERVER_NAME, version: SERVER_VERSION, tools: 20 });
+  assert.deepEqual(health, { status: 'ok', service: SERVER_NAME, version: SERVER_VERSION, tools: 33 });
   const result = await rpc(base, { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18' } });
   assert.equal(result.response.status, 200);
   assert.equal(result.body.result.serverInfo.name, 'erp-lmg-digital-marketing');
@@ -94,12 +99,15 @@ test('tools/list without token returns OAuth challenge in header and MCP metadat
   assert.deepEqual(result.body.error.data._meta['mcp/www_authenticate'], [challenge]);
 });
 
-test('tools/list exposes exactly the expected 20 read-only tools', async () => {
+test('tools/list exposes exactly the expected tools and annotations', async () => {
   const base = await harness();
   const result = await rpc(base, { jsonrpc: '2.0', id: 3, method: 'tools/list' }, 'safe-test-token');
   assert.deepEqual(result.body.result.tools.map((tool) => tool.name), expectedTools);
   for (const tool of result.body.result.tools) {
-    assert.deepEqual(tool.annotations, { readOnlyHint: true, destructiveHint: false, openWorldHint: false });
+    assert.equal(typeof tool.annotations.readOnlyHint, 'boolean');
+    assert.equal(tool.annotations.openWorldHint, false);
+    if (tool.write) assert.equal(tool.annotations.readOnlyHint, false);
+    else assert.deepEqual(tool.annotations, { readOnlyHint: true, destructiveHint: false, openWorldHint: false });
     assert.ok(tool.inputSchema);
     assert.ok(tool.outputSchema);
   }
@@ -107,7 +115,8 @@ test('tools/list exposes exactly the expected 20 read-only tools', async () => {
 
 test('every tool maps to an OAuth Laravel endpoint', () => {
   for (const tool of tools) {
-    const path = endpointForTool(tool.name, { client_id: 123 }, '/api/oauth-marketing-mcp');
+    const prefix = tool.write ? '/api/oauth-marketing-crud' : '/api/oauth-marketing-mcp';
+    const path = endpointForTool(tool.name, { client_id: 123, content_plan_id: 123 }, prefix);
     assert.equal(path, expectedEndpoints[tool.name]);
     assert.ok(!path.startsWith('/api/marketing-mcp'));
   }
@@ -123,6 +132,22 @@ test('legacy marketing_list_clients forwards bearer token without returning it',
   const result = await rpc(base, { jsonrpc: '2.0', id: 4, method: 'tools/call', params: { name: 'marketing_list_clients', arguments: { page: 1 } } }, token);
   assert.deepEqual(calls, [{ url: 'https://erp.test/api/oauth-marketing-mcp/clients?page=1', authorization: `Bearer ${token}`, method: 'GET' }]);
   assert.equal(result.body.result.structuredContent.data[0].id, 7);
+  assert.ok(!JSON.stringify(result.body).includes(token));
+});
+
+test('content plan MCP mutations use OAuth CRUD endpoints and forward bearer token', async () => {
+  const calls = [];
+  const token = 'content-plan-oauth-token';
+  const base = await harness(async (url, options) => {
+    calls.push({ url: String(url), method: options.method, authorization: options.headers.authorization, body: options.body });
+    return jsonResponse(200, { data: { id: 8 }, meta: { operation: options.method } });
+  });
+  const args = { client_id: 1, confirmation_token: 'x'.repeat(64), judul: 'Plan', type_produk_id: 1, strategy_id: 1, pilar_id: 1, hooks_id: 1, body_id: 1, cta_id: 1, priority: 1, menit: 30 };
+  const result = await rpc(base, { jsonrpc: '2.0', id: 11, method: 'tools/call', params: { name: 'marketing_create_content_plan', arguments: args } }, token);
+  assert.equal(result.body.result.structuredContent.data.id, 8);
+  assert.equal(calls[0].url, 'https://erp.test/api/oauth-marketing-crud/content-plans');
+  assert.equal(calls[0].method, 'POST');
+  assert.equal(calls[0].authorization, `Bearer ${token}`);
   assert.ok(!JSON.stringify(result.body).includes(token));
 });
 

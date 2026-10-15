@@ -3,6 +3,7 @@
   "name": "erp-lmg-marketing",
   "version": "1.0.0",
   "description": "Private read-only Digital Marketing assistant for authorized ERP LMG data.",
+  "mcpServers": "./mcp.json",
   "author": { "name": "Lighter Media Group" },
   "extensions": {
     "com.openai": {

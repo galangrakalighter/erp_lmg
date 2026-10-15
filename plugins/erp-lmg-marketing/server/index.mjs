@@ -54,6 +54,51 @@ const clientResponseSchema = {
 
 export const tools = [
   {
+    name: "account_get_client_profile",
+    description: "Read the authorized client's safe profile, status, division and project summary.",
+    inputSchema: { type: "object", required: ["client_id"], properties: { client_id: { type: "integer", minimum: 1 } }, additionalProperties: false },
+  },
+  {
+    name: "account_list_client_contacts",
+    description: "List authorized internal PIC contacts using safe identity fields; private email and phone are not returned by default.",
+    inputSchema: { type: "object", required: ["client_id"], properties: { client_id: { type: "integer", minimum: 1 } }, additionalProperties: false },
+  },
+  {
+    name: "account_get_client_brief",
+    description: "Read the authorized client's stored brief and project brief metadata.",
+    inputSchema: { type: "object", required: ["client_id"], properties: { client_id: { type: "integer", minimum: 1 } }, additionalProperties: false },
+  },
+  {
+    name: "account_get_client_needs",
+    description: "Read the authorized client's recorded needs, target audience and basic project targets without inventing missing data.",
+    inputSchema: { type: "object", required: ["client_id"], properties: { client_id: { type: "integer", minimum: 1 } }, additionalProperties: false },
+  },
+  {
+    name: "account_get_client_project_status",
+    description: "Read actual client project activity, timeline, task status, PIC, deadlines, overdue work and calculated progress from stored tasks.",
+    inputSchema: { type: "object", required: ["client_id"], properties: { client_id: { type: "integer", minimum: 1 } }, additionalProperties: false },
+  },
+  {
+    name: "account_get_client_milestones",
+    description: "Read actual client project milestones and KPI deadlines without estimating missing progress.",
+    inputSchema: { type: "object", required: ["client_id"], properties: { client_id: { type: "integer", minimum: 1 } }, additionalProperties: false },
+  },
+  {
+    name: "account_get_client_documents_history",
+    description: "Read authorized client document metadata, approval/revision history, and permission-gated contract status without file contents, paths, financial values or personal data.",
+    inputSchema: { type: "object", required: ["client_id"], properties: { client_id: { type: "integer", minimum: 1 } }, additionalProperties: false },
+  },
+  {
+    name: "account_get_client_summary",
+    description: "Summarize actual client project progress, overdue work, documents, approvals and known communication/contract availability.",
+    inputSchema: { type: "object", required: ["client_id"], properties: { client_id: { type: "integer", minimum: 1 } }, additionalProperties: false },
+  },
+  {
+    name: "account_search_client_data",
+    description: "Search authorized client briefs, tasks and document metadata without secrets, file contents, financial values or private contacts.",
+    inputSchema: { type: "object", required: ["client_id", "q"], properties: { client_id: { type: "integer", minimum: 1 }, q: { type: "string", minLength: 2, maxLength: 100 } }, additionalProperties: false },
+  },
+  {
     name: "marketing_list_clients",
     description: "List only ERP LMG marketing clients accessible to the authenticated user. Use this for 'clients I can access', not for division-wide totals.",
     inputSchema: {
@@ -271,11 +316,20 @@ export const tools = [
 ];
 
 for (const tool of tools) {
-  tool.outputSchema = ["marketing_list_clients", "marketing_get_division_client_summary"].includes(tool.name) ? responseSchema : clientResponseSchema;
+  tool.outputSchema = ["marketing_list_clients", "marketing_get_division_client_summary", "account_get_client_profile", "account_list_client_contacts", "account_get_client_brief", "account_get_client_needs", "account_get_client_project_status", "account_get_client_milestones", "account_get_client_documents_history", "account_get_client_summary", "account_search_client_data"].includes(tool.name) ? responseSchema : clientResponseSchema;
   tool.annotations = { readOnlyHint: true, destructiveHint: false, openWorldHint: false };
 }
 
 const toolPaths = {
+  account_get_client_profile: "/clients/{client_id}/profile",
+  account_list_client_contacts: "/clients/{client_id}/contacts",
+  account_get_client_brief: "/clients/{client_id}/brief",
+  account_get_client_needs: "/clients/{client_id}/needs",
+  account_get_client_project_status: "/clients/{client_id}/project-status",
+  account_get_client_milestones: "/clients/{client_id}/milestones",
+  account_get_client_documents_history: "/clients/{client_id}/documents-history",
+  account_get_client_summary: "/clients/{client_id}/summary",
+  account_search_client_data: "/clients/{client_id}/account-search",
   marketing_list_clients: "/clients",
   marketing_get_division_client_summary: "/division-client-summary",
   marketing_get_data_availability: "/clients/{client_id}/data-availability",

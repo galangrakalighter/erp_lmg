@@ -2,14 +2,23 @@
   "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
   "mcpServers": {
     "erp-lmg-marketing": {
-      "type": "stdio",
-      "command": "node",
-      "args": ["${PLUGIN_ROOT}/server/index.mjs"],
-      "cwd": "${PLUGIN_ROOT}",
-      "env_vars": [
-        "ERP_LMG_API_URL",
-        "ERP_LMG_SANCTUM_TOKEN"
-      ]
+      "type": "streamable-http",
+      "url": "https://erp.lightermediagroup.com/mcp",
+      "extensions": {
+        "com.openai": {
+          "auth": {
+            "type": "oauth",
+            "client": {
+              "mode": "provided",
+              "clientId": "01a13d64-fecf-7066-95d3-d7a98a991b52",
+              "tokenEndpointAuthMethod": "none"
+            },
+            "authorizationUrl": "https://erp.lightermediagroup.com/oauth/authorize",
+            "tokenUrl": "https://erp.lightermediagroup.com/oauth/token",
+            "baseScopes": ["marketing:read", "offline_access"]
+          }
+        }
+      }
     }
   }
 }

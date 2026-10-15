@@ -4,6 +4,10 @@ import { endpointForTool, tools } from '../server/index.mjs';
 import { createRemoteMcpServer, SERVER_NAME, SERVER_VERSION } from './server.mjs';
 
 const expectedTools = [
+  'account_get_client_profile', 'account_list_client_contacts', 'account_get_client_brief', 'account_get_client_needs',
+  'account_get_client_project_status', 'account_get_client_milestones',
+  'account_get_client_documents_history',
+  'account_get_client_summary', 'account_search_client_data',
   'marketing_list_clients', 'marketing_get_division_client_summary', 'marketing_get_data_availability', 'marketing_get_performance_summary',
   'marketing_get_content_plan', 'marketing_get_content_mix', 'marketing_get_performance_trend',
   'marketing_get_top_content', 'marketing_get_paid_performance', 'marketing_get_market_research',
@@ -13,6 +17,15 @@ const expectedTools = [
   'marketing_search',
 ];
 const expectedEndpoints = {
+  account_get_client_profile: '/api/oauth-marketing-mcp/clients/123/profile',
+  account_list_client_contacts: '/api/oauth-marketing-mcp/clients/123/contacts',
+  account_get_client_brief: '/api/oauth-marketing-mcp/clients/123/brief',
+  account_get_client_needs: '/api/oauth-marketing-mcp/clients/123/needs',
+  account_get_client_project_status: '/api/oauth-marketing-mcp/clients/123/project-status',
+  account_get_client_milestones: '/api/oauth-marketing-mcp/clients/123/milestones',
+  account_get_client_documents_history: '/api/oauth-marketing-mcp/clients/123/documents-history',
+  account_get_client_summary: '/api/oauth-marketing-mcp/clients/123/summary',
+  account_search_client_data: '/api/oauth-marketing-mcp/clients/123/account-search?q=launch',
   marketing_list_clients: '/api/oauth-marketing-mcp/clients',
   marketing_get_division_client_summary: '/api/oauth-marketing-mcp/division-client-summary',
   marketing_get_data_availability: '/api/oauth-marketing-mcp/clients/123/data-availability',

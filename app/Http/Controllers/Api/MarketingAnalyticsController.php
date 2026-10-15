@@ -8,6 +8,7 @@ use App\Services\CampaignAnalyticsService;
 use App\Services\DigitalMarketingDataService;
 use App\Services\MarketingAnalyticsService;
 use App\Services\MarketingSearchService;
+use App\Services\ClientManagementReadService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -22,7 +23,81 @@ class MarketingAnalyticsController extends Controller
         private readonly CampaignAnalyticsService $campaignAnalytics,
         private readonly MarketingSearchService $marketingSearch,
         private readonly ActivityLogService $activityLog,
+        private readonly ClientManagementReadService $clientManagement,
     ) {}
+
+    public function clientProfile(Request $request, int $client): JsonResponse
+    {
+        $this->validateAllowedQueryKeys($request, []);
+        $result = $this->clientManagement->profile($request->user(), $client);
+        $this->audit($request, 'account_get_client_profile', $client, []);
+        return response()->json(['data' => $result, 'pagination' => null, 'meta' => ['source' => $result['source'], 'as_of' => $result['as_of']]]);
+    }
+
+    public function clientContacts(Request $request, int $client): JsonResponse
+    {
+        $this->validateAllowedQueryKeys($request, []);
+        $result = $this->clientManagement->contacts($request->user(), $client);
+        $this->audit($request, 'account_list_client_contacts', $client, []);
+        return response()->json(['data' => $result, 'pagination' => null, 'meta' => ['source' => $result['source'], 'as_of' => $result['as_of']]]);
+    }
+
+    public function clientBrief(Request $request, int $client): JsonResponse
+    {
+        $this->validateAllowedQueryKeys($request, []);
+        $result = $this->clientManagement->brief($request->user(), $client);
+        $this->audit($request, 'account_get_client_brief', $client, []);
+        return response()->json(['data' => $result, 'pagination' => null, 'meta' => ['source' => $result['source'], 'as_of' => $result['as_of']]]);
+    }
+
+    public function clientNeeds(Request $request, int $client): JsonResponse
+    {
+        $this->validateAllowedQueryKeys($request, []);
+        $result = $this->clientManagement->needsAndTargets($request->user(), $client);
+        $this->audit($request, 'account_get_client_needs', $client, []);
+        return response()->json(['data' => $result, 'pagination' => null, 'meta' => ['source' => $result['source'], 'as_of' => $result['as_of']]]);
+    }
+
+    public function clientProjectStatus(Request $request, int $client): JsonResponse
+    {
+        $this->validateAllowedQueryKeys($request, []);
+        $result = $this->clientManagement->projectStatus($request->user(), $client);
+        $this->audit($request, 'account_get_client_project_status', $client, []);
+        return response()->json(['data' => $result, 'pagination' => null, 'meta' => ['source' => $result['source'], 'as_of' => $result['as_of']]]);
+    }
+
+    public function clientMilestones(Request $request, int $client): JsonResponse
+    {
+        $this->validateAllowedQueryKeys($request, []);
+        $result = $this->clientManagement->milestones($request->user(), $client);
+        $this->audit($request, 'account_get_client_milestones', $client, []);
+        return response()->json(['data' => $result, 'pagination' => null, 'meta' => ['source' => $result['source'], 'as_of' => $result['as_of']]]);
+    }
+
+    public function clientDocumentsAndHistory(Request $request, int $client): JsonResponse
+    {
+        $this->validateAllowedQueryKeys($request, []);
+        $result = $this->clientManagement->documentsAndHistory($request->user(), $client);
+        $this->audit($request, 'account_get_client_documents_history', $client, []);
+        return response()->json(['data' => $result, 'pagination' => null, 'meta' => ['source' => $result['source'], 'as_of' => $result['as_of']]]);
+    }
+
+    public function clientSummary(Request $request, int $client): JsonResponse
+    {
+        $this->validateAllowedQueryKeys($request, []);
+        $result = $this->clientManagement->summary($request->user(), $client);
+        $this->audit($request, 'account_get_client_summary', $client, []);
+        return response()->json(['data' => $result, 'pagination' => null, 'meta' => ['source' => $result['source'], 'as_of' => $result['as_of']]]);
+    }
+
+    public function clientSearch(Request $request, int $client): JsonResponse
+    {
+        $this->validateAllowedQueryKeys($request, ['q']);
+        $filters = $request->validate(['q' => ['required', 'string', 'min:2', 'max:100']]);
+        $result = $this->clientManagement->search($request->user(), $client, $filters['q']);
+        $this->audit($request, 'account_search_client_data', $client, []);
+        return response()->json(['data' => $result, 'pagination' => null, 'meta' => ['source' => $result['source'], 'as_of' => $result['as_of']]]);
+    }
 
     public function clients(Request $request): JsonResponse
     {

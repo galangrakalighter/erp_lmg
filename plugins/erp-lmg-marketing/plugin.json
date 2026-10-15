@@ -1,19 +1,19 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "erp-lmg-marketing",
-  "version": "0.2.0",
-  "description": "Private read-only marketing analyst for authorized ERP LMG data.",
+  "version": "1.0.0",
+  "description": "Private read-only Digital Marketing assistant for authorized ERP LMG data.",
   "author": { "name": "Lighter Media Group" },
   "extensions": {
     "com.openai": {
       "interface": {
-        "displayName": "ERP LMG Marketing",
-        "shortDescription": "Analitik marketing ERP LMG",
-        "longDescription": "Read-only research, branding, content, workflow, asset, campaign, and performance analysis for authorized ERP LMG clients.",
+        "displayName": "ERP LMG Digital Marketing",
+        "shortDescription": "Asisten Digital Marketing ERP LMG",
+        "longDescription": "Read-only Digital Marketing assistant for authorized ERP LMG research, branding, content, workflow, assets, campaigns, client scope, and performance data.",
         "developerName": "Lighter Media Group",
         "category": "Productivity",
         "capabilities": ["Tools"],
-        "defaultPrompt": "Analisis data marketing ERP LMG yang dapat saya akses tanpa mengarang metrik yang tidak tersedia.",
+        "defaultPrompt": "Gunakan data Digital Marketing ERP LMG yang dapat saya akses dan jangan mengarang informasi yang tidak tersedia.",
         "logo": "./assets/icon.svg",
         "composerIcon": "./assets/icon.svg"
       }

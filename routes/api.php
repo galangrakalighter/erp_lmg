@@ -35,6 +35,24 @@ $marketingMcpRoutes = function (): void {
     Route::get('/clients', [MarketingAnalyticsController::class, 'clients'])->name('clients');
     Route::get('/division-client-summary', [MarketingAnalyticsController::class, 'divisionClientSummary'])
         ->name('division-client-summary');
+    Route::get('/clients/{client}/profile', [MarketingAnalyticsController::class, 'clientProfile'])
+        ->whereNumber('client')->name('profile');
+    Route::get('/clients/{client}/contacts', [MarketingAnalyticsController::class, 'clientContacts'])
+        ->whereNumber('client')->name('contacts');
+    Route::get('/clients/{client}/brief', [MarketingAnalyticsController::class, 'clientBrief'])
+        ->whereNumber('client')->name('brief');
+    Route::get('/clients/{client}/needs', [MarketingAnalyticsController::class, 'clientNeeds'])
+        ->whereNumber('client')->name('needs');
+    Route::get('/clients/{client}/project-status', [MarketingAnalyticsController::class, 'clientProjectStatus'])
+        ->whereNumber('client')->name('project-status');
+    Route::get('/clients/{client}/milestones', [MarketingAnalyticsController::class, 'clientMilestones'])
+        ->whereNumber('client')->name('milestones');
+    Route::get('/clients/{client}/documents-history', [MarketingAnalyticsController::class, 'clientDocumentsAndHistory'])
+        ->whereNumber('client')->name('documents-history');
+    Route::get('/clients/{client}/summary', [MarketingAnalyticsController::class, 'clientSummary'])
+        ->whereNumber('client')->name('summary');
+    Route::get('/clients/{client}/account-search', [MarketingAnalyticsController::class, 'clientSearch'])
+        ->whereNumber('client')->name('account-search');
     Route::get('/clients/{client}/data-availability', [MarketingAnalyticsController::class, 'dataAvailability'])
         ->whereNumber('client')->name('data-availability');
     Route::get('/clients/{client}/performance-summary', [MarketingAnalyticsController::class, 'performanceSummary'])

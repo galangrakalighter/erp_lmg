@@ -72,6 +72,7 @@ class ContentPlanDatabaseOAuthTest extends TestCase
         $id = (int) $created->json('data.id');
         $this->assertDatabaseHas('oauth_access_tokens', ['id' => $tokenId, 'user_id' => $this->authorizedUser->id, 'revoked' => false]);
         $this->assertDatabaseHas('data_jasa', ['id' => $id, 'produk_client_id' => $this->allowedClient, 'judul' => 'OAuth database plan']);
+        $this->assertDatabaseHas('data_jasa', ['id' => $id, 'pic' => $this->authorizedUser->id]);
 
         $updatePayload = ['judul' => 'OAuth updated'];
         $updateToken = $this->confirmation($bearer, 'update', $this->allowedClient, $id, $updatePayload);
@@ -210,7 +211,7 @@ class ContentPlanDatabaseOAuthTest extends TestCase
 
     private function createPayload(): array
     {
-        return ['judul' => 'OAuth database plan', 'type_produk_id' => 1, 'strategy_id' => 1, 'pilar_id' => 1, 'hooks_id' => 1, 'body_id' => 1, 'cta_id' => 1, 'status_id' => 1, 'pic' => $this->authorizedUser->id, 'priority' => 1, 'menit' => 30];
+        return ['judul' => 'OAuth database plan', 'type_produk_id' => 1, 'strategy_id' => 1, 'pilar_id' => 1, 'hooks_id' => 1, 'body_id' => 1, 'cta_id' => 1, 'status_id' => 1, 'priority' => 1, 'menit' => 30];
     }
 
     private function seedAccessFixtures(): void

@@ -135,7 +135,7 @@ test('initialize succeeds with production identity and health remains available'
   const result = await rpc(base, { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18' } });
   assert.equal(result.response.status, 200);
   assert.equal(result.body.result.serverInfo.name, 'erp-lmg-digital-marketing');
-  assert.equal(result.body.result.serverInfo.version, '1.6.0');
+  assert.equal(result.body.result.serverInfo.version, '1.6.1');
 });
 
 test('tools/list without token returns OAuth challenge in header and MCP metadata', async () => {
@@ -190,7 +190,7 @@ test('content plan MCP mutations use OAuth CRUD endpoints and forward bearer tok
     calls.push({ url: String(url), method: options.method, authorization: options.headers.authorization, body: options.body });
     return jsonResponse(200, { data: { id: 8 }, meta: { operation: options.method } });
   });
-  const args = { client_id: 1, confirmation_token: 'x'.repeat(64), judul: 'Plan', type_produk_id: 1, strategy_id: 1, pilar_id: 1, hooks_id: 1, body_id: 1, cta_id: 1, status_id: 1, pic: 1, priority: 1, menit: 30 };
+  const args = { client_id: 1, confirmation_token: 'x'.repeat(64), judul: 'Plan', type_produk_id: 1, strategy_id: 1, pilar_id: 1, hooks_id: 1, body_id: 1, cta_id: 1, status_id: 1, priority: 1, menit: 30 };
   const result = await rpc(base, { jsonrpc: '2.0', id: 11, method: 'tools/call', params: { name: 'marketing_create_content_plan', arguments: args } }, token);
   assert.equal(result.body.result.structuredContent.data.id, 8);
   assert.equal(calls[0].url, 'https://erp.test/api/oauth-marketing-crud/content-plans');

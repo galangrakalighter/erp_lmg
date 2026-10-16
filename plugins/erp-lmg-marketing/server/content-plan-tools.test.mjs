@@ -40,7 +40,6 @@ assert.deepEqual(validateToolArguments("marketing_create_content_plan", {}), [
   "body_id wajib diisi.",
   "cta_id wajib diisi.",
   "status_id wajib diisi.",
-  "pic wajib diisi.",
   "priority wajib diisi.",
   "menit wajib diisi.",
 ]);

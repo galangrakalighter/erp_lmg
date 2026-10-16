@@ -360,11 +360,11 @@
                             <div class="col-md-4 mb-3">
                                 <div class="form-group">
                                     <label class="text-dark font-weight-bold small">Tanggal Posting</label>
-                                    <div class="input-group shadow-sm">
+                                    <div class="input-group shadow-sm" data-content-plan-date-trigger>
                                         <div class="input-group-prepend">
                                             <span class="input-group-text bg-white border-right-0"><i class="far fa-calendar-check text-muted"></i></span>
                                         </div>
-                                        <input type="date" name="tanggal_posting" id="create_tanggal_posting" class="form-control border-left-0" data-date-picker data-no-default-date>
+                                        <input type="date" name="tanggal_posting" id="create_tanggal_posting" class="form-control border-left-0" data-native-date="true" data-content-plan-date>
                                     </div>
                                 </div>
                             </div>
@@ -618,7 +618,7 @@
                             <div class="col-md-4">
                                 <div class="form-group">
                                     <label class="text-muted font-weight-bold small uppercase">Tanggal Posting</label>
-                                    <input type="date" name="tanggal_posting" id="edit_tanggal_posting" class="form-control shadow-sm" data-date-picker data-no-default-date {{ $role == "Content Creator" ? "readonly" : "" }}>
+                                    <input type="date" name="tanggal_posting" id="edit_tanggal_posting" class="form-control shadow-sm" data-native-date="true" data-content-plan-date {{ $role == "Content Creator" ? "readonly" : "" }}>
                                 </div>
                             </div>
 
@@ -800,6 +800,38 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
+        const openNativeDatePicker = input => {
+            if (!input || input.disabled || input.readOnly) return;
+
+            input.focus({ preventScroll: true });
+            if (typeof input.showPicker === 'function') {
+                try {
+                    input.showPicker();
+                    return true;
+                } catch (_error) {
+                    // Browser lama tetap dapat membuka kalender lewat klik native.
+                }
+            }
+
+            return false;
+        };
+
+        document.querySelectorAll('[data-content-plan-date-trigger]').forEach(trigger => {
+            const input = trigger.querySelector('[data-content-plan-date]');
+            trigger.style.cursor = input?.readOnly ? 'default' : 'pointer';
+            trigger.addEventListener('click', event => {
+                if (event.target === input) return;
+                openNativeDatePicker(input);
+            });
+        });
+
+        document.querySelectorAll('[data-content-plan-date]').forEach(input => {
+            input.addEventListener('click', event => {
+                if (typeof input.showPicker === 'function') event.preventDefault();
+                openNativeDatePicker(input);
+            });
+        });
+
         const updateCompositionGuidance = select => {
             const target = document.getElementById(select.dataset.guidanceTarget || '');
             if (!target) return;
@@ -900,13 +932,8 @@
             $('#edit_komposisi').val(rowData.komposisi);
             window.updateCompositionGuidance?.(document.getElementById('edit_komposisi'));
             $('#edit_warna').val(rowData.background);
-            const editPostingDate = document.getElementById('edit_tanggal_posting');
             const postingDateValue = rowData.tanggal_posting ? String(rowData.tanggal_posting).slice(0, 10) : '';
-            if (editPostingDate?._flatpickr) {
-                editPostingDate._flatpickr.setDate(postingDateValue, false, 'Y-m-d');
-            } else {
-                $('#edit_tanggal_posting').val(postingDateValue);
-            }
+            $('#edit_tanggal_posting').val(postingDateValue);
             $('#edit_jam_posting').val(rowData.jam_posting ? String(rowData.jam_posting).slice(0, 5) : '');
             $('#edit_link').val(rowData.link);
             $('#edit_status').val(rowData.status_id);

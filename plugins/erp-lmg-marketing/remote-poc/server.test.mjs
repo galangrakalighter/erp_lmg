@@ -137,7 +137,7 @@ test('initialize succeeds with production identity and health remains available'
   const result = await rpc(base, { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18' } });
   assert.equal(result.response.status, 200);
   assert.equal(result.body.result.serverInfo.name, 'erp-lmg-digital-marketing');
-  assert.equal(result.body.result.serverInfo.version, '1.7.0');
+  assert.equal(result.body.result.serverInfo.version, '1.7.1');
 });
 
 test('tools/list without token returns OAuth challenge in header and MCP metadata', async () => {

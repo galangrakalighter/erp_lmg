@@ -29,7 +29,7 @@ Server menyediakan:
 - `POST /mcp`
 - `GET /health`
 
-Nama server: `erp-lmg-digital-marketing`. Versi: `1.7.0`.
+Nama server: `erp-lmg-digital-marketing`. Versi: `1.7.1`.
 
 ## Pengujian kontrak
 

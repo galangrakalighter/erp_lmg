@@ -547,7 +547,7 @@ async function handle(message) {
   const { id, method, params = {} } = message;
   if (method === "notifications/initialized") return null;
   if (method === "initialize") {
-    return { jsonrpc: "2.0", id, result: { protocolVersion: params.protocolVersion || "2025-06-18", capabilities: { tools: { listChanged: false } }, serverInfo: { name: "erp-lmg-digital-marketing", version: "1.7.0" } } };
+    return { jsonrpc: "2.0", id, result: { protocolVersion: params.protocolVersion || "2025-06-18", capabilities: { tools: { listChanged: false } }, serverInfo: { name: "erp-lmg-digital-marketing", version: "1.7.1" } } };
   }
   if (method === "tools/list") return { jsonrpc: "2.0", id, result: { tools } };
   if (method === "tools/call") {

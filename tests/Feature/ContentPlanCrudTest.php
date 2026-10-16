@@ -60,7 +60,7 @@ class ContentPlanCrudTest extends TestCase
 
     private function payload(): array
     {
-        return ['client_id' => 1, 'judul' => 'Pilot plan', 'type_produk_id' => 1, 'strategy_id' => 1, 'pilar_id' => 1, 'hooks_id' => 1, 'body_id' => 1, 'cta_id' => 1, 'priority' => 1, 'menit' => 30];
+        return ['client_id' => 1, 'judul' => 'Pilot plan', 'type_produk_id' => 1, 'strategy_id' => 1, 'pilar_id' => 1, 'hooks_id' => 1, 'body_id' => 1, 'cta_id' => 1, 'status_id' => 1, 'pic' => 1, 'priority' => 1, 'menit' => 30];
     }
 
     private function token(string $action, int $id, array $payload, ?User $user = null): string
@@ -166,5 +166,5 @@ class ContentPlanCrudTest extends TestCase
     }
 
     private function servicePayload(array $payload): array
-    { return array_filter(array_intersect_key($payload, array_flip(['judul','type_produk_id','strategy_id','pilar_id','hooks_id','body_id','cta_id','priority','menit']))); }
+    { return array_filter(array_intersect_key($payload, array_flip(['judul','type_produk_id','strategy_id','pilar_id','hooks_id','body_id','cta_id','status_id','pic','priority','menit']))); }
 }

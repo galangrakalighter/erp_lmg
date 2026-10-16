@@ -79,18 +79,18 @@ class MarketingAnalyticsApiTest extends TestCase
 
     public function test_oauth_discovery_describes_pkce_and_read_only_scope(): void
     {
-        $this->getJson('/.well-known/oauth-protected-resource')
-            ->assertOk()
-            ->assertJsonPath('scopes_supported.0', 'marketing:read')
-            ->assertJsonPath('scopes_supported.1', 'offline_access')
-            ->assertJsonPath('authorization_servers.0', config('marketing-mcp.issuer'));
+        $protected = $this->getJson('/.well-known/oauth-protected-resource')->assertOk();
+        $this->assertContains('marketing:read', $protected->json('scopes_supported'));
+        $this->assertContains('offline_access', $protected->json('scopes_supported'));
+        $protected->assertJsonPath('authorization_servers.0', config('marketing-mcp.issuer'));
 
         $this->getJson('/.well-known/oauth-authorization-server')
             ->assertOk()
             ->assertJsonPath('code_challenge_methods_supported.0', 'S256')
             ->assertJsonPath('token_endpoint_auth_methods_supported.0', 'none')
             ->assertJsonPath('grant_types_supported.0', 'authorization_code')
-            ->assertJsonPath('scopes_supported.1', 'offline_access');
+            ->assertJsonPath('scopes_supported.0', 'marketing:read');
+        $this->assertContains('offline_access', $this->getJson('/.well-known/oauth-authorization-server')->json('scopes_supported'));
 
         $route = collect(Route::getRoutes()->getRoutes())
             ->first(fn ($route) => $route->uri() === 'api/oauth-marketing-mcp/clients');
@@ -108,7 +108,8 @@ class MarketingAnalyticsApiTest extends TestCase
         $this->getJson('/.well-known/oauth-authorization-server')
             ->assertOk()
             ->assertJsonPath('grant_types_supported.1', 'refresh_token')
-            ->assertJsonPath('scopes_supported.1', 'offline_access');
+            ->assertJsonPath('scopes_supported.0', 'marketing:read');
+        $this->assertContains('offline_access', $this->getJson('/.well-known/oauth-authorization-server')->json('scopes_supported'));
     }
 
     public function test_oauth_poc_lists_only_clients_accessible_to_the_connected_user(): void
@@ -581,7 +582,7 @@ class MarketingAnalyticsApiTest extends TestCase
         $routes = collect(Route::getRoutes()->getRoutes())
             ->filter(fn ($route) => str_starts_with($route->uri(), 'api/marketing-mcp/'));
 
-        $this->assertCount(30, $routes);
+        $this->assertCount(31, $routes);
         foreach ($routes as $route) {
             $this->assertSame(['GET', 'HEAD'], $route->methods());
         }
@@ -728,7 +729,7 @@ class MarketingAnalyticsApiTest extends TestCase
             ->filter(fn ($route) => str_starts_with($route->uri(), 'api/marketing-mcp/')
                 || str_starts_with($route->uri(), 'api/oauth-marketing-mcp/'));
 
-        $this->assertCount(60, $routes);
+        $this->assertCount(62, $routes);
         foreach ($routes as $route) {
             $this->assertSame(['GET', 'HEAD'], $route->methods(), $route->uri());
         }

@@ -3,7 +3,7 @@ import { pathToFileURL } from 'node:url';
 import { endpointForTool, tools, validateToolArguments } from '../server/index.mjs';
 
 export const SERVER_NAME = 'erp-lmg-digital-marketing';
-export const SERVER_VERSION = '1.5.0';
+export const SERVER_VERSION = '1.6.0';
 
 const defaultConfig = {
   port: Number.parseInt(process.env.MCP_PORT ?? '8787', 10),

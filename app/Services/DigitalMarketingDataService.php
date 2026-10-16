@@ -160,6 +160,20 @@ class DigitalMarketingDataService
         ]);
     }
 
+    public function contentPlanStatuses(Authenticatable $user, int $clientId, array $filters): array
+    {
+        $this->assertClientAccess($user, $clientId);
+        $categoryId = DB::table('produk_client')->where('id', $clientId)->value('kategori_jasa_id');
+        $query = DB::table('status')->when(Schema::hasColumn('status', 'status'), fn (Builder $q) => $q->where('status', 1))->whereNotNull('nama_status')->where('nama_status', '!=', '')
+            ->when($categoryId !== null, fn (Builder $q) => $q->where(function (Builder $inner) use ($categoryId): void {
+                $inner->whereNull('kategori_id')->orWhere('kategori_id', $categoryId);
+            }));
+        $search = trim((string) ($filters['search'] ?? ''));
+        $rows = $query->when($search !== '', fn (Builder $q) => $q->whereRaw('LOWER(nama_status) LIKE ?', ['%'.mb_strtolower($search).'%']))
+            ->orderBy('nama_status')->get(['id', 'nama_status'])->map(fn ($row) => ['id' => (int) $row->id, 'name' => (string) $row->nama_status, 'active' => true]);
+        return $this->paginate($rows, $filters, 'content_plan_statuses', ['client_id' => $clientId, 'source' => 'status', 'safe_fields' => ['id', 'name', 'active']]);
+    }
+
     public function tasks(int $clientId, array $filters): array
     {
         [$start, $end] = $this->period($filters);

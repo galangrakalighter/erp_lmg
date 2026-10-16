@@ -5,7 +5,7 @@ const readOnly = tools.filter((tool) => tool.annotations?.readOnlyHint === true)
 const masterTools = ["marketing_list_product_types", "marketing_list_strategies", "marketing_list_hooks", "marketing_list_bodies", "marketing_list_ctas"];
 const mutations = ["marketing_create_content_plan", "marketing_update_content_plan", "marketing_archive_content_plan"];
 
-assert.equal(readOnly.length, 34, "harus ada 29 tool read-only lama dan 5 master content plan");
+assert.equal(readOnly.length, 35, "harus ada 29 tool read-only lama dan 6 master/status content plan");
 for (const name of masterTools) {
   const tool = tools.find((candidate) => candidate.name === name);
   assert.ok(tool, `${name} harus terdaftar`);
@@ -39,6 +39,8 @@ assert.deepEqual(validateToolArguments("marketing_create_content_plan", {}), [
   "hooks_id wajib diisi.",
   "body_id wajib diisi.",
   "cta_id wajib diisi.",
+  "status_id wajib diisi.",
+  "pic wajib diisi.",
   "priority wajib diisi.",
   "menit wajib diisi.",
 ]);

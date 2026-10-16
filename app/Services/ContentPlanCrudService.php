@@ -16,6 +16,7 @@ final class ContentPlanCrudService
         $this->policy->assert($user, $clientId, MarketingCrudPermissions::CONTENT_PLAN_CREATE);
         $payload = $this->payload($data);
         $this->validateMasters($clientId, $payload);
+        $this->validateStatusAndPic($payload);
         $this->confirmation->consume($user, $data['confirmation_token'], 'create', 'content_plan', 0, $this->hash($payload));
         $id = DB::table('data_jasa')->insertGetId($payload + ['produk_client_id' => $clientId, 'created_at' => now(), 'updated_at' => now()]);
         $this->audit->record($user, 'CREATE', $id, $clientId, [], $this->safe($payload));
@@ -29,6 +30,7 @@ final class ContentPlanCrudService
         abort_if($plan->archived_at, 409, 'Content plan sudah diarsipkan.');
         $payload = $this->payload($data);
         $this->validateMasters((int) $plan->produk_client_id, $payload);
+        $this->validateStatusAndPic($payload);
         $this->confirmation->consume($user, $data['confirmation_token'], 'update', 'content_plan', $id, $this->hash($payload));
         DB::table('data_jasa')->where('id', $id)->update($payload + ['updated_at' => now()]);
         $this->audit->record($user, 'UPDATE', $id, (int) $plan->produk_client_id, [], $this->safe($payload));
@@ -52,8 +54,15 @@ final class ContentPlanCrudService
         abort_unless($permission, 422, 'Operasi confirmation tidak valid.');
         if ($objectId > 0) $this->policy->assertObject($user, $objectId, $permission);
         else $this->policy->assert($user, $clientId, $permission);
-        $token = app(MarketingConfirmationTokenService::class)->issue($user, $action, 'content_plan', $objectId, hash('sha256', json_encode($payload, JSON_THROW_ON_ERROR)));
-        return ['action' => $action, 'module' => 'content_plan', 'object_id' => $objectId, 'client_id' => $clientId, 'expires_in' => 300, 'confirmation_token' => $token];
+        $canonicalPayload = $action === 'archive' ? ['reason' => $payload['reason'] ?? null] : $this->payload($payload);
+        if ($action !== 'archive') {
+            $this->validateMasters($clientId, $canonicalPayload);
+            $this->validateStatusAndPic($canonicalPayload);
+        }
+        $token = app(MarketingConfirmationTokenService::class)->issue($user, $action, 'content_plan', $objectId, hash('sha256', json_encode($canonicalPayload, JSON_THROW_ON_ERROR)));
+        $draft = array_intersect_key($canonicalPayload, array_flip(['judul', 'status_id', 'pic', 'type_produk_id', 'strategy_id', 'pilar_id', 'hooks_id', 'body_id', 'cta_id', 'priority', 'menit']));
+        if (isset($draft['status_id']) && \Illuminate\Support\Facades\Schema::hasTable('status')) $draft['status'] = DB::table('status')->where('id', $draft['status_id'])->value('nama_status');
+        return ['action' => $action, 'module' => 'content_plan', 'object_id' => $objectId, 'client_id' => $clientId, 'draft' => $draft, 'expires_in' => 300, 'confirmation_token' => $token];
     }
 
     private function read(Authenticatable $user, int $id): array
@@ -92,5 +101,17 @@ final class ContentPlanCrudService
             if ($table === 'pilar') $query->where('status', 1);
             abort_unless($query->exists(), 422, "Master content plan {$field} tidak aktif atau tidak valid.");
         }
+    }
+
+    private function validateStatusAndPic(array $payload): void
+    {
+        if (array_key_exists('status_id', $payload)) {
+            if (!\Illuminate\Support\Facades\Schema::hasTable('status')) return;
+            $statusQuery = DB::table('status')->where('id', (int) $payload['status_id']);
+            if (\Illuminate\Support\Facades\Schema::hasColumn('status', 'status')) $statusQuery->where('status', 1);
+            $status = $statusQuery->first();
+            abort_unless($status, 422, 'status_id tidak aktif atau tidak valid.');
+        }
+        if (array_key_exists('pic', $payload)) abort_unless(DB::table('users')->where('id', (int) $payload['pic'])->exists(), 422, 'pic tidak valid.');
     }
 }

@@ -210,7 +210,7 @@ class ContentPlanDatabaseOAuthTest extends TestCase
 
     private function createPayload(): array
     {
-        return ['judul' => 'OAuth database plan', 'type_produk_id' => 1, 'strategy_id' => 1, 'pilar_id' => 1, 'hooks_id' => 1, 'body_id' => 1, 'cta_id' => 1, 'priority' => 1, 'menit' => 30];
+        return ['judul' => 'OAuth database plan', 'type_produk_id' => 1, 'strategy_id' => 1, 'pilar_id' => 1, 'hooks_id' => 1, 'body_id' => 1, 'cta_id' => 1, 'status_id' => 1, 'pic' => $this->authorizedUser->id, 'priority' => 1, 'menit' => 30];
     }
 
     private function seedAccessFixtures(): void
@@ -224,6 +224,7 @@ class ContentPlanDatabaseOAuthTest extends TestCase
         foreach ([$this->allowedClient, $this->otherClient] as $client) DB::table('client_division')->insert(['client_id' => $client, 'division_id' => $division, 'status' => 1, 'created_at' => now(), 'updated_at' => now()]);
         $this->authorizedUser = $this->makeUser('OAuth Owner', 'owner@example.test', 'Digital Marketing Manager', 'Digital Marketing', true);
         foreach ([['type_produk', 'type'], ['strategy', 'strategy'], ['pilar', 'pilar'], ['hooks', 'hooks'], ['jenis_body', 'nama_body'], ['jenis_cta', 'nama_cta']] as [$table, $column]) DB::table($table)->insert(['id' => 1, $column => 'Default']);
+        DB::table('status')->insert(['id' => 1, 'nama_status' => 'Draft']);
     }
 
     protected function makeUser(string $name, string $email, string $roleName, string $divisionName, bool $assignClient, bool $locked = false): User

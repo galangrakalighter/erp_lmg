@@ -315,6 +315,14 @@ class MarketingAnalyticsController extends Controller
         return response()->json(['data' => $result['data'], 'pagination' => $result['pagination'], 'meta' => $result['meta']]);
     }
 
+    public function contentPlanStatuses(Request $request, int $client): JsonResponse
+    {
+        $filters = $request->validate(['search' => ['nullable', 'string', 'max:100'], 'page' => ['nullable', 'integer', 'min:1'], 'per_page' => ['nullable', 'integer', 'min:1', 'max:100']]);
+        $result = $this->digitalMarketing->contentPlanStatuses($request->user(), $client, $filters);
+        $this->audit($request, 'marketing_list_content_plan_statuses', $client, $filters);
+        return response()->json(['data' => $result['data'], 'pagination' => $result['pagination'], 'meta' => $result['meta']]);
+    }
+
     public function tasks(Request $request, int $client): JsonResponse
     {
         $filters = $this->phaseTwoPeriodFilters($request, ['pic_id', 'status'], [

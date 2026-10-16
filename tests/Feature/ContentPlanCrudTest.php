@@ -31,16 +31,16 @@ class ContentPlanCrudTest extends TestCase
         Schema::create('produk_client', fn (Blueprint $t) => $t->id());
         Schema::create('data_jasa', function (Blueprint $t): void {
             $t->id(); $t->unsignedBigInteger('produk_client_id'); $t->string('judul')->nullable(); $t->string('inspirasi')->nullable();
-            foreach (['type_produk_id','strategy_id','pilar_id','hooks_id','body_id','cta_id','status_id','pic','priority','menit'] as $c) $t->integer($c)->nullable();
+            foreach (['type_produk_id','strategy_id','pilar_id','hooks_id','body_id','cta_id','status_id'] as $c) $t->integer($c)->nullable();
             foreach (['durasi','background','komposisi','note','link','platform'] as $c) $t->text($c)->nullable();
-            foreach (['tanggal_posting','tanggal_deadline','tanggal_mulai'] as $c) $t->date($c)->nullable();
+            $t->date('tanggal_posting')->nullable();
             $t->timestamp('archived_at')->nullable(); $t->integer('archived_by')->nullable(); $t->timestamps();
         });
         $this->user = \Mockery::mock(Authenticatable::class);
         $this->user->shouldReceive('getAuthIdentifier')->andReturn(1);
         $policy = \Mockery::mock(ContentPlanCrudAuthorization::class);
         $policy->shouldReceive('assert')->zeroOrMoreTimes();
-        $policy->shouldReceive('assertObject')->zeroOrMoreTimes()->andReturnUsing(fn ($u, $id, $p) => DB::table('data_jasa')->where('id', $id)->first(['id','produk_client_id','pic','archived_at']));
+        $policy->shouldReceive('assertObject')->zeroOrMoreTimes()->andReturnUsing(fn ($u, $id, $p) => DB::table('data_jasa')->where('id', $id)->first(['id','produk_client_id','archived_at']));
         $this->firestore = new InMemoryFirestoreService();
         $this->app->instance(FirestoreService::class, $this->firestore);
         $this->activityLog = $this->app->make(ActivityLogService::class);
@@ -60,7 +60,7 @@ class ContentPlanCrudTest extends TestCase
 
     private function payload(): array
     {
-        return ['client_id' => 1, 'judul' => 'Pilot plan', 'type_produk_id' => 1, 'strategy_id' => 1, 'pilar_id' => 1, 'hooks_id' => 1, 'body_id' => 1, 'cta_id' => 1, 'status_id' => 1, 'priority' => 1, 'menit' => 30];
+        return ['client_id' => 1, 'judul' => 'Pilot plan', 'type_produk_id' => 1, 'strategy_id' => 1, 'pilar_id' => 1, 'hooks_id' => 1, 'body_id' => 1, 'cta_id' => 1, 'status_id' => 1];
     }
 
     private function token(string $action, int $id, array $payload, ?User $user = null): string
@@ -166,5 +166,5 @@ class ContentPlanCrudTest extends TestCase
     }
 
     private function servicePayload(array $payload): array
-    { $result = array_filter(array_intersect_key($payload, array_flip(['judul','type_produk_id','strategy_id','pilar_id','hooks_id','body_id','cta_id','status_id','priority','menit']))); return array_key_exists('type_produk_id', $payload) ? $result + ['pic' => (int) $this->user->getAuthIdentifier()] : $result; }
+    { return array_filter(array_intersect_key($payload, array_flip(['judul','type_produk_id','strategy_id','pilar_id','hooks_id','body_id','cta_id','status_id']))); }
 }

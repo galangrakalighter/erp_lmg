@@ -88,7 +88,6 @@ class DigitalMarketingDataService
             ->leftJoin('jenis_body', 'jenis_body.id', '=', 'data_jasa.body_id')
             ->leftJoin('jenis_cta', 'jenis_cta.id', '=', 'data_jasa.cta_id')
             ->leftJoin('status', 'status.id', '=', 'data_jasa.status_id')
-            ->leftJoin('users', 'users.id', '=', 'data_jasa.pic')
             ->leftJoin('platform_mirror_copies as mirror_copy', function ($join): void {
                 $join->on('mirror_copy.client_id', '=', 'data_jasa.produk_client_id')
                     ->where('mirror_copy.table_name', '=', 'data_jasa')
@@ -103,10 +102,9 @@ class DigitalMarketingDataService
                 'data_jasa.id', 'data_jasa.judul as title', 'data_jasa.inspirasi as inspiration',
                 'data_jasa.note as copy_notes', 'data_jasa.platform', 'data_jasa.content_source as source',
                 'data_jasa.tanggal_posting as publish_date', 'data_jasa.jam_posting as publish_time',
-                'data_jasa.tanggal_mulai as start_date', 'data_jasa.tanggal_deadline as deadline',
                 'type_produk.type as content_type', 'strategy.strategy', 'pilar.pilar as content_pillar',
                 'hooks.hooks as hook', 'jenis_body.nama_body as body_format', 'jenis_cta.nama_cta as cta',
-                'status.nama_status as status', 'users.id as pic_id', 'users.name as pic_name', 'data_jasa.updated_at',
+                'status.nama_status as status', 'data_jasa.updated_at',
             ]);
         $hashtags = DB::table('brand_tagline')->where('produk_client_id', $clientId)
             ->get(['platform', 'nama_hashtagline'])->groupBy(fn ($row) => strtolower((string) $row->platform));

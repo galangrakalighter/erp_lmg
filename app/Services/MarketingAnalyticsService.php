@@ -444,7 +444,7 @@ class MarketingAnalyticsService
                 ->orWhereNull('type_produk.type')->orWhereNull('strategy.strategy')
                 ->orWhereNull('pilar.pilar')->orWhereNull('hooks.hooks')
                 ->orWhereNull('jenis_body.nama_body')->orWhereNull('jenis_cta.nama_cta')
-                ->orWhereNull('status.nama_status')->orWhereNull('users.id');
+                ->orWhereNull('status.nama_status');
         })->count('data_jasa.id');
 
         $plans = $query->select([
@@ -453,7 +453,7 @@ class MarketingAnalyticsService
             'data_jasa.content_source as source', 'type_produk.type as content_type',
             'strategy.strategy', 'pilar.pilar', 'hooks.hooks as hook',
             'jenis_body.nama_body as body', 'jenis_cta.nama_cta as cta',
-            'status.nama_status as status', 'users.id as pic_id', 'users.name as pic_name',
+            'status.nama_status as status',
         ])->orderBy('data_jasa.tanggal_posting')->orderBy('data_jasa.id')
             ->paginate((int) $filters['per_page'], ['*'], 'page', (int) $filters['page']);
 
@@ -479,12 +479,12 @@ class MarketingAnalyticsService
             'data_jasa.platform', 'data_jasa.content_source as source',
             'type_produk.type as content_type', 'strategy.strategy', 'pilar.pilar',
             'hooks.hooks as hook', 'jenis_cta.nama_cta as cta', 'status.nama_status as status',
-            'users.id as pic_id', 'jenis_body.nama_body as body', 'data_jasa.updated_at',
+            'jenis_body.nama_body as body', 'data_jasa.updated_at',
         ]);
         $total = $rows->count();
         $missingCount = $rows->filter(fn ($row) => collect([
             $row->platform, $row->source, $row->content_type, $row->strategy, $row->pilar,
-            $row->hook, $row->body, $row->cta, $row->status, $row->pic_id,
+            $row->hook, $row->body, $row->cta, $row->status,
         ])->contains(fn ($value) => blank($value)))->count();
         $organic = $rows->filter(fn ($row) => strtolower((string) $row->source) === 'organic')->count();
         $paid = $rows->filter(fn ($row) => strtolower((string) $row->source) === 'paid')->count();
@@ -674,7 +674,6 @@ class MarketingAnalyticsService
             ->leftJoin('jenis_body', 'jenis_body.id', '=', 'data_jasa.body_id')
             ->leftJoin('jenis_cta', 'jenis_cta.id', '=', 'data_jasa.cta_id')
             ->leftJoin('status', 'status.id', '=', 'data_jasa.status_id')
-            ->leftJoin('users', 'users.id', '=', 'data_jasa.pic')
             ->leftJoin('platform_mirror_copies as mirror_copy', function ($join): void {
                 $join->on('mirror_copy.client_id', '=', 'data_jasa.produk_client_id')
                     ->where('mirror_copy.table_name', '=', 'data_jasa')
@@ -684,8 +683,7 @@ class MarketingAnalyticsService
             ->whereBetween('data_jasa.tanggal_posting', [$start->toDateString(), $end->toDateString()])
             ->when($platform, fn (Builder $query) => $query->whereRaw('LOWER(data_jasa.platform) = ?', [$platform]))
             ->when($source, fn (Builder $query) => $query->whereRaw('LOWER(data_jasa.content_source) = ?', [$source]))
-            ->when(isset($filters['status']), fn (Builder $query) => $query->where('data_jasa.status_id', (int) $filters['status']))
-            ->when(isset($filters['pic_id']), fn (Builder $query) => $query->where('data_jasa.pic', (int) $filters['pic_id']));
+            ->when(isset($filters['status']), fn (Builder $query) => $query->where('data_jasa.status_id', (int) $filters['status']));
     }
 
     private function distribution(Collection $rows, string $field, int $total, bool $lowercase = false): array

@@ -14,8 +14,7 @@ final class ContentPlanCrudService
     {
         $clientId = (int) $data['client_id'];
         $this->policy->assert($user, $clientId, MarketingCrudPermissions::CONTENT_PLAN_CREATE);
-        abort_if(array_key_exists('pic', $data), 422, 'pic ditetapkan otomatis dari user OAuth.');
-        $payload = $this->payload($data) + ['pic' => (int) $user->getAuthIdentifier()];
+        $payload = $this->payload($data);
         $this->validateMasters($clientId, $payload);
         $this->validateStatusAndPic($payload);
         $this->confirmation->consume($user, $data['confirmation_token'], 'create', 'content_plan', 0, $this->hash($payload));
@@ -29,7 +28,6 @@ final class ContentPlanCrudService
         $plan = $this->policy->assertObject($user, $id, MarketingCrudPermissions::CONTENT_PLAN_UPDATE);
         abort_unless(isset($data['client_id']) && (int) $data['client_id'] === (int) $plan->produk_client_id, 403, 'client_id tidak sesuai dengan record content plan.');
         abort_if($plan->archived_at, 409, 'Content plan sudah diarsipkan.');
-        abort_if(array_key_exists('pic', $data), 422, 'pic ditetapkan otomatis dari user OAuth.');
         $payload = $this->payload($data);
         $this->validateMasters((int) $plan->produk_client_id, $payload);
         $this->validateStatusAndPic($payload);
@@ -56,29 +54,27 @@ final class ContentPlanCrudService
         abort_unless($permission, 422, 'Operasi confirmation tidak valid.');
         if ($objectId > 0) $this->policy->assertObject($user, $objectId, $permission);
         else $this->policy->assert($user, $clientId, $permission);
-        abort_if($action !== 'archive' && array_key_exists('pic', $payload), 422, 'pic ditetapkan otomatis dari user OAuth.');
         $canonicalPayload = $action === 'archive' ? ['reason' => $payload['reason'] ?? null] : $this->payload($payload);
-        if ($action === 'create') $canonicalPayload['pic'] = (int) $user->getAuthIdentifier();
         if ($action !== 'archive') {
             $this->validateMasters($clientId, $canonicalPayload);
             $this->validateStatusAndPic($canonicalPayload);
         }
         $token = app(MarketingConfirmationTokenService::class)->issue($user, $action, 'content_plan', $objectId, hash('sha256', json_encode($canonicalPayload, JSON_THROW_ON_ERROR)));
-        $draft = array_intersect_key($canonicalPayload, array_flip(['judul', 'status_id', 'pic', 'type_produk_id', 'strategy_id', 'pilar_id', 'hooks_id', 'body_id', 'cta_id', 'priority', 'menit']));
+        $draft = array_intersect_key($canonicalPayload, array_flip(['judul', 'status_id', 'type_produk_id', 'strategy_id', 'pilar_id', 'hooks_id', 'body_id', 'cta_id']));
         if (isset($draft['status_id']) && \Illuminate\Support\Facades\Schema::hasTable('status')) $draft['status'] = DB::table('status')->where('id', $draft['status_id'])->value('nama_status');
         return ['action' => $action, 'module' => 'content_plan', 'object_id' => $objectId, 'client_id' => $clientId, 'draft' => $draft, 'expires_in' => 300, 'confirmation_token' => $token];
     }
 
     private function read(Authenticatable $user, int $id): array
     {
-        $plan = DB::table('data_jasa')->where('id', $id)->first(['id', 'produk_client_id', 'judul', 'inspirasi', 'platform', 'tanggal_mulai', 'tanggal_deadline', 'status_id', 'pic', 'priority', 'menit', 'archived_at']);
+        $plan = DB::table('data_jasa')->where('id', $id)->first(['id', 'produk_client_id', 'judul', 'inspirasi', 'platform', 'tanggal_posting', 'status_id', 'archived_at']);
         $this->policy->assert($user, (int) $plan->produk_client_id, MarketingCrudPermissions::CONTENT_PLAN_UPDATE);
         return (array) $plan;
     }
 
     private function payload(array $data): array
     {
-        return array_filter(array_intersect_key($data, array_flip(['judul', 'inspirasi', 'type_produk_id', 'strategy_id', 'pilar_id', 'hooks_id', 'body_id', 'cta_id', 'durasi', 'background', 'komposisi', 'note', 'tanggal_posting', 'tanggal_deadline', 'tanggal_mulai', 'link', 'platform', 'status_id', 'pic', 'priority', 'menit'])), fn ($v) => $v !== null);
+        return array_filter(array_intersect_key($data, array_flip(['judul', 'inspirasi', 'type_produk_id', 'strategy_id', 'pilar_id', 'hooks_id', 'body_id', 'cta_id', 'durasi', 'background', 'komposisi', 'note', 'tanggal_posting', 'link', 'platform', 'status_id'])), fn ($v) => $v !== null);
     }
     private function safe(array $data): array { return array_diff_key($data, array_flip(['link'])); }
     private function hash(array $data): string { return hash('sha256', json_encode($data, JSON_THROW_ON_ERROR)); }
@@ -116,6 +112,5 @@ final class ContentPlanCrudService
             $status = $statusQuery->first();
             abort_unless($status, 422, 'status_id tidak aktif atau tidak valid.');
         }
-        if (array_key_exists('pic', $payload)) abort_unless(DB::table('users')->where('id', (int) $payload['pic'])->exists(), 422, 'pic tidak valid.');
     }
 }

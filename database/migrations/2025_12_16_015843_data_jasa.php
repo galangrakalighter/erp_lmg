@@ -27,15 +27,10 @@ return new class extends Migration
             $table->string('komposisi')->nullable();
             $table->text('note')->nullable();
             $table->date('tanggal_posting')->nullable();
-            $table->date('tanggal_deadline')->nullable();
-            $table->date('tanggal_mulai')->nullable();
             $table->string('link')->nullable();
             $table->string('platform')->nullable();
             $table->integer('status_id')->constrained("status")->cascadeOnDelete();
             $table->timestamps();
-            $table->foreignId('pic')->constrained("users")->cascadeOnDelete();
-            $table->integer('priority');
-            $table->integer('menit');
         });
     }
 

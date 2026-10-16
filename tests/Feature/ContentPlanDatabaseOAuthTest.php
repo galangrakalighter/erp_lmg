@@ -72,7 +72,6 @@ class ContentPlanDatabaseOAuthTest extends TestCase
         $id = (int) $created->json('data.id');
         $this->assertDatabaseHas('oauth_access_tokens', ['id' => $tokenId, 'user_id' => $this->authorizedUser->id, 'revoked' => false]);
         $this->assertDatabaseHas('data_jasa', ['id' => $id, 'produk_client_id' => $this->allowedClient, 'judul' => 'OAuth database plan']);
-        $this->assertDatabaseHas('data_jasa', ['id' => $id, 'pic' => $this->authorizedUser->id]);
 
         $updatePayload = ['judul' => 'OAuth updated'];
         $updateToken = $this->confirmation($bearer, 'update', $this->allowedClient, $id, $updatePayload);
@@ -211,7 +210,7 @@ class ContentPlanDatabaseOAuthTest extends TestCase
 
     private function createPayload(): array
     {
-        return ['judul' => 'OAuth database plan', 'type_produk_id' => 1, 'strategy_id' => 1, 'pilar_id' => 1, 'hooks_id' => 1, 'body_id' => 1, 'cta_id' => 1, 'status_id' => 1, 'priority' => 1, 'menit' => 30];
+        return ['judul' => 'OAuth database plan', 'type_produk_id' => 1, 'strategy_id' => 1, 'pilar_id' => 1, 'hooks_id' => 1, 'body_id' => 1, 'cta_id' => 1, 'status_id' => 1];
     }
 
     private function seedAccessFixtures(): void
@@ -272,7 +271,7 @@ class ContentPlanDatabaseOAuthTest extends TestCase
         foreach (['brand_image' => ['nama_image'], 'brand_value' => ['nama_value'], 'brand_tagline' => ['nama_tagline','nama_hashtagline'], 'gaya_komunikasi' => ['gaya_bicara','gaya_bahasa'], 'komposisi' => ['type_komposisi','komposisi'], 'audio_brand' => ['nama_audio'], 'moodboard' => ['moodboard'], 'alat_branding' => ['nama_alat']] as $table => $columns) {
             Schema::create($table, function (Blueprint $t) use ($columns) { $t->id(); $t->unsignedBigInteger('produk_client_id'); foreach ($columns as $column) $t->string($column)->nullable(); $t->string('platform')->nullable(); $t->timestamps(); });
         }
-        Schema::create('data_jasa', function (Blueprint $t) { $t->id(); $t->unsignedBigInteger('produk_client_id'); $t->string('judul')->nullable(); $t->string('inspirasi')->nullable(); foreach (['type_produk_id','strategy_id','pilar_id','hooks_id','body_id','cta_id','status_id','pic','priority','menit'] as $c) $t->integer($c)->nullable(); foreach (['durasi','background','komposisi','note','link','platform'] as $c) $t->text($c)->nullable(); foreach (['tanggal_posting','tanggal_deadline','tanggal_mulai'] as $c) $t->date($c)->nullable(); $t->string('content_source')->default('organic'); $t->timestamp('archived_at')->nullable(); $t->integer('archived_by')->nullable(); $t->timestamps(); });
+        Schema::create('data_jasa', function (Blueprint $t) { $t->id(); $t->unsignedBigInteger('produk_client_id'); $t->string('judul')->nullable(); $t->string('inspirasi')->nullable(); foreach (['type_produk_id','strategy_id','pilar_id','hooks_id','body_id','cta_id','status_id'] as $c) $t->integer($c)->nullable(); foreach (['durasi','background','komposisi','note','link','platform'] as $c) $t->text($c)->nullable(); $t->date('tanggal_posting')->nullable(); $t->string('content_source')->default('organic'); $t->timestamp('archived_at')->nullable(); $t->integer('archived_by')->nullable(); $t->timestamps(); });
         Schema::create('marketing_campaigns', function (Blueprint $t) { $t->id(); $t->unsignedBigInteger('client_id'); $t->unsignedBigInteger('owner_user_id')->nullable(); $t->string('name', 200); $t->string('status', 50); $t->string('platform', 50)->nullable(); $t->string('source', 20)->default('organic'); $t->date('start_date'); $t->date('end_date'); $t->text('objective')->nullable(); $t->decimal('budget', 18, 2)->nullable(); $t->string('currency', 3)->nullable(); $t->text('target')->nullable(); $t->timestamp('archived_at')->nullable(); $t->unsignedBigInteger('archived_by')->nullable(); $t->timestamps(); });
         Schema::create('marketing_approval_events', function (Blueprint $t) { $t->id(); $t->unsignedBigInteger('user_id'); $t->unsignedBigInteger('client_id'); $t->string('record_type', 50); $t->unsignedBigInteger('record_id'); $t->string('action', 30); $t->string('status', 30); $t->text('note')->nullable(); $t->uuid('audit_reference')->unique(); $t->timestamp('created_at'); });
         Schema::create('task', function (Blueprint $t) { $t->id(); $t->string('nama_task'); $t->string('jira')->nullable(); $t->unsignedBigInteger('divisi'); $t->unsignedBigInteger('pic'); $t->integer('priority'); $t->integer('menit'); $t->unsignedBigInteger('id_manajement_konten')->nullable(); $t->unsignedBigInteger('id_kpi')->nullable(); $t->date('tanggal_mulai'); $t->date('tanggal_deadline')->nullable(); $t->text('note')->nullable(); $t->integer('status'); $t->unsignedBigInteger('project'); $t->time('jam_mulai')->nullable(); $t->date('tanggal_approve')->nullable(); $t->date('tanggal_revisi')->nullable(); $t->date('tanggal_split')->nullable(); $t->string('completion_proof_path')->nullable(); $t->timestamp('archived_at')->nullable(); $t->unsignedBigInteger('archived_by')->nullable(); $t->timestamps(); });

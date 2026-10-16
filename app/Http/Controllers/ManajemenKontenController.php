@@ -93,7 +93,6 @@ class ManajemenKontenController extends Controller
                 ->leftJoin('hooks', 'hooks.id', '=', 'data_jasa.hooks_id')
                 ->leftJoin('jenis_body', 'jenis_body.id', '=', 'data_jasa.body_id')
                 ->leftJoin('jenis_cta', 'jenis_cta.id', '=', 'data_jasa.cta_id')
-                ->leftJoin('users', 'users.id', '=', 'data_jasa.pic')
                 ->where('data_jasa.produk_client_id', $produk_id)
                 ->whereIn('data_jasa.platform', $mirroredPlatforms)
                 ->when(count($mirroredPlatforms) > 1, fn ($query) => $query->whereNotIn(
@@ -108,9 +107,7 @@ class ManajemenKontenController extends Controller
                     'pilar.pilar', 
                     'hooks.hooks', 
                     'jenis_body.nama_body', 
-                    'jenis_cta.nama_cta', 
-                    'users.email as vic_email',
-                    'users.name as vic_name'
+                    'jenis_cta.nama_cta'
                 );
 
             // LOGIKA FILTER TANGGAL
@@ -159,8 +156,6 @@ class ManajemenKontenController extends Controller
         foreach($arr as $d){
             $value[$d] = (int)$request->$d; 
         }
-        $request->pic = (int)$request->pic;
-        $request->prioritas = (int)$request->prioritas;
 
         // Validasi Terlebih Dahulu
         $request->validate([
@@ -179,10 +174,8 @@ class ManajemenKontenController extends Controller
             'jenis_cta'         => 'required|integer',
             'warna'             => 'nullable|string',
             'komposisi'         => 'nullable|string',
-            'tanggal_mulai'     => 'nullable|date',
             'tanggal_posting'   => 'nullable|date',
             'jam_posting'       => ['nullable', 'date_format:H:i'],
-            'tanggal_deadline'  => 'nullable|date',
             'link'              => 'nullable|string',
             'status'            => 'required|integer',
             'note'              => 'nullable|string',
@@ -208,10 +201,8 @@ class ManajemenKontenController extends Controller
                 'durasi'           => $request->durasi,
                 'komposisi'        => $request->komposisi,
                 'note'             => $request->note,
-                'tanggal_mulai'    => $request->tanggal_mulai,
                 'tanggal_posting'  => $request->tanggal_posting,
                 'jam_posting'      => $request->content_source === 'organic' ? $request->jam_posting : null,
-                'tanggal_deadline' => $request->tanggal_deadline,
                 'link'             => $request->link,
                 'status_id'        => $value['status'],
                 'platform'         => $request->platform,
@@ -316,15 +307,6 @@ class ManajemenKontenController extends Controller
         $dmRole = DigitalMarketingPermissions::role(Auth::user());
         $this->authorizeManagerClient((int) $data->produk_client_id, $dmRole);
         abort_unless(DigitalMarketingPermissions::canManageContentPlan($dmRole, (string) $data->content_source), 403);
-        $BATAS_HARIAN = (int)$request->pic == 39 ? 480 : 420;
-        $otherJobs = DB::table('data_jasa')
-                    ->where('pic', (int)$request->pic)
-                    ->whereNot('id', $id)
-                    ->get();
-
-        // 2. Siapkan Wadah Beban Harian
-        $dailyLoad = [];
-
         // --- LOOP 1: Hitung Beban Job LAIN ---
         // foreach ($otherJobs as $job) {
         //     $period = CarbonPeriod::create($job->tanggal_mulai, $job->tanggal_deadline);
@@ -367,8 +349,6 @@ class ManajemenKontenController extends Controller
         foreach($arr as $d){
             $value[$d] = (int)$request->$d; 
         }
-        $request->pic = (int)$request->pic;
-        $request->prioritas = (int)$request->prioritas;
         // dd($request->all());
         // Validasi Terlebih Dahulu
         $request->validate([
@@ -388,10 +368,8 @@ class ManajemenKontenController extends Controller
             'durasi'            => 'nullable|string|max:50',
             'warna'             => 'nullable|string',
             'komposisi'         => 'nullable|string',
-            'tanggal_mulai'     => 'nullable|date',
             'tanggal_posting'   => 'nullable|date',
             'jam_posting'       => ['nullable', 'date_format:H:i'],
-            'tanggal_deadline'  => 'nullable|date',
             'link'              => 'nullable|string',
             'status'            => 'required|integer',
             'note'              => 'nullable|string',
@@ -419,10 +397,8 @@ class ManajemenKontenController extends Controller
                 'background'       => $request->warna,
                 'komposisi'        => $request->komposisi,
                 'note'             => $request->note,
-                'tanggal_mulai'    => $request->tanggal_mulai,
                 'tanggal_posting'  => $request->tanggal_posting,
                 'jam_posting'      => $request->content_source === 'organic' ? $request->jam_posting : null,
-                'tanggal_deadline' => $request->tanggal_deadline,
                 'link'             => $request->link,
                 'status_id'        => $value['status'],
                 'platform'         => $request->platform,

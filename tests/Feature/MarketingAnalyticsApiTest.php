@@ -772,7 +772,7 @@ class MarketingAnalyticsApiTest extends TestCase
         $response->assertOk()->assertJsonPath('pagination.total', 1)
             ->assertJsonPath('data.0.content_plan_id', $sourceId)
             ->assertJsonPath('data.0.platform', 'instagram')
-            ->assertJsonPath('data.0.pic_name', 'Marketing User')
+            ->assertJsonMissingPath('data.0.pic_name')
             ->assertJsonPath('meta.period.timezone', 'Asia/Jakarta')
             ->assertJsonPath('meta.completeness.status', 'complete')
             ->assertJsonMissingPath('data.0.email')->assertJsonMissingPath('data.0.password')
@@ -984,7 +984,6 @@ class MarketingAnalyticsApiTest extends TestCase
         ]);
         $planId = $this->insertContentPlan($this->allowedClient, $refs, [
             'inspirasi' => 'Customer question', 'note' => 'Draft copy without credentials',
-            'tanggal_mulai' => '2026-10-01', 'tanggal_deadline' => '2026-10-04',
         ]);
         $divisionId = DB::table('divisions')->where('name', 'Digital Marketing')->value('id');
         DB::table('task')->insert([
@@ -1171,7 +1170,7 @@ class MarketingAnalyticsApiTest extends TestCase
         return DB::table('data_jasa')->insertGetId($overrides + $refs + [
             'produk_client_id' => $clientId, 'judul' => 'Safe title', 'platform' => 'Instagram',
             'content_source' => 'organic', 'tanggal_posting' => '2026-10-05', 'jam_posting' => '10:00:00',
-            'pic' => $this->user->id, 'created_at' => now(), 'updated_at' => now(),
+            'created_at' => now(), 'updated_at' => now(),
         ]);
     }
 
@@ -1337,8 +1336,6 @@ class MarketingAnalyticsApiTest extends TestCase
             $table->string('platform')->nullable();
             $table->string('content_source')->default('organic');
             $table->date('tanggal_posting')->nullable();
-            $table->date('tanggal_mulai')->nullable();
-            $table->date('tanggal_deadline')->nullable();
             $table->time('jam_posting')->nullable();
             $table->unsignedBigInteger('type_produk_id')->nullable();
             $table->unsignedBigInteger('strategy_id')->nullable();
@@ -1347,9 +1344,6 @@ class MarketingAnalyticsApiTest extends TestCase
             $table->unsignedBigInteger('body_id')->nullable();
             $table->unsignedBigInteger('cta_id')->nullable();
             $table->unsignedBigInteger('status_id')->nullable();
-            $table->unsignedBigInteger('pic')->nullable();
-            $table->unsignedInteger('priority')->nullable();
-            $table->unsignedInteger('menit')->nullable();
             $table->timestamp('archived_at')->nullable()->index();
             $table->unsignedBigInteger('archived_by')->nullable();
             $table->timestamps();

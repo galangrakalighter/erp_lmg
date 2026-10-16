@@ -44,7 +44,7 @@ class ClientManagementReadService
     {
         $this->access->assertClientAccess($user, $clientId);
         $items = Schema::hasTable('data_jasa') ? DB::table('data_jasa')->where('produk_client_id', $clientId)->whereNull('archived_at')
-            ->orderByDesc('updated_at')->limit(100)->get(['id', 'judul', 'inspirasi', 'note', 'platform', 'tanggal_mulai', 'tanggal_deadline']) : collect();
+            ->orderByDesc('updated_at')->limit(100)->get(['id', 'judul', 'inspirasi', 'note', 'platform', 'tanggal_posting']) : collect();
         return ['client_id' => $clientId, 'briefs' => $items->map(fn ($item) => (array) $item)->values(),
             'scope' => 'client', 'source' => 'data_jasa', 'as_of' => now('Asia/Jakarta')->toIso8601String()];
     }
@@ -157,10 +157,10 @@ class ClientManagementReadService
 
     private function projectSummary(int $clientId): array
     {
-        $summary = ['content_plans' => 0, 'latest_deadline' => null];
+        $summary = ['content_plans' => 0, 'latest_posting_date' => null];
         if (Schema::hasTable('data_jasa')) {
             $summary['content_plans'] = DB::table('data_jasa')->where('produk_client_id', $clientId)->whereNull('archived_at')->count();
-            $summary['latest_deadline'] = DB::table('data_jasa')->where('produk_client_id', $clientId)->whereNull('archived_at')->max('tanggal_deadline');
+            $summary['latest_posting_date'] = DB::table('data_jasa')->where('produk_client_id', $clientId)->whereNull('archived_at')->max('tanggal_posting');
         }
         if (Schema::hasTable('task')) {
             $summary['tasks'] = DB::table('task')->where('project', $clientId)->count();

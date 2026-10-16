@@ -20,7 +20,7 @@ class ContentPlanCrudAuthorization
 
     public function assertObject(Authenticatable $user, int $contentPlanId, string $permission): object
     {
-        $plan = DB::table('data_jasa')->where('id', $contentPlanId)->first(['id', 'produk_client_id', 'pic', 'archived_at']);
+        $plan = DB::table('data_jasa')->where('id', $contentPlanId)->first(['id', 'produk_client_id', 'archived_at']);
         abort_unless($plan, 404, 'Content plan tidak ditemukan.');
         $this->assert($user, (int) $plan->produk_client_id, $permission);
         return $plan;

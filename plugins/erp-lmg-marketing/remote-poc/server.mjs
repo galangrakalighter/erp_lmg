@@ -1,9 +1,9 @@
 import http from 'node:http';
 import { pathToFileURL } from 'node:url';
-import { endpointForTool, tools, validateToolArguments } from '../server/index.mjs';
+import { endpointForTool, interpretMarketingRequest, tools, validateToolArguments } from '../server/index.mjs';
 
 export const SERVER_NAME = 'erp-lmg-digital-marketing';
-export const SERVER_VERSION = '1.7.5';
+export const SERVER_VERSION = '1.8.0';
 
 const defaultConfig = {
   port: Number.parseInt(process.env.MCP_PORT ?? '8787', 10),
@@ -179,7 +179,7 @@ export function createRemoteMcpServer(options = {}) {
         return json(res, 200, rpcError(message.id, -32602, 'Input tool tidak valid.', { errors: validationErrors }));
       }
       try {
-        const data = await callLaravel(fetchImpl, config, token, name, args);
+        const data = name === 'marketing_interpret_request' ? interpretMarketingRequest(args) : await callLaravel(fetchImpl, config, token, name, args);
         return json(res, 200, {
           jsonrpc: '2.0', id: message.id,
           result: { content: [{ type: 'text', text: JSON.stringify(data) }], structuredContent: data },

@@ -4,6 +4,7 @@ import { endpointForTool, tools } from '../server/index.mjs';
 import { createRemoteMcpServer, SERVER_NAME, SERVER_VERSION } from './server.mjs';
 
 const expectedTools = [
+  'marketing_interpret_request',
   'marketing_upload_document_file',
   'marketing_request_approval_confirmation', 'marketing_submit_for_approval', 'marketing_approve', 'marketing_reject', 'marketing_request_revision',
   'marketing_request_task_confirmation', 'marketing_create_task', 'marketing_update_task', 'marketing_archive_task', 'marketing_change_task_pic', 'marketing_change_task_deadline', 'marketing_change_task_status', 'marketing_complete_task',
@@ -134,11 +135,11 @@ async function rpc(base, body, token) {
 test('initialize succeeds with production identity and health remains available', async () => {
   const base = await harness();
   const health = await fetch(`${base}/health`).then((response) => response.json());
-  assert.deepEqual(health, { status: 'ok', service: SERVER_NAME, version: SERVER_VERSION, tools: 86 });
+  assert.deepEqual(health, { status: 'ok', service: SERVER_NAME, version: SERVER_VERSION, tools: 87 });
   const result = await rpc(base, { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18' } });
   assert.equal(result.response.status, 200);
   assert.equal(result.body.result.serverInfo.name, 'erp-lmg-digital-marketing');
-  assert.equal(result.body.result.serverInfo.version, '1.7.5');
+  assert.equal(result.body.result.serverInfo.version, '1.8.0');
 });
 
 test('tools/list without token returns OAuth challenge in header and MCP metadata', async () => {
@@ -166,6 +167,7 @@ test('tools/list exposes exactly the expected tools and annotations', async () =
 
 test('every tool maps to an OAuth Laravel endpoint', () => {
   for (const tool of tools) {
+    if (tool.name === 'marketing_interpret_request') continue;
     const prefix = tool.write ? '/api/oauth-marketing-crud' : '/api/oauth-marketing-mcp';
     const path = endpointForTool(tool.name, { client_id: 123, asset_metadata_id: 123, task_id: 123, campaign_id: 123, content_plan_id: 123, brand_guideline_id: 123, record_id: 123 }, prefix);
     assert.equal(path, expectedEndpoints[tool.name]);

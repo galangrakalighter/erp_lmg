@@ -60,6 +60,7 @@ const mutationResponseSchema = {
 };
 
 export const tools = [
+  { name: "marketing_interpret_request", description: "Plan-only natural-language router for Digital Marketing. Detects module, operation, client context, platform, objective, required fields, and relevant ERP masters; never mutates data or issues confirmation tokens.", inputSchema: { type: "object", required: ["request"], properties: { request: { type: "string", minLength: 3, maxLength: 5000 }, client_id: { type: "integer", minimum: 1 }, platform: { type: "string", enum: platforms }, objective: { type: "string", maxLength: 1000 } }, additionalProperties: false }, write: false },
   { name: "marketing_upload_document_file", description: "Upload one PDF to private ERP storage for an authorized Digital Marketing client or append a file version to existing document metadata. Never returns private storage paths.", inputSchema: { type: "object", required: ["client_id", "file_name", "file_base64"], properties: { client_id: { type: "integer", minimum: 1 }, document_id: { type: "integer", minimum: 1 }, name: { type: "string", minLength: 2, maxLength: 255 }, description: { type: "string", maxLength: 5000 }, file_name: { type: "string", minLength: 5, maxLength: 255, pattern: "^[^\\\\/]+\\.pdf$" }, file_base64: { type: "string", minLength: 8, maxLength: 27962028 } }, additionalProperties: false }, write: true },
   { name: "marketing_request_approval_confirmation", description: "Request a short-lived, single-use confirmation token for an append-only approval event.", inputSchema: { type: "object", required: ["action", "client_id", "record_type", "record_id"], properties: { action: { type: "string", enum: ["submit_for_approval", "approve", "reject", "request_revision"] }, client_id: { type: "integer", minimum: 1 }, record_type: { type: "string", enum: approvalRecordTypes }, record_id: { type: "integer", minimum: 1 }, note: { type: "string", maxLength: 2000 } }, additionalProperties: false }, write: true },
   { name: "marketing_submit_for_approval", description: "Append a submission event and set the derived approval status to pending after confirmation.", inputSchema: { type: "object", required: ["client_id", "record_type", "record_id", "confirmation_token"], properties: { client_id: { type: "integer", minimum: 1 }, record_type: { type: "string", enum: approvalRecordTypes }, record_id: { type: "integer", minimum: 1 }, note: { type: "string", maxLength: 2000 }, confirmation_token: { type: "string", minLength: 64, maxLength: 64 } }, additionalProperties: false }, write: true },
@@ -463,6 +464,26 @@ export function endpointForTool(name, args = {}, prefix = "/api/marketing-mcp") 
   return `${prefix}${template.replace(/\{([^}]+)\}/g, (_, key) => encodeURIComponent(String(args[key] ?? "")))}`;
 }
 
+export function interpretMarketingRequest(args = {}) {
+  const text = String(args.request ?? '').trim();
+  const lower = text.toLowerCase();
+  const module = lower.includes('content plan') || lower.includes('konten') ? 'content_plan'
+    : lower.includes('branding') || lower.includes('brand') ? 'branding'
+    : lower.includes('riset') || lower.includes('research') ? 'market_research'
+    : lower.includes('campaign') || lower.includes('kampanye') ? 'campaign'
+    : lower.includes('task') || lower.includes('tugas') ? 'task'
+    : lower.includes('approval') || lower.includes('approve') || lower.includes('revisi') ? 'approval_revision'
+    : lower.includes('aset') || lower.includes('dokumen') ? 'asset_document'
+    : lower.includes('performa') || lower.includes('performance') || lower.includes('reach') ? 'performance'
+    : lower.includes('brief') || lower.includes('project') || lower.includes('meeting') || lower.includes('komunikasi') ? 'client_account' : null;
+  const write = /\b(buat|create|buatkan|ubah|update|edit|arsip|archive|submit|approve|tolak|revisi|hapus)\b/i.test(text);
+  const rawOperation = write ? (lower.match(/\b(archive|arsip|update|ubah|edit|create|buat|buatkan|submit|approve|tolak|revisi)\b/i)?.[1] ?? 'create') : 'read';
+  const operation = ({buat: 'create', buatkan: 'create', buatkanlah: 'create', ubah: 'update', edit: 'update', arsip: 'archive', submit: 'submit_for_approval', approve: 'approve', tolak: 'reject', revisi: 'request_revision'})[rawOperation] ?? rawOperation;
+  const masters = module === 'content_plan' ? ['marketing_list_product_types', 'marketing_list_strategies', 'marketing_list_content_pillars', 'marketing_list_hooks', 'marketing_list_bodies', 'marketing_list_ctas', 'marketing_list_content_plan_statuses'] : [];
+  const required = module === 'content_plan' && write ? ['client_id', 'judul', 'note', 'platform', 'content_source', 'type_produk_id', 'strategy_id', 'pilar_id', 'hooks_id', 'body_id', 'cta_id', 'status_id', 'priority', 'menit'] : (module ? ['client_id'] : ['client_id', 'module/tujuan']);
+  return { plan_only: true, module, operation, client_id: args.client_id ?? null, platform: args.platform ?? null, objective: args.objective ?? null, required_fields: required, master_tools: masters, authorization: { required: true, source: 'OAuth user; server must verify division and client assignment' }, execution: { write_requires_explicit_confirmation: write, next_step: module ? (write ? 'collect_missing_fields_then_show_draft_and_request_confirmation' : 'call_scoped_read_tool') : 'ask_for_module_and_client', duplicate_prevention: 'server-side idempotency/record checks; no automatic retry' }, warnings: ['Client name/ID, status, permissions, master IDs, and performance values must not be guessed.'] };
+}
+
 export function validateToolArguments(name, args = {}) {
   const tool = tools.find((candidate) => candidate.name === name);
   if (!tool) return [`Tool tidak dikenal: ${name}`];
@@ -548,7 +569,7 @@ async function handle(message) {
   const { id, method, params = {} } = message;
   if (method === "notifications/initialized") return null;
   if (method === "initialize") {
-    return { jsonrpc: "2.0", id, result: { protocolVersion: params.protocolVersion || "2025-06-18", capabilities: { tools: { listChanged: false } }, serverInfo: { name: "erp-lmg-digital-marketing", version: "1.7.5" } } };
+    return { jsonrpc: "2.0", id, result: { protocolVersion: params.protocolVersion || "2025-06-18", capabilities: { tools: { listChanged: false } }, serverInfo: { name: "erp-lmg-digital-marketing", version: "1.8.0" } } };
   }
   if (method === "tools/list") return { jsonrpc: "2.0", id, result: { tools } };
   if (method === "tools/call") {

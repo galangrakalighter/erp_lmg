@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "erp-lmg-marketing",
-  "version": "1.7.5",
+  "version": "1.8.0",
   "description": "Private Digital Marketing assistant with authorized read-only analytics and confirmed CRUD operations for Digital Marketing metadata.",
   "mcpServers": "./mcp.json",
   "author": { "name": "Lighter Media Group" },

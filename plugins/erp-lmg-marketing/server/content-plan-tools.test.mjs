@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
-import { tools, endpointForTool, validateToolArguments } from "./index.mjs";
+import { tools, endpointForTool, interpretMarketingRequest, validateToolArguments } from "./index.mjs";
 
 const readOnly = tools.filter((tool) => tool.annotations?.readOnlyHint === true);
 const masterTools = ["marketing_list_product_types", "marketing_list_strategies", "marketing_list_content_pillars", "marketing_list_hooks", "marketing_list_bodies", "marketing_list_ctas"];
 const mutations = ["marketing_create_content_plan", "marketing_update_content_plan", "marketing_archive_content_plan"];
 
-assert.equal(readOnly.length, 36, "harus ada 29 tool read-only lama dan 7 master/status content plan");
+assert.equal(readOnly.length, 37, "harus ada 29 tool read-only lama, 7 master/status, dan orchestrator");
 for (const name of masterTools) {
   const tool = tools.find((candidate) => candidate.name === name);
   assert.ok(tool, `${name} harus terdaftar`);
@@ -46,4 +46,11 @@ assert.deepEqual(validateToolArguments("marketing_create_content_plan", {}), [
   "priority wajib diisi.",
   "menit wajib diisi.",
 ]);
-console.log(`MCP tool inventory OK: ${tools.length} total, ${readOnly.length} read-only, 29 legacy read-only plus 6 content-plan masters.`);
+const orchestrator = tools.find((tool) => tool.name === "marketing_interpret_request");
+assert.ok(orchestrator && orchestrator.annotations.readOnlyHint === true && orchestrator.inputSchema.required.includes("request"));
+const plan = interpretMarketingRequest({ request: "Buat content plan Instagram untuk Chiminro", platform: "instagram" });
+assert.equal(plan.module, "content_plan");
+assert.equal(plan.operation, "create");
+assert.deepEqual(plan.master_tools, ["marketing_list_product_types", "marketing_list_strategies", "marketing_list_content_pillars", "marketing_list_hooks", "marketing_list_bodies", "marketing_list_ctas", "marketing_list_content_plan_statuses"]);
+assert.equal(plan.plan_only, true);
+console.log(`MCP tool inventory OK: ${tools.length} total, ${readOnly.length} read-only, orchestrator present.`);

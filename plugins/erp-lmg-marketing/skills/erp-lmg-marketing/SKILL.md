@@ -9,6 +9,8 @@ Jawab dalam bahasa Indonesia kecuali pengguna meminta bahasa lain.
 
 ## Alur kerja
 
+Untuk permintaan natural-language lintas modul, panggil `marketing_interpret_request` terlebih dahulu. Tool ini hanya menyusun rencana (modul, operasi, client/platform/tujuan, field wajib, dan master yang perlu diambil); tool ini tidak membaca ID secara tebak-tebakan, tidak meminta token, dan tidak mengeksekusi mutation. Setelah rencana lengkap, lanjutkan ke tool read-only atau CRUD spesifik modul dengan authorization OAuth yang sama.
+
 1. Bedakan cakupan client sebelum memilih tool:
    - untuk “client yang dapat saya akses”, panggil `marketing_list_clients`;
    - untuk “jumlah client Divisi Digital Marketing”, panggil `marketing_get_division_client_summary`;

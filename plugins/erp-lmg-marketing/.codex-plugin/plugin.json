@@ -1,6 +1,6 @@
 {
   "name": "erp-lmg-marketing",
-  "version": "1.7.5",
+  "version": "1.8.0",
   "description": "Private Digital Marketing assistant with authorized read-only analytics and confirmed CRUD operations for Digital Marketing metadata.",
   "author": {
     "name": "Lighter Media Group"

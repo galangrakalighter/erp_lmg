@@ -84,7 +84,7 @@ async function callLaravel(fetchImpl, config, token, name, args) {
       uploadBody.set('file', new Blob([bytes], { type: 'application/pdf' }), args.file_name);
     }
     response = await fetchImpl(url, {
-      method: isWrite ? (name.includes('create') ? 'POST' : name.includes('update') ? 'PATCH' : 'POST') : 'GET',
+      method: isWrite ? (name.includes('delete_') ? 'DELETE' : name.includes('create') ? 'POST' : name.includes('update') ? 'PATCH' : 'POST') : 'GET',
       headers: { authorization: `Bearer ${token}`, accept: 'application/json' },
       ...(isWrite ? upload
         ? { headers: { authorization: `Bearer ${token}`, accept: 'application/json' }, body: uploadBody }

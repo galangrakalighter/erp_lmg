@@ -135,6 +135,7 @@ Route::middleware([
     Route::post('/market-research/{entity}', [MarketResearchCrudController::class, 'store'])->whereIn('entity', ['four_p','swot','segmentation','target_audience','positioning'])->name('market-research.store');
     Route::patch('/market-research/{entity}/{record}', [MarketResearchCrudController::class, 'update'])->whereIn('entity', ['four_p','swot','segmentation','target_audience','positioning'])->whereNumber('record')->name('market-research.update');
     Route::post('/market-research/{entity}/{record}/archive', [MarketResearchCrudController::class, 'archive'])->whereIn('entity', ['four_p','swot','segmentation','target_audience','positioning'])->whereNumber('record')->name('market-research.archive');
+    Route::delete('/market-research/{entity}/{record}', [MarketResearchCrudController::class, 'deletePermanent'])->whereIn('entity', ['four_p','swot','segmentation','target_audience','positioning'])->whereNumber('record')->name('market-research.delete-permanent');
     Route::post('/campaigns/confirmation', [CampaignCrudController::class, 'confirmation'])->name('campaigns.confirmation');
     Route::post('/campaigns', [CampaignCrudController::class, 'store'])->name('campaigns.store');
     Route::patch('/campaigns/{campaign}', [CampaignCrudController::class, 'update'])->whereNumber('campaign')->name('campaigns.update');

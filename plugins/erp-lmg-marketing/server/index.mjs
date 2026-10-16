@@ -369,17 +369,18 @@ const marketResearchEntities = {
 for (const [entity, fields] of Object.entries(marketResearchEntities)) {
   const fieldProperties = Object.fromEntries(fields.map((field) => [field, { type: "string", maxLength: 2000 }]));
   tools.push(
-    { name: `marketing_request_${entity}_confirmation`, description: `Request confirmation for ${entity} mutation.`, inputSchema: { type: "object", required: ["action","client_id","payload"], properties: { action: { type: "string", enum: ["create","update","archive"] }, client_id: { type: "integer", minimum: 1 }, record_id: { type: "integer", minimum: 0 }, payload: { type: "object" } }, additionalProperties: false }, write: true },
+    { name: `marketing_request_${entity}_confirmation`, description: `Request confirmation for ${entity} mutation. Permanent deletion requires explicit delete_permanent action.`, inputSchema: { type: "object", required: ["action","client_id","payload"], properties: { action: { type: "string", enum: ["create","update","archive","delete_permanent"] }, client_id: { type: "integer", minimum: 1 }, record_id: { type: "integer", minimum: 0 }, payload: { type: "object" } }, additionalProperties: false }, write: true },
     { name: `marketing_create_${entity}`, description: `Create authorized ${entity} market research.`, inputSchema: { type: "object", required: ["client_id","confirmation_token",...(entity === "four_p" ? ["nama_analisis","type","platform"] : [])], properties: { client_id: { type: "integer", minimum: 1 }, confirmation_token: { type: "string", minLength: 64, maxLength: 64 }, ...fieldProperties }, additionalProperties: false }, write: true },
     { name: `marketing_update_${entity}`, description: `Update authorized ${entity} market research.`, inputSchema: { type: "object", required: ["record_id","client_id","confirmation_token"], properties: { record_id: { type: "integer", minimum: 1 }, client_id: { type: "integer", minimum: 1 }, confirmation_token: { type: "string", minLength: 64, maxLength: 64 }, ...fieldProperties }, additionalProperties: false }, write: true },
     { name: `marketing_archive_${entity}`, description: `Soft archive authorized ${entity} market research.`, inputSchema: { type: "object", required: ["record_id","client_id","confirmation_token","reason"], properties: { record_id: { type: "integer", minimum: 1 }, client_id: { type: "integer", minimum: 1 }, confirmation_token: { type: "string", minLength: 64, maxLength: 64 }, reason: { type: "string", minLength: 5, maxLength: 500 } }, additionalProperties: false }, write: true },
+    { name: `marketing_delete_${entity}`, description: `Permanently delete ${entity} only after explicit permanent-delete confirmation and relation checks.`, inputSchema: { type: "object", required: ["record_id","client_id","confirmation_token","reason"], properties: { record_id: { type: "integer", minimum: 1 }, client_id: { type: "integer", minimum: 1 }, confirmation_token: { type: "string", minLength: 64, maxLength: 64 }, reason: { type: "string", minLength: 5, maxLength: 500 } }, additionalProperties: false }, write: true },
   );
 }
 
 for (const tool of tools) {
   tool.outputSchema = tool.write ? mutationResponseSchema : (["marketing_list_clients", "marketing_get_division_client_summary", "account_get_client_profile", "account_list_client_contacts", "account_get_client_brief", "account_get_client_needs", "account_get_client_project_status", "account_get_client_milestones", "account_get_client_documents_history", "account_get_client_summary", "account_search_client_data"].includes(tool.name) ? responseSchema : clientResponseSchema);
   tool.annotations = tool.write
-    ? { readOnlyHint: false, destructiveHint: tool.name.includes('_archive_'), openWorldHint: false }
+    ? { readOnlyHint: false, destructiveHint: tool.name.includes('_archive_') || tool.name.includes('_delete_'), openWorldHint: false }
     : { readOnlyHint: true, destructiveHint: false, openWorldHint: false };
 }
 
@@ -456,6 +457,7 @@ for (const entity of Object.keys(marketResearchEntities)) {
   toolPaths[`marketing_create_${entity}`] = `/market-research/${entity}`;
   toolPaths[`marketing_update_${entity}`] = `/market-research/${entity}/{record_id}`;
   toolPaths[`marketing_archive_${entity}`] = `/market-research/${entity}/{record_id}/archive`;
+  toolPaths[`marketing_delete_${entity}`] = `/market-research/${entity}/{record_id}`;
 }
 
 export function endpointForTool(name, args = {}, prefix = "/api/marketing-mcp") {
@@ -467,6 +469,7 @@ export function endpointForTool(name, args = {}, prefix = "/api/marketing-mcp") 
 export function interpretMarketingRequest(args = {}) {
   const text = String(args.request ?? '').trim();
   const lower = text.toLowerCase();
+  const ambiguousDelete = /\b(hapus|hilangkan|buang)\b/i.test(text) && !/hapus permanen|delete permanent|arsipkan|archive/i.test(text);
   const module = lower.includes('content plan') || lower.includes('konten') ? 'content_plan'
     : lower.includes('branding') || lower.includes('brand') ? 'branding'
     : lower.includes('riset') || lower.includes('research') ? 'market_research'
@@ -481,7 +484,7 @@ export function interpretMarketingRequest(args = {}) {
   const operation = ({buat: 'create', buatkan: 'create', buatkanlah: 'create', ubah: 'update', edit: 'update', arsip: 'archive', submit: 'submit_for_approval', approve: 'approve', tolak: 'reject', revisi: 'request_revision'})[rawOperation] ?? rawOperation;
   const masters = module === 'content_plan' ? ['marketing_list_product_types', 'marketing_list_strategies', 'marketing_list_content_pillars', 'marketing_list_hooks', 'marketing_list_bodies', 'marketing_list_ctas', 'marketing_list_content_plan_statuses'] : [];
   const required = module === 'content_plan' && write ? ['client_id', 'judul', 'note', 'platform', 'content_source', 'type_produk_id', 'strategy_id', 'pilar_id', 'hooks_id', 'body_id', 'cta_id', 'status_id', 'priority', 'menit'] : (module ? ['client_id'] : ['client_id', 'module/tujuan']);
-  return { plan_only: true, module, operation, client_id: args.client_id ?? null, platform: args.platform ?? null, objective: args.objective ?? null, required_fields: required, master_tools: masters, authorization: { required: true, source: 'OAuth user; server must verify division and client assignment' }, execution: { write_requires_explicit_confirmation: write, next_step: module ? (write ? 'collect_missing_fields_then_show_draft_and_request_confirmation' : 'call_scoped_read_tool') : 'ask_for_module_and_client', duplicate_prevention: 'server-side idempotency/record checks; no automatic retry' }, warnings: ['Client name/ID, status, permissions, master IDs, and performance values must not be guessed.'] };
+  return { plan_only: true, module, operation: ambiguousDelete ? 'clarify_delete_mode' : operation, clarification: ambiguousDelete ? 'Apakah ingin diarsipkan atau dihapus permanen?' : null, client_id: args.client_id ?? null, platform: args.platform ?? null, objective: args.objective ?? null, required_fields: required, master_tools: masters, authorization: { required: true, source: 'OAuth user; server must verify division and client assignment' }, execution: { write_requires_explicit_confirmation: write, next_step: ambiguousDelete ? 'ask_archive_or_permanent_delete' : (module ? (write ? 'collect_missing_fields_then_show_draft_and_request_confirmation' : 'call_scoped_read_tool') : 'ask_for_module_and_client'), duplicate_prevention: 'server-side idempotency/record checks; no automatic retry' }, warnings: ['Client name/ID, status, permissions, master IDs, and performance values must not be guessed.'] };
 }
 
 export function validateToolArguments(name, args = {}) {

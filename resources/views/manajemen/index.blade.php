@@ -360,11 +360,11 @@
                             <div class="col-md-4 mb-3">
                                 <div class="form-group">
                                     <label class="text-dark font-weight-bold small">Tanggal Posting</label>
-                                    <div class="input-group shadow-sm" data-content-plan-date-trigger>
+                                    <div class="input-group shadow-sm">
                                         <div class="input-group-prepend">
                                             <span class="input-group-text bg-white border-right-0"><i class="far fa-calendar-check text-muted"></i></span>
                                         </div>
-                                        <input type="date" name="tanggal_posting" id="create_tanggal_posting" class="form-control border-left-0" data-native-date="true" data-content-plan-date>
+                                        <input type="date" name="tanggal_posting" id="create_tanggal_posting" class="form-control border-left-0" data-native-date="true">
                                     </div>
                                 </div>
                             </div>
@@ -618,7 +618,7 @@
                             <div class="col-md-4">
                                 <div class="form-group">
                                     <label class="text-muted font-weight-bold small uppercase">Tanggal Posting</label>
-                                    <input type="date" name="tanggal_posting" id="edit_tanggal_posting" class="form-control shadow-sm" data-native-date="true" data-content-plan-date {{ $role == "Content Creator" ? "readonly" : "" }}>
+                                    <input type="date" name="tanggal_posting" id="edit_tanggal_posting" class="form-control shadow-sm" data-native-date="true" {{ $role == "Content Creator" ? "readonly" : "" }}>
                                 </div>
                             </div>
 
@@ -719,6 +719,7 @@
 <script>
     const produkId = "{{ $produk->id }}";
     const platform = "{{ $platform }}";
+    const contentPlanDataUrl = @json(route('manajemen_konten.api_data', ['produkId' => $produk->id, 'platform' => $platform]));
     const isContentCreator = {{ $RoleSekarang == 'Content Creator' ? 'true' : 'false' }};
     const multimediaMode = {{ $multimediaMode ? 'true' : 'false' }};
     const allowedContentSources = @json($allowedContentSources);
@@ -739,8 +740,8 @@
     const contentPlanPageSize = 10;
 
     const escapeContentPlan = (value) => String(value ?? '-')
-        .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 
     function renderContentPlan() {
         const tbody = document.getElementById('contentPlanRows');
@@ -789,49 +790,20 @@
         if (startDate) params.set('start_date', startDate);
         if (endDate) params.set('end_date', endDate);
 
-        const response = await fetch(`/api/manajemen-konten/${produkId}/${encodeURIComponent(platform)}?${params}`, {
-            headers: { 'Accept': 'application/json' }
+        const response = await fetch(`${contentPlanDataUrl}?${params.toString()}`, {
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
         });
-        if (!response.ok) throw new Error('Gagal mengambil data Content Plan');
-        const payload = await response.json();
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || !payload) {
+            throw new Error(payload?.message || `Gagal mengambil data Content Plan (${response.status})`);
+        }
         contentPlanData = Array.isArray(payload.data) ? payload.data : [];
         contentPlanCurrentPage = 1;
         renderContentPlan();
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        const openNativeDatePicker = input => {
-            if (!input || input.disabled || input.readOnly) return;
-
-            input.focus({ preventScroll: true });
-            if (typeof input.showPicker === 'function') {
-                try {
-                    input.showPicker();
-                    return true;
-                } catch (_error) {
-                    // Browser lama tetap dapat membuka kalender lewat klik native.
-                }
-            }
-
-            return false;
-        };
-
-        document.querySelectorAll('[data-content-plan-date-trigger]').forEach(trigger => {
-            const input = trigger.querySelector('[data-content-plan-date]');
-            trigger.style.cursor = input?.readOnly ? 'default' : 'pointer';
-            trigger.addEventListener('click', event => {
-                if (event.target === input) return;
-                openNativeDatePicker(input);
-            });
-        });
-
-        document.querySelectorAll('[data-content-plan-date]').forEach(input => {
-            input.addEventListener('click', event => {
-                if (typeof input.showPicker === 'function') event.preventDefault();
-                openNativeDatePicker(input);
-            });
-        });
-
         const updateCompositionGuidance = select => {
             const target = document.getElementById(select.dataset.guidanceTarget || '');
             if (!target) return;
@@ -880,12 +852,16 @@
             syncContentSourceTabs();
             loadContentPlan();
         }));
-        loadContentPlan().catch(() => {
+        loadContentPlan().catch(error => {
+            console.error('Content Plan gagal dimuat:', error);
             document.getElementById('contentPlanRows').innerHTML = '<tr><td colspan="17" class="py-4 text-center text-danger">Data gagal dimuat.</td></tr>';
         });
         document.getElementById('filterForm')?.addEventListener('submit', event => {
             event.preventDefault();
-            loadContentPlan();
+            loadContentPlan().catch(error => {
+                console.error('Content Plan gagal dimuat:', error);
+                document.getElementById('contentPlanRows').innerHTML = '<tr><td colspan="17" class="py-4 text-center text-danger">Data gagal dimuat.</td></tr>';
+            });
         });
         document.getElementById('contentPlanPrev')?.addEventListener('click', () => { contentPlanCurrentPage--; renderContentPlan(); });
         document.getElementById('contentPlanNext')?.addEventListener('click', () => { contentPlanCurrentPage++; renderContentPlan(); });

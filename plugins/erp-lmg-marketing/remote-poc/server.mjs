@@ -83,12 +83,15 @@ async function callLaravel(fetchImpl, config, token, name, args) {
       uploadBody.set('file_name', args.file_name);
       uploadBody.set('file', new Blob([bytes], { type: 'application/pdf' }), args.file_name);
     }
+    const requestArgs = name === 'marketing_request_permanent_delete_confirmation'
+      ? { ...args, action: 'delete_permanent' }
+      : args;
     response = await fetchImpl(url, {
       method: isWrite ? (name.includes('delete_') ? 'DELETE' : name.includes('create') ? 'POST' : name.includes('update') ? 'PATCH' : 'POST') : 'GET',
       headers: { authorization: `Bearer ${token}`, accept: 'application/json' },
       ...(isWrite ? upload
         ? { headers: { authorization: `Bearer ${token}`, accept: 'application/json' }, body: uploadBody }
-        : { headers: { authorization: `Bearer ${token}`, accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(args) } : {}),
+        : { headers: { authorization: `Bearer ${token}`, accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(requestArgs) } : {}),
       signal: AbortSignal.timeout(config.timeoutMs),
     });
   } catch (error) {

@@ -376,6 +376,10 @@ for (const [entity, fields] of Object.entries(marketResearchEntities)) {
     { name: `marketing_delete_${entity}`, description: `Permanently delete ${entity} only after explicit permanent-delete confirmation and relation checks.`, inputSchema: { type: "object", required: ["record_id","client_id","confirmation_token","reason"], properties: { record_id: { type: "integer", minimum: 1 }, client_id: { type: "integer", minimum: 1 }, confirmation_token: { type: "string", minLength: 64, maxLength: 64 }, reason: { type: "string", minLength: 5, maxLength: 500 } }, additionalProperties: false }, write: true },
   );
 }
+tools.push(
+  { name: "marketing_request_permanent_delete_confirmation", description: "Request confirmation for an explicit permanent deletion; never use for an ambiguous delete request.", inputSchema: { type: "object", required: ["entity", "client_id", "record_id", "payload"], properties: { entity: { type: "string", enum: Object.keys(marketResearchEntities) }, client_id: { type: "integer", minimum: 1 }, record_id: { type: "integer", minimum: 1 }, payload: { type: "object", required: ["reason"] } }, additionalProperties: false }, write: true },
+  { name: "marketing_delete_market_research", description: "Permanently delete authorized market research only after explicit delete_permanent confirmation and relation checks.", inputSchema: { type: "object", required: ["entity", "record_id", "client_id", "confirmation_token", "reason"], properties: { entity: { type: "string", enum: Object.keys(marketResearchEntities) }, record_id: { type: "integer", minimum: 1 }, client_id: { type: "integer", minimum: 1 }, confirmation_token: { type: "string", minLength: 64, maxLength: 64 }, reason: { type: "string", minLength: 5, maxLength: 500 } }, additionalProperties: false }, write: true },
+);
 
 for (const tool of tools) {
   tool.outputSchema = tool.write ? mutationResponseSchema : (["marketing_list_clients", "marketing_get_division_client_summary", "account_get_client_profile", "account_list_client_contacts", "account_get_client_brief", "account_get_client_needs", "account_get_client_project_status", "account_get_client_milestones", "account_get_client_documents_history", "account_get_client_summary", "account_search_client_data"].includes(tool.name) ? responseSchema : clientResponseSchema);
@@ -459,6 +463,8 @@ for (const entity of Object.keys(marketResearchEntities)) {
   toolPaths[`marketing_archive_${entity}`] = `/market-research/${entity}/{record_id}/archive`;
   toolPaths[`marketing_delete_${entity}`] = `/market-research/${entity}/{record_id}`;
 }
+toolPaths.marketing_request_permanent_delete_confirmation = "/market-research/{entity}/confirmation";
+toolPaths.marketing_delete_market_research = "/market-research/{entity}/{record_id}";
 
 export function endpointForTool(name, args = {}, prefix = "/api/marketing-mcp") {
   const template = toolPaths[name];

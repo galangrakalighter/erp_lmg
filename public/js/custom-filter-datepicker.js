@@ -78,13 +78,15 @@
 
         const submitFormat = input.dataset.datePickerFormat || (input.type === 'date' ? 'Y-m-d' : 'd M Y');
 
+        const readOnly = input.readOnly;
+
         window.flatpickr(input, {
             altInput: true,
             altFormat: 'd/m/Y',
             altInputClass: 'lmg-filter-date-picker',
             allowInput: false,
             animate: false,
-            clickOpens: true,
+            clickOpens: !readOnly,
             dateFormat: submitFormat,
             defaultDate: input.value || null,
             disableMobile: true,
@@ -95,6 +97,10 @@
                 instance.altInput.setAttribute('autocomplete', 'off');
                 instance.altInput.setAttribute('aria-label', input.getAttribute('aria-label') || 'Pilih tanggal');
                 if (input.disabled) instance.altInput.disabled = true;
+                if (readOnly) {
+                    instance.altInput.readOnly = true;
+                    instance.altInput.setAttribute('aria-readonly', 'true');
+                }
                 if (input.required) {
                     instance.altInput.required = true;
                     input.required = false;

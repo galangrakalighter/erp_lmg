@@ -157,6 +157,13 @@
                 </div>
             @endif
 
+            <div id="dmPerformanceAccounts" class="hidden border-b border-zinc-200 bg-white px-4 py-3 sm:px-5">
+                <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <span class="shrink-0 text-[10px] font-bold uppercase tracking-[.14em] text-zinc-500">Akun Performance</span>
+                    <div id="dmPerformanceAccountTabs" class="flex gap-2 overflow-x-auto" role="tablist" aria-label="Pilih akun performance"></div>
+                </div>
+            </div>
+
             <div id="dmWorkspacePanels" class="relative min-h-[70vh] bg-[#f5f5f3]">
                 <div id="dmWorkspaceEmpty" class="grid min-h-[70vh] place-items-center px-6 text-center text-sm text-zinc-500">
                     Pilih tab untuk membuka workspace client.
@@ -175,6 +182,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const panels = document.getElementById('dmWorkspacePanels');
     const empty = document.getElementById('dmWorkspaceEmpty');
     const exportButton = document.getElementById('dmWorkspaceExport');
+    const performanceAccountBar = document.getElementById('dmPerformanceAccounts');
+    const performanceAccountTabs = document.getElementById('dmPerformanceAccountTabs');
     const exportUrls = {
         'market-research': @json(route('invoice.download', ['id' => $client->id, 'halaman' => 'Market Research'])),
         'branding': @json(route('invoice.download', ['id' => $client->id, 'halaman' => 'Branding'])),
@@ -182,10 +191,58 @@ document.addEventListener('DOMContentLoaded', function () {
     };
     const panelCache = new Map();
     const availablePlatforms = @json($platforms->values());
+    const performanceAccounts = @json($performanceAccounts ?? []);
     const mirrorPairs = @json($platformMirrorPairs ?? []);
     const mirrorScopes = @json($platformMirrorScopes ?? []);
     const mirrorUrl = @json(route('digital-marketing.platform-mirroring', ['id_produk' => $client->id]));
     let activeKey = null;
+    let activePerformanceAccount = null;
+
+    function accountsForPlatform() {
+        return performanceAccounts[String(platformSelect?.value || '').toLowerCase()] || [];
+    }
+
+    function selectedPerformanceAccount() {
+        const accounts = accountsForPlatform();
+        return accounts.find(account => account.id === activePerformanceAccount)
+            || accounts.find(account => account.selected)
+            || accounts[0]
+            || null;
+    }
+
+    function renderPerformanceAccounts() {
+        const visible = activeKey === 'analisis';
+        performanceAccountBar?.classList.toggle('hidden', !visible);
+        if (!visible || !performanceAccountTabs) return;
+
+        const accounts = accountsForPlatform();
+        const selected = selectedPerformanceAccount();
+        activePerformanceAccount = selected?.id || null;
+        performanceAccountTabs.innerHTML = '';
+
+        if (!accounts.length) {
+            performanceAccountTabs.innerHTML = '<span class="py-1.5 text-xs text-amber-700">Belum ada akun terhubung.</span>';
+            return;
+        }
+
+        accounts.forEach(account => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.role = 'tab';
+            button.textContent = account.label;
+            button.dataset.performanceAccount = account.id;
+            const isActive = account.id === activePerformanceAccount;
+            button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            button.className = `shrink-0 rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${isActive ? 'border-zinc-950 bg-zinc-950 text-white' : 'border-zinc-200 bg-white text-zinc-600 hover:border-zinc-400 hover:text-zinc-950'}`;
+            button.addEventListener('click', () => {
+                if (activePerformanceAccount === account.id) return;
+                activePerformanceAccount = account.id;
+                const analysisTab = tabs.find(tab => tab.dataset.workspaceTab === 'analisis');
+                if (analysisTab) openTab(analysisTab);
+            });
+            performanceAccountTabs.appendChild(button);
+        });
+    }
 
     function showGroup(group) {
         groupButtons.forEach(button => button.classList.toggle('is-active', button.dataset.workspaceGroup === group));
@@ -262,6 +319,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const parsed = new URL(url, window.location.origin);
         parsed.searchParams.set('embed', '1');
+        if (button.dataset.workspaceTab === 'analisis') {
+            const account = selectedPerformanceAccount();
+            if (account) parsed.searchParams.set('account_id', account.id);
+        }
         if (button.dataset.readonly === '1') parsed.searchParams.set('readonly', '1');
         return parsed.toString();
     }
@@ -271,7 +332,8 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!url) return;
 
         const platform = button.dataset.needsPlatform === '1' ? (platformSelect?.value || '') : 'global';
-        const cacheKey = `${button.dataset.workspaceTab}:${platform}`;
+        const account = button.dataset.workspaceTab === 'analisis' ? (selectedPerformanceAccount()?.id || 'default') : 'none';
+        const cacheKey = `${button.dataset.workspaceTab}:${platform}:${account}`;
 
         tabs.forEach(tab => {
             tab.classList.remove('is-active', 'bg-zinc-950', 'text-white');
@@ -292,6 +354,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         panel.classList.remove('hidden');
         activeKey = button.dataset.workspaceTab;
+        renderPerformanceAccounts();
 
         if (exportButton) {
             const exportUrl = exportUrls[activeKey];
@@ -309,6 +372,8 @@ document.addEventListener('DOMContentLoaded', function () {
             const pageUrl = new URL(window.location.href);
             pageUrl.searchParams.set('tab', activeKey);
             if (platformSelect) pageUrl.searchParams.set('platform', platformSelect.value);
+            if (activeKey === 'analisis' && activePerformanceAccount) pageUrl.searchParams.set('account_id', activePerformanceAccount);
+            else pageUrl.searchParams.delete('account_id');
             history.replaceState({}, '', pageUrl);
         }
     }
@@ -318,7 +383,8 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!url) return null;
 
         const platform = button.dataset.needsPlatform === '1' ? (platformSelect?.value || '') : 'global';
-        const cacheKey = `${button.dataset.workspaceTab}:${platform}`;
+        const account = button.dataset.workspaceTab === 'analisis' ? (selectedPerformanceAccount()?.id || 'default') : 'none';
+        const cacheKey = `${button.dataset.workspaceTab}:${platform}:${account}`;
         let panel = panelCache.get(cacheKey);
 
         if (panel) return panel;
@@ -358,6 +424,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (firstTab) openTab(firstTab);
     }));
     platformSelect?.addEventListener('change', function () {
+        activePerformanceAccount = null;
         const active = tabs.find(tab => tab.dataset.workspaceTab === activeKey && !tab.disabled)
             || tabs.find(tab => !tab.disabled);
         if (active) openTab(active);
@@ -432,6 +499,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const params = new URLSearchParams(window.location.search);
     if (platformSelect && params.get('platform') && Array.from(platformSelect.options).some(option => option.value === params.get('platform'))) {
         platformSelect.value = params.get('platform');
+    }
+    if (params.get('account_id') && accountsForPlatform().some(account => account.id === params.get('account_id'))) {
+        activePerformanceAccount = params.get('account_id');
     }
     const initial = tabs.find(tab => tab.dataset.workspaceTab === params.get('tab') && !tab.disabled)
         || tabs.find(tab => !tab.disabled);

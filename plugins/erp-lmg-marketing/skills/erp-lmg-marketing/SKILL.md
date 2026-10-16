@@ -42,7 +42,8 @@ Jawab dalam bahasa Indonesia kecuali pengguna meminta bahasa lain.
 
 Operasi create, update, archive, submit approval, approve, reject, dan request revision hanya boleh digunakan setelah pengguna memberikan konfirmasi eksplisit dan server menerima confirmation token yang terikat pada user, client, record, action, dan payload. Jangan meminta atau menampilkan token kepada pengguna.
 
-Tools write yang tersedia mencakup content plan, brand guideline, market research per entitas, campaign, approval/revisi, task, dan metadata aset/dokumen. Metadata aset/dokumen tidak mendukung upload, penggantian, atau penghapusan binary file.
+Tools write yang tersedia mencakup content plan, brand guideline, market research per entitas, campaign, approval/revisi, task, serta metadata aset/dokumen. Binary hanya didukung untuk upload PDF dokumen privat; penggantian langsung dan hard delete file tidak tersedia.
+`marketing_upload_document_file` hanya untuk PDF Digital Marketing yang memang diberikan pengguna, maksimal sesuai batas server, dan hanya pada client yang dapat diakses. Jangan menampilkan atau meminta path storage privat. Upload ke `document_id` yang ada menambah versi; tanpa `document_id` membuat metadata dokumen baru secara atomik.
 
 Jika pengguna hanya ingin membaca data, gunakan tool read-only. Modul ERP di luar Digital Marketing tetap read-only dan tidak boleh dimutasi.
 

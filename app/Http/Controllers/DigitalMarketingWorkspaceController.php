@@ -30,6 +30,9 @@ class DigitalMarketingWorkspaceController extends Controller
         $mirrorScopes = DigitalMarketingPermissions::mirrorScopes($role);
         $workspaceTabs = DigitalMarketingPermissions::workspaceTabs($role);
         $workspaceReadOnlyTabs = DigitalMarketingPermissions::readOnlyWorkspaceTabs($role);
+        $performanceAccounts = $platforms->mapWithKeys(fn (string $platform) => [
+            strtolower($platform) => $client->performanceAccounts($platform),
+        ]);
 
         return view('digital_marketing.workspace', [
             'title' => $client->nama.' · Digital Marketing',
@@ -54,6 +57,7 @@ class DigitalMarketingWorkspaceController extends Controller
                 },
             ]),
             'platformMirrorPairs' => $mirroring->activePairs($client->id),
+            'performanceAccounts' => $performanceAccounts,
         ]);
     }
 

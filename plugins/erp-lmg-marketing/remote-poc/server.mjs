@@ -3,7 +3,7 @@ import { pathToFileURL } from 'node:url';
 import { endpointForTool, tools, validateToolArguments } from '../server/index.mjs';
 
 export const SERVER_NAME = 'erp-lmg-digital-marketing';
-export const SERVER_VERSION = '1.6.1';
+export const SERVER_VERSION = '1.7.0';
 
 const defaultConfig = {
   port: Number.parseInt(process.env.MCP_PORT ?? '8787', 10),
@@ -38,7 +38,7 @@ async function readJson(req) {
   let raw = '';
   for await (const chunk of req) {
     raw += chunk;
-    if (raw.length > 1_000_000) throw new ClientInputError('Request body terlalu besar.');
+    if (raw.length > 30_000_000) throw new ClientInputError('Request body terlalu besar.');
   }
   try {
     return JSON.parse(raw || '{}');
@@ -69,10 +69,26 @@ async function callLaravel(fetchImpl, config, token, name, args) {
   url.search = isWrite ? '' : queryFor(args).toString();
   let response;
   try {
+    const upload = name === 'marketing_upload_document_file';
+    let uploadBody;
+    if (upload) {
+      const normalized = args.file_base64.replace(/\s+/g, '');
+      const bytes = Buffer.from(normalized, 'base64');
+      if (!bytes.length || bytes.toString('base64').replace(/=+$/, '') !== normalized.replace(/=+$/, '')) throw new ClientInputError('File PDF tidak valid.');
+      uploadBody = new FormData();
+      uploadBody.set('client_id', String(args.client_id));
+      if (args.document_id) uploadBody.set('document_id', String(args.document_id));
+      if (args.name) uploadBody.set('name', args.name);
+      if (args.description) uploadBody.set('description', args.description);
+      uploadBody.set('file_name', args.file_name);
+      uploadBody.set('file', new Blob([bytes], { type: 'application/pdf' }), args.file_name);
+    }
     response = await fetchImpl(url, {
       method: isWrite ? (name.includes('create') ? 'POST' : name.includes('update') ? 'PATCH' : 'POST') : 'GET',
       headers: { authorization: `Bearer ${token}`, accept: 'application/json' },
-      ...(isWrite ? { headers: { authorization: `Bearer ${token}`, accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(args) } : {}),
+      ...(isWrite ? upload
+        ? { headers: { authorization: `Bearer ${token}`, accept: 'application/json' }, body: uploadBody }
+        : { headers: { authorization: `Bearer ${token}`, accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(args) } : {}),
       signal: AbortSignal.timeout(config.timeoutMs),
     });
   } catch (error) {

@@ -94,8 +94,15 @@ class OAuthConnection extends Model
         $selection = [
             'page_id' => filled($selection['page_id'] ?? null) ? (string) $selection['page_id'] : null,
             'instagram_account_id' => filled($selection['instagram_account_id'] ?? null) ? (string) $selection['instagram_account_id'] : null,
+            'page_ids' => collect($selection['page_ids'] ?? [])->filter()->map(fn ($id) => (string) $id)->unique()->values()->all(),
+            'instagram_account_ids' => collect($selection['instagram_account_ids'] ?? [])->filter()->map(fn ($id) => (string) $id)->unique()->values()->all(),
             'ad_account_id' => filled($selection['ad_account_id'] ?? null) ? (string) $selection['ad_account_id'] : null,
         ];
+
+        $selection['page_ids'] = $selection['page_ids'] ?: array_values(array_filter([$selection['page_id']]));
+        $selection['instagram_account_ids'] = $selection['instagram_account_ids'] ?: array_values(array_filter([$selection['instagram_account_id']]));
+        $selection['page_id'] = $selection['page_ids'][0] ?? null;
+        $selection['instagram_account_id'] = $selection['instagram_account_ids'][0] ?? null;
 
         $assets = $this->assets ?? [];
         $pages = collect($assets['pages'] ?? []);
@@ -109,6 +116,13 @@ class OAuthConnection extends Model
         )) {
             throw ValidationException::withMessages(['instagram_account_id' => 'Instagram Page tidak tersedia pada koneksi ini.']);
         }
+        if (collect($selection['page_ids'])->diff($pages->pluck('id')->map(fn ($id) => (string) $id))->isNotEmpty()) {
+            throw ValidationException::withMessages(['page_ids' => 'Salah satu Facebook Page tidak tersedia pada koneksi ini.']);
+        }
+        $availableInstagramIds = $instagramPages->map(fn ($page) => (string) data_get($page, 'instagram_business_account.id'));
+        if (collect($selection['instagram_account_ids'])->diff($availableInstagramIds)->isNotEmpty()) {
+            throw ValidationException::withMessages(['instagram_account_ids' => 'Salah satu akun Instagram tidak tersedia pada koneksi ini.']);
+        }
 
         if ($selection['ad_account_id']) {
             $adAccount = collect($assets['ad_accounts'] ?? [])->firstWhere('id', $selection['ad_account_id']);
@@ -116,9 +130,9 @@ class OAuthConnection extends Model
                 throw ValidationException::withMessages(['ad_account_id' => 'Akun iklan tidak tersedia pada koneksi ini.']);
             }
 
-            $selectedPageIds = collect([$selection['page_id']])
+            $selectedPageIds = collect($selection['page_ids'])
                 ->merge($instagramPages
-                    ->filter(fn ($page) => (string) data_get($page, 'instagram_business_account.id') === $selection['instagram_account_id'])
+                    ->filter(fn ($page) => in_array((string) data_get($page, 'instagram_business_account.id'), $selection['instagram_account_ids'], true))
                     ->pluck('id'))
                 ->filter()
                 ->map(fn ($id) => (string) $id)

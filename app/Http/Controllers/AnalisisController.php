@@ -90,9 +90,14 @@ class AnalisisController extends Controller
             ->get();
         $legacyAccess = is_array($produkBaru->access_token) ? $produkBaru->access_token : [];
         $index = array_search($platform, $legacyAccess['platform'] ?? [], true);
-        $platformToken = $produkBaru->platformAccessToken($platform)
-            ?? ($index !== false ? ($legacyAccess['access'][$index] ?? null) : null);
-        $platformAccountId = $produkBaru->platformAccountId($platform);
+        $requestedAccountId = $request->filled('account_id') ? (string) $request->input('account_id') : null;
+        $availableAccountIds = collect($produkBaru->performanceAccounts($platform))->pluck('id');
+        if ($requestedAccountId !== null && ! $availableAccountIds->containsStrict($requestedAccountId)) {
+            abort(422, 'Akun performance yang dipilih tidak tersedia untuk client ini.');
+        }
+        $credentials = $produkBaru->performanceAccountCredentials($platform, $requestedAccountId);
+        $platformToken = $credentials['access_token'] ?? ($index !== false ? ($legacyAccess['access'][$index] ?? null) : null);
+        $platformAccountId = $credentials['id'] ?? $produkBaru->platformAccountId($platform);
         $paidPosts = [];
         $paidError = null;
         $paidCurrency = 'IDR';

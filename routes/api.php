@@ -154,6 +154,7 @@ Route::middleware([
     Route::post('/tasks/{task}/complete', [MarketingTaskCrudController::class, 'complete'])->whereNumber('task')->name('tasks.complete');
     Route::post('/assets/confirmation', [MarketingAssetCrudController::class, 'confirmation'])->name('assets.confirmation');
     Route::post('/assets', [MarketingAssetCrudController::class, 'store'])->name('assets.store');
+    Route::post('/assets/upload-document', [MarketingAssetCrudController::class, 'uploadDocument'])->name('assets.upload-document');
     Route::patch('/assets/{asset}', [MarketingAssetCrudController::class, 'update'])->whereNumber('asset')->name('assets.update');
     Route::post('/assets/{asset}/archive', [MarketingAssetCrudController::class, 'archive'])->whereNumber('asset')->name('assets.archive');
 });

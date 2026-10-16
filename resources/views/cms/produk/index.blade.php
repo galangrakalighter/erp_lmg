@@ -584,8 +584,8 @@
                 method: 'PUT',
                 headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
                 body: JSON.stringify({
-                    page_id: panel.querySelector('[data-meta-page]')?.value || null,
-                    instagram_account_id: panel.querySelector('[data-meta-instagram-account]')?.value || null,
+                    page_ids: Array.from(panel.querySelector('[data-meta-page]')?.selectedOptions || []).map(option => option.value),
+                    instagram_account_ids: Array.from(panel.querySelector('[data-meta-instagram-account]')?.selectedOptions || []).map(option => option.value),
                     ad_account_id: panel.querySelector('[data-meta-ad-account]')?.value || null
                 })
             }).then(async response => {

@@ -122,15 +122,23 @@ class MetaOAuthController extends Controller
             if (! collect($pages)->contains('id', $selected['page_id'] ?? null)) {
                 $selected['page_id'] = Arr::get($pages, '0.id');
             }
+            $availablePageIds = collect($pages)->pluck('id')->filter()->map(fn ($id) => (string) $id);
+            $selected['page_ids'] = collect($selected['page_ids'] ?? [$selected['page_id'] ?? null])
+                ->filter()->map(fn ($id) => (string) $id)->intersect($availablePageIds)->values()->all();
+            $selected['page_ids'] = $selected['page_ids'] ?: array_values(array_filter([$selected['page_id'] ?? null]));
             $instagramAccounts = collect($pages)
                 ->pluck('instagram_business_account')
                 ->filter(fn ($account) => filled($account['id'] ?? null));
             if (! $instagramAccounts->contains('id', $selected['instagram_account_id'] ?? null)) {
                 $selected['instagram_account_id'] = $instagramAccounts->first()['id'] ?? null;
             }
-            $selectedPageIds = collect([$selected['page_id'] ?? null])
+            $availableInstagramIds = $instagramAccounts->pluck('id')->filter()->map(fn ($id) => (string) $id);
+            $selected['instagram_account_ids'] = collect($selected['instagram_account_ids'] ?? [$selected['instagram_account_id'] ?? null])
+                ->filter()->map(fn ($id) => (string) $id)->intersect($availableInstagramIds)->values()->all();
+            $selected['instagram_account_ids'] = $selected['instagram_account_ids'] ?: array_values(array_filter([$selected['instagram_account_id'] ?? null]));
+            $selectedPageIds = collect($selected['page_ids'])
                 ->merge(collect($pages)
-                    ->filter(fn ($page) => (string) Arr::get($page, 'instagram_business_account.id') === (string) ($selected['instagram_account_id'] ?? ''))
+                    ->filter(fn ($page) => in_array((string) Arr::get($page, 'instagram_business_account.id'), $selected['instagram_account_ids'], true))
                     ->pluck('id'))
                 ->filter()->map(fn ($id) => (string) $id)->unique();
             $eligibleAdAccounts = collect($adAccounts)->filter(fn ($account) =>
@@ -190,6 +198,10 @@ class MetaOAuthController extends Controller
         $data = $request->validate([
             'page_id' => ['nullable', 'string', 'max:255'],
             'instagram_account_id' => ['nullable', 'string', 'max:255'],
+            'page_ids' => ['nullable', 'array'],
+            'page_ids.*' => ['string', 'max:255'],
+            'instagram_account_ids' => ['nullable', 'array'],
+            'instagram_account_ids.*' => ['string', 'max:255'],
             'ad_account_id' => ['nullable', 'string', 'max:255'],
         ]);
         $connection->saveSelectedMetaAssets($data);

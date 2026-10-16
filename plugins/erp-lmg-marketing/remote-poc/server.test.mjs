@@ -4,6 +4,7 @@ import { endpointForTool, tools } from '../server/index.mjs';
 import { createRemoteMcpServer, SERVER_NAME, SERVER_VERSION } from './server.mjs';
 
 const expectedTools = [
+  'marketing_upload_document_file',
   'marketing_request_approval_confirmation', 'marketing_submit_for_approval', 'marketing_approve', 'marketing_reject', 'marketing_request_revision',
   'marketing_request_task_confirmation', 'marketing_create_task', 'marketing_update_task', 'marketing_archive_task', 'marketing_change_task_pic', 'marketing_change_task_deadline', 'marketing_change_task_status', 'marketing_complete_task',
   'marketing_request_asset_metadata_confirmation', 'marketing_create_asset_metadata', 'marketing_update_asset_metadata', 'marketing_archive_asset_metadata',
@@ -29,6 +30,7 @@ for (const entity of ['four_p', 'swot', 'segmentation', 'target_audience', 'posi
   expectedTools.push(`marketing_request_${entity}_confirmation`, `marketing_create_${entity}`, `marketing_update_${entity}`, `marketing_archive_${entity}`);
 }
 const expectedEndpoints = {
+  marketing_upload_document_file: '/api/oauth-marketing-crud/assets/upload-document',
   marketing_request_approval_confirmation: '/api/oauth-marketing-crud/approvals/confirmation',
   marketing_submit_for_approval: '/api/oauth-marketing-crud/approvals/submit',
   marketing_approve: '/api/oauth-marketing-crud/approvals/approve',
@@ -131,11 +133,11 @@ async function rpc(base, body, token) {
 test('initialize succeeds with production identity and health remains available', async () => {
   const base = await harness();
   const health = await fetch(`${base}/health`).then((response) => response.json());
-  assert.deepEqual(health, { status: 'ok', service: SERVER_NAME, version: SERVER_VERSION, tools: 84 });
+  assert.deepEqual(health, { status: 'ok', service: SERVER_NAME, version: SERVER_VERSION, tools: 85 });
   const result = await rpc(base, { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18' } });
   assert.equal(result.response.status, 200);
   assert.equal(result.body.result.serverInfo.name, 'erp-lmg-digital-marketing');
-  assert.equal(result.body.result.serverInfo.version, '1.6.1');
+  assert.equal(result.body.result.serverInfo.version, '1.7.0');
 });
 
 test('tools/list without token returns OAuth challenge in header and MCP metadata', async () => {
@@ -266,6 +268,25 @@ test('asset metadata MCP mutation never sends binary fields or exposes bearer to
   assert.ok(!('location' in calls[0].body));
   assert.ok(!('binary' in calls[0].body));
   assert.ok(!JSON.stringify(result.body).includes(token));
+});
+
+test('document upload converts PDF payload to multipart and never returns token or private path', async () => {
+  const calls = [];
+  const token = 'document-upload-secret';
+  const base = await harness(async (url, options) => {
+    calls.push({ url: String(url), authorization: options.headers.authorization, body: options.body });
+    assert.ok(options.body instanceof FormData);
+    assert.equal(options.body.get('client_id'), '1');
+    assert.equal(options.body.get('file_name'), 'brief.pdf');
+    assert.equal(options.body.get('file').type, 'application/pdf');
+    return jsonResponse(201, { data: { document_id: 9, client_id: 1, file_name: 'brief.pdf', mime: 'application/pdf', size: 15, version: 1, upload_status: 'uploaded', timestamp: '2026-10-16T10:00:00+07:00' }, meta: { operation: 'upload_document_file' } });
+  });
+  const file_base64 = Buffer.from('%PDF-1.4\n%%EOF').toString('base64');
+  const result = await rpc(base, { jsonrpc: '2.0', id: 45, method: 'tools/call', params: { name: 'marketing_upload_document_file', arguments: { client_id: 1, name: 'Brief', file_name: 'brief.pdf', file_base64 } } }, token);
+  assert.equal(result.body.result.structuredContent.data.document_id, 9);
+  assert.equal(calls[0].url, 'https://erp.test/api/oauth-marketing-crud/assets/upload-document');
+  assert.ok(!JSON.stringify(result.body).includes(token));
+  assert.ok(!JSON.stringify(result.body).includes('storage_path'));
 });
 
 test('unknown tool and invalid input are rejected before Laravel', async () => {

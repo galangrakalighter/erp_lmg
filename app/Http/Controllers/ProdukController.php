@@ -451,10 +451,10 @@ class ProdukController extends Controller
             ]);
 
             $metaConnection = $produk->oauthConnections()->where('provider', 'meta')->first();
-            if ($metaConnection && $request->hasAny(['meta_page_id', 'meta_instagram_account_id', 'meta_ad_account_id'])) {
+            if ($metaConnection && $request->hasAny(['meta_page_ids', 'meta_instagram_account_ids', 'meta_ad_account_id'])) {
                 $metaConnection->saveSelectedMetaAssets([
-                    'page_id' => $request->input('meta_page_id'),
-                    'instagram_account_id' => $request->input('meta_instagram_account_id'),
+                    'page_ids' => $request->input('meta_page_ids', []),
+                    'instagram_account_ids' => $request->input('meta_instagram_account_ids', []),
                     'ad_account_id' => $request->input('meta_ad_account_id'),
                 ]);
             }

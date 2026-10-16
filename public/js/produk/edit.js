@@ -86,12 +86,11 @@ function setupMetaAdAccountFilter() {
     const initiallySelected = String(adAccountSelect.dataset.selected || '');
     const refreshAccounts = () => {
         const selectedPageIds = new Set();
-        if (pageSelect?.value) selectedPageIds.add(String(pageSelect.value));
+        Array.from(pageSelect?.selectedOptions || []).forEach(option => selectedPageIds.add(String(option.value)));
 
-        const instagramOption = instagramSelect?.selectedOptions?.[0];
-        if (instagramSelect?.value && instagramOption?.dataset.pageId) {
-            selectedPageIds.add(String(instagramOption.dataset.pageId));
-        }
+        Array.from(instagramSelect?.selectedOptions || []).forEach(option => {
+            if (option.dataset.pageId) selectedPageIds.add(String(option.dataset.pageId));
+        });
 
         const currentValue = String(adAccountSelect.value || initiallySelected);
         const eligibleAccounts = accounts.filter(account =>
@@ -134,8 +133,8 @@ function setupMetaAdAccountFilter() {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
                 },
                 body: JSON.stringify({
-                    page_id: pageSelect?.value || null,
-                    instagram_account_id: instagramSelect?.value || null,
+                    page_ids: Array.from(pageSelect?.selectedOptions || []).map(option => option.value),
+                    instagram_account_ids: Array.from(instagramSelect?.selectedOptions || []).map(option => option.value),
                     ad_account_id: adAccountSelect.value || null
                 })
             });
@@ -291,20 +290,18 @@ function buildEditModalHtml(res){
                     ${oauthConnections.meta?.connected ? `
                         <div class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4" data-meta-assets-panel>
                             <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-                                <div><p class="mb-0 text-sm font-bold text-emerald-900">Terhubung sebagai ${escapeProdukHtml(oauthConnections.meta.provider_user_name || 'Pengguna Meta')}</p><p class="mb-0 text-[11px] text-emerald-700">Pilih aset yang digunakan untuk client ini.</p></div>
+                                <div><p class="mb-0 text-sm font-bold text-emerald-900">Terhubung sebagai ${escapeProdukHtml(oauthConnections.meta.provider_user_name || 'Pengguna Meta')}</p><p class="mb-0 text-[11px] text-emerald-700">Pilih satu atau beberapa akun yang digunakan untuk client ini.</p></div>
                                 <button type="button" data-meta-disconnect data-client-id="${p.id}" class="rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-semibold text-rose-700">Putuskan</button>
                             </div>
                             <div class="grid gap-3 md:grid-cols-3">
                                 <label class="text-xs font-semibold text-zinc-700">Facebook Page
-                                    <select name="meta_page_id" data-meta-page class="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm">
-                                        <option value="">Pilih Facebook Page</option>
-                                        ${(oauthConnections.meta.pages || []).map(page => `<option value="${escapeProdukHtml(page.id)}" ${String(oauthConnections.meta.selected_assets?.page_id || '') === String(page.id) ? 'selected' : ''}>${escapeProdukHtml(page.name)}${page.instagram?.username ? ` · @${escapeProdukHtml(page.instagram.username)}` : ''}</option>`).join('')}
+                                    <select name="meta_page_ids[]" data-meta-page multiple class="select2-multiple mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm" data-placeholder="Pilih Facebook Page">
+                                        ${(oauthConnections.meta.pages || []).map(page => `<option value="${escapeProdukHtml(page.id)}" ${(oauthConnections.meta.selected_assets?.page_ids || [oauthConnections.meta.selected_assets?.page_id]).map(String).includes(String(page.id)) ? 'selected' : ''}>${escapeProdukHtml(page.name)}${page.instagram?.username ? ` · @${escapeProdukHtml(page.instagram.username)}` : ''}</option>`).join('')}
                                     </select>
                                 </label>
                                 <label class="text-xs font-semibold text-zinc-700">Instagram Page
-                                    <select name="meta_instagram_account_id" data-meta-instagram-account class="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm">
-                                        <option value="">Pilih Instagram Page</option>
-                                        ${(oauthConnections.meta.instagram_accounts || []).map(account => `<option value="${escapeProdukHtml(account.id)}" data-page-id="${escapeProdukHtml(account.page_id || '')}" ${String(oauthConnections.meta.selected_assets?.instagram_account_id || '') === String(account.id) ? 'selected' : ''}>${account.username ? `@${escapeProdukHtml(account.username)}` : escapeProdukHtml(account.name || 'Instagram')}${account.page_name ? ` · ${escapeProdukHtml(account.page_name)}` : ''}</option>`).join('')}
+                                    <select name="meta_instagram_account_ids[]" data-meta-instagram-account multiple class="select2-multiple mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm" data-placeholder="Pilih Instagram Page">
+                                        ${(oauthConnections.meta.instagram_accounts || []).map(account => `<option value="${escapeProdukHtml(account.id)}" data-page-id="${escapeProdukHtml(account.page_id || '')}" ${(oauthConnections.meta.selected_assets?.instagram_account_ids || [oauthConnections.meta.selected_assets?.instagram_account_id]).map(String).includes(String(account.id)) ? 'selected' : ''}>${account.username ? `@${escapeProdukHtml(account.username)}` : escapeProdukHtml(account.name || 'Instagram')}${account.page_name ? ` · ${escapeProdukHtml(account.page_name)}` : ''}</option>`).join('')}
                                     </select>
                                 </label>
                                 <label class="text-xs font-semibold text-zinc-700">Akun Iklan

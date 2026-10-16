@@ -4,13 +4,28 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\MarketingAssetCrudService;
+use App\Services\MarketingDocumentUploadService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 final class MarketingAssetCrudController extends Controller
 {
-    public function __construct(private readonly MarketingAssetCrudService $service) {}
+    public function __construct(private readonly MarketingAssetCrudService $service, private readonly MarketingDocumentUploadService $uploadService) {}
+
+    public function uploadDocument(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'client_id' => ['required', 'integer', 'min:1'],
+            'document_id' => ['nullable', 'integer', 'min:1'],
+            'name' => ['required_without:document_id', 'nullable', 'string', 'min:2', 'max:255'],
+            'file_name' => ['required', 'string', 'min:5', 'max:255'],
+            'description' => ['nullable', 'string', 'max:5000'],
+            'file' => ['required', 'file', 'max:'.config('marketing-mcp.document_upload_max_kb', 20480)],
+        ]);
+        $result = $this->uploadService->upload($request->user(), (int) $data['client_id'], isset($data['document_id']) ? (int) $data['document_id'] : null, $request->file('file'), $data);
+        return response()->json(['data' => $result, 'meta' => ['operation' => 'upload_document_file']], 201);
+    }
 
     public function confirmation(Request $request): JsonResponse
     {

@@ -1,6 +1,6 @@
 # Remote MCP OAuth — ERP LMG Digital Marketing
 
-Remote MCP produksi mengekspos 78 tool Digital Marketing: 29 read-only dan operasi CRUD/approval terkonfirmasi. Definisi tool, schema, annotation, validator, dan pemetaan endpoint dipakai bersama dengan transport stdio dari `../server/index.mjs`. Transport HTTP selalu meneruskan bearer token pengguna ke endpoint `/api/oauth-marketing-mcp`; endpoint Sanctum tidak digunakan.
+Remote MCP produksi mengekspos 85 tool Digital Marketing: 35 read-only dan operasi CRUD/approval/upload yang terotorisasi. Definisi tool, schema, annotation, validator, dan pemetaan endpoint dipakai bersama dengan transport stdio dari `../server/index.mjs`. Transport HTTP selalu meneruskan bearer token pengguna ke endpoint OAuth Laravel; endpoint Sanctum tidak digunakan.
 
 ## Persiapan ERP
 
@@ -29,7 +29,7 @@ Server menyediakan:
 - `POST /mcp`
 - `GET /health`
 
-Nama server: `erp-lmg-digital-marketing`. Versi: `1.6.0`.
+Nama server: `erp-lmg-digital-marketing`. Versi: `1.7.0`.
 
 ## Pengujian kontrak
 
@@ -39,7 +39,7 @@ node --check plugins/erp-lmg-marketing/remote-poc/server.mjs
 node --test --test-isolation=none plugins/erp-lmg-marketing/remote-poc/server.test.mjs
 ```
 
-Suite memeriksa 78 tool, 29 annotation read-only, mapping endpoint OAuth, forwarding token tanpa kebocoran, challenge OAuth, validasi input, timeout, non-JSON, serta error Laravel 401/403/404/422/500.
+Suite memeriksa 85 tool, annotation read-only/write, upload multipart PDF, mapping endpoint OAuth, forwarding token tanpa kebocoran, challenge OAuth, validasi input, timeout, non-JSON, serta error Laravel 401/403/404/422/500.
 
 ## Smoke test OAuth lokal
 

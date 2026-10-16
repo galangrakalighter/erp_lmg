@@ -189,6 +189,102 @@ class ProdukClient extends Model
         return $page['id'] ?? null;
     }
 
+    /**
+     * Daftar akun yang dapat dipilih pada Data Performance.
+     * Token sengaja tidak disertakan agar aman dikirim ke view.
+     */
+    public function performanceAccounts(string $platform): array
+    {
+        $platform = strtolower(trim($platform));
+
+        if (in_array($platform, ['facebook', 'instagram'], true)) {
+            $connection = $this->oauthConnections()->where('provider', 'meta')->first();
+            $pages = collect($connection ? ($connection->assets['pages'] ?? []) : []);
+            $selected = $connection?->selected_assets ?? [];
+            $selectionKey = $platform === 'instagram' ? 'instagram_account_ids' : 'page_ids';
+            $legacySelectionKey = $platform === 'instagram' ? 'instagram_account_id' : 'page_id';
+            $hasSelectionConfiguration = array_key_exists($selectionKey, $selected) || filled($selected[$legacySelectionKey] ?? null);
+            $selectedIds = $platform === 'instagram'
+                ? collect($selected['instagram_account_ids'] ?? [$selected['instagram_account_id'] ?? null])->filter()->map(fn ($id) => (string) $id)
+                : collect($selected['page_ids'] ?? [$selected['page_id'] ?? null])->filter()->map(fn ($id) => (string) $id);
+
+            return $pages->map(function (array $page) use ($platform, $selected) {
+                if ($platform === 'instagram') {
+                    $id = data_get($page, 'instagram_business_account.id');
+                    if (! filled($id)) {
+                        return null;
+                    }
+
+                    $label = data_get($page, 'instagram_business_account.username')
+                        ?? data_get($page, 'instagram_business_account.name')
+                        ?? ($page['name'] ?? 'Instagram');
+                    $selectedId = $selected['instagram_account_id'] ?? null;
+                } else {
+                    $id = $page['id'] ?? null;
+                    $label = $page['name'] ?? 'Facebook Page';
+                    $selectedId = $selected['page_id'] ?? null;
+                }
+
+                return [
+                    'id' => (string) $id,
+                    'label' => (string) $label,
+                    'selected' => (string) $id === (string) $selectedId,
+                ];
+            })->filter(fn ($account) => $account && (! $hasSelectionConfiguration || $selectedIds->contains((string) $account['id'])))->values()->all();
+        }
+
+        $id = $this->platformAccountId($platform);
+        if (! filled($id)) {
+            return [];
+        }
+
+        $connection = $this->oauthConnections()->where('provider', $platform)->first();
+
+        return [[
+            'id' => (string) $id,
+            'label' => (string) ($connection?->provider_user_name ?: ucfirst($platform)),
+            'selected' => true,
+        ]];
+    }
+
+    /** @return array{id:string, access_token:string}|null */
+    public function performanceAccountCredentials(string $platform, ?string $accountId = null): ?array
+    {
+        $platform = strtolower(trim($platform));
+
+        if (in_array($platform, ['facebook', 'instagram'], true)) {
+            $connection = $this->oauthConnections()->where('provider', 'meta')->first();
+            if (! $connection) {
+                return null;
+            }
+
+            $pages = collect($connection->assets['pages'] ?? []);
+            $selected = $connection->selected_assets ?? [];
+            $page = $platform === 'instagram'
+                ? $pages->first(fn ($item) => (string) data_get($item, 'instagram_business_account.id') === (string) ($accountId ?: ($selected['instagram_account_id'] ?? '')))
+                : $pages->first(fn ($item) => (string) ($item['id'] ?? '') === (string) ($accountId ?: ($selected['page_id'] ?? '')));
+            $page ??= $platform === 'instagram'
+                ? $pages->first(fn ($item) => filled(data_get($item, 'instagram_business_account.id')))
+                : $pages->first();
+
+            $id = $platform === 'instagram'
+                ? data_get($page, 'instagram_business_account.id')
+                : data_get($page, 'id');
+            $token = data_get($page, 'access_token') ?: $connection->access_token;
+
+            return filled($id) && filled($token)
+                ? ['id' => (string) $id, 'access_token' => (string) $token]
+                : null;
+        }
+
+        $id = $this->platformAccountId($platform);
+        $token = $this->platformAccessToken($platform);
+
+        return filled($id) && filled($token)
+            ? ['id' => (string) $id, 'access_token' => (string) $token]
+            : null;
+    }
+
     public function metaAdsConnection(): ?array
     {
         $connection = $this->oauthConnections()->where('provider', 'meta')->first();

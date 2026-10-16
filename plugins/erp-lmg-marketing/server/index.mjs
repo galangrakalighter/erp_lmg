@@ -60,6 +60,7 @@ const mutationResponseSchema = {
 };
 
 export const tools = [
+  { name: "marketing_upload_document_file", description: "Upload one PDF to private ERP storage for an authorized Digital Marketing client or append a file version to existing document metadata. Never returns private storage paths.", inputSchema: { type: "object", required: ["client_id", "file_name", "file_base64"], properties: { client_id: { type: "integer", minimum: 1 }, document_id: { type: "integer", minimum: 1 }, name: { type: "string", minLength: 2, maxLength: 255 }, description: { type: "string", maxLength: 5000 }, file_name: { type: "string", minLength: 5, maxLength: 255, pattern: "^[^\\\\/]+\\.pdf$" }, file_base64: { type: "string", minLength: 8, maxLength: 27962028 } }, additionalProperties: false }, write: true },
   { name: "marketing_request_approval_confirmation", description: "Request a short-lived, single-use confirmation token for an append-only approval event.", inputSchema: { type: "object", required: ["action", "client_id", "record_type", "record_id"], properties: { action: { type: "string", enum: ["submit_for_approval", "approve", "reject", "request_revision"] }, client_id: { type: "integer", minimum: 1 }, record_type: { type: "string", enum: approvalRecordTypes }, record_id: { type: "integer", minimum: 1 }, note: { type: "string", maxLength: 2000 } }, additionalProperties: false }, write: true },
   { name: "marketing_submit_for_approval", description: "Append a submission event and set the derived approval status to pending after confirmation.", inputSchema: { type: "object", required: ["client_id", "record_type", "record_id", "confirmation_token"], properties: { client_id: { type: "integer", minimum: 1 }, record_type: { type: "string", enum: approvalRecordTypes }, record_id: { type: "integer", minimum: 1 }, note: { type: "string", maxLength: 2000 }, confirmation_token: { type: "string", minLength: 64, maxLength: 64 } }, additionalProperties: false }, write: true },
   { name: "marketing_approve", description: "Append an approval decision for a pending Digital Marketing record after confirmation.", inputSchema: { type: "object", required: ["client_id", "record_type", "record_id", "confirmation_token"], properties: { client_id: { type: "integer", minimum: 1 }, record_type: { type: "string", enum: approvalRecordTypes }, record_id: { type: "integer", minimum: 1 }, note: { type: "string", maxLength: 2000 }, confirmation_token: { type: "string", minLength: 64, maxLength: 64 } }, additionalProperties: false }, write: true },
@@ -382,6 +383,7 @@ for (const tool of tools) {
 }
 
 const toolPaths = {
+  marketing_upload_document_file: "/assets/upload-document",
   marketing_request_approval_confirmation: "/approvals/confirmation",
   marketing_submit_for_approval: "/approvals/submit",
   marketing_approve: "/approvals/approve",
@@ -545,7 +547,7 @@ async function handle(message) {
   const { id, method, params = {} } = message;
   if (method === "notifications/initialized") return null;
   if (method === "initialize") {
-    return { jsonrpc: "2.0", id, result: { protocolVersion: params.protocolVersion || "2025-06-18", capabilities: { tools: { listChanged: false } }, serverInfo: { name: "erp-lmg-digital-marketing", version: "1.6.1" } } };
+    return { jsonrpc: "2.0", id, result: { protocolVersion: params.protocolVersion || "2025-06-18", capabilities: { tools: { listChanged: false } }, serverInfo: { name: "erp-lmg-digital-marketing", version: "1.7.0" } } };
   }
   if (method === "tools/list") return { jsonrpc: "2.0", id, result: { tools } };
   if (method === "tools/call") {

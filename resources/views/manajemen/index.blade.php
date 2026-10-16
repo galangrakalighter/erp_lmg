@@ -364,7 +364,7 @@
                                         <div class="input-group-prepend">
                                             <span class="input-group-text bg-white border-right-0"><i class="far fa-calendar-check text-muted"></i></span>
                                         </div>
-                                        <input type="date" name="tanggal_posting" id="create_tanggal_posting" class="form-control border-left-0" data-native-date="true">
+                                        <input type="date" name="tanggal_posting" id="create_tanggal_posting" class="form-control border-left-0" data-filter-date data-no-default-date>
                                     </div>
                                 </div>
                             </div>
@@ -618,7 +618,7 @@
                             <div class="col-md-4">
                                 <div class="form-group">
                                     <label class="text-muted font-weight-bold small uppercase">Tanggal Posting</label>
-                                    <input type="date" name="tanggal_posting" id="edit_tanggal_posting" class="form-control shadow-sm" data-native-date="true" {{ $role == "Content Creator" ? "readonly" : "" }}>
+                                    <input type="date" name="tanggal_posting" id="edit_tanggal_posting" class="form-control shadow-sm" data-filter-date data-no-default-date {{ $role == "Content Creator" ? "readonly" : "" }}>
                                 </div>
                             </div>
 
@@ -909,7 +909,12 @@
             window.updateCompositionGuidance?.(document.getElementById('edit_komposisi'));
             $('#edit_warna').val(rowData.background);
             const postingDateValue = rowData.tanggal_posting ? String(rowData.tanggal_posting).slice(0, 10) : '';
-            $('#edit_tanggal_posting').val(postingDateValue);
+            const editPostingDate = document.getElementById('edit_tanggal_posting');
+            if (editPostingDate?._flatpickr) {
+                editPostingDate._flatpickr.setDate(postingDateValue, false, 'Y-m-d');
+            } else if (editPostingDate) {
+                editPostingDate.value = postingDateValue;
+            }
             $('#edit_jam_posting').val(rowData.jam_posting ? String(rowData.jam_posting).slice(0, 5) : '');
             $('#edit_link').val(rowData.link);
             $('#edit_status').val(rowData.status_id);

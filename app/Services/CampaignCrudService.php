@@ -28,7 +28,8 @@ final class CampaignCrudService
             abort_unless($action === 'create', 422, 'record_id wajib untuk update atau archive.');
             $this->policy->assert($user, $clientId, $permission);
         }
-        $normalized = $action === 'archive' ? ['reason' => $payload['reason'] ?? null] : $this->payload($payload);
+        if ($action === 'archive') $this->assertArchiveReason($payload['reason'] ?? null);
+        $normalized = $action === 'archive' ? ['reason' => $payload['reason']] : $this->payload($payload);
         $token = $this->confirmation->issue($user, $action, self::MODULE, $id, $this->hash($clientId, $normalized));
 
         return ['action' => $action, 'module' => self::MODULE, 'record_id' => $id, 'client_id' => $clientId, 'expires_in' => 300, 'confirmation_token' => $token];
@@ -66,6 +67,7 @@ final class CampaignCrudService
         $record = $this->policy->assertObject($user, $id, MarketingCrudPermissions::CAMPAIGN_ARCHIVE);
         abort_if($record->archived_at, 409, 'Campaign sudah diarsipkan.');
         abort_unless((int) $data['client_id'] === (int) $record->client_id, 403, 'client_id tidak sesuai dengan record campaign.');
+        $this->assertArchiveReason($data['reason'] ?? null);
         $payload = ['reason' => $data['reason']];
         $this->confirmation->consume($user, $data['confirmation_token'], 'archive', self::MODULE, $id, $this->hash((int) $record->client_id, $payload));
         DB::table('marketing_campaigns')->where('id', $id)->update(['archived_at' => now(), 'archived_by' => $user->getAuthIdentifier(), 'updated_at' => now()]);
@@ -84,6 +86,12 @@ final class CampaignCrudService
         ksort($payload);
 
         return hash('sha256', json_encode(['client_id' => $clientId, 'payload' => $payload], JSON_THROW_ON_ERROR));
+    }
+
+    private function assertArchiveReason(?string $reason): void
+    {
+        abort_if($reason === null || trim($reason) === '', 422, 'reason_required');
+        abort_if(mb_strlen(trim($reason)) < 5 || mb_strlen($reason) > 500, 422, 'reason_invalid');
     }
 
     private function assertOwner(int $clientId, mixed $ownerId): void

@@ -17,12 +17,13 @@ final class MarketingTaskCrudService
     public function confirmation(Authenticatable $user, string $action, int $clientId, int $id, array $payload): array
     {
         $permission = $this->permission($action);
+        if ($action === 'archive') $this->assertArchiveReason($payload['reason'] ?? null);
         if ($action === 'create') {
             abort_unless($id === 0, 422, 'record_id create harus 0.');
             $this->policy->assert($user, $clientId, $permission);
         } else {
             $task = $this->policy->object($user, $id, $permission);
-            abort_unless((int) $task->project === $clientId, 403, 'client_id tidak sesuai dengan task.');
+            abort_unless((int) $task->project === $clientId, 403, 'client_access_denied');
         }
         $normalized = $this->payload($action, $payload);
         $token = $this->confirmation->issue($user, $action, self::MODULE, $id, $this->hash($clientId, $normalized));
@@ -63,6 +64,7 @@ final class MarketingTaskCrudService
     {
         $task = $this->active($this->policy->object($user, $id, MarketingCrudPermissions::TASK_ARCHIVE));
         $this->assertClient($task, $data);
+        $this->assertArchiveReason($data['reason'] ?? null);
         $payload = ['reason' => $data['reason']];
         $this->confirmation->consume($user, $data['confirmation_token'], 'archive', self::MODULE, $id, $this->hash((int) $task->project, $payload));
         DB::table('task')->where('id', $id)->update(['archived_at' => now(), 'archived_by' => $user->getAuthIdentifier(), 'updated_at' => now()]);
@@ -172,5 +174,6 @@ final class MarketingTaskCrudService
     private function assertClient(object $task, array $data): void { abort_unless((int) $data['client_id'] === (int) $task->project, 403, 'client_id tidak sesuai dengan task.'); }
     private function active(object $task): object { abort_if($task->archived_at, 409, 'Task sudah diarsipkan.'); return $task; }
     private function hash(int $clientId, array $payload): string { ksort($payload); return hash('sha256', json_encode(['client_id' => $clientId, 'payload' => $payload], JSON_THROW_ON_ERROR)); }
+    private function assertArchiveReason(?string $reason): void { abort_if($reason === null || trim($reason) === '', 422, 'reason_required'); abort_if(mb_strlen(trim($reason)) < 5 || mb_strlen($reason) > 500, 422, 'reason_invalid'); }
     private function read(int $id): array { return (array) DB::table('task')->where('id', $id)->first(['id', 'nama_task', 'project as client_id', 'divisi as division_id', 'pic as pic_id', 'priority', 'menit as estimated_minutes', 'id_manajement_konten as content_plan_id', 'tanggal_mulai as start_date', 'tanggal_deadline as deadline', 'note', 'status', 'jam_mulai as start_time', 'tanggal_approve as completed_at', 'archived_at']); }
 }

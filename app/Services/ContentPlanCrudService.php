@@ -47,8 +47,9 @@ final class ContentPlanCrudService
     {
         $plan = $this->policy->assertObject($user, $id, MarketingCrudPermissions::CONTENT_PLAN_ARCHIVE);
         abort_if($plan->archived_at, 409, 'Content plan sudah diarsipkan.');
+        $this->assertArchiveReason($data['reason'] ?? null);
         $payload = ['reason' => $data['reason']];
-        $this->confirmation->consume($user, $data['confirmation_token'], 'archive', 'content_plan', $id, $this->hash($payload));
+        $this->confirmation->consume($user, $data['confirmation_token'], 'archive', 'content_plan', $id, $this->hash(['client_id' => (int) $plan->produk_client_id, 'payload' => $payload]));
         DB::table('data_jasa')->where('id', $id)->update(['archived_at' => now(), 'archived_by' => $user->getAuthIdentifier(), 'updated_at' => now()]);
         $this->audit->record($user, 'ARCHIVE', $id, (int) $plan->produk_client_id, [], $payload);
         return ['id' => $id, 'archived_at' => now('Asia/Jakarta')->toIso8601String(), 'scope' => 'client'];
@@ -61,14 +62,16 @@ final class ContentPlanCrudService
         if ($objectId > 0) $this->policy->assertObject($user, $objectId, $permission);
         else $this->policy->assert($user, $clientId, $permission);
         abort_if($action !== 'archive' && array_key_exists('pic', $payload), 422, 'PIC ditetapkan otomatis dari user OAuth.');
-        $canonicalPayload = $action === 'archive' ? ['reason' => $payload['reason'] ?? null] : $this->payload($payload);
+        if ($action === 'archive') $this->assertArchiveReason($payload['reason'] ?? null);
+        $canonicalPayload = $action === 'archive' ? ['reason' => $payload['reason']] : $this->payload($payload);
         if ($action === 'create') $canonicalPayload['pic'] = (int) $user->getAuthIdentifier();
         if ($action !== 'archive') {
             $this->validateDraft($canonicalPayload, $action === 'create');
             $this->validateMasters($clientId, $canonicalPayload);
             $this->validateStatusAndPic($canonicalPayload);
         }
-        $token = app(MarketingConfirmationTokenService::class)->issue($user, $action, 'content_plan', $objectId, hash('sha256', json_encode($canonicalPayload, JSON_THROW_ON_ERROR)));
+        $tokenPayload = $action === 'archive' ? ['client_id' => $clientId, 'payload' => $canonicalPayload] : $canonicalPayload;
+        $token = app(MarketingConfirmationTokenService::class)->issue($user, $action, 'content_plan', $objectId, $this->hash($tokenPayload));
         $draft = array_intersect_key($canonicalPayload, array_flip(['judul', 'note', 'platform', 'content_source', 'status_id', 'type_produk_id', 'strategy_id', 'pilar_id', 'hooks_id', 'body_id', 'cta_id', 'priority', 'menit', 'pic']));
         $draft['masters'] = $this->masterLabels($canonicalPayload);
         if (isset($draft['pic']) && Schema::hasTable('users')) $draft['pic_name'] = DB::table('users')->where('id', $draft['pic'])->value('name');
@@ -92,6 +95,7 @@ final class ContentPlanCrudService
     }
     private function safe(array $data): array { return array_diff_key($data, array_flip(['link'])); }
     private function hash(array $data): string { return hash('sha256', json_encode($data, JSON_THROW_ON_ERROR)); }
+    private function assertArchiveReason(mixed $reason): void { abort_if(!is_string($reason) || trim($reason) === '', 422, 'reason_required'); abort_if(mb_strlen(trim($reason)) < 5 || mb_strlen($reason) > 500, 422, 'reason_invalid'); }
 
     private function validateDraft(array $payload, bool $create): void
     {

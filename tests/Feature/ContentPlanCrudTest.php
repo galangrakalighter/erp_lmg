@@ -92,8 +92,8 @@ class ContentPlanCrudTest extends TestCase
         $id = (int) $created['id'];
         $update = ['client_id' => 1, 'judul' => 'Updated'];
         $this->service->update($this->user, $id, $update + ['confirmation_token' => $this->token('update', $id, $this->servicePayload($update))]);
-        $archive = ['reason' => 'done'];
-        $this->service->archive($this->user, $id, $archive + ['confirmation_token' => $this->token('archive', $id, $archive)]);
+        $archive = ['reason' => 'cleanup'];
+        $this->service->archive($this->user, $id, $archive + ['confirmation_token' => $this->token('archive', $id, ['client_id' => 1, 'payload' => $archive])]);
         $row = DB::table('data_jasa')->find($id);
         $this->assertNotNull($row->archived_at); $this->assertSame(1, (int) $row->archived_by);
     }
@@ -162,7 +162,8 @@ class ContentPlanCrudTest extends TestCase
         $payload = $this->payload();
         $created = $this->service->create($this->user, $payload + ['confirmation_token' => $this->token('create', 0, $this->servicePayload($payload))]);
         $id = (int) $created['id'];
-        $this->service->archive($this->user, $id, ['reason' => 'finished', 'confirmation_token' => $this->token('archive', $id, ['reason' => 'finished'])]);
+        $reason = ['reason' => 'finished'];
+        $this->service->archive($this->user, $id, $reason + ['confirmation_token' => $this->token('archive', $id, ['client_id' => 1, 'payload' => $reason])]);
         $this->assertSame(0, DB::table('data_jasa')->whereNull('archived_at')->where('id', $id)->count());
         $this->assertSame(1, DB::table('data_jasa')->whereNotNull('archived_at')->where('id', $id)->count());
     }

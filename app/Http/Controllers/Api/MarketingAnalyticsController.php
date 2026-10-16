@@ -410,7 +410,7 @@ class MarketingAnalyticsController extends Controller
             'source' => ['nullable', Rule::in(['organic', 'paid'])],
         ];
         if ($listing) {
-            $rules += ['campaign_id' => ['nullable', 'string', 'max:100'], 'page' => ['sometimes', 'integer', 'min:1'], 'per_page' => ['sometimes', 'integer', 'min:1', 'max:100']];
+            $rules += ['campaign_id' => ['nullable', 'integer', 'min:1'], 'page' => ['sometimes', 'integer', 'min:1'], 'per_page' => ['sometimes', 'integer', 'min:1', 'max:100']];
         }
         if ($comparison) {
             $rules += [

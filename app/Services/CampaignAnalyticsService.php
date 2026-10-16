@@ -13,57 +13,40 @@ class CampaignAnalyticsService
     public function campaigns(int $clientId, array $filters): array
     {
         [$start, $end] = $this->period($filters);
-        $snapshots = $this->snapshots($clientId, $filters, $start, $end);
-        $invalid = 0;
-        $rows = collect();
+        $rows = DB::table('marketing_campaigns')
+            ->where('client_id', $clientId)
+            ->whereNull('archived_at')
+            ->whereDate('start_date', '<=', $end->toDateString())
+            ->whereDate('end_date', '>=', $start->toDateString())
+            ->when(filled($filters['platform'] ?? null), fn ($query) => $query->whereRaw('LOWER(platform) = ?', [strtolower($filters['platform'])]))
+            ->when(filled($filters['source'] ?? null), fn ($query) => $query->whereRaw('LOWER(source) = ?', [strtolower($filters['source'])]))
+            ->when(filled($filters['campaign_id'] ?? null), fn ($query) => $query->where('id', (int) $filters['campaign_id']))
+            ->orderByDesc('updated_at')
+            ->get(['id', 'owner_user_id', 'name', 'status', 'platform', 'source', 'start_date', 'end_date', 'objective', 'budget', 'currency', 'target', 'updated_at'])
+            ->map(fn ($row): array => [
+                'campaign_id' => (int) $row->id,
+                'campaign' => (string) $row->name,
+                'owner_user_id' => $row->owner_user_id === null ? null : (int) $row->owner_user_id,
+                'status' => (string) $row->status,
+                'platform' => $row->platform,
+                'source' => (string) $row->source,
+                'start_date' => (string) $row->start_date,
+                'end_date' => (string) $row->end_date,
+                'objective' => $row->objective,
+                'budget' => $row->budget === null ? null : (float) $row->budget,
+                'currency' => $row->currency,
+                'target' => $row->target,
+                'last_updated_at' => (string) $row->updated_at,
+            ]);
 
-        foreach ($snapshots as $snapshot) {
-            $items = $this->decodeList($snapshot->items, $invalid);
-            foreach ($items as $index => $item) {
-                if (! is_array($item)) {
-                    $invalid++;
-
-                    continue;
-                }
-                $campaignId = $this->safeString($item['campaign_id'] ?? null, 100);
-                if (filled($filters['campaign_id'] ?? null) && $campaignId !== (string) $filters['campaign_id']) {
-                    continue;
-                }
-                $metrics = $this->metrics($item['metrics'] ?? []);
-                $identity = $this->safeString($item['id'] ?? null, 150)
-                    ?? $campaignId
-                    ?? sha1(json_encode([$item['title'] ?? null, $item['date'] ?? null, $index]));
-                $rows->push([
-                    'campaign_id' => $campaignId,
-                    'campaign' => $this->safeString($item['campaign'] ?? null, 200),
-                    'content_id' => $this->safeString($item['id'] ?? null, 150),
-                    'title' => $this->safeString($item['title'] ?? null, 300),
-                    'date' => $this->safeDate($item['date'] ?? null),
-                    'platform' => strtolower((string) $snapshot->platform),
-                    'source' => strtolower((string) $snapshot->source),
-                    'budget' => $this->number($item['budget'] ?? null),
-                    'target' => $this->safeString($item['target'] ?? null, 200),
-                    'currency' => $this->currency($item['currency'] ?? data_get($this->decodeObject($snapshot->metrics), 'currency')),
-                    'metrics' => $this->withRates($metrics),
-                    'last_updated_at' => (string) $snapshot->captured_at,
-                    '_identity' => strtolower((string) $snapshot->source).'|'.$identity,
-                ]);
-            }
-        }
-
-        $rows = $rows->sortBy('last_updated_at')->keyBy('_identity')->values()
-            ->map(function (array $row): array {
-                unset($row['_identity']);
-
-                return $row;
-            })->sortByDesc('last_updated_at')->values();
-
-        return $this->paginate($rows, $filters, $this->meta($start, $end, $snapshots, $rows->isEmpty() ? 'no_data' : ($invalid ? 'partial' : 'complete'), [
-            'invalid_item_count' => $invalid,
+        return $this->paginate($rows, $filters, [
+            'period' => ['start_date' => $start->toDateString(), 'end_date' => $end->toDateString()],
+            'source' => 'marketing_campaigns',
+            'completeness' => ['status' => $rows->isEmpty() ? 'no_data' : 'complete', 'reasons' => $rows->isEmpty() ? ['Tidak ada campaign kanonik aktif pada periode dan filter yang dipilih.'] : []],
             'budget_availability' => $this->availability($rows, 'budget'),
             'target_availability' => $this->availability($rows, 'target'),
-            'notice' => 'Budget dan target hanya ditampilkan bila tersimpan eksplisit pada item snapshot.',
-        ]));
+            'notice' => 'Daftar campaign berasal dari tabel kanonik; metrik performa tetap berasal dari snapshot melalui tool performa.',
+        ]);
     }
 
     public function performance(int $clientId, array $filters): array

@@ -6,6 +6,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class DigitalMarketingDataService
 {
@@ -31,6 +32,7 @@ class DigitalMarketingDataService
         $rows = collect();
         foreach ($definitions as $section => [$table, $columns]) {
             $items = DB::table($table)->where('produk_client_id', $clientId)
+                ->whereNull('archived_at')
                 ->when($platform, fn (Builder $query) => $query->whereRaw('LOWER(platform) = ?', [$platform]))
                 ->get($columns)->map(fn ($row) => ['section' => $section] + (array) $row);
             $rows = $rows->concat($items);
@@ -58,6 +60,7 @@ class DigitalMarketingDataService
         $rows = collect();
         foreach ($definitions as $section => [$table, $columns]) {
             $items = DB::table($table)->where('produk_client_id', $clientId)
+                ->when($table === 'brand_identify', fn (Builder $query) => $query->whereNull('archived_at'))
                 ->when($platform, fn (Builder $query) => $query->whereRaw('LOWER(platform) = ?', [$platform]))
                 ->get($columns)->map(fn ($row) => ['section' => $section] + (array) $row);
             $rows = $rows->concat($items);
@@ -128,6 +131,7 @@ class DigitalMarketingDataService
         $rows = DB::table('task')->leftJoin('users', 'users.id', '=', 'task.pic')
             ->leftJoin('divisions', 'divisions.id', '=', 'task.divisi')
             ->where('task.project', $clientId)
+            ->whereNull('task.archived_at')
             ->where(function (Builder $query) use ($start, $end): void {
                 $query->whereBetween('task.tanggal_mulai', [$start->toDateString(), $end->toDateString()])
                     ->orWhereBetween('task.tanggal_deadline', [$start->toDateString(), $end->toDateString()]);
@@ -148,8 +152,27 @@ class DigitalMarketingDataService
     public function approvals(int $clientId, array $filters): array
     {
         [$start, $end] = $this->period($filters);
+        if (Schema::hasTable('marketing_approval_events')) {
+            $events = DB::table('marketing_approval_events')->leftJoin('users', 'users.id', '=', 'marketing_approval_events.user_id')
+                ->where('marketing_approval_events.client_id', $clientId)
+                ->whereBetween('marketing_approval_events.created_at', [$start, $end])
+                ->orderByDesc('marketing_approval_events.id')
+                ->get([
+                    'marketing_approval_events.id as event_id', 'marketing_approval_events.record_type', 'marketing_approval_events.record_id',
+                    'marketing_approval_events.action', 'marketing_approval_events.status', 'marketing_approval_events.note',
+                    'marketing_approval_events.audit_reference', 'marketing_approval_events.created_at',
+                    'users.id as actor_id', 'users.name as actor_name',
+                ]);
+            if ($events->isNotEmpty()) {
+                return $this->paginate($events, $filters, 'marketing_approval_events', [
+                    'period' => $this->periodMeta($start, $end),
+                    'history_availability' => ['status' => 'complete', 'append_only' => true],
+                ]);
+            }
+        }
         $rows = DB::table('task')->leftJoin('users', 'users.id', '=', 'task.pic')
             ->where('task.project', $clientId)
+            ->whereNull('task.archived_at')
             ->where(function (Builder $query) use ($start, $end): void {
                 $query->whereBetween('task.tanggal_approve', [$start->toDateString(), $end->toDateString()])
                     ->orWhereBetween('task.tanggal_revisi', [$start->toDateString(), $end->toDateString()])
@@ -169,7 +192,7 @@ class DigitalMarketingDataService
 
     public function assets(int $clientId, array $filters): array
     {
-        $rows = DB::table('file_pdf')->leftJoin('divisions', 'divisions.id', '=', 'file_pdf.division_id')
+        $legacy = DB::table('file_pdf')->leftJoin('divisions', 'divisions.id', '=', 'file_pdf.division_id')
             ->leftJoin('users', 'users.id', '=', 'file_pdf.uploaded_by')
             ->where('file_pdf.client', $clientId)
             ->when(isset($filters['division_id']), fn (Builder $query) => $query->where('file_pdf.division_id', (int) $filters['division_id']))
@@ -180,10 +203,23 @@ class DigitalMarketingDataService
                 'file_pdf.created_at', 'file_pdf.updated_at',
             ])->selectSub(function ($query): void {
                 $query->from('file_pdf_versions')->selectRaw('COUNT(*)')->whereColumn('file_pdf_versions.file_pdf_id', 'file_pdf.id');
-            }, 'version_count')->get();
+            }, 'version_count')->get()->map(fn ($row): object => (object) (['metadata_source' => 'legacy_file_pdf'] + (array) $row));
 
-        return $this->paginate($rows, $filters, 'file_pdf_metadata', [
+        $canonical = collect();
+        if (Schema::hasTable('marketing_asset_metadata')) {
+            $canonical = DB::table('marketing_asset_metadata')->leftJoin('users', 'users.id', '=', 'marketing_asset_metadata.created_by')
+                ->where('marketing_asset_metadata.client_id', $clientId)->whereNull('marketing_asset_metadata.archived_at')
+                ->get(['marketing_asset_metadata.id', 'marketing_asset_metadata.name', 'marketing_asset_metadata.asset_type', 'marketing_asset_metadata.mime_type', 'marketing_asset_metadata.description', 'marketing_asset_metadata.project_id', 'marketing_asset_metadata.campaign_id', 'marketing_asset_metadata.content_plan_id', 'marketing_asset_metadata.approval_status', 'marketing_asset_metadata.current_version', 'marketing_asset_metadata.created_by as created_by_id', 'users.name as created_by_name', 'marketing_asset_metadata.created_at', 'marketing_asset_metadata.updated_at'])
+                ->map(function ($row): object {
+                    $versions = DB::table('marketing_asset_versions')->where('asset_metadata_id', $row->id)->orderBy('version_number')->get(['version_number', 'label', 'note', 'created_by', 'created_at'])->map(fn ($version) => (array) $version)->all();
+                    return (object) (['metadata_source' => 'marketing_asset_metadata', 'version_count' => count($versions), 'versions' => $versions] + (array) $row);
+                });
+        }
+        $rows = $canonical->concat($legacy)->sortByDesc('updated_at')->values();
+
+        return $this->paginate($rows, $filters, 'marketing_asset_metadata_and_legacy_file_pdf', [
             'excluded_fields' => ['location', 'editor_content', 'binary_content', 'uploader_email'],
+            'binary_operations' => 'not_supported',
         ]);
     }
 

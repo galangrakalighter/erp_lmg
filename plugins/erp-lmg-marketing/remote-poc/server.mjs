@@ -3,7 +3,7 @@ import { pathToFileURL } from 'node:url';
 import { endpointForTool, tools, validateToolArguments } from '../server/index.mjs';
 
 export const SERVER_NAME = 'erp-lmg-digital-marketing';
-export const SERVER_VERSION = '1.0.0';
+export const SERVER_VERSION = '1.4.0';
 
 const defaultConfig = {
   port: Number.parseInt(process.env.MCP_PORT ?? '8787', 10),
@@ -137,7 +137,7 @@ export function createRemoteMcpServer(options = {}) {
           protocolVersion: message.params?.protocolVersion ?? '2025-06-18',
           capabilities: { tools: { listChanged: false } },
           serverInfo: { name: SERVER_NAME, version: SERVER_VERSION },
-          instructions: "Read-only ERP LMG Digital Marketing. Use marketing_list_clients for 'clients I can access' and marketing_get_division_client_summary for division-wide client totals. Never present a restricted personal count as the division total.",
+          instructions: "ERP LMG Digital Marketing. Read tools never mutate data. Write tools require explicit confirmation and a short-lived confirmation token. Use marketing_list_clients for 'clients I can access' and marketing_get_division_client_summary for division-wide client totals. Never present a restricted personal count as the division total.",
         },
       });
     }

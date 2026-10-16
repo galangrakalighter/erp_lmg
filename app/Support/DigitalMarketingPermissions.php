@@ -2,7 +2,8 @@
 
 namespace App\Support;
 
-use App\Models\User;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Support\Facades\DB;
 
 class DigitalMarketingPermissions
 {
@@ -11,14 +12,20 @@ class DigitalMarketingPermissions
         'content-plan', 'guide', 'analisis', 'explore', 'dokumen', 'timeline',
     ];
 
-    public static function role(?User $user): string
+    public static function role(?Authenticatable $user): string
     {
         if (! $user) return '';
-        if ($user->isAdmin) return 'Super Admin';
-        $user->loadMissing('userDivisions.role', 'userDivisions.division');
-        return (string) optional($user->userDivisions->first(
-            fn ($row) => strtolower(trim((string) $row->division?->name)) === 'digital marketing'
-        ))->role?->role_name;
+        if ((bool) data_get($user, 'isAdmin', false)) return 'Super Admin';
+
+        return (string) (DB::table('user_division')
+            ->join('divisions', 'divisions.id', '=', 'user_division.division_id')
+            ->join('roles', function ($join): void {
+                $join->on('roles.id', '=', 'user_division.role_id')
+                    ->on('roles.division_id', '=', 'user_division.division_id');
+            })
+            ->where('user_division.user_id', $user->getAuthIdentifier())
+            ->whereRaw('LOWER(TRIM(divisions.name)) = ?', ['digital marketing'])
+            ->value('roles.role_name') ?? '');
     }
 
     public static function isManager(string $role): bool

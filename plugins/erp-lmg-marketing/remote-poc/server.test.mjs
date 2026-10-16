@@ -4,6 +4,11 @@ import { endpointForTool, tools } from '../server/index.mjs';
 import { createRemoteMcpServer, SERVER_NAME, SERVER_VERSION } from './server.mjs';
 
 const expectedTools = [
+  'marketing_request_approval_confirmation', 'marketing_submit_for_approval', 'marketing_approve', 'marketing_reject', 'marketing_request_revision',
+  'marketing_request_task_confirmation', 'marketing_create_task', 'marketing_update_task', 'marketing_archive_task', 'marketing_change_task_pic', 'marketing_change_task_deadline', 'marketing_change_task_status', 'marketing_complete_task',
+  'marketing_request_asset_metadata_confirmation', 'marketing_create_asset_metadata', 'marketing_update_asset_metadata', 'marketing_archive_asset_metadata',
+  'marketing_request_campaign_confirmation', 'marketing_create_campaign', 'marketing_update_campaign', 'marketing_archive_campaign',
+  'marketing_request_brand_guideline_confirmation', 'marketing_create_brand_guideline', 'marketing_update_brand_guideline', 'marketing_archive_brand_guideline',
   'marketing_request_content_plan_confirmation', 'marketing_create_content_plan', 'marketing_update_content_plan', 'marketing_archive_content_plan',
   'account_get_client_profile', 'account_list_client_contacts', 'account_get_client_brief', 'account_get_client_needs',
   'account_get_client_project_status', 'account_get_client_milestones',
@@ -17,7 +22,35 @@ const expectedTools = [
   'marketing_get_performance_metrics', 'marketing_compare_periods', 'marketing_analyze_channels',
   'marketing_search',
 ];
+for (const entity of ['four_p', 'swot', 'segmentation', 'target_audience', 'positioning']) {
+  expectedTools.push(`marketing_request_${entity}_confirmation`, `marketing_create_${entity}`, `marketing_update_${entity}`, `marketing_archive_${entity}`);
+}
 const expectedEndpoints = {
+  marketing_request_approval_confirmation: '/api/oauth-marketing-crud/approvals/confirmation',
+  marketing_submit_for_approval: '/api/oauth-marketing-crud/approvals/submit',
+  marketing_approve: '/api/oauth-marketing-crud/approvals/approve',
+  marketing_reject: '/api/oauth-marketing-crud/approvals/reject',
+  marketing_request_revision: '/api/oauth-marketing-crud/approvals/request-revision',
+  marketing_request_task_confirmation: '/api/oauth-marketing-crud/tasks/confirmation',
+  marketing_create_task: '/api/oauth-marketing-crud/tasks',
+  marketing_update_task: '/api/oauth-marketing-crud/tasks/123',
+  marketing_archive_task: '/api/oauth-marketing-crud/tasks/123/archive',
+  marketing_change_task_pic: '/api/oauth-marketing-crud/tasks/123/change-pic',
+  marketing_change_task_deadline: '/api/oauth-marketing-crud/tasks/123/change-deadline',
+  marketing_change_task_status: '/api/oauth-marketing-crud/tasks/123/change-status',
+  marketing_complete_task: '/api/oauth-marketing-crud/tasks/123/complete',
+  marketing_request_asset_metadata_confirmation: '/api/oauth-marketing-crud/assets/confirmation',
+  marketing_create_asset_metadata: '/api/oauth-marketing-crud/assets',
+  marketing_update_asset_metadata: '/api/oauth-marketing-crud/assets/123',
+  marketing_archive_asset_metadata: '/api/oauth-marketing-crud/assets/123/archive',
+  marketing_request_campaign_confirmation: '/api/oauth-marketing-crud/campaigns/confirmation',
+  marketing_create_campaign: '/api/oauth-marketing-crud/campaigns',
+  marketing_update_campaign: '/api/oauth-marketing-crud/campaigns/123',
+  marketing_archive_campaign: '/api/oauth-marketing-crud/campaigns/123/archive',
+  marketing_request_brand_guideline_confirmation: '/api/oauth-marketing-crud/brand-guidelines/confirmation',
+  marketing_create_brand_guideline: '/api/oauth-marketing-crud/brand-guidelines',
+  marketing_update_brand_guideline: '/api/oauth-marketing-crud/brand-guidelines/123',
+  marketing_archive_brand_guideline: '/api/oauth-marketing-crud/brand-guidelines/123/archive',
   marketing_request_content_plan_confirmation: '/api/oauth-marketing-crud/content-plans/confirmation',
   marketing_create_content_plan: '/api/oauth-marketing-crud/content-plans',
   marketing_update_content_plan: '/api/oauth-marketing-crud/content-plans/123',
@@ -52,6 +85,12 @@ const expectedEndpoints = {
   marketing_analyze_channels: '/api/oauth-marketing-mcp/clients/123/channel-analysis',
   marketing_search: '/api/oauth-marketing-mcp/clients/123/search',
 };
+for (const entity of ['four_p', 'swot', 'segmentation', 'target_audience', 'positioning']) {
+  expectedEndpoints[`marketing_request_${entity}_confirmation`] = `/api/oauth-marketing-crud/market-research/${entity}/confirmation`;
+  expectedEndpoints[`marketing_create_${entity}`] = `/api/oauth-marketing-crud/market-research/${entity}`;
+  expectedEndpoints[`marketing_update_${entity}`] = `/api/oauth-marketing-crud/market-research/${entity}/123`;
+  expectedEndpoints[`marketing_archive_${entity}`] = `/api/oauth-marketing-crud/market-research/${entity}/123/archive`;
+}
 
 const running = [];
 afterEach(async () => {
@@ -83,11 +122,11 @@ async function rpc(base, body, token) {
 test('initialize succeeds with production identity and health remains available', async () => {
   const base = await harness();
   const health = await fetch(`${base}/health`).then((response) => response.json());
-  assert.deepEqual(health, { status: 'ok', service: SERVER_NAME, version: SERVER_VERSION, tools: 33 });
+  assert.deepEqual(health, { status: 'ok', service: SERVER_NAME, version: SERVER_VERSION, tools: 78 });
   const result = await rpc(base, { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18' } });
   assert.equal(result.response.status, 200);
   assert.equal(result.body.result.serverInfo.name, 'erp-lmg-digital-marketing');
-  assert.equal(result.body.result.serverInfo.version, '1.0.0');
+  assert.equal(result.body.result.serverInfo.version, '1.4.0');
 });
 
 test('tools/list without token returns OAuth challenge in header and MCP metadata', async () => {
@@ -116,7 +155,7 @@ test('tools/list exposes exactly the expected tools and annotations', async () =
 test('every tool maps to an OAuth Laravel endpoint', () => {
   for (const tool of tools) {
     const prefix = tool.write ? '/api/oauth-marketing-crud' : '/api/oauth-marketing-mcp';
-    const path = endpointForTool(tool.name, { client_id: 123, content_plan_id: 123 }, prefix);
+    const path = endpointForTool(tool.name, { client_id: 123, asset_metadata_id: 123, task_id: 123, campaign_id: 123, content_plan_id: 123, brand_guideline_id: 123, record_id: 123 }, prefix);
     assert.equal(path, expectedEndpoints[tool.name]);
     assert.ok(!path.startsWith('/api/marketing-mcp'));
   }
@@ -148,6 +187,75 @@ test('content plan MCP mutations use OAuth CRUD endpoints and forward bearer tok
   assert.equal(calls[0].url, 'https://erp.test/api/oauth-marketing-crud/content-plans');
   assert.equal(calls[0].method, 'POST');
   assert.equal(calls[0].authorization, `Bearer ${token}`);
+  assert.ok(!JSON.stringify(result.body).includes(token));
+});
+
+test('campaign MCP mutations use canonical OAuth CRUD endpoints and never expose bearer token', async () => {
+  const calls = [];
+  const token = 'campaign-oauth-secret';
+  const base = await harness(async (url, options) => {
+    calls.push({ url: String(url), method: options.method, authorization: options.headers.authorization, body: JSON.parse(options.body) });
+    return jsonResponse(201, { data: { id: 21, name: 'Canonical Launch' }, meta: { operation: 'create' } });
+  });
+  const args = { client_id: 7, confirmation_token: 'c'.repeat(64), name: 'Canonical Launch', status: 'planned', source: 'paid', start_date: '2026-04-01', end_date: '2026-06-30' };
+  const result = await rpc(base, { jsonrpc: '2.0', id: 12, method: 'tools/call', params: { name: 'marketing_create_campaign', arguments: args } }, token);
+  assert.equal(result.body.result.structuredContent.data.id, 21);
+  assert.equal(calls[0].url, 'https://erp.test/api/oauth-marketing-crud/campaigns');
+  assert.equal(calls[0].method, 'POST');
+  assert.equal(calls[0].authorization, `Bearer ${token}`);
+  assert.deepEqual(calls[0].body, args);
+  assert.ok(!JSON.stringify(result.body).includes(token));
+});
+
+test('approval MCP events use append-only OAuth endpoints and forward no token in the response', async () => {
+  const calls = [];
+  const token = 'approval-oauth-secret';
+  const base = await harness(async (url, options) => {
+    calls.push({ url: String(url), method: options.method, authorization: options.headers.authorization, body: JSON.parse(options.body) });
+    return jsonResponse(201, { data: { event_id: 31, action: 'submit_for_approval', status: 'pending' }, meta: { operation: 'submit_for_approval' } });
+  });
+  const args = { client_id: 7, record_type: 'campaign', record_id: 21, note: 'Ready', confirmation_token: 'a'.repeat(64) };
+  const result = await rpc(base, { jsonrpc: '2.0', id: 13, method: 'tools/call', params: { name: 'marketing_submit_for_approval', arguments: args } }, token);
+  assert.equal(result.body.result.structuredContent.data.event_id, 31);
+  assert.equal(calls[0].url, 'https://erp.test/api/oauth-marketing-crud/approvals/submit');
+  assert.equal(calls[0].method, 'POST');
+  assert.equal(calls[0].authorization, `Bearer ${token}`);
+  assert.deepEqual(calls[0].body, args);
+  assert.ok(!JSON.stringify(result.body).includes(token));
+});
+
+test('task MCP mutations use OAuth CRUD endpoints and keep bearer token out of the response', async () => {
+  const calls = [];
+  const token = 'task-oauth-secret';
+  const base = await harness(async (url, options) => {
+    calls.push({ url: String(url), method: options.method, authorization: options.headers.authorization, body: JSON.parse(options.body) });
+    return jsonResponse(200, { data: { id: 44, status: 1 }, meta: { operation: 'change_status' } });
+  });
+  const args = { task_id: 44, client_id: 7, status: 1, confirmation_token: 't'.repeat(64) };
+  const result = await rpc(base, { jsonrpc: '2.0', id: 14, method: 'tools/call', params: { name: 'marketing_change_task_status', arguments: args } }, token);
+  assert.equal(result.body.result.structuredContent.data.id, 44);
+  assert.equal(calls[0].url, 'https://erp.test/api/oauth-marketing-crud/tasks/44/change-status');
+  assert.equal(calls[0].method, 'POST');
+  assert.equal(calls[0].authorization, `Bearer ${token}`);
+  assert.deepEqual(calls[0].body, args);
+  assert.ok(!JSON.stringify(result.body).includes(token));
+});
+
+test('asset metadata MCP mutation never sends binary fields or exposes bearer token', async () => {
+  const calls = [];
+  const token = 'asset-oauth-secret';
+  const base = await harness(async (url, options) => {
+    calls.push({ url: String(url), method: options.method, authorization: options.headers.authorization, body: JSON.parse(options.body) });
+    return jsonResponse(201, { data: { id: 52, name: 'Key Visual', current_version: 1 }, meta: { operation: 'create' } });
+  });
+  const args = { client_id: 7, name: 'Key Visual', asset_type: 'asset', mime_type: 'image/png', confirmation_token: 'm'.repeat(64) };
+  const result = await rpc(base, { jsonrpc: '2.0', id: 15, method: 'tools/call', params: { name: 'marketing_create_asset_metadata', arguments: args } }, token);
+  assert.equal(result.body.result.structuredContent.data.id, 52);
+  assert.equal(calls[0].url, 'https://erp.test/api/oauth-marketing-crud/assets');
+  assert.equal(calls[0].method, 'POST');
+  assert.deepEqual(calls[0].body, args);
+  assert.ok(!('location' in calls[0].body));
+  assert.ok(!('binary' in calls[0].body));
   assert.ok(!JSON.stringify(result.body).includes(token));
 });
 

@@ -1,8 +1,8 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "erp-lmg-marketing",
-  "version": "1.0.0",
-  "description": "Private read-only Digital Marketing assistant for authorized ERP LMG data.",
+  "version": "1.4.0",
+  "description": "Private Digital Marketing assistant with authorized read-only analytics and confirmed CRUD operations for Digital Marketing metadata.",
   "mcpServers": "./mcp.json",
   "author": { "name": "Lighter Media Group" },
   "extensions": {
@@ -10,7 +10,7 @@
       "interface": {
         "displayName": "ERP LMG Digital Marketing",
         "shortDescription": "Asisten Digital Marketing ERP LMG",
-        "longDescription": "Read-only Digital Marketing assistant for authorized ERP LMG research, branding, content, workflow, assets, campaigns, client scope, and performance data.",
+        "longDescription": "Digital Marketing assistant for authorized ERP LMG research, branding, content, workflow, assets, campaigns, client scope, performance, and confirmed metadata mutations.",
         "developerName": "Lighter Media Group",
         "category": "Productivity",
         "capabilities": ["Tools"],

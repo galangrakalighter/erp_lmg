@@ -1042,16 +1042,22 @@ class MarketingAnalyticsApiTest extends TestCase
         $this->insertSnapshot('2026-09-30', ['impressions' => 800, 'clicks' => 8, 'spend' => 80, 'leads' => 2, 'conversions' => 1, 'currency' => 'IDR'], [$paidCurrent], 'paid');
         $this->insertSnapshot('2026-10-10', ['reach' => 800, 'impressions' => 1000, 'engagement' => 40, 'clicks' => 20, 'spend' => 100, 'leads' => 4, 'conversions' => 2, 'currency' => 'IDR'], [$paidCurrent], 'paid');
         $this->insertSnapshot('2026-10-11', ['reach' => 500, 'impressions' => 600, 'engagement' => 60, 'clicks' => 10], [$organicCurrent], 'organic');
+        $campaignId = DB::table('marketing_campaigns')->insertGetId([
+            'client_id' => $this->allowedClient, 'name' => 'Launch', 'status' => 'active', 'platform' => 'instagram', 'source' => 'paid',
+            'start_date' => '2026-10-01', 'end_date' => '2026-10-31', 'budget' => 1500, 'currency' => 'IDR', 'target' => 'lead_generation',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
 
         $before = DB::table('analysis_snapshots')->orderBy('id')->get()->map(fn ($row) => (array) $row)->all();
         $base = "/api/marketing-mcp/clients/{$this->allowedClient}";
         $period = 'start_date=2026-10-01&end_date=2026-10-14';
 
-        $this->withMarketingToken()->getJson($base.'/campaigns?'.$period.'&campaign_id=campaign-1')->assertOk()
+        $this->withMarketingToken()->getJson($base.'/campaigns?'.$period.'&campaign_id='.$campaignId)->assertOk()
             ->assertJsonPath('data.0.campaign', 'Launch')
             ->assertJsonPath('data.0.budget', 1500)
             ->assertJsonPath('data.0.target', 'lead_generation')
-            ->assertJsonPath('data.0.metrics.ctr', 2)
+            ->assertJsonPath('meta.source', 'marketing_campaigns')
+            ->assertJsonMissingPath('data.0.metrics')
             ->assertJsonMissing(['never-return']);
         $this->withMarketingToken()->getJson($base.'/performance-metrics?'.$period)->assertOk()
             ->assertJsonPath('pagination', null)
@@ -1196,7 +1202,7 @@ class MarketingAnalyticsApiTest extends TestCase
 
     private function createContractSchema(): void
     {
-        foreach (['file_pdf_versions', 'file_pdf', 'task', 'alat_branding', 'moodboard', 'audio_brand', 'komposisi', 'gaya_komunikasi', 'brand_tagline', 'brand_value', 'brand_image', 'brand_identify', 'positioning', 'target_audience', 'segmentasi', 'analize_swot', 'analize_4p', 'oauth_refresh_tokens', 'oauth_access_tokens', 'oauth_clients', 'platform_mirror_copies', 'analysis_snapshots', 'data_jasa', 'jenis_cta', 'jenis_body', 'hooks', 'pilar', 'strategy', 'type_produk', 'status', 'user_client', 'client_division', 'user_division', 'roles', 'divisions', 'produk_client', 'kategori_jasa', 'personal_access_tokens', 'users'] as $table) {
+        foreach (['marketing_campaigns', 'file_pdf_versions', 'file_pdf', 'task', 'alat_branding', 'moodboard', 'audio_brand', 'komposisi', 'gaya_komunikasi', 'brand_tagline', 'brand_value', 'brand_image', 'brand_identify', 'positioning', 'target_audience', 'segmentasi', 'analize_swot', 'analize_4p', 'oauth_refresh_tokens', 'oauth_access_tokens', 'oauth_clients', 'platform_mirror_copies', 'analysis_snapshots', 'data_jasa', 'jenis_cta', 'jenis_body', 'hooks', 'pilar', 'strategy', 'type_produk', 'status', 'user_client', 'client_division', 'user_division', 'roles', 'divisions', 'produk_client', 'kategori_jasa', 'personal_access_tokens', 'users'] as $table) {
             Schema::dropIfExists($table);
         }
 
@@ -1345,6 +1351,12 @@ class MarketingAnalyticsApiTest extends TestCase
             $table->timestamp('captured_at');
             $table->timestamps();
         });
+        Schema::create('marketing_campaigns', function (Blueprint $table): void {
+            $table->id(); $table->unsignedBigInteger('client_id'); $table->unsignedBigInteger('owner_user_id')->nullable();
+            $table->string('name', 200); $table->string('status', 50); $table->string('platform', 50)->nullable(); $table->string('source', 20)->default('organic');
+            $table->date('start_date'); $table->date('end_date'); $table->text('objective')->nullable(); $table->decimal('budget', 18, 2)->nullable();
+            $table->string('currency', 3)->nullable(); $table->text('target')->nullable(); $table->timestamp('archived_at')->nullable(); $table->unsignedBigInteger('archived_by')->nullable(); $table->timestamps();
+        });
         Schema::create('platform_mirror_copies', function (Blueprint $table): void {
             $table->id();
             $table->unsignedBigInteger('client_id');
@@ -1369,6 +1381,8 @@ class MarketingAnalyticsApiTest extends TestCase
                     $table->text($field)->nullable();
                 }
                 $table->string('platform')->nullable();
+                $table->timestamp('archived_at')->nullable();
+                $table->unsignedBigInteger('archived_by')->nullable();
                 $table->timestamps();
             });
         }
@@ -1378,13 +1392,17 @@ class MarketingAnalyticsApiTest extends TestCase
             'komposisi' => ['type_komposisi', 'komposisi'], 'audio_brand' => ['nama_audio'],
             'moodboard' => ['moodboard'], 'alat_branding' => ['nama_alat'],
         ] as $tableName => $fields) {
-            Schema::create($tableName, function (Blueprint $table) use ($fields): void {
+            Schema::create($tableName, function (Blueprint $table) use ($fields, $tableName): void {
                 $table->id();
                 $table->unsignedBigInteger('produk_client_id');
                 foreach ($fields as $field) {
                     $table->text($field)->nullable();
                 }
                 $table->string('platform')->nullable();
+                if ($tableName === 'brand_identify') {
+                    $table->timestamp('archived_at')->nullable();
+                    $table->unsignedBigInteger('archived_by')->nullable();
+                }
                 $table->timestamps();
             });
         }
@@ -1405,6 +1423,8 @@ class MarketingAnalyticsApiTest extends TestCase
             $table->time('jam_mulai')->nullable();
             $table->date('tanggal_approve')->nullable();
             $table->date('tanggal_revisi')->nullable();
+            $table->timestamp('archived_at')->nullable();
+            $table->unsignedBigInteger('archived_by')->nullable();
             $table->timestamps();
         });
         Schema::create('file_pdf', function (Blueprint $table): void {

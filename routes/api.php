@@ -3,6 +3,12 @@
 use App\Http\Controllers\AnalisisController;
 use App\Http\Controllers\Api\MarketingAnalyticsController;
 use App\Http\Controllers\Api\ContentPlanCrudController;
+use App\Http\Controllers\Api\BrandGuidelineCrudController;
+use App\Http\Controllers\Api\MarketResearchCrudController;
+use App\Http\Controllers\Api\CampaignCrudController;
+use App\Http\Controllers\Api\MarketingApprovalController;
+use App\Http\Controllers\Api\MarketingTaskCrudController;
+use App\Http\Controllers\Api\MarketingAssetCrudController;
 use App\Http\Controllers\BarangClientController;
 use App\Http\Controllers\BlacklistController;
 use App\Http\Controllers\brandingController;
@@ -23,6 +29,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Middleware\EnsureOAuthAccountIsUnlocked;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\ProtectMarketingMcpResponse;
+use App\Http\Middleware\ProtectMarketingMcpCrudResponse;
 use App\Http\Middleware\RequireMarketingMcpToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -106,7 +113,7 @@ Route::middleware([
 ])->prefix('oauth-marketing-mcp')->name('api.oauth-marketing-mcp.')->group($marketingMcpRoutes);
 
 Route::middleware([
-    ProtectMarketingMcpResponse::class,
+    ProtectMarketingMcpCrudResponse::class,
     'auth:oauth-api',
     CheckToken::using('marketing:write'),
     EnsureOAuthAccountIsUnlocked::class,
@@ -116,6 +123,35 @@ Route::middleware([
     Route::post('/content-plans/confirmation', [ContentPlanCrudController::class, 'confirmation'])->name('content-plans.confirmation');
     Route::patch('/content-plans/{contentPlan}', [ContentPlanCrudController::class, 'update'])->whereNumber('contentPlan')->name('content-plans.update');
     Route::post('/content-plans/{contentPlan}/archive', [ContentPlanCrudController::class, 'archive'])->whereNumber('contentPlan')->name('content-plans.archive');
+    Route::post('/brand-guidelines/confirmation', [BrandGuidelineCrudController::class, 'confirmation'])->name('brand-guidelines.confirmation');
+    Route::post('/brand-guidelines', [BrandGuidelineCrudController::class, 'store'])->name('brand-guidelines.store');
+    Route::patch('/brand-guidelines/{brandGuideline}', [BrandGuidelineCrudController::class, 'update'])->whereNumber('brandGuideline')->name('brand-guidelines.update');
+    Route::post('/brand-guidelines/{brandGuideline}/archive', [BrandGuidelineCrudController::class, 'archive'])->whereNumber('brandGuideline')->name('brand-guidelines.archive');
+    Route::post('/market-research/{entity}/confirmation', [MarketResearchCrudController::class, 'confirmation'])->whereIn('entity', ['four_p','swot','segmentation','target_audience','positioning'])->name('market-research.confirmation');
+    Route::post('/market-research/{entity}', [MarketResearchCrudController::class, 'store'])->whereIn('entity', ['four_p','swot','segmentation','target_audience','positioning'])->name('market-research.store');
+    Route::patch('/market-research/{entity}/{record}', [MarketResearchCrudController::class, 'update'])->whereIn('entity', ['four_p','swot','segmentation','target_audience','positioning'])->whereNumber('record')->name('market-research.update');
+    Route::post('/market-research/{entity}/{record}/archive', [MarketResearchCrudController::class, 'archive'])->whereIn('entity', ['four_p','swot','segmentation','target_audience','positioning'])->whereNumber('record')->name('market-research.archive');
+    Route::post('/campaigns/confirmation', [CampaignCrudController::class, 'confirmation'])->name('campaigns.confirmation');
+    Route::post('/campaigns', [CampaignCrudController::class, 'store'])->name('campaigns.store');
+    Route::patch('/campaigns/{campaign}', [CampaignCrudController::class, 'update'])->whereNumber('campaign')->name('campaigns.update');
+    Route::post('/campaigns/{campaign}/archive', [CampaignCrudController::class, 'archive'])->whereNumber('campaign')->name('campaigns.archive');
+    Route::post('/approvals/confirmation', [MarketingApprovalController::class, 'confirmation'])->name('approvals.confirmation');
+    Route::post('/approvals/submit', [MarketingApprovalController::class, 'submit'])->name('approvals.submit');
+    Route::post('/approvals/approve', [MarketingApprovalController::class, 'approve'])->name('approvals.approve');
+    Route::post('/approvals/reject', [MarketingApprovalController::class, 'reject'])->name('approvals.reject');
+    Route::post('/approvals/request-revision', [MarketingApprovalController::class, 'requestRevision'])->name('approvals.request-revision');
+    Route::post('/tasks/confirmation', [MarketingTaskCrudController::class, 'confirmation'])->name('tasks.confirmation');
+    Route::post('/tasks', [MarketingTaskCrudController::class, 'store'])->name('tasks.store');
+    Route::patch('/tasks/{task}', [MarketingTaskCrudController::class, 'update'])->whereNumber('task')->name('tasks.update');
+    Route::post('/tasks/{task}/archive', [MarketingTaskCrudController::class, 'archive'])->whereNumber('task')->name('tasks.archive');
+    Route::post('/tasks/{task}/change-pic', [MarketingTaskCrudController::class, 'changePic'])->whereNumber('task')->name('tasks.change-pic');
+    Route::post('/tasks/{task}/change-deadline', [MarketingTaskCrudController::class, 'changeDeadline'])->whereNumber('task')->name('tasks.change-deadline');
+    Route::post('/tasks/{task}/change-status', [MarketingTaskCrudController::class, 'changeStatus'])->whereNumber('task')->name('tasks.change-status');
+    Route::post('/tasks/{task}/complete', [MarketingTaskCrudController::class, 'complete'])->whereNumber('task')->name('tasks.complete');
+    Route::post('/assets/confirmation', [MarketingAssetCrudController::class, 'confirmation'])->name('assets.confirmation');
+    Route::post('/assets', [MarketingAssetCrudController::class, 'store'])->name('assets.store');
+    Route::patch('/assets/{asset}', [MarketingAssetCrudController::class, 'update'])->whereNumber('asset')->name('assets.update');
+    Route::post('/assets/{asset}/archive', [MarketingAssetCrudController::class, 'archive'])->whereNumber('asset')->name('assets.archive');
 });
 
 Route::middleware(['web', 'auth'])->get(

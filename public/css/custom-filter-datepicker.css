@@ -45,6 +45,7 @@
 }
 
 .flatpickr-calendar.lmg-filter-calendar {
+    z-index: 1080;
     width: 310px;
     padding: 10px;
     border: 1px solid #e4e4e7;

@@ -360,12 +360,7 @@
                             <div class="col-md-4 mb-3">
                                 <div class="form-group">
                                     <label class="text-dark font-weight-bold small">Tanggal Posting</label>
-                                    <div class="input-group shadow-sm">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text bg-white border-right-0"><i class="far fa-calendar-check text-muted"></i></span>
-                                        </div>
-                                        <input type="date" name="tanggal_posting" id="create_tanggal_posting" class="form-control border-left-0" data-filter-date data-no-default-date>
-                                    </div>
+                                    <input type="date" name="tanggal_posting" id="create_tanggal_posting" class="form-control shadow-sm" data-filter-date data-no-default-date>
                                 </div>
                             </div>
                             <div class="col-md-4 mb-3" data-organic-only>

@@ -77,6 +77,7 @@
         applyDefault(input);
 
         const submitFormat = input.dataset.datePickerFormat || (input.type === 'date' ? 'Y-m-d' : 'd M Y');
+        const modal = input.closest('.modal');
 
         window.flatpickr(input, {
             altInput: true,
@@ -88,6 +89,7 @@
             dateFormat: submitFormat,
             defaultDate: input.value || null,
             disableMobile: true,
+            appendTo: modal || undefined,
             locale: localeId,
             monthSelectorType: 'dropdown',
             onReady: function (_selectedDates, _dateStr, instance) {

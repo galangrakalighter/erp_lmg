@@ -31,6 +31,8 @@ class AppServiceProvider extends ServiceProvider
         ]);
         Passport::tokensExpireIn(now()->addHour());
         Passport::refreshTokensExpireIn(now()->addDays(30));
+        // Rotate refresh tokens on every successful refresh; the previous token becomes unusable.
+        Passport::$revokeRefreshTokenAfterUse = true;
         Passport::authorizationView('oauth.authorize');
 
         foreach (['created', 'updated', 'deleted'] as $event) {

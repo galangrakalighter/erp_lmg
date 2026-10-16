@@ -98,6 +98,19 @@ class MarketingAnalyticsApiTest extends TestCase
         $this->assertSame(['GET', 'HEAD'], $route->methods());
     }
 
+    public function test_oauth_refresh_configuration_is_bounded_rotated_and_discoverable(): void
+    {
+        $this->assertTrue(Passport::$revokeRefreshTokenAfterUse);
+        $accessTtl = Passport::tokensExpireIn();
+        $refreshTtl = Passport::refreshTokensExpireIn();
+        $this->assertGreaterThan(0, ($accessTtl->d * 86400) + ($accessTtl->h * 3600) + ($accessTtl->i * 60) + $accessTtl->s);
+        $this->assertGreaterThan(0, ($refreshTtl->d * 86400) + ($refreshTtl->h * 3600) + ($refreshTtl->i * 60) + $refreshTtl->s);
+        $this->getJson('/.well-known/oauth-authorization-server')
+            ->assertOk()
+            ->assertJsonPath('grant_types_supported.1', 'refresh_token')
+            ->assertJsonPath('scopes_supported.1', 'offline_access');
+    }
+
     public function test_oauth_poc_lists_only_clients_accessible_to_the_connected_user(): void
     {
         $this->mockPassportResourceServer();

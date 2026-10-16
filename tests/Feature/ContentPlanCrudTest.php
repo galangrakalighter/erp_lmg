@@ -31,9 +31,10 @@ class ContentPlanCrudTest extends TestCase
         Schema::create('produk_client', fn (Blueprint $t) => $t->id());
         Schema::create('data_jasa', function (Blueprint $t): void {
             $t->id(); $t->unsignedBigInteger('produk_client_id'); $t->string('judul')->nullable(); $t->string('inspirasi')->nullable();
-            foreach (['type_produk_id','strategy_id','pilar_id','hooks_id','body_id','cta_id','status_id'] as $c) $t->integer($c)->nullable();
+            foreach (['type_produk_id','strategy_id','pilar_id','hooks_id','body_id','cta_id','status_id','pic','priority','menit'] as $c) $t->integer($c)->nullable();
             foreach (['durasi','background','komposisi','note','link','platform'] as $c) $t->text($c)->nullable();
             $t->date('tanggal_posting')->nullable();
+            $t->string('content_source')->default('organic');
             $t->timestamp('archived_at')->nullable(); $t->integer('archived_by')->nullable(); $t->timestamps();
         });
         $this->user = \Mockery::mock(Authenticatable::class);
@@ -60,11 +61,12 @@ class ContentPlanCrudTest extends TestCase
 
     private function payload(): array
     {
-        return ['client_id' => 1, 'judul' => 'Pilot plan', 'type_produk_id' => 1, 'strategy_id' => 1, 'pilar_id' => 1, 'hooks_id' => 1, 'body_id' => 1, 'cta_id' => 1, 'status_id' => 1];
+        return ['client_id' => 1, 'judul' => 'Pilot plan', 'note' => 'Copy lengkap', 'platform' => 'instagram', 'content_source' => 'organic', 'type_produk_id' => 1, 'strategy_id' => 1, 'pilar_id' => 1, 'hooks_id' => 1, 'body_id' => 1, 'cta_id' => 1, 'status_id' => 1, 'priority' => 50, 'menit' => 60];
     }
 
     private function token(string $action, int $id, array $payload, ?User $user = null): string
     {
+        if ($action === 'create') $payload['pic'] = 1;
         return app(MarketingConfirmationTokenService::class)->issue($user ?? $this->user, $action, 'content_plan', $id, hash('sha256', json_encode($payload, JSON_THROW_ON_ERROR)));
     }
 
@@ -117,7 +119,7 @@ class ContentPlanCrudTest extends TestCase
         $payload = $this->payload(); $created = $this->service->create($this->user, $payload + ['confirmation_token' => $this->token('create', 0, $this->servicePayload($payload))]);
         $token = $this->token('create', 0, ['judul' => 'wrong']);
         $this->expectException(\Symfony\Component\HttpKernel\Exception\HttpException::class);
-        $this->service->update($this->user, $created['id'], ['client_id' => 1, 'judul' => 'x', 'confirmation_token' => $token]);
+        $this->service->update($this->user, $created['id'], ['client_id' => 1, 'judul' => 'xx', 'confirmation_token' => $token]);
     }
 
     public function test_token_mismatch_user_client_record_and_action_is_rejected(): void
@@ -166,5 +168,5 @@ class ContentPlanCrudTest extends TestCase
     }
 
     private function servicePayload(array $payload): array
-    { return array_filter(array_intersect_key($payload, array_flip(['judul','type_produk_id','strategy_id','pilar_id','hooks_id','body_id','cta_id','status_id']))); }
+    { return array_filter(array_intersect_key($payload, array_flip(['judul','note','platform','content_source','type_produk_id','strategy_id','pilar_id','hooks_id','body_id','cta_id','status_id','priority','menit']))); }
 }

@@ -130,6 +130,7 @@ class DigitalMarketingDataService
         $definitions = [
             'product_types' => ['type_produk', 'type'],
             'strategies' => ['strategy', 'strategy'],
+            'content_pillars' => ['pilar', 'pilar'],
             'hooks' => ['hooks', 'hooks'],
             'bodies' => ['jenis_body', 'nama_body'],
             'ctas' => ['jenis_cta', 'nama_cta'],
@@ -140,7 +141,7 @@ class DigitalMarketingDataService
         if (Schema::hasColumn($table, 'status')) {
             $query->where($table.'.status', 1);
         }
-        if ($master === 'product_types') {
+        if (in_array($master, ['product_types', 'content_pillars'], true)) {
             $categoryId = DB::table('produk_client')->where('id', $clientId)->value('kategori_jasa_id');
             if ($categoryId !== null && Schema::hasColumn($table, 'kategori_id')) $query->where($table.'.kategori_id', $categoryId);
         }

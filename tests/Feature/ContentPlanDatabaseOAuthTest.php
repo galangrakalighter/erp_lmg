@@ -63,9 +63,19 @@ class ContentPlanDatabaseOAuthTest extends TestCase
     {
         [$bearer, $tokenId] = $this->databaseToken($this->authorizedUser, ['marketing:read', 'marketing:write']);
         $createPayload = $this->createPayload();
-        $confirmation = $this->withToken($bearer)->postJson('/api/oauth-marketing-crud/content-plans/confirmation', [
+        $confirmationResponse = $this->withToken($bearer)->postJson('/api/oauth-marketing-crud/content-plans/confirmation', [
             'action' => 'create', 'client_id' => $this->allowedClient, 'object_id' => 0, 'payload' => $createPayload,
-        ])->assertOk()->json('data.confirmation_token');
+        ])->assertOk()
+            ->assertJsonPath('data.draft.judul', 'OAuth database plan')
+            ->assertJsonPath('data.draft.note', 'Copy draft yang sudah lengkap')
+            ->assertJsonPath('data.draft.platform', 'instagram')
+            ->assertJsonPath('data.draft.content_source', 'organic')
+            ->assertJsonPath('data.draft.priority', 50)
+            ->assertJsonPath('data.draft.menit', 60)
+            ->assertJsonPath('data.draft.pic', $this->authorizedUser->id)
+            ->assertJsonPath('data.draft.pic_name', 'OAuth Owner')
+            ->assertJsonPath('data.draft.masters.pilar_id.name', 'Default');
+        $confirmation = $confirmationResponse->json('data.confirmation_token');
 
         $created = $this->withToken($bearer)->postJson('/api/oauth-marketing-crud/content-plans', $createPayload + ['client_id' => $this->allowedClient, 'confirmation_token' => $confirmation])
             ->assertCreated()->assertJsonPath('meta.operation', 'create');
@@ -105,15 +115,30 @@ class ContentPlanDatabaseOAuthTest extends TestCase
         $this->assertDoesNotMatchRegularExpression('/password|credential|private[_-]?key/i', $serialized);
     }
 
+    public function test_confirmation_rejects_incomplete_draft_and_forged_pic_before_issuing_token(): void
+    {
+        [$bearer] = $this->databaseToken($this->authorizedUser, ['marketing:write']);
+        $this->withToken($bearer)->postJson('/api/oauth-marketing-crud/content-plans/confirmation', [
+            'action' => 'create', 'client_id' => $this->allowedClient, 'object_id' => 0,
+            'payload' => ['judul' => 'Belum lengkap'],
+        ])->assertUnprocessable()->assertJsonMissingPath('data.confirmation_token');
+
+        $forged = $this->createPayload() + ['pic' => 999999];
+        $this->withToken($bearer)->postJson('/api/oauth-marketing-crud/content-plans/confirmation', [
+            'action' => 'create', 'client_id' => $this->allowedClient, 'object_id' => 0, 'payload' => $forged,
+        ])->assertUnprocessable()->assertJsonMissingPath('data.confirmation_token');
+    }
+
     public function test_content_plan_master_options_are_scoped_paginated_searchable_and_safe(): void
     {
         [$bearer] = $this->databaseToken($this->authorizedUser, ['marketing:read']);
         DB::table('type_produk')->insert(['id' => 2, 'type' => 'Video']);
         DB::table('strategy')->insert(['id' => 2, 'strategy' => 'Awareness']);
+        DB::table('pilar')->insert(['id' => 2, 'pilar' => 'Learning', 'status' => 1, 'kategori_id' => DB::table('produk_client')->where('id', $this->allowedClient)->value('kategori_jasa_id')]);
         DB::table('hooks')->insert(['id' => 2, 'hooks' => 'Question']);
         DB::table('jenis_body')->insert(['id' => 2, 'nama_body' => 'Story']);
         DB::table('jenis_cta')->insert(['id' => 2, 'nama_cta' => 'Learn']);
-        foreach (['product-types', 'strategies', 'hooks', 'bodies', 'ctas'] as $master) {
+        foreach (['product-types', 'strategies', 'content-pillars', 'hooks', 'bodies', 'ctas'] as $master) {
             $response = $this->withToken($bearer)->getJson("/api/oauth-marketing-mcp/clients/{$this->allowedClient}/content-plan-masters/{$master}?search=ea&per_page=1");
             $response->assertOk()->assertJsonStructure(['data', 'pagination', 'meta']);
             $this->assertLessThanOrEqual(1, count($response->json('data')));
@@ -210,7 +235,7 @@ class ContentPlanDatabaseOAuthTest extends TestCase
 
     private function createPayload(): array
     {
-        return ['judul' => 'OAuth database plan', 'type_produk_id' => 1, 'strategy_id' => 1, 'pilar_id' => 1, 'hooks_id' => 1, 'body_id' => 1, 'cta_id' => 1, 'status_id' => 1];
+        return ['judul' => 'OAuth database plan', 'note' => 'Copy draft yang sudah lengkap', 'platform' => 'instagram', 'content_source' => 'organic', 'type_produk_id' => 1, 'strategy_id' => 1, 'pilar_id' => 1, 'hooks_id' => 1, 'body_id' => 1, 'cta_id' => 1, 'status_id' => 1, 'priority' => 50, 'menit' => 60];
     }
 
     private function seedAccessFixtures(): void
@@ -223,7 +248,11 @@ class ContentPlanDatabaseOAuthTest extends TestCase
         $this->otherClient = DB::table('produk_client')->insertGetId(['kategori_jasa_id' => $category, 'nama' => 'Other', 'status' => 1, 'created_at' => now(), 'updated_at' => now()]);
         foreach ([$this->allowedClient, $this->otherClient] as $client) DB::table('client_division')->insert(['client_id' => $client, 'division_id' => $division, 'status' => 1, 'created_at' => now(), 'updated_at' => now()]);
         $this->authorizedUser = $this->makeUser('OAuth Owner', 'owner@example.test', 'Digital Marketing Manager', 'Digital Marketing', true);
-        foreach ([['type_produk', 'type'], ['strategy', 'strategy'], ['pilar', 'pilar'], ['hooks', 'hooks'], ['jenis_body', 'nama_body'], ['jenis_cta', 'nama_cta']] as [$table, $column]) DB::table($table)->insert(['id' => 1, $column => 'Default']);
+        foreach ([['type_produk', 'type'], ['strategy', 'strategy'], ['pilar', 'pilar'], ['hooks', 'hooks'], ['jenis_body', 'nama_body'], ['jenis_cta', 'nama_cta']] as [$table, $column]) {
+            $row = ['id' => 1, $column => 'Default'];
+            if ($table === 'pilar') $row['kategori_id'] = $category;
+            DB::table($table)->insert($row);
+        }
         DB::table('status')->insert(['id' => 1, 'nama_status' => 'Draft']);
     }
 
@@ -271,7 +300,7 @@ class ContentPlanDatabaseOAuthTest extends TestCase
         foreach (['brand_image' => ['nama_image'], 'brand_value' => ['nama_value'], 'brand_tagline' => ['nama_tagline','nama_hashtagline'], 'gaya_komunikasi' => ['gaya_bicara','gaya_bahasa'], 'komposisi' => ['type_komposisi','komposisi'], 'audio_brand' => ['nama_audio'], 'moodboard' => ['moodboard'], 'alat_branding' => ['nama_alat']] as $table => $columns) {
             Schema::create($table, function (Blueprint $t) use ($columns) { $t->id(); $t->unsignedBigInteger('produk_client_id'); foreach ($columns as $column) $t->string($column)->nullable(); $t->string('platform')->nullable(); $t->timestamps(); });
         }
-        Schema::create('data_jasa', function (Blueprint $t) { $t->id(); $t->unsignedBigInteger('produk_client_id'); $t->string('judul')->nullable(); $t->string('inspirasi')->nullable(); foreach (['type_produk_id','strategy_id','pilar_id','hooks_id','body_id','cta_id','status_id'] as $c) $t->integer($c)->nullable(); foreach (['durasi','background','komposisi','note','link','platform'] as $c) $t->text($c)->nullable(); $t->date('tanggal_posting')->nullable(); $t->string('content_source')->default('organic'); $t->timestamp('archived_at')->nullable(); $t->integer('archived_by')->nullable(); $t->timestamps(); });
+        Schema::create('data_jasa', function (Blueprint $t) { $t->id(); $t->unsignedBigInteger('produk_client_id'); $t->string('judul')->nullable(); $t->string('inspirasi')->nullable(); foreach (['type_produk_id','strategy_id','pilar_id','hooks_id','body_id','cta_id','status_id','pic','priority','menit'] as $c) $t->integer($c)->nullable(); foreach (['durasi','background','komposisi','note','link','platform'] as $c) $t->text($c)->nullable(); foreach (['tanggal_posting','tanggal_deadline','tanggal_mulai'] as $c) $t->date($c)->nullable(); $t->string('content_source')->default('organic'); $t->timestamp('archived_at')->nullable(); $t->integer('archived_by')->nullable(); $t->timestamps(); });
         Schema::create('marketing_campaigns', function (Blueprint $t) { $t->id(); $t->unsignedBigInteger('client_id'); $t->unsignedBigInteger('owner_user_id')->nullable(); $t->string('name', 200); $t->string('status', 50); $t->string('platform', 50)->nullable(); $t->string('source', 20)->default('organic'); $t->date('start_date'); $t->date('end_date'); $t->text('objective')->nullable(); $t->decimal('budget', 18, 2)->nullable(); $t->string('currency', 3)->nullable(); $t->text('target')->nullable(); $t->timestamp('archived_at')->nullable(); $t->unsignedBigInteger('archived_by')->nullable(); $t->timestamps(); });
         Schema::create('marketing_approval_events', function (Blueprint $t) { $t->id(); $t->unsignedBigInteger('user_id'); $t->unsignedBigInteger('client_id'); $t->string('record_type', 50); $t->unsignedBigInteger('record_id'); $t->string('action', 30); $t->string('status', 30); $t->text('note')->nullable(); $t->uuid('audit_reference')->unique(); $t->timestamp('created_at'); });
         Schema::create('task', function (Blueprint $t) { $t->id(); $t->string('nama_task'); $t->string('jira')->nullable(); $t->unsignedBigInteger('divisi'); $t->unsignedBigInteger('pic'); $t->integer('priority'); $t->integer('menit'); $t->unsignedBigInteger('id_manajement_konten')->nullable(); $t->unsignedBigInteger('id_kpi')->nullable(); $t->date('tanggal_mulai'); $t->date('tanggal_deadline')->nullable(); $t->text('note')->nullable(); $t->integer('status'); $t->unsignedBigInteger('project'); $t->time('jam_mulai')->nullable(); $t->date('tanggal_approve')->nullable(); $t->date('tanggal_revisi')->nullable(); $t->date('tanggal_split')->nullable(); $t->string('completion_proof_path')->nullable(); $t->timestamp('archived_at')->nullable(); $t->unsignedBigInteger('archived_by')->nullable(); $t->timestamps(); });

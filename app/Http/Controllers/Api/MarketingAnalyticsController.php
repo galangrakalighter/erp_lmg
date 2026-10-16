@@ -302,7 +302,7 @@ class MarketingAnalyticsController extends Controller
 
     public function contentPlanMaster(Request $request, int $client, string $master): JsonResponse
     {
-        $allowed = ['product-types', 'strategies', 'hooks', 'bodies', 'ctas'];
+        $allowed = ['product-types', 'strategies', 'content-pillars', 'hooks', 'bodies', 'ctas'];
         abort_unless(in_array($master, $allowed, true), 404, 'Master content plan tidak ditemukan.');
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:100'],

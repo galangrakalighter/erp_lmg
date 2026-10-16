@@ -41,8 +41,9 @@ final class ContentPlanCrudController extends Controller
             'client_id' => [$create ? 'required' : 'sometimes', 'integer', 'min:1'], 'confirmation_token' => ['required', 'string', 'size:64'],
             'judul' => [$create ? 'required' : 'sometimes', 'string', 'max:255'], 'inspirasi' => ['nullable', 'string', 'max:255'],
             'type_produk_id' => [$create ? 'required' : 'sometimes', 'integer', 'min:1'], 'strategy_id' => [$create ? 'required' : 'sometimes', 'integer', 'min:1'], 'pilar_id' => [$create ? 'required' : 'sometimes', 'integer', 'min:1'], 'hooks_id' => [$create ? 'required' : 'sometimes', 'integer', 'min:1'], 'body_id' => [$create ? 'required' : 'sometimes', 'integer', 'min:1'], 'cta_id' => [$create ? 'required' : 'sometimes', 'integer', 'min:1'],
-            'platform' => ['nullable', 'string', 'max:50'], 'status_id' => [$create ? 'required' : 'sometimes', 'integer', 'min:1'],
-            'durasi' => ['nullable', 'string', 'max:100'], 'background' => ['nullable', 'string', 'max:255'], 'komposisi' => ['nullable', 'string', 'max:255'], 'note' => ['nullable', 'string', 'max:10000'], 'link' => ['nullable', 'url', 'max:2048'], 'tanggal_posting' => ['nullable', 'date'],
+            'platform' => [$create ? 'required' : 'sometimes', 'string', 'in:facebook,instagram,tiktok,threads,google,youtube'], 'content_source' => [$create ? 'required' : 'sometimes', 'string', 'in:organic,paid'], 'status_id' => [$create ? 'required' : 'sometimes', 'integer', 'min:1'],
+            'pic' => ['prohibited'], 'priority' => [$create ? 'required' : 'sometimes', 'integer', 'min:0', 'max:100'], 'menit' => [$create ? 'required' : 'sometimes', 'integer', 'min:0', 'max:10000'],
+            'durasi' => ['nullable', 'string', 'max:100'], 'background' => ['nullable', 'string', 'max:255'], 'komposisi' => ['nullable', 'string', 'max:255'], 'note' => [$create ? 'required' : 'sometimes', 'string', 'min:2', 'max:10000'], 'link' => ['nullable', 'url', 'max:2048'], 'tanggal_posting' => ['nullable', 'date'], 'tanggal_deadline' => ['nullable', 'date'], 'tanggal_mulai' => ['nullable', 'date'],
         ];
         return $rules;
     }

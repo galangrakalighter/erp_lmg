@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import { tools, endpointForTool, validateToolArguments } from "./index.mjs";
 
 const readOnly = tools.filter((tool) => tool.annotations?.readOnlyHint === true);
-const masterTools = ["marketing_list_product_types", "marketing_list_strategies", "marketing_list_hooks", "marketing_list_bodies", "marketing_list_ctas"];
+const masterTools = ["marketing_list_product_types", "marketing_list_strategies", "marketing_list_content_pillars", "marketing_list_hooks", "marketing_list_bodies", "marketing_list_ctas"];
 const mutations = ["marketing_create_content_plan", "marketing_update_content_plan", "marketing_archive_content_plan"];
 
-assert.equal(readOnly.length, 35, "harus ada 29 tool read-only lama dan 6 master/status content plan");
+assert.equal(readOnly.length, 36, "harus ada 29 tool read-only lama dan 7 master/status content plan");
 for (const name of masterTools) {
   const tool = tools.find((candidate) => candidate.name === name);
   assert.ok(tool, `${name} harus terdaftar`);
@@ -33,6 +33,9 @@ assert.deepEqual(validateToolArguments("marketing_create_content_plan", {}), [
   "client_id wajib diisi.",
   "confirmation_token wajib diisi.",
   "judul wajib diisi.",
+  "note wajib diisi.",
+  "platform wajib diisi.",
+  "content_source wajib diisi.",
   "type_produk_id wajib diisi.",
   "strategy_id wajib diisi.",
   "pilar_id wajib diisi.",
@@ -43,4 +46,4 @@ assert.deepEqual(validateToolArguments("marketing_create_content_plan", {}), [
   "priority wajib diisi.",
   "menit wajib diisi.",
 ]);
-console.log(`MCP tool inventory OK: ${tools.length} total, ${readOnly.length} read-only, 29 legacy read-only plus 5 content-plan masters.`);
+console.log(`MCP tool inventory OK: ${tools.length} total, ${readOnly.length} read-only, 29 legacy read-only plus 6 content-plan masters.`);

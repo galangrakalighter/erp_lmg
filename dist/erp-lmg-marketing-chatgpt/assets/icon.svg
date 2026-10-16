@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="ERP LMG">
-  <rect width="64" height="64" rx="14" fill="#18181b"/>
-  <path d="M17 18h30v8H26v8h17v8H26v4h21v8H17z" fill="#ffffff"/>
-  <circle cx="47" cy="18" r="6" fill="#10b981"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="ERP LMG Marketing">
+  <rect width="64" height="64" rx="14" fill="#173B57"/>
+  <path d="M14 45V31h8v14h-8Zm14 0V21h8v24h-8Zm14 0V13h8v32h-8Z" fill="#FFFFFF"/>
+  <path d="M12 51h40" stroke="#65D6AD" stroke-width="4" stroke-linecap="round"/>
 </svg>

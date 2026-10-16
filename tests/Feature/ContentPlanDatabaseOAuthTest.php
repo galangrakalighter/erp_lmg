@@ -105,6 +105,29 @@ class ContentPlanDatabaseOAuthTest extends TestCase
         $this->assertDoesNotMatchRegularExpression('/password|credential|private[_-]?key/i', $serialized);
     }
 
+    public function test_content_plan_master_options_are_scoped_paginated_searchable_and_safe(): void
+    {
+        [$bearer] = $this->databaseToken($this->authorizedUser, ['marketing:read']);
+        DB::table('type_produk')->insert(['id' => 2, 'type' => 'Video']);
+        DB::table('strategy')->insert(['id' => 2, 'strategy' => 'Awareness']);
+        DB::table('hooks')->insert(['id' => 2, 'hooks' => 'Question']);
+        DB::table('jenis_body')->insert(['id' => 2, 'nama_body' => 'Story']);
+        DB::table('jenis_cta')->insert(['id' => 2, 'nama_cta' => 'Learn']);
+        foreach (['product-types', 'strategies', 'hooks', 'bodies', 'ctas'] as $master) {
+            $response = $this->withToken($bearer)->getJson("/api/oauth-marketing-mcp/clients/{$this->allowedClient}/content-plan-masters/{$master}?search=ea&per_page=1");
+            $response->assertOk()->assertJsonStructure(['data', 'pagination', 'meta']);
+            $this->assertLessThanOrEqual(1, count($response->json('data')));
+            foreach ($response->json('data') as $row) {
+                $this->assertSame(['id', 'name', 'active'], array_keys($row));
+                $this->assertTrue($row['active']);
+            }
+        }
+        $restricted = $this->makeUser('Restricted Master User', 'restricted-master@example.test', 'Manager', 'Finance', false);
+        [$restrictedBearer] = $this->databaseToken($restricted, ['marketing:read']);
+        $this->withToken($restrictedBearer)->getJson('/api/oauth-marketing-mcp/clients/999999/content-plan-masters/hooks')
+            ->assertForbidden();
+    }
+
     public function test_missing_revoked_expired_and_wrong_scope_database_tokens_are_rejected(): void
     {
         $this->withToken('not-a-jwt')->postJson('/api/oauth-marketing-crud/content-plans/confirmation', [])->assertUnauthorized();
@@ -200,7 +223,7 @@ class ContentPlanDatabaseOAuthTest extends TestCase
         $this->otherClient = DB::table('produk_client')->insertGetId(['kategori_jasa_id' => $category, 'nama' => 'Other', 'status' => 1, 'created_at' => now(), 'updated_at' => now()]);
         foreach ([$this->allowedClient, $this->otherClient] as $client) DB::table('client_division')->insert(['client_id' => $client, 'division_id' => $division, 'status' => 1, 'created_at' => now(), 'updated_at' => now()]);
         $this->authorizedUser = $this->makeUser('OAuth Owner', 'owner@example.test', 'Digital Marketing Manager', 'Digital Marketing', true);
-        foreach (['type_produk', 'strategy', 'pilar', 'hooks', 'jenis_body', 'jenis_cta'] as $table) DB::table($table)->insert(['id' => 1]);
+        foreach ([['type_produk', 'type'], ['strategy', 'strategy'], ['pilar', 'pilar'], ['hooks', 'hooks'], ['jenis_body', 'nama_body'], ['jenis_cta', 'nama_cta']] as [$table, $column]) DB::table($table)->insert(['id' => 1, $column => 'Default']);
     }
 
     protected function makeUser(string $name, string $email, string $roleName, string $divisionName, bool $assignClient, bool $locked = false): User

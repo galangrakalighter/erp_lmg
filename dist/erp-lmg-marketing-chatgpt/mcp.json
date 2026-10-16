@@ -13,15 +13,9 @@
               "clientId": "01a13d64-fecf-7066-95d3-d7a98a991b52",
               "tokenEndpointAuthMethod": "none"
             },
-            "baseScopes": [
-              "marketing:read",
-              "offline_access"
-            ],
-            "defaultScopes": [
-              "marketing:read",
-              "offline_access"
-            ],
-            "oidcEnabled": false
+            "authorizationUrl": "https://erp.lightermediagroup.com/oauth/authorize",
+            "tokenUrl": "https://erp.lightermediagroup.com/oauth/token",
+            "baseScopes": ["marketing:read", "offline_access"]
           }
         }
       }

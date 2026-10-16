@@ -568,7 +568,7 @@ class MarketingAnalyticsApiTest extends TestCase
         $routes = collect(Route::getRoutes()->getRoutes())
             ->filter(fn ($route) => str_starts_with($route->uri(), 'api/marketing-mcp/'));
 
-        $this->assertCount(29, $routes);
+        $this->assertCount(30, $routes);
         foreach ($routes as $route) {
             $this->assertSame(['GET', 'HEAD'], $route->methods());
         }
@@ -715,7 +715,7 @@ class MarketingAnalyticsApiTest extends TestCase
             ->filter(fn ($route) => str_starts_with($route->uri(), 'api/marketing-mcp/')
                 || str_starts_with($route->uri(), 'api/oauth-marketing-mcp/'));
 
-        $this->assertCount(58, $routes);
+        $this->assertCount(60, $routes);
         foreach ($routes as $route) {
             $this->assertSame(['GET', 'HEAD'], $route->methods(), $route->uri());
         }

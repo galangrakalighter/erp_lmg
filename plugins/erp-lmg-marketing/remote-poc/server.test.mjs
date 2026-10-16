@@ -15,7 +15,9 @@ const expectedTools = [
   'account_get_client_documents_history',
   'account_get_client_summary', 'account_search_client_data',
   'marketing_list_clients', 'marketing_get_division_client_summary', 'marketing_get_data_availability', 'marketing_get_performance_summary',
-  'marketing_get_content_plan', 'marketing_get_content_mix', 'marketing_get_performance_trend',
+  'marketing_get_content_plan',
+  'marketing_list_product_types', 'marketing_list_strategies', 'marketing_list_hooks', 'marketing_list_bodies', 'marketing_list_ctas',
+  'marketing_get_content_mix', 'marketing_get_performance_trend',
   'marketing_get_top_content', 'marketing_get_paid_performance', 'marketing_get_market_research',
   'marketing_get_brand_guidelines', 'marketing_get_content_calendar', 'marketing_get_tasks',
   'marketing_get_approvals', 'marketing_get_assets', 'marketing_list_campaigns',
@@ -69,6 +71,11 @@ const expectedEndpoints = {
   marketing_get_data_availability: '/api/oauth-marketing-mcp/clients/123/data-availability',
   marketing_get_performance_summary: '/api/oauth-marketing-mcp/clients/123/performance-summary',
   marketing_get_content_plan: '/api/oauth-marketing-mcp/clients/123/content-plan',
+  marketing_list_product_types: '/api/oauth-marketing-mcp/clients/123/content-plan-masters/product-types',
+  marketing_list_strategies: '/api/oauth-marketing-mcp/clients/123/content-plan-masters/strategies',
+  marketing_list_hooks: '/api/oauth-marketing-mcp/clients/123/content-plan-masters/hooks',
+  marketing_list_bodies: '/api/oauth-marketing-mcp/clients/123/content-plan-masters/bodies',
+  marketing_list_ctas: '/api/oauth-marketing-mcp/clients/123/content-plan-masters/ctas',
   marketing_get_content_mix: '/api/oauth-marketing-mcp/clients/123/content-mix',
   marketing_get_performance_trend: '/api/oauth-marketing-mcp/clients/123/performance-trend',
   marketing_get_top_content: '/api/oauth-marketing-mcp/clients/123/top-content',
@@ -122,11 +129,11 @@ async function rpc(base, body, token) {
 test('initialize succeeds with production identity and health remains available', async () => {
   const base = await harness();
   const health = await fetch(`${base}/health`).then((response) => response.json());
-  assert.deepEqual(health, { status: 'ok', service: SERVER_NAME, version: SERVER_VERSION, tools: 78 });
+  assert.deepEqual(health, { status: 'ok', service: SERVER_NAME, version: SERVER_VERSION, tools: 83 });
   const result = await rpc(base, { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18' } });
   assert.equal(result.response.status, 200);
   assert.equal(result.body.result.serverInfo.name, 'erp-lmg-digital-marketing');
-  assert.equal(result.body.result.serverInfo.version, '1.4.0');
+  assert.equal(result.body.result.serverInfo.version, '1.5.0');
 });
 
 test('tools/list without token returns OAuth challenge in header and MCP metadata', async () => {

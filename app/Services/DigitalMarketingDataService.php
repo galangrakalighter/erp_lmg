@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -122,6 +123,40 @@ class DigitalMarketingDataService
         return $this->paginate($rows, $filters, 'data_jasa', [
             'period' => $this->periodMeta($start, $end),
             'caption_availability' => ['status' => 'unavailable', 'reason' => 'Skema content plan belum memiliki field caption khusus; copy_notes tidak diperlakukan sebagai caption.'],
+        ]);
+    }
+
+    public function contentPlanMasters(Authenticatable $user, int $clientId, string $master, array $filters): array
+    {
+        $this->assertClientAccess($user, $clientId);
+        $definitions = [
+            'product_types' => ['type_produk', 'type'],
+            'strategies' => ['strategy', 'strategy'],
+            'hooks' => ['hooks', 'hooks'],
+            'bodies' => ['jenis_body', 'nama_body'],
+            'ctas' => ['jenis_cta', 'nama_cta'],
+        ];
+        abort_unless(isset($definitions[$master]), 404, 'Master content plan tidak ditemukan.');
+        [$table, $nameColumn] = $definitions[$master];
+        $query = DB::table($table)->whereNotNull($nameColumn)->where($nameColumn, '!=', '');
+        if (Schema::hasColumn($table, 'status')) {
+            $query->where($table.'.status', 1);
+        }
+        if ($master === 'product_types') {
+            $categoryId = DB::table('produk_client')->where('id', $clientId)->value('kategori_jasa_id');
+            if ($categoryId !== null && Schema::hasColumn($table, 'kategori_id')) $query->where($table.'.kategori_id', $categoryId);
+        }
+        $search = trim((string) ($filters['search'] ?? ''));
+        $rows = $query->when($search !== '', fn (Builder $q) => $q->whereRaw('LOWER('.$nameColumn.') LIKE ?', ['%'.mb_strtolower($search).'%']))
+            ->orderBy($nameColumn)->get(['id', $nameColumn])->map(fn ($row) => [
+                'id' => (int) $row->id,
+                'name' => (string) $row->{$nameColumn},
+                'active' => true,
+            ]);
+        return $this->paginate($rows, $filters, 'content_plan_'.$master.'_master', [
+            'client_id' => $clientId,
+            'source' => $table,
+            'safe_fields' => ['id', 'name', 'active'],
         ]);
     }
 

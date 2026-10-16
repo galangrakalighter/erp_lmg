@@ -67,6 +67,8 @@ $marketingMcpRoutes = function (): void {
         ->whereNumber('client')->name('performance-summary');
     Route::get('/clients/{client}/content-plan', [MarketingAnalyticsController::class, 'contentPlan'])
         ->whereNumber('client')->name('content-plan');
+    Route::get('/clients/{client}/content-plan-masters/{master}', [MarketingAnalyticsController::class, 'contentPlanMaster'])
+        ->whereNumber('client')->whereIn('master', ['product-types', 'strategies', 'hooks', 'bodies', 'ctas'])->name('content-plan-masters');
     Route::get('/clients/{client}/content-mix', [MarketingAnalyticsController::class, 'contentMix'])
         ->whereNumber('client')->name('content-mix');
     Route::get('/clients/{client}/performance-trend', [MarketingAnalyticsController::class, 'performanceTrend'])

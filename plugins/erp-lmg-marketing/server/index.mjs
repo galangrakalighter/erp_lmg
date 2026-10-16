@@ -197,6 +197,11 @@ export const tools = [
       additionalProperties: false,
     },
   },
+  ...["product_types", "strategies", "hooks", "bodies", "ctas"].map((master) => ({
+    name: `marketing_list_${master}`,
+    description: `List active ${master.replace("_", " ")} options valid for an authorized Content Plan client. Read-only; returns only safe IDs, names, and active metadata.`,
+    inputSchema: { type: "object", required: ["client_id"], properties: { client_id: { type: "integer", minimum: 1 }, search: { type: "string", maxLength: 100 }, ...pagination }, additionalProperties: false },
+  })),
   {
     name: "marketing_get_content_mix",
     description: "Aggregate canonical, non-mirrored content-plan composition for one authorized client.",
@@ -419,6 +424,11 @@ const toolPaths = {
   marketing_get_data_availability: "/clients/{client_id}/data-availability",
   marketing_get_performance_summary: "/clients/{client_id}/performance-summary",
   marketing_get_content_plan: "/clients/{client_id}/content-plan",
+  marketing_list_product_types: "/clients/{client_id}/content-plan-masters/product-types",
+  marketing_list_strategies: "/clients/{client_id}/content-plan-masters/strategies",
+  marketing_list_hooks: "/clients/{client_id}/content-plan-masters/hooks",
+  marketing_list_bodies: "/clients/{client_id}/content-plan-masters/bodies",
+  marketing_list_ctas: "/clients/{client_id}/content-plan-masters/ctas",
   marketing_get_content_mix: "/clients/{client_id}/content-mix",
   marketing_get_performance_trend: "/clients/{client_id}/performance-trend",
   marketing_get_top_content: "/clients/{client_id}/top-content",
@@ -533,7 +543,7 @@ async function handle(message) {
   const { id, method, params = {} } = message;
   if (method === "notifications/initialized") return null;
   if (method === "initialize") {
-    return { jsonrpc: "2.0", id, result: { protocolVersion: params.protocolVersion || "2025-06-18", capabilities: { tools: { listChanged: false } }, serverInfo: { name: "erp-lmg-digital-marketing", version: "1.4.0" } } };
+    return { jsonrpc: "2.0", id, result: { protocolVersion: params.protocolVersion || "2025-06-18", capabilities: { tools: { listChanged: false } }, serverInfo: { name: "erp-lmg-digital-marketing", version: "1.5.0" } } };
   }
   if (method === "tools/list") return { jsonrpc: "2.0", id, result: { tools } };
   if (method === "tools/call") {

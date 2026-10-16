@@ -300,6 +300,21 @@ class MarketingAnalyticsController extends Controller
             fn () => $this->digitalMarketing->contentCalendar($client, $filters));
     }
 
+    public function contentPlanMaster(Request $request, int $client, string $master): JsonResponse
+    {
+        $allowed = ['product-types', 'strategies', 'hooks', 'bodies', 'ctas'];
+        abort_unless(in_array($master, $allowed, true), 404, 'Master content plan tidak ditemukan.');
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:100'],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+        ]);
+        $key = str_replace('-', '_', $master);
+        $result = $this->digitalMarketing->contentPlanMasters($request->user(), $client, $key, $filters);
+        $this->audit($request, 'marketing_list_'.$key, $client, $filters);
+        return response()->json(['data' => $result['data'], 'pagination' => $result['pagination'], 'meta' => $result['meta']]);
+    }
+
     public function tasks(Request $request, int $client): JsonResponse
     {
         $filters = $this->phaseTwoPeriodFilters($request, ['pic_id', 'status'], [

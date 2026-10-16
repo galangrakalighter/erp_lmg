@@ -27,6 +27,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Passport::tokensCan([
             'marketing:read' => 'Membaca data marketing ERP yang dapat diakses pengguna.',
+            'marketing:write' => 'Membuat atau memperbarui metadata Digital Marketing setelah konfirmasi pengguna.',
             'offline_access' => 'Mempertahankan koneksi dengan refresh token tanpa meminta login berulang.',
         ]);
         Passport::tokensExpireIn(now()->addHour());

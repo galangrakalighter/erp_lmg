@@ -15,7 +15,7 @@
             },
             "authorizationUrl": "https://erp.lightermediagroup.com/oauth/authorize",
             "tokenUrl": "https://erp.lightermediagroup.com/oauth/token",
-            "baseScopes": ["marketing:read", "offline_access"]
+            "baseScopes": ["marketing:read", "marketing:write", "offline_access"]
           }
         }
       }

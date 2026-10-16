@@ -24,7 +24,7 @@ function rpcError(id, code, message, data) {
 
 function challengeFor(config) {
   const metadata = `${config.oauthIssuer}/.well-known/oauth-protected-resource`;
-  return `Bearer resource_metadata="${metadata}", scope="marketing:read offline_access"`;
+  return `Bearer resource_metadata="${metadata}", scope="marketing:read marketing:write offline_access"`;
 }
 
 function unauthorized(res, id, config) {

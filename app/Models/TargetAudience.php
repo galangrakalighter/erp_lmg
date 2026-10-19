@@ -9,6 +9,7 @@ class TargetAudience extends Model
     protected $table = "target_audience";
     protected $fillable = [
         "produk_client_id",
+        "indikator",
         "usia",
         "gender",
         "negara",
@@ -18,5 +19,6 @@ class TargetAudience extends Model
         "status_sosial",
         "penggunaan",
         "manfaat",
+        "platform",
     ];
 }

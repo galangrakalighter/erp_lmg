@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "LMG Privacy Monitoring",
+  "version": "1.0.0",
+  "description": "Bagikan hanya tab kerja yang Anda pilih ke Live Monitoring ERP Lighter Media Group.",
+  "minimum_chrome_version": "116",
+  "permissions": [
+    "activeTab",
+    "tabCapture",
+    "scripting",
+    "storage"
+  ],
+  "background": {
+    "service_worker": "service-worker.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "LMG Privacy Monitoring",
+    "default_popup": "popup.html"
+  }
+}

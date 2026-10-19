@@ -6,12 +6,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\userDivision;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Builder;
+use Laravel\Sanctum\HasApiTokens;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -23,17 +27,12 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
-        'hod',
-        'dmm',
-        'dm',
-        'cc',
-        'divisi',
-        'client',
-    ];
-    
-    protected $casts = [
-        'divisi' => 'array',
-        'client' => 'array',
+        'isAdmin',
+        'jabatan',
+        'photo_profile',
+        'phone',
+        'is_locked',
+        'monitoring_share_enabled',
     ];
 
     /**
@@ -56,35 +55,53 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'isAdmin' => 'boolean',
+            'is_locked' => 'boolean',
+            'monitoring_share_enabled' => 'boolean',
         ];
     }
 
-    public function many_dmm(): HasMany {
-        return $this->hasMany(User::class, 'hod');
+    /** Batasi daftar pilihan akun ke akun yang masih aktif. */
+    public function scopeUnlocked(Builder $query): Builder
+    {
+        return $query->where($query->getModel()->qualifyColumn('is_locked'), false);
     }
 
-    public function many_dm(): HasMany {
-        return $this->hasMany(User::class, 'dmm');
+    public function userDivisions() {
+        return $this->hasMany(userDivision::class, 'user_id', 'id');
     }
 
-    public function many_cc(): HasMany {
-        return $this->hasMany(User::class, 'dm');
+    public function userClients()
+    {
+        return $this->hasMany(UserClient::class, 'user_id');
     }
 
-    // --- Relasi ATASAN (BelongsTo) ---
-    public function as_hod(): BelongsTo {
-        return $this->belongsTo(User::class, 'hod');
+    public function clients() {
+        return $this->belongsToMany(ProdukClient::class, 'user_client', 'user_id', 'client_id');
     }
 
-    public function as_dmm(): BelongsTo {
-        return $this->belongsTo(User::class, 'dmm');
+    public function kpis()
+    {
+        return $this->belongsToMany(KPI::class, 'kpi_user', 'user_id', 'kpi_id');
     }
 
-    public function as_dm(): BelongsTo {
-        return $this->belongsTo(User::class, 'dm');
+    public function accountMasterFiles()
+    {
+        return $this->hasMany(AccountMasterFile::class, 'owner_user_id');
     }
 
-    public function as_cc(): BelongsTo {
-        return $this->belongsTo(User::class, 'cc');
+    public function monitoringSessions()
+    {
+        return $this->hasMany(MonitoringSession::class, 'target_user_id');
+    }
+
+    public function monitoringTargets()
+    {
+        return $this->belongsToMany(User::class, 'monitoring_accesses', 'viewer_user_id', 'target_user_id')->withTimestamps();
+    }
+
+    public function monitoringViewers()
+    {
+        return $this->belongsToMany(User::class, 'monitoring_accesses', 'target_user_id', 'viewer_user_id')->withTimestamps();
     }
 }

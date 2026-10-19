@@ -49,26 +49,27 @@
     <script src="{{ asset('vendor/jquery/jquery.min.js')}}"></script>
     <script src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js')}}"></script>
 
-    <!-- Core plugin JavaScript-->
+    <script src="{{ asset('vendor-local/select2/select2.min.js') }}"></script>
+
     <script src="{{ asset('vendor/jquery-easing/jquery.easing.min.js')}}"></script>
-
-    <!-- Custom scripts for all pages-->
     <script src="{{ asset('js/sb-admin-2.min.js')}}"></script>
-
-    <!-- Page level plugins -->
     <script src="{{ asset('vendor/chart.js/Chart.min.js')}}"></script>
-
-    <!-- Page level custom scripts -->
-    <script src="{{ asset('js/demo/chart-area-demo.js')}}"></script>
-    <script src="{{ asset('js/demo/chart-pie-demo.js')}}"></script>
-
-    <!-- Page level plugins -->
     <script src="{{ asset('vendor/datatables/jquery.dataTables.min.js')}}"></script>
     <script src="{{ asset('vendor/datatables/dataTables.bootstrap4.min.js')}}"></script>
-    <script src="https://cdn.rawgit.com/ashl1/datatables-rowsgroup/v1.0.0/dataTables.rowsGroup.js"></script>
-    <!-- Page level custom scripts -->
-    <script src="{{ asset('js/demo/datatables-demo.js')}}"></script>
-    <script src="https://cdn.jsdelivr.net/npm/split.js/dist/split.min.js"></script>
+    <script src="{{ asset('js/native-client-table.js') }}"></script>
+    @unless(request()->routeIs(
+        'cms.hook',
+        'cms.strategy',
+        'cms.status',
+        'cms.type',
+        'cms.pilar',
+        'cms.body',
+        'cms.cta',
+        'cms.composition'
+    ))
+        <script src="{{ asset('js/demo/datatables-demo.js')}}"></script>
+    @endunless
+    <script src="{{ asset('vendor-local/split/split.min.js') }}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const loader = document.getElementById('loadingOverlay');
@@ -113,6 +114,61 @@
                 });
             });
         });
+
+        function hitungJamSelesaiManual(jamMulai, durasiMenit) {
+            if (!jamMulai) return "00:00";
+            const [jam, menit] = jamMulai.split(':').map(Number);
+            const totalMenit = (jam * 60) + menit + parseInt(durasiMenit || 0);
+            console.log(totalMenit);
+            
+            const h = Math.floor(totalMenit / 60);
+            const m = totalMenit % 60;
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        }
+
+        function formatDurasi(menit) {
+            if (!menit || menit <= 0) return "0 Menit";
+            let jam = Math.floor(menit / 60);
+            let sisaMenit = menit % 60;
+            if (jam > 0) {
+                return sisaMenit > 0 ? `${jam} Jam ${sisaMenit} Menit` : `${jam} Jam`;
+            } else {
+                return `${menit} Menit`;
+            }
+        }
+        function openPaymentModal(invoiceId, noInvoice) {
+            // 1. Set title modal
+            $('#modalNoInvoice').text(noInvoice);
+            
+            // 2. Set action form ke route pembayaran
+            // Sesuaikan route dengan route yang ada di web.php Anda
+            $('#paymentForm').attr('action', '/invoice/payment/' + invoiceId);
+            
+            // 3. Tampilkan modal
+            $('#paymentModal').modal('show');
+        }
+        function editInvoice(data) {
+            // 1. Tampilkan modal
+            $('#invoiceModal').modal('show');
+            
+            // 2. Ubah URL form agar mengarah ke route UPDATE
+            $('#invoiceForm').attr('action', '/invoice/' + data.id);
+            
+            // 3. Tambahkan hidden method PUT untuk spoofing
+            $('#methodField').html('@method("PUT")');
+            
+            // 4. Isi field modal dengan data dari baris tabel
+            $('#customer_id').val(data.customer_id); // Pastikan ada ID ini di modal
+            $('#no_invoice').val(data.no_invoice);
+            $('#total_amount').val(data.total_amount.replace(/\./g, '')); // Bersihkan format angka
+            $('#due_date').val(data.due_date_raw); // Pastikan data JSON Anda mengirim tanggal format Y-m-d
+        }
+        function resetForm() {
+            $('#invoiceForm').attr('action', '{{ route("invoice.store") }}');
+            $('#methodContainer').html('');
+            $('#no_invoice').val('');
+            $('#total_amount').val('');
+        }
         $(document).ready(function() {
             var tableId = '#target_audience';
 
@@ -144,6 +200,76 @@
                     }
                 ],
                 dom: '<"d-flex justify-content-between align-items-center mb-3"lf>rt<"d-flex justify-content-between align-items-center mt-3"ip>'
+            });
+
+            $('#invoiceTable').DataTable({
+                processing: true,
+                serverSide: false, // Opsional: gunakan jika data ribuan
+                ajax: '{{ route('api.invoices.data') }}',
+                columns: [
+                    { data: 'customer_name', name: 'customer_name' },
+                    { data: 'no_invoice', name: 'no_invoice' },
+                    { data: 'due_date', name: 'due_date' },
+                    { data: 'total_amount', name: 'total_amount', className: 'text-right' },
+                    { data: 'remaining', name: 'remaining', className: 'text-right font-weight-bold' },
+                    { 
+                        data: 'status', 
+                        name: 'status',
+                        render: function(data) {
+                            let color = data === 'paid' ? 'success' : (data === 'partial' ? 'warning' : 'danger');
+                            return `<span class="badge badge-${color}">${data.toUpperCase()}</span>`;
+                        }
+                    },
+                    { 
+                        data: 'id', 
+                        name: 'action',
+                        orderable: false, 
+                        searchable: false,
+                        className: 'text-center',
+                        render: function(data, type, row) {
+                            let actions = '';
+
+                            // 1. Tombol Bayar (Hanya muncul jika belum lunas)
+                            if (row.status !== 'paid') {
+                                actions += `<button type="button" class="btn btn-sm btn-primary mr-1" 
+                                    onclick="openPaymentModal(${row.id}, '${row.no_invoice}')">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                </button>`;
+                            }
+
+                            // 2. Tombol PDF (Selalu muncul)
+                            actions += `<a href="/invoice/pdf/${row.id}" target="_blank" class="btn btn-sm btn-warning mr-1">
+                                            <i class="fas fa-file-pdf"></i>
+                                        </a>`;
+
+                            // 3. Tombol Edit (Selalu muncul)
+                            actions += `<button type="button" class="btn btn-sm btn-info mr-1" 
+                                onclick="editInvoice(${JSON.stringify(row).replace(/"/g, '&quot;')})">
+                                <i class="fas fa-edit"></i>
+                            </button>`;
+
+                            // 4. Tombol Hapus (Selalu muncul)
+                            actions += `<form action="/invoice/${row.id}" method="POST" style="display:inline;" onsubmit="return confirm('Yakin ingin menghapus?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-danger">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>`;
+
+                            return actions;
+                        }
+                    }
+                ],
+                language: {
+                    emptyTable: 'Belum ada data',
+                    info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ data',
+                    infoEmpty: 'Menampilkan 0 data',
+                    lengthMenu: 'Tampilkan _MENU_ data',
+                    search: 'Cari:',
+                    zeroRecords: 'Data tidak ditemukan',
+                    paginate: { previous: 'Sebelumnya', next: 'Berikutnya' }
+                }
             });
         });
     </script>

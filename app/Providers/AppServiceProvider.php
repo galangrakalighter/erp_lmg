@@ -2,7 +2,13 @@
 
 namespace App\Providers;
 
+use App\Models\AuditTrail;
+use App\Services\ActivityLogService;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Passport\Passport;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -11,7 +17,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(ActivityLogService::class);
     }
 
     /**
@@ -19,6 +25,29 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Passport::tokensCan([
+            'marketing:read' => 'Membaca data marketing ERP yang dapat diakses pengguna.',
+            'marketing:write' => 'Membuat atau memperbarui metadata Digital Marketing setelah konfirmasi pengguna.',
+            'offline_access' => 'Mempertahankan koneksi dengan refresh token tanpa meminta login berulang.',
+        ]);
+        Passport::tokensExpireIn(now()->addHour());
+        Passport::refreshTokensExpireIn(now()->addDays(30));
+        // Rotate refresh tokens on every successful refresh; the previous token becomes unusable.
+        Passport::$revokeRefreshTokenAfterUse = true;
+        Passport::authorizationView('oauth.authorize');
+
+        foreach (['created', 'updated', 'deleted'] as $event) {
+            Event::listen("eloquent.{$event}: *", function (string $eventName, array $payload): void {
+                $model = $payload[0] ?? null;
+
+                if ($model instanceof Model && ! $model instanceof AuditTrail) {
+                    app(ActivityLogService::class)->recordModelEvent($eventName, $model);
+                }
+            });
+        }
+
+        if (config('app.env') !== 'local') {
+            URL::forceScheme('https');
+        }
     }
 }

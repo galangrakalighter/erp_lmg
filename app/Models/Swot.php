@@ -13,5 +13,6 @@ class Swot extends Model
         "weakness",
         "oportunity",
         "threat",
+        "platform"
     ];
 }

@@ -4,7 +4,11 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use App\Models\User;
 use App\Services\MarketResearch\MarketResearchService;
+use App\Services\PlatformMirroringService;
+use App\Support\DigitalMarketingPermissions;
 class marketResearchController extends Controller
 {
     protected $market;
@@ -13,8 +17,10 @@ class marketResearchController extends Controller
         $this->market = $market;
     }
 
-    public function index($id, $platform){
-        $data = $this->market->getMarket((int)$id, $platform);
+    public function index($id, $platform, PlatformMirroringService $mirroring){
+        $data = $this->market->getMarket((int)$id, $mirroring->platforms((int) $id, $platform, 'market-research'));
+        $divisi = User::find(Auth::user()->id)->userDivisions;
+        $role = Auth::user()->isAdmin == false ? DB::table('roles')->where('id', $divisi[0]->role_id)->value('role_name') : "Super Admin";
         $title = "Market Research";
         // dd($data['data']);
         $arr=[];
@@ -22,7 +28,11 @@ class marketResearchController extends Controller
             array_push($arr, $d);
         }
         $produk = DB::table('produk_client')->where('id', $id)->first();
-        // dd($arr);
-        return view('market.index', compact('data', 'title', 'produk', 'platform'));
+        $halaman = "Market Research";
+        $dmRole = DigitalMarketingPermissions::role(Auth::user());
+        $readOnly = request()->routeIs('api.multimedia.*') || (! DigitalMarketingPermissions::isManager($dmRole) && $dmRole !== 'Digital Marketing') || (! Auth::user()->isAdmin && $divisi->contains(
+            fn ($row) => strtolower(trim((string) $row->division?->name)) === 'multimedia'
+        ));
+        return view('market.index', compact('data', 'title', 'produk', 'platform', 'halaman', 'role', 'readOnly'));
     }
 }

@@ -35,7 +35,11 @@
                                     <div class="row">
                                         <div class="col-md-6 mb-3">
                                             <label class="form-label small fw-bold">Rentang Usia</label>
-                                            <input type="text" name="usia" class="form-control bg-light border-0">
+                                            <textarea 
+                                                id="myInput" 
+                                                placeholder="Ketik sesuatu... (Shift+Enter untuk baris baru)" 
+                                                style="width: 100%; min-height: 50px; padding: 10px; resize: vertical;">
+                                            </textarea>
                                         </div>
                                         <div class="col-md-6 mb-3">
                                             <label class="form-label small fw-bold">Gender</label>
@@ -56,6 +60,10 @@
                                         <div class="col-md-6 mb-3">
                                             <label class="form-label small fw-bold">Profile</label>
                                             <input type="text" name="pekerjaan" class="form-control bg-light border-0">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label small fw-bold">Indikator</label>
+                                            <input type="text" name="indikator" class="form-control bg-light border-0">
                                         </div>
                                     </div>
                                 </div>
@@ -167,10 +175,15 @@
                                                 <input type="text" name="wilayah" class="form-control bg-light border-0" 
                                                     value="{{ $item->wilayah }}">
                                             </div>
-                                            <div class="col-12 mb-2">
+                                            <div class="col-6 mb-2">
                                                 <label class="form-label small fw-bold text-muted">Profil / Pekerjaan</label>
                                                 <input type="text" name="pekerjaan" class="form-control bg-light border-0" 
                                                     value="{{ $item->pekerjaan }}">
+                                            </div>
+                                            <div class="col-6 mb-2">
+                                                <label class="form-label small fw-bold text-muted">Indikator</label>
+                                                <input type="text" name="indikator" class="form-control bg-light border-0" 
+                                                    value="{{ $item->indikator }}">
                                             </div>
                                         </div>
                                     </div>
@@ -216,7 +229,7 @@
 
                     <!-- MODAL FOOTER -->
                     <div class="modal-footer border-0 p-4 bg-light shadow-sm" style="border-radius: 0 0 15px 15px;">
-                        <button type="button" class="btn btn-link text-muted fw-bold text-decoration-none me-auto" data-bs-dismiss="modal">
+                        <button type="button" class="btn btn-link text-muted fw-bold text-decoration-none me-auto" data-dismiss="modal">
                             Batal
                         </button>
                         <button type="submit" class="btn btn-primary px-5 py-2 shadow-sm fw-bold" style="border-radius: 8px;">

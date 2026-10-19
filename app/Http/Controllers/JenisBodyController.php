@@ -4,9 +4,13 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use App\Models\User;
 class JenisBodyController extends Controller
 {
     public function index($name){
+        $divisi = User::find(Auth::user()->id)->userDivisions;
+        $role = Auth::user()->isAdmin == false ? DB::table('roles')->where('id', $divisi[0]->role_id)->value('role_name') : "Super Admin";
         $datatable = DB::table('jenis_body');
         if($name == "LGTR"){
             $data = $datatable->where("kategori_id", 1);
@@ -15,10 +19,12 @@ class JenisBodyController extends Controller
         }
         $data = $datatable->get();
         $title = "Jenis Body";
-        return view('cms.body.index', compact('data', 'title'));
+        $activeProductCode = $name;
+        return view('cms.body.index', compact('data', 'title', 'role', 'activeProductCode'));
     }
 
     public function store(Request $request, $name){
+        $request->validate(['nama' => 'required|string|max:255', 'fungsi_singkat' => 'nullable|string|max:1000', 'contoh' => 'nullable|string|max:3000', 'status' => 'required|integer']);
         if($name == "LGTR"){
             $divisi = 1;
         }else {
@@ -26,6 +32,8 @@ class JenisBodyController extends Controller
         }
         DB::table("jenis_body")->insert([
             "nama_body" => $request->nama,
+            "fungsi_singkat" => $request->fungsi_singkat,
+            "contoh" => $request->contoh,
             "status" => $request->status,
             "kategori_id" => $divisi
         ]);
@@ -34,8 +42,11 @@ class JenisBodyController extends Controller
     }
 
     public function update($id, Request $request){
+        $request->validate(['nama' => 'required|string|max:255', 'fungsi_singkat' => 'nullable|string|max:1000', 'contoh' => 'nullable|string|max:3000', 'status' => 'required|integer']);
         DB::table('jenis_body')->where('id', $id)->update([
             "nama_body" => $request->nama,
+            "fungsi_singkat" => $request->fungsi_singkat,
+            "contoh" => $request->contoh,
             "status" => $request->status
         ]);
 

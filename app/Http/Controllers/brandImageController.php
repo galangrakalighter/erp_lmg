@@ -12,9 +12,11 @@ class brandImageController extends Controller
     public function index()
     {
         $title = "Brand Image";
-        $produk = DB::table("produk_client")->where('status', 1)->get();
+        $visibleClientIds = \App\Models\ProdukClient::query()->visibleTo(auth()->user())->pluck('produk_client.id');
+        $produk = DB::table("produk_client")->whereIn('id', $visibleClientIds)->where('status', 1)->get();
         $data = DB::table('brand_image')
                 ->join('produk_client', 'produk_client.id', '=', 'brand_image.produk_client_id')
+                ->whereIn('produk_client.id', $visibleClientIds)
                 ->select("produk_client.nama", 'brand_image.*')
                 ->get();
         return view("cms_branding.image", compact('title', 'data', 'produk'));

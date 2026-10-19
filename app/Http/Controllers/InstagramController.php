@@ -38,6 +38,7 @@ class InstagramController extends Controller
         ->join('pilar', 'pilar.id', '=', 'data_jasa.pilar_id')
         ->join('hooks', 'hooks.id', '=', 'data_jasa.hooks_id')
         ->where('data_jasa.produk_client_id', $produk)
+            ->whereNull('data_jasa.archived_at')
         ->select('data_jasa.*', 'type_produk.type', 'strategy.strategy', 'status.nama_status', 'pilar.pilar', 'hooks.hooks')
         ->paginate(10);
         
@@ -47,10 +48,11 @@ class InstagramController extends Controller
             case 'Instagram':
                 $posts = [];
                 $maxFollowers = 0;
-                $index = array_search($platform, $produkBaru->access_token['platform']);
+                $token = $produkBaru->platformAccessToken($platform);
+                $accountId = $produkBaru->platformAccountId($platform);
 
-                foreach ($this->instagram->getMedia($since, $until, $fetch, $produkBaru->access_token['access'][$index]) as $post) {
-                    $insightsRaw = $this->instagram->getInsights($post['id'], $since, $until, $fetch, $produkBaru->access_token['access'][$index]);
+                foreach ($this->instagram->getMedia($since, $until, $fetch, $token, $accountId) as $post) {
+                    $insightsRaw = $this->instagram->getInsights($post['id'], $since, $until, $fetch, $token, $accountId);
                     $frekuensi = ($post['reach_count'] > 0) ? round($post['impresi'] / $post['reach_count']) : 0;
                     // Data Untuk Chart
                     

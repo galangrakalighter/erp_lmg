@@ -9,8 +9,11 @@ class positioningController extends Controller
 {
     public function index(){
         $title = "Target Audience";
-        $produk = DB::table('produk_client')->get();
+        $visibleClientIds = \App\Models\ProdukClient::query()->visibleTo(auth()->user())->pluck('produk_client.id');
+        $produk = DB::table('produk_client')->whereIn('id', $visibleClientIds)->get();
         $data = Positioning::join('produk_client', 'produk_client.id', '=', 'positioning.produk_client_id')
+        ->whereIn('produk_client.id', $visibleClientIds)
+        ->whereNull('positioning.archived_at')
         ->select('positioning.*', 'produk_client.nama')
         ->get();
         
@@ -43,7 +46,7 @@ class positioningController extends Controller
             "indikator" => "nullable|string",
             "deskripsi" => "nullable|string"
         ]);
-        Positioning::findOrFail($id)->update([
+        Positioning::query()->whereNull('archived_at')->findOrFail($id)->update([
             "produk_client_id" => $request->produk,
             "indikator" => $request->indikator,
             "deskripsi" => $request->deskripsi,
@@ -55,7 +58,7 @@ class positioningController extends Controller
 
     public function destroy($id){
         $id = (int)$id;
-        Positioning::destroy($id);
+        DB::table('positioning')->where('id', $id)->whereNull('archived_at')->update(['archived_at' => now(), 'archived_by' => auth()->id(), 'updated_at' => now()]);
         return redirect()->back()->with('success', 'Berhasil Di Hapus');
     }
 }

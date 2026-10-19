@@ -11,5 +11,6 @@ class Positioning extends Model
         "produk_client_id",
         "indikator",
         "deskripsi",
+        "platform",
     ];
 }

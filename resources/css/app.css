@@ -8,4 +8,548 @@
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+    --color-black: #161616;
+    --color-zinc-950: #161616;
+}
+
+/*
+ * Global dropdown language.
+ * Covers native selects across Tailwind and legacy Bootstrap pages while
+ * leaving hidden Select2 source elements and multi-select lists intact.
+ */
+@layer components {
+    select:not([multiple]):not([size]):not(.select2-hidden-accessible) {
+        min-height: 42px;
+        appearance: none !important;
+        cursor: pointer;
+        border: 1px solid #d4d4d8 !important;
+        border-radius: 12px !important;
+        background-color: #fff !important;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2352525b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+        background-repeat: no-repeat !important;
+        background-position: right 0.85rem center !important;
+        background-size: 16px !important;
+        padding-right: 2.75rem !important;
+        color: #27272a !important;
+        box-shadow: 0 1px 2px rgb(22 22 22 / 4%) !important;
+        transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+    }
+
+    select:not([multiple]):not([size]):not(.select2-hidden-accessible):hover {
+        border-color: #a1a1aa !important;
+        background-color: #fafafa !important;
+    }
+
+    select:not([multiple]):not([size]):not(.select2-hidden-accessible):focus {
+        border-color: #161616 !important;
+        background-color: #fff !important;
+        outline: none !important;
+        box-shadow: 0 0 0 3px rgb(22 22 22 / 9%) !important;
+    }
+
+    select:not([multiple]):not([size]):not(.select2-hidden-accessible):disabled {
+        cursor: not-allowed;
+        border-color: #e4e4e7 !important;
+        background-color: #f4f4f5 !important;
+        color: #a1a1aa !important;
+        opacity: 1;
+    }
+
+    select.form-control-sm:not([multiple]):not([size]),
+    select.form-select-sm:not([multiple]):not([size]) {
+        min-height: 36px;
+        border-radius: 10px !important;
+        background-position: right 0.65rem center !important;
+        padding-right: 2.25rem !important;
+        font-size: 12px !important;
+    }
+
+    select[multiple],
+    select[size]:not([size='1']) {
+        border: 1px solid #d4d4d8 !important;
+        border-radius: 12px !important;
+        background-color: #fff !important;
+        color: #27272a !important;
+    }
+
+    select option {
+        background: #fff;
+        color: #27272a;
+    }
+}
+
+
+/*
+ * ============================================================
+ * SELECT2 - KHUSUS CONTENT CREATOR MANAGER (CCM)
+ * ============================================================
+ *
+ * Tidak mengubah JavaScript.
+ * Tidak mengubah initHierarchy().
+ * Tidak mengubah filterOptions().
+ * Tidak mengubah klik / change event.
+ *
+ * Hanya memperbaiki background dan color Select2 CCM.
+ */
+
+@layer components {
+
+    /* Container utama Select2 CCM */
+    #select-ccm + .select2-container {
+        color: #18181b !important;
+    }
+
+    /* Kotak utama CCM */
+    #select-ccm + .select2-container
+    .select2-selection--multiple {
+
+        background-color: #ffffff !important;
+
+        color: #18181b !important;
+
+        border-color: #d4d4d8 !important;
+    }
+
+    /* Area isi selected item / placeholder */
+    #select-ccm + .select2-container
+    .select2-selection__rendered {
+
+        background-color: #ffffff !important;
+
+        color: #18181b !important;
+    }
+
+    /* Placeholder "Pilih CCM" */
+    #select-ccm + .select2-container
+    .select2-selection__placeholder {
+
+        color: #71717a !important;
+    }
+
+    /*
+     * Item CCM yang sudah dipilih
+     */
+    #select-ccm + .select2-container
+    .select2-selection__choice {
+
+        background-color: #f4f4f5 !important;
+
+        color: #18181b !important;
+
+        border-color: #e4e4e7 !important;
+    }
+
+    /*
+     * Tombol X pada item CCM
+     */
+    #select-ccm + .select2-container
+    .select2-selection__choice__remove {
+
+        color: #52525b !important;
+
+        background-color: transparent !important;
+    }
+
+    #select-ccm + .select2-container
+    .select2-selection__choice__remove:hover {
+
+        color: #18181b !important;
+
+        background-color: transparent !important;
+    }
+
+    /*
+     * Dropdown CCM
+     *
+     * Select2 biasanya membuat dropdown di luar posisi
+     * <select>, sehingga kita target berdasarkan class
+     * Select2 Bootstrap4.
+     */
+    .select2-container--bootstrap4
+    .select2-dropdown {
+
+        background-color: #ffffff !important;
+
+        color: #18181b !important;
+
+        border-color: #d4d4d8 !important;
+    }
+
+    /*
+     * Hasil / option CCM
+     */
+    .select2-container--bootstrap4
+    .select2-results__option {
+
+        background-color: #ffffff !important;
+
+        color: #18181b !important;
+    }
+
+    /*
+     * CCM ketika mouse diarahkan
+     */
+    .select2-container--bootstrap4
+    .select2-results__option--highlighted {
+
+        background-color: #f4f4f5 !important;
+
+        color: #18181b !important;
+    }
+
+    /*
+     * CCM yang sudah terpilih
+     */
+    .select2-container--bootstrap4
+    .select2-results__option[aria-selected="true"] {
+
+        background-color: #e4e4e7 !important;
+
+        color: #18181b !important;
+    }
+
+    /*
+     * CCM yang disabled karena filterOptions()
+     */
+    .select2-container--bootstrap4
+    .select2-results__option[aria-disabled="true"] {
+
+        background-color: #fafafa !important;
+
+        color: #a1a1aa !important;
+    }
+
+    /*
+     * Search box dropdown CCM
+     */
+    .select2-container--bootstrap4
+    .select2-search--dropdown {
+
+        background-color: #ffffff !important;
+    }
+
+    /*
+     * Input pencarian CCM
+     */
+    .select2-container--bootstrap4
+    .select2-search--dropdown
+    .select2-search__field {
+
+        background-color: #ffffff !important;
+
+        color: #18181b !important;
+
+        border-color: #d4d4d8 !important;
+    }
+
+    /*
+     * Placeholder search CCM
+     */
+    .select2-container--bootstrap4
+    .select2-search--dropdown
+    .select2-search__field::placeholder {
+
+        color: #a1a1aa !important;
+    }
+
+    /*
+     * Search focus
+     */
+    .select2-container--bootstrap4
+    .select2-search--dropdown
+    .select2-search__field:focus {
+
+        background-color: #ffffff !important;
+
+        color: #18181b !important;
+
+        border-color: #18181b !important;
+
+        outline: none !important;
+
+        box-shadow: none !important;
+    }
+}
+
+
+/*
+ * Palet utama Lighter Media Group.
+ * Semua permukaan hitam memakai #161616 dan aksen berlatar hijau
+ * dinetralkan menjadi permukaan gelap agar tampilan aplikasi konsisten.
+ */
+@layer utilities {
+    :where(
+        .bg-emerald-50,
+        .bg-emerald-50\/40,
+        .bg-emerald-100,
+        .bg-emerald-500,
+        .bg-emerald-500\/70,
+        .bg-emerald-600,
+        .bg-lime-50,
+        .bg-lime-100,
+        .bg-lime-300,
+        .bg-lime-300\/10,
+        .bg-lime-400
+    ) {
+        background-color: #161616 !important;
+        color: #ffffff !important;
+    }
+
+    :where(
+        .hover\:bg-emerald-50,
+        .hover\:bg-emerald-700,
+        .hover\:bg-lime-200,
+        .hover\:bg-lime-300,
+        .hover\:bg-lime-400,
+        .hover\:bg-lime-500
+    ):hover {
+        background-color: #161616 !important;
+        color: #ffffff !important;
+    }
+}
+
+
+/* Modal safety area shared by Bootstrap, legacy, and Tailwind pages. */
+@layer components {
+    :root {
+        --lmg-modal-gap: 2rem;
+        --lmg-modal-layer: 100000;
+    }
+
+    .modal {
+        z-index: var(--lmg-modal-layer) !important;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        padding: var(--lmg-modal-gap) !important;
+    }
+
+    .modal-dialog {
+        width: 100%;
+        max-height: calc(100dvh - (var(--lmg-modal-gap) * 2));
+        margin: 0 auto !important;
+    }
+
+    .modal-content {
+        display: flex;
+        max-height: calc(100dvh - (var(--lmg-modal-gap) * 2)) !important;
+        flex-direction: column;
+        overflow: hidden !important;
+    }
+
+    .modal-body {
+        min-height: 0;
+        overflow-y: auto !important;
+        overscroll-behavior: contain;
+    }
+
+    /* Custom Tailwind modals use an id containing "modal" instead of .modal. */
+    :where([id*='Modal'], [id*='modal']).fixed {
+        z-index: var(--lmg-modal-layer) !important;
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+
+    :where([id*='Modal'], [id*='modal']).fixed [role='dialog'] {
+        display: flex;
+        max-height: calc(100dvh - (var(--lmg-modal-gap) * 2));
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    :where([id*='Modal'], [id*='modal']).fixed [role='dialog'] > :where(form, .modal-content) {
+        display: flex;
+        min-height: 0;
+        max-height: inherit;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    :where([id*='Modal'], [id*='modal']).fixed [role='dialog'] :where(.modal-body, [data-modal-body]) {
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+
+    @media (max-width: 640px) {
+        :root {
+            --lmg-modal-gap: 1rem;
+        }
+
+        .modal {
+            padding-inline: 0.75rem !important;
+        }
+    }
+}
+
+
+/* Tailwind presentation for legacy DataTables outside Division views. */
+@layer components {
+    .lmg-tailwind-datatable {
+        width: 100%;
+        color: #3f3f46;
+        font-size: 0.875rem;
+    }
+
+    .lmg-tailwind-datatable > .row {
+        display: flex !important;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin: 0 !important;
+        padding: 1rem;
+    }
+
+    .lmg-tailwind-datatable > .row:first-child {
+        border: 1px solid #e4e4e7;
+        border-bottom: 0;
+        border-radius: 1rem 1rem 0 0;
+        background: #fafafa;
+    }
+
+    .lmg-tailwind-datatable > .row:last-child {
+        border: 1px solid #e4e4e7;
+        border-top: 0;
+        border-radius: 0 0 1rem 1rem;
+        background: #fff;
+    }
+
+    .lmg-tailwind-datatable > .row > [class*='col-'] {
+        width: auto !important;
+        max-width: 100%;
+        padding: 0 !important;
+    }
+
+    .lmg-tailwind-datatable .dataTables_length label,
+    .lmg-tailwind-datatable .dataTables_filter label {
+        display: flex;
+        align-items: center;
+        gap: 0.625rem;
+        margin: 0;
+        color: #71717a;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .lmg-tailwind-datatable .dataTables_filter input,
+    .lmg-tailwind-datatable .dataTables_length select {
+        min-height: 2.5rem;
+        border: 1px solid #d4d4d8 !important;
+        border-radius: 0.75rem !important;
+        background: #fff !important;
+        padding: 0.5rem 0.75rem !important;
+        color: #18181b !important;
+        outline: none;
+        box-shadow: none !important;
+    }
+
+    .lmg-tailwind-datatable .dataTables_filter input {
+        width: min(18rem, 55vw);
+        margin-left: 0 !important;
+    }
+
+    .lmg-tailwind-datatable .dataTables_filter input:focus,
+    .lmg-tailwind-datatable .dataTables_length select:focus {
+        border-color: #161616 !important;
+        box-shadow: 0 0 0 3px rgb(22 22 22 / 8%) !important;
+    }
+
+    .lmg-tailwind-datatable table.dataTable {
+        width: 100% !important;
+        margin: 0 !important;
+        border: 1px solid #e4e4e7 !important;
+        border-collapse: separate !important;
+        border-spacing: 0;
+        background: #fff;
+    }
+
+    .lmg-tailwind-datatable table.dataTable thead th {
+        border-bottom: 1px solid #e4e4e7 !important;
+        background: #161616 !important;
+        padding: 0.875rem 1rem !important;
+        color: #fff !important;
+        font-size: 0.625rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .lmg-tailwind-datatable table.dataTable tbody td {
+        border-bottom: 1px solid #f4f4f5 !important;
+        padding: 0.875rem 1rem !important;
+        background: #fff;
+        vertical-align: middle;
+    }
+
+    .lmg-tailwind-datatable table.dataTable tbody tr:nth-child(even) td {
+        background: #fafafa;
+    }
+
+    .lmg-tailwind-datatable table.dataTable tbody tr:hover td {
+        background: #f4f4f5;
+    }
+
+    .lmg-tailwind-datatable .dataTables_info {
+        padding: 0 !important;
+        color: #71717a !important;
+        font-size: 0.75rem;
+    }
+
+    .lmg-tailwind-datatable .dataTables_paginate {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0 !important;
+    }
+
+    .lmg-tailwind-datatable .dataTables_paginate .paginate_button {
+        display: inline-flex !important;
+        min-width: 2.25rem;
+        min-height: 2.25rem;
+        align-items: center;
+        justify-content: center;
+        margin: 0 !important;
+        border: 1px solid #e4e4e7 !important;
+        border-radius: 0.625rem !important;
+        background: #fff !important;
+        padding: 0.4rem 0.65rem !important;
+        color: #52525b !important;
+        font-size: 0.75rem;
+        font-weight: 700;
+        box-shadow: none !important;
+    }
+
+    .lmg-tailwind-datatable .dataTables_paginate .paginate_button.current,
+    .lmg-tailwind-datatable .dataTables_paginate .paginate_button.current:hover {
+        border-color: #161616 !important;
+        background: #161616 !important;
+        color: #fff !important;
+    }
+
+    .lmg-tailwind-datatable .dataTables_paginate .paginate_button:hover {
+        border-color: #a1a1aa !important;
+        background: #f4f4f5 !important;
+        color: #161616 !important;
+    }
+
+    .lmg-tailwind-datatable .dataTables_paginate .paginate_button.disabled {
+        cursor: not-allowed !important;
+        opacity: 0.4;
+    }
+
+    @media (max-width: 640px) {
+        .lmg-tailwind-datatable > .row {
+            align-items: stretch;
+            padding: 0.75rem;
+        }
+
+        .lmg-tailwind-datatable > .row > [class*='col-'],
+        .lmg-tailwind-datatable .dataTables_filter,
+        .lmg-tailwind-datatable .dataTables_filter label,
+        .lmg-tailwind-datatable .dataTables_filter input {
+            width: 100% !important;
+        }
+    }
 }

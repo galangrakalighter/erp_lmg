@@ -43,7 +43,7 @@
                         </div>
                         
                         <div class="alert alert-info py-2 mb-0 mt-2">
-                            <small><i class="fas fa-info-circle mr-1"></i> Format yang didukung: JPG, PNG, JPEG, WEBP. Dan Ukuran Maksimal 2MB!</small>
+                            <small><i class="fas fa-info-circle mr-1"></i> Format yang didukung: JPG, PNG, JPEG, WEBP. Dan Ukuran Maksimal 5MB!</small>
                         </div>
                     </div>
 
@@ -59,8 +59,8 @@
         </div>
     </div>
 
-    @foreach ($moodboard as $item)
-        <div class="modal fade" id="editModalMoodboard_{{ $item->id }}" tabindex="-1" role="dialog" aria-labelledby="editModalLabel" aria-hidden="true">
+    @if($moodboard)
+        <div class="modal fade" id="editModalMoodboard_{{ $moodboard->id }}" tabindex="-1" role="dialog" aria-labelledby="editModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
                 <div class="modal-content border-0 shadow-lg">
 
@@ -73,7 +73,7 @@
                         </button>
                     </div>
 
-                    <form action="{{ route('moodboard.update', $item->id) }}" method="POST" enctype="multipart/form-data">
+                    <form action="{{ route('moodboard.update', $moodboard->id) }}" method="POST" enctype="multipart/form-data">
                         @csrf
 
                         <div class="modal-body p-4">
@@ -91,10 +91,10 @@
                                             name="image" 
                                             class="form-control" 
                                             accept="image/*" 
-                                            onchange="previewEditImage(this, '{{ $item->id }}')">
+                                            onchange="previewEditImage(this, '{{ $moodboard->id }}')">
                                     </div>
                                     <small class="text-muted mt-1 d-block italic">
-                                        *Kosongkan jika tidak ingin mengubah gambar. Maksimal 2MB.
+                                        *Kosongkan jika tidak ingin mengubah gambar. Maksimal 5MB.
                                     </small>
                                 </div>
 
@@ -103,9 +103,9 @@
                                     <label class="d-block font-weight-bold text-muted mb-2">Tampilan Gambar:</label>
                                     <div class="preview-wrapper border rounded p-2 bg-light">
                                         {{-- Menampilkan gambar lama sebagai default --}}
-                                        <img id="preview-display-moodboard-{{ $item->id }}" 
-                                            src="{{ asset('storage/' . $item->moodboard) }}" 
-                                            data-original="{{ asset('storage/' . $item->moodboard) }}"
+                                        <img id="preview-display-moodboard-{{ $moodboard->id }}" 
+                                            src="{{ asset('storage/' . $moodboard->moodboard) }}" 
+                                            data-original="{{ asset('storage/' . $moodboard->moodboard) }}"
                                             alt="Preview" 
                                             class="img-fluid rounded shadow-sm" 
                                             style="max-height: 300px; width: auto;">
@@ -125,7 +125,7 @@
             </div>
         </div>
 
-        <div class="modal fade" id="hapusModalMoodboard_{{ $item->id }}" tabindex="-1" role="dialog" aria-labelledby="hapusModalLabel" aria-hidden="true">
+        <div class="modal fade" id="hapusModalMoodboard_{{ $moodboard->id }}" tabindex="-1" role="dialog" aria-labelledby="hapusModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered" role="document">
                 <div class="modal-content border-0 shadow">
                     <div class="modal-header bg-danger text-white">
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <form action="{{ route('moodboard.destroy', $item->id) }}" method="POST">
+                    <form action="{{ route('moodboard.destroy', $moodboard->id) }}" method="POST">
                         @csrf
 
                         <div class="modal-body text-center p-4">
@@ -145,7 +145,7 @@
                             
                             {{-- Tampilkan thumbnail agar user yakin mana yang dihapus --}}
                             <div class="mb-3">
-                                <img src="{{ asset('storage/' . $item->moodboard) }}" 
+                                <img src="{{ asset('storage/' . $moodboard->moodboard) }}" 
                                     class="img-fluid rounded border shadow-sm" 
                                     style="max-height: 150px;" alt="Hapus Moodboard">
                             </div>
@@ -165,7 +165,7 @@
                 </div>
             </div>
         </div>
-    @endforeach
+    @endif
 
     <script>
         document.getElementById('inputImageMoodboard').onchange = function (evt) {
@@ -204,9 +204,9 @@
                     return;
                 }
 
-                // 2. Validasi: Maksimal 2MB
-                if (fileSize > 2) {
-                    alert("Gagal: Ukuran file terlalu besar! Maksimal 2MB (File Anda: " + fileSize.toFixed(2) + " MB)");
+                // 2. Validasi: Maksimal 5MB
+                if (fileSize > 5) {
+                    alert("Gagal: Ukuran file terlalu besar! Maksimal 5MB (File Anda: " + fileSize.toFixed(2) + " MB)");
                     input.value = ""; // Reset input
                     preview.src = originalSrc; // Kembalikan ke gambar lama
                     return;

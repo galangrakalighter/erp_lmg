@@ -13,14 +13,14 @@ class moodBoardController extends Controller
         // dd($request->all());
         $validator = Validator::make($request->all(), [
             'produk' => 'required',
-            'image'  => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'image'  => 'required|image|mimes:jpeg,png,jpg|max:5120',
         ]);
 
         // 2. Jika Validasi Gagal, Redirect Back dengan Session Error
         if ($validator->fails()) {
             return redirect()->back()
                 ->withInput()
-                ->with('error', 'MoodBoard Harus berupa gambar (JPG, PNG, JPEG) dan maksimal 2MB!');
+                ->with('error', 'MoodBoard Harus berupa gambar (JPG, PNG, JPEG) dan maksimal 5MB!');
         }
 
         // 3. Jika Lolos, Simpan Data
@@ -39,12 +39,12 @@ class moodBoardController extends Controller
         $moodboard = Moodboard::findOrFail($id);
         if ($request->hasFile('image')) {
             $validator = Validator::make($request->all(), [
-                'image' => 'image|mimes:jpeg,png,jpg,webp|max:2048',
+                'image' => 'image|mimes:jpeg,png,jpg,webp|max:5120',
             ]);
 
             if ($validator->fails()) {
                 return redirect()->back()
-                    ->with('error', 'Harus berupa gambar (JPG, PNG, JPEG, WEBP) dan maksimal 2MB!');
+                    ->with('error', 'Harus berupa gambar (JPG, PNG, JPEG, WEBP) dan maksimal 5MB!');
             }
 
             // Hapus foto lama & Simpan yang baru

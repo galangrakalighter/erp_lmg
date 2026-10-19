@@ -19,5 +19,6 @@ class Segmentasi extends Model
         "penggunaan",
         "loyalitas",
         "manfaat",
+        "platform",
     ];
 }

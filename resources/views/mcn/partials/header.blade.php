@@ -1,0 +1,4 @@
+<header class="relative mb-6 overflow-hidden rounded-[28px] bg-[#161616] px-6 py-7 text-white shadow-xl shadow-zinc-950/10 sm:px-8">
+    <div class="absolute -right-16 -top-24 h-64 w-64 rounded-full bg-white/5 blur-3xl"></div>
+    <div class="relative flex flex-wrap items-end justify-between gap-5"><div><p class="text-[10px] font-bold uppercase tracking-[.24em] text-zinc-400">Lighter Media Group · MCN</p><h1 class="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">{{ $heading }}</h1><p class="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">{{ $description }}</p></div>@isset($actionLabel)<button type="button" {!! $actionAttributes ?? '' !!} class="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white px-4 py-2.5 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200"><span class="text-lg leading-none">＋</span>{{ $actionLabel }}</button>@endisset</div>
+</header>

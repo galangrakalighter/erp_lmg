@@ -1,0 +1,310 @@
+<?php
+
+namespace App\Services;
+
+use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+
+class DigitalMarketingDataService
+{
+    private const MAX_PERIOD_DAYS = 366;
+
+    public function __construct(private readonly MarketingAccessService $access) {}
+
+    public function assertClientAccess(mixed $user, int $clientId): void
+    {
+        $this->access->assertClientAccess($user, $clientId);
+    }
+
+    public function marketResearch(int $clientId, array $filters): array
+    {
+        $platform = $this->platform($filters);
+        $definitions = [
+            'four_p' => ['analize_4p', ['id', 'nama_analisis', 'type', 'platform', 'updated_at']],
+            'swot' => ['analize_swot', ['id', 'strenght', 'weakness', 'oportunity', 'threat', 'platform', 'updated_at']],
+            'segmentation' => ['segmentasi', ['id', 'usia', 'gender', 'negara', 'wilayah', 'gaya_hidup', 'status_sosial', 'minat', 'penggunaan', 'loyalitas', 'manfaat', 'platform', 'updated_at']],
+            'target_audience' => ['target_audience', ['id', 'indikator', 'usia', 'gender', 'negara', 'wilayah', 'pekerjaan', 'gaya_hidup', 'status_sosial', 'penggunaan', 'manfaat', 'platform', 'updated_at']],
+            'positioning' => ['positioning', ['id', 'indikator', 'deskripsi', 'platform', 'updated_at']],
+        ];
+        $rows = collect();
+        foreach ($definitions as $section => [$table, $columns]) {
+            $items = DB::table($table)->where('produk_client_id', $clientId)
+                ->whereNull('archived_at')
+                ->when($platform, fn (Builder $query) => $query->whereRaw('LOWER(platform) = ?', [$platform]))
+                ->get($columns)->map(fn ($row) => ['section' => $section] + (array) $row);
+            $rows = $rows->concat($items);
+        }
+
+        return $this->paginate($rows, $filters, 'market_research_tables', [
+            'competitor_data' => ['status' => 'unavailable', 'reason' => 'Belum ada tabel atau relasi kompetitor kanonik.'],
+        ]);
+    }
+
+    public function brandGuidelines(int $clientId, array $filters): array
+    {
+        $platform = $this->platform($filters);
+        $definitions = [
+            'identity' => ['brand_identify', ['id', 'identify as value', 'platform', 'updated_at']],
+            'visual' => ['brand_image', ['id', 'nama_image as value', 'platform', 'updated_at']],
+            'value' => ['brand_value', ['id', 'nama_value as value', 'platform', 'updated_at']],
+            'tagline' => ['brand_tagline', ['id', 'nama_tagline as value', 'nama_hashtagline as hashtags', 'platform', 'updated_at']],
+            'tone_of_voice' => ['gaya_komunikasi', ['id', 'gaya_bicara as value', 'gaya_bahasa as language_style', 'platform', 'updated_at']],
+            'composition' => ['komposisi', ['id', 'type_komposisi as value', 'komposisi as guidance', 'platform', 'updated_at']],
+            'audio' => ['audio_brand', ['id', 'nama_audio as value', 'platform', 'updated_at']],
+            'moodboard' => ['moodboard', ['id', 'moodboard as value', 'platform', 'updated_at']],
+            'tool' => ['alat_branding', ['id', 'nama_alat as value', 'platform', 'updated_at']],
+        ];
+        $rows = collect();
+        foreach ($definitions as $section => [$table, $columns]) {
+            $items = DB::table($table)->where('produk_client_id', $clientId)
+                ->when(Schema::hasColumn($table, 'archived_at'), fn (Builder $query) => $query->whereNull('archived_at'))
+                ->when($platform, fn (Builder $query) => $query->whereRaw('LOWER(platform) = ?', [$platform]))
+                ->get($columns)->map(fn ($row) => ['section' => $section] + (array) $row);
+            $rows = $rows->concat($items);
+        }
+
+        $categoryId = DB::table('produk_client')->where('id', $clientId)->value('kategori_jasa_id');
+        $pillars = DB::table('pilar')->where('kategori_id', $categoryId)->where('status', 1)
+            ->get(['id', 'pilar as value', 'fungsi_singkat', 'contoh', 'updated_at'])
+            ->map(fn ($row) => ['section' => 'content_pillar', 'platform' => null] + (array) $row);
+
+        return $this->paginate($rows->concat($pillars), $filters, 'branding_and_content_master');
+    }
+
+    public function contentCalendar(int $clientId, array $filters): array
+    {
+        [$start, $end] = $this->period($filters);
+        $platform = $this->platform($filters);
+        $source = $filters['source'] ?? null;
+        $rows = DB::table('data_jasa')
+            ->leftJoin('type_produk', 'type_produk.id', '=', 'data_jasa.type_produk_id')
+            ->leftJoin('strategy', 'strategy.id', '=', 'data_jasa.strategy_id')
+            ->leftJoin('pilar', 'pilar.id', '=', 'data_jasa.pilar_id')
+            ->leftJoin('hooks', 'hooks.id', '=', 'data_jasa.hooks_id')
+            ->leftJoin('jenis_body', 'jenis_body.id', '=', 'data_jasa.body_id')
+            ->leftJoin('jenis_cta', 'jenis_cta.id', '=', 'data_jasa.cta_id')
+            ->leftJoin('status', 'status.id', '=', 'data_jasa.status_id')
+            ->leftJoin('platform_mirror_copies as mirror_copy', function ($join): void {
+                $join->on('mirror_copy.client_id', '=', 'data_jasa.produk_client_id')
+                    ->where('mirror_copy.table_name', '=', 'data_jasa')
+                    ->on('mirror_copy.target_id', '=', 'data_jasa.id');
+            })
+            ->where('data_jasa.produk_client_id', $clientId)->whereNull('mirror_copy.id')
+            ->whereNull('data_jasa.archived_at')
+            ->whereBetween('data_jasa.tanggal_posting', [$start->toDateString(), $end->toDateString()])
+            ->when($platform, fn (Builder $query) => $query->whereRaw('LOWER(data_jasa.platform) = ?', [$platform]))
+            ->when($source, fn (Builder $query) => $query->whereRaw('LOWER(data_jasa.content_source) = ?', [$source]))
+            ->get([
+                'data_jasa.id', 'data_jasa.judul as title', 'data_jasa.inspirasi as inspiration',
+                'data_jasa.note as copy_notes', 'data_jasa.platform', 'data_jasa.content_source as source',
+                'data_jasa.tanggal_posting as publish_date', 'data_jasa.jam_posting as publish_time',
+                'type_produk.type as content_type', 'strategy.strategy', 'pilar.pilar as content_pillar',
+                'hooks.hooks as hook', 'jenis_body.nama_body as body_format', 'jenis_cta.nama_cta as cta',
+                'status.nama_status as status', 'data_jasa.updated_at',
+            ]);
+        $hashtags = DB::table('brand_tagline')->where('produk_client_id', $clientId)
+            ->get(['platform', 'nama_hashtagline'])->groupBy(fn ($row) => strtolower((string) $row->platform));
+        $rows = $rows->map(function ($row) use ($hashtags): array {
+            $item = (array) $row;
+            $item['platform'] = filled($item['platform']) ? strtolower((string) $item['platform']) : null;
+            $item['source'] = filled($item['source']) ? strtolower((string) $item['source']) : null;
+            $item['hashtags'] = $item['platform'] ? $hashtags->get($item['platform'], collect())->pluck('nama_hashtagline')->filter()->values()->all() : [];
+            $item['caption'] = null;
+
+            return $item;
+        });
+
+        return $this->paginate($rows, $filters, 'data_jasa', [
+            'period' => $this->periodMeta($start, $end),
+            'caption_availability' => ['status' => 'unavailable', 'reason' => 'Skema content plan belum memiliki field caption khusus; copy_notes tidak diperlakukan sebagai caption.'],
+        ]);
+    }
+
+    public function contentPlanMasters(Authenticatable $user, int $clientId, string $master, array $filters): array
+    {
+        $this->assertClientAccess($user, $clientId);
+        $definitions = [
+            'product_types' => ['type_produk', 'type'],
+            'strategies' => ['strategy', 'strategy'],
+            'content_pillars' => ['pilar', 'pilar'],
+            'hooks' => ['hooks', 'hooks'],
+            'bodies' => ['jenis_body', 'nama_body'],
+            'ctas' => ['jenis_cta', 'nama_cta'],
+        ];
+        abort_unless(isset($definitions[$master]), 404, 'Master content plan tidak ditemukan.');
+        [$table, $nameColumn] = $definitions[$master];
+        $query = DB::table($table)->whereNotNull($nameColumn)->where($nameColumn, '!=', '');
+        if (Schema::hasColumn($table, 'status')) {
+            $query->where($table.'.status', 1);
+        }
+        if (in_array($master, ['product_types', 'content_pillars'], true)) {
+            $categoryId = DB::table('produk_client')->where('id', $clientId)->value('kategori_jasa_id');
+            if ($categoryId !== null && Schema::hasColumn($table, 'kategori_id')) $query->where($table.'.kategori_id', $categoryId);
+        }
+        $search = trim((string) ($filters['search'] ?? ''));
+        $rows = $query->when($search !== '', fn (Builder $q) => $q->whereRaw('LOWER('.$nameColumn.') LIKE ?', ['%'.mb_strtolower($search).'%']))
+            ->orderBy($nameColumn)->get(['id', $nameColumn])->map(fn ($row) => [
+                'id' => (int) $row->id,
+                'name' => (string) $row->{$nameColumn},
+                'active' => true,
+            ]);
+        return $this->paginate($rows, $filters, 'content_plan_'.$master.'_master', [
+            'client_id' => $clientId,
+            'source' => $table,
+            'safe_fields' => ['id', 'name', 'active'],
+        ]);
+    }
+
+    public function contentPlanStatuses(Authenticatable $user, int $clientId, array $filters): array
+    {
+        $this->assertClientAccess($user, $clientId);
+        $categoryId = DB::table('produk_client')->where('id', $clientId)->value('kategori_jasa_id');
+        $query = DB::table('status')->when(Schema::hasColumn('status', 'status'), fn (Builder $q) => $q->where('status', 1))->whereNotNull('nama_status')->where('nama_status', '!=', '')
+            ->when($categoryId !== null, fn (Builder $q) => $q->where(function (Builder $inner) use ($categoryId): void {
+                $inner->whereNull('kategori_id')->orWhere('kategori_id', $categoryId);
+            }));
+        $search = trim((string) ($filters['search'] ?? ''));
+        $rows = $query->when($search !== '', fn (Builder $q) => $q->whereRaw('LOWER(nama_status) LIKE ?', ['%'.mb_strtolower($search).'%']))
+            ->orderBy('nama_status')->get(['id', 'nama_status'])->map(fn ($row) => ['id' => (int) $row->id, 'name' => (string) $row->nama_status, 'active' => true]);
+        return $this->paginate($rows, $filters, 'content_plan_statuses', ['client_id' => $clientId, 'source' => 'status', 'safe_fields' => ['id', 'name', 'active']]);
+    }
+
+    public function tasks(int $clientId, array $filters): array
+    {
+        [$start, $end] = $this->period($filters);
+        $rows = DB::table('task')->leftJoin('users', 'users.id', '=', 'task.pic')
+            ->leftJoin('divisions', 'divisions.id', '=', 'task.divisi')
+            ->where('task.project', $clientId)
+            ->whereNull('task.archived_at')
+            ->where(function (Builder $query) use ($start, $end): void {
+                $query->whereBetween('task.tanggal_mulai', [$start->toDateString(), $end->toDateString()])
+                    ->orWhereBetween('task.tanggal_deadline', [$start->toDateString(), $end->toDateString()]);
+            })
+            ->when(isset($filters['pic_id']), fn (Builder $query) => $query->where('task.pic', (int) $filters['pic_id']))
+            ->when(isset($filters['status']), fn (Builder $query) => $query->where('task.status', (int) $filters['status']))
+            ->get([
+                'task.id', 'task.nama_task as task', 'task.priority', 'task.menit as estimated_minutes',
+                'task.tanggal_mulai as start_date', 'task.tanggal_deadline as deadline', 'task.jam_mulai as start_time',
+                'task.status', 'task.id_manajement_konten as content_plan_id', 'task.id_kpi as kpi_id',
+                'users.id as pic_id', 'users.name as pic_name', 'divisions.id as division_id',
+                'divisions.name as division_name', 'task.updated_at',
+            ]);
+
+        return $this->paginate($rows, $filters, 'task', ['period' => $this->periodMeta($start, $end)]);
+    }
+
+    public function approvals(int $clientId, array $filters): array
+    {
+        [$start, $end] = $this->period($filters);
+        if (Schema::hasTable('marketing_approval_events')) {
+            $events = DB::table('marketing_approval_events')->leftJoin('users', 'users.id', '=', 'marketing_approval_events.user_id')
+                ->where('marketing_approval_events.client_id', $clientId)
+                ->whereBetween('marketing_approval_events.created_at', [$start, $end])
+                ->orderByDesc('marketing_approval_events.id')
+                ->get([
+                    'marketing_approval_events.id as event_id', 'marketing_approval_events.record_type', 'marketing_approval_events.record_id',
+                    'marketing_approval_events.action', 'marketing_approval_events.status', 'marketing_approval_events.note',
+                    'marketing_approval_events.audit_reference', 'marketing_approval_events.created_at',
+                    'users.id as actor_id', 'users.name as actor_name',
+                ]);
+            if ($events->isNotEmpty()) {
+                return $this->paginate($events, $filters, 'marketing_approval_events', [
+                    'period' => $this->periodMeta($start, $end),
+                    'history_availability' => ['status' => 'complete', 'append_only' => true],
+                ]);
+            }
+        }
+        $rows = DB::table('task')->leftJoin('users', 'users.id', '=', 'task.pic')
+            ->where('task.project', $clientId)
+            ->whereNull('task.archived_at')
+            ->where(function (Builder $query) use ($start, $end): void {
+                $query->whereBetween('task.tanggal_approve', [$start->toDateString(), $end->toDateString()])
+                    ->orWhereBetween('task.tanggal_revisi', [$start->toDateString(), $end->toDateString()])
+                    ->orWhereBetween('task.tanggal_deadline', [$start->toDateString(), $end->toDateString()]);
+            })->get([
+                'task.id as task_id', 'task.nama_task as task', 'task.status',
+                'task.tanggal_approve as approved_at', 'task.tanggal_revisi as revised_at',
+                'task.tanggal_deadline as deadline', 'task.id_manajement_konten as content_plan_id',
+                'users.id as pic_id', 'users.name as pic_name', 'task.updated_at',
+            ]);
+
+        return $this->paginate($rows, $filters, 'task', [
+            'period' => $this->periodMeta($start, $end),
+            'history_availability' => ['status' => 'partial', 'reason' => 'Hanya tanggal approval/revisi terakhir yang tersedia; event history dan approver belum tersimpan secara kanonik.'],
+        ]);
+    }
+
+    public function assets(int $clientId, array $filters): array
+    {
+        $legacy = DB::table('file_pdf')->leftJoin('divisions', 'divisions.id', '=', 'file_pdf.division_id')
+            ->leftJoin('users', 'users.id', '=', 'file_pdf.uploaded_by')
+            ->where('file_pdf.client', $clientId)
+            ->when(isset($filters['division_id']), fn (Builder $query) => $query->where('file_pdf.division_id', (int) $filters['division_id']))
+            ->select([
+                'file_pdf.id', 'file_pdf.nama_file as name', 'file_pdf.division_id', 'divisions.name as division_name',
+                'file_pdf.is_generated_document', 'file_pdf.is_system_template', 'file_pdf.is_pinned',
+                'file_pdf.pin_order', 'users.id as uploaded_by_id', 'users.name as uploaded_by_name',
+                'file_pdf.created_at', 'file_pdf.updated_at',
+            ])->selectSub(function ($query): void {
+                $query->from('file_pdf_versions')->selectRaw('COUNT(*)')->whereColumn('file_pdf_versions.file_pdf_id', 'file_pdf.id');
+            }, 'version_count')->get()->map(fn ($row): object => (object) (['metadata_source' => 'legacy_file_pdf'] + (array) $row));
+
+        $canonical = collect();
+        if (Schema::hasTable('marketing_asset_metadata')) {
+            $canonical = DB::table('marketing_asset_metadata')->leftJoin('users', 'users.id', '=', 'marketing_asset_metadata.created_by')
+                ->where('marketing_asset_metadata.client_id', $clientId)->whereNull('marketing_asset_metadata.archived_at')
+                ->get(['marketing_asset_metadata.id', 'marketing_asset_metadata.name', 'marketing_asset_metadata.asset_type', 'marketing_asset_metadata.mime_type', 'marketing_asset_metadata.description', 'marketing_asset_metadata.project_id', 'marketing_asset_metadata.campaign_id', 'marketing_asset_metadata.content_plan_id', 'marketing_asset_metadata.approval_status', 'marketing_asset_metadata.current_version', 'marketing_asset_metadata.created_by as created_by_id', 'users.name as created_by_name', 'marketing_asset_metadata.created_at', 'marketing_asset_metadata.updated_at'])
+                ->map(function ($row): object {
+                    $versions = DB::table('marketing_asset_versions')->where('asset_metadata_id', $row->id)->orderBy('version_number')->get(['version_number', 'label', 'note', 'created_by', 'created_at'])->map(fn ($version) => (array) $version)->all();
+                    return (object) (['metadata_source' => 'marketing_asset_metadata', 'version_count' => count($versions), 'versions' => $versions] + (array) $row);
+                });
+        }
+        $rows = $canonical->concat($legacy)->sortByDesc('updated_at')->values();
+
+        return $this->paginate($rows, $filters, 'marketing_asset_metadata_and_legacy_file_pdf', [
+            'excluded_fields' => ['location', 'editor_content', 'binary_content', 'uploader_email'],
+            'binary_operations' => 'not_supported',
+        ]);
+    }
+
+    private function paginate(Collection $rows, array $filters, string $source, array $extraMeta = []): array
+    {
+        $page = (int) ($filters['page'] ?? 1);
+        $perPage = (int) ($filters['per_page'] ?? 25);
+        $total = $rows->count();
+        $latest = $rows->max('updated_at');
+
+        return [
+            'data' => $rows->forPage($page, $perPage)->values()->all(),
+            'pagination' => ['page' => $page, 'per_page' => $perPage, 'total' => $total, 'last_page' => max(1, (int) ceil($total / $perPage))],
+            'meta' => [
+                'source' => $source,
+                'freshness' => ['latest_updated_at' => $latest ? (string) $latest : null],
+                'completeness' => ['status' => $total === 0 ? 'no_data' : 'complete'],
+            ] + $extraMeta,
+        ];
+    }
+
+    private function period(array $filters): array
+    {
+        $start = CarbonImmutable::parse($filters['start_date'], 'Asia/Jakarta')->startOfDay();
+        $end = CarbonImmutable::parse($filters['end_date'], 'Asia/Jakarta')->endOfDay();
+        abort_if($start->diffInDays($end) + 1 > self::MAX_PERIOD_DAYS, 422, 'Rentang tanggal maksimum adalah '.self::MAX_PERIOD_DAYS.' hari.');
+
+        return [$start, $end];
+    }
+
+    private function periodMeta(CarbonImmutable $start, CarbonImmutable $end): array
+    {
+        return ['start_date' => $start->toDateString(), 'end_date' => $end->toDateString(), 'max_days' => self::MAX_PERIOD_DAYS, 'timezone' => 'Asia/Jakarta'];
+    }
+
+    private function platform(array $filters): ?string
+    {
+        return filled($filters['platform'] ?? null) ? strtolower((string) $filters['platform']) : null;
+    }
+}

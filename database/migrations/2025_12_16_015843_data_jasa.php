@@ -27,10 +27,9 @@ return new class extends Migration
             $table->string('komposisi')->nullable();
             $table->text('note')->nullable();
             $table->date('tanggal_posting')->nullable();
-            $table->date('tanggal_deadline')->nullable();
             $table->string('link')->nullable();
             $table->string('platform')->nullable();
-            $table->integer('status_id')->constrained("status")->cascadeOnDelete();;
+            $table->integer('status_id')->constrained("status")->cascadeOnDelete();
             $table->timestamps();
         });
     }

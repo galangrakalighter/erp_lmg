@@ -20,6 +20,7 @@ Aplikasi internal berbasis Laravel untuk mengelola operasional Lighter Media Gro
 ## Daftar isi
 
 - [Teknologi](#teknologi)
+- [Digital Marketing](#digital-marketing)
 - [MCP Marketing Analytics](#mcp-marketing-analytics)
 - [Menjalankan aplikasi](#menjalankan-aplikasi)
 - [Gambaran alur aplikasi](#gambaran-alur-aplikasi)
@@ -55,6 +56,63 @@ Aplikasi internal berbasis Laravel untuk mengelola operasional Lighter Media Gro
 - Tailwind CSS 4
 - Vite 7
 - JavaScript
+
+## Digital Marketing
+
+Modul Digital Marketing mengelola Content Plan, Branding, Market Research, Campaign, Task, dan metadata aset/dokumen. Data modul ini juga menjadi sumber dashboard, kalender, pencarian, ringkasan, ekspor, rekomendasi, dan MCP Marketing Analytics.
+
+### Area data
+
+| Area | Tabel utama | Implementasi penting |
+|---|---|---|
+| Content Plan | `data_jasa` | `app/Services/ContentPlanCrudService.php`, `app/Http/Controllers/ManajemenKontenController.php` |
+| Branding | `brand_identify` | `app/Services/BrandGuidelineCrudService.php`, `app/Http/Controllers/brandIdentifyController.php` |
+| Market Research | `analize_4p`, `analize_swot`, `segmentasi`, `target_audience`, `positioning` | `app/Services/MarketResearchCrudService.php`, `app/Services/MarketResearch/MarketResearchServiceImplement.php` |
+| Campaign | `marketing_campaigns` | `app/Services/CampaignCrudService.php`, `app/Services/CampaignAnalyticsService.php` |
+| Task | `task` | `app/Services/MarketingTaskCrudService.php` |
+| Metadata aset/dokumen | `marketing_asset_metadata` | `app/Services/MarketingAssetCrudService.php`, `app/Services/MarketingDocumentUploadService.php` |
+| Read model dan MCP | Berbagai tabel Digital Marketing | `app/Services/DigitalMarketingDataService.php`, `app/Services/ClientManagementReadService.php`, `app/Services/MarketingAnalyticsService.php` |
+
+### Aturan lifecycle `archived_at`
+
+Aturan ini berlaku untuk semua perubahan dan fitur baru yang menyentuh data Digital Marketing:
+
+1. Record aktif adalah record dengan `archived_at IS NULL`. Semua daftar, detail yang dipakai fitur aktif, pencarian, ringkasan, kalender, dashboard, rekomendasi, ekspor, serta hasil MCP/orchestrator harus memfilter record aktif.
+2. Nilai `archived_at` yang terisi berarti archived. Jangan menganggap record archived sebagai aktif hanya karena status bisnisnya masih berjalan.
+3. Archive adalah soft archive: isi `archived_at` dan `archived_by`; jangan menghapus baris, metadata, file, atau versi aset secara permanen. Setelah archive, record harus langsung tidak terlihat dari semua read aktif.
+4. Update biasa hanya untuk record aktif. Update record archived harus ditolak dengan error yang jelas; jangan mengosongkan `archived_at` untuk menghidupkannya kembali.
+5. Create selalu membuat baris dan ID baru, sekalipun ada record aktif atau archived dengan data yang sama. Create mengisi `archived_at` dan `archived_by` dengan `NULL`. Jangan menambah unique constraint atas kombinasi field bisnis Digital Marketing atau mengubah create menjadi upsert/restore.
+6. Peringatan data serupa boleh ditampilkan sebagai informasi, tetapi tidak boleh memblokir create. Jika ada konfirmasi sebelum create, token harus terikat ke payload yang disetujui dan audit create hanya mencatat peristiwa serta ID, tanpa token atau data sensitif.
+7. `include_archived=true` hanya boleh ditambahkan pada tool khusus archive/admin yang memang memerlukan audit. Jangan menerapkannya pada alur aktif standar.
+
+Gunakan pola query eksplisit Laravel:
+
+```php
+DB::table('data_jasa')->where('produk_client_id', $clientId)->whereNull('archived_at');
+```
+
+Pastikan setiap reader, termasuk query agregat dan query yang dipakai sebagai sumber reader lain, menerapkan filter yang sama. Untuk tabel legacy yang belum memiliki kolom, cek skema secara eksplisit dan jangan mengasumsikan kolom tersedia; selaraskan skema sebelum menghapus guard kompatibilitas.
+
+### Checklist saat melanjutkan atau menambah fitur
+
+- Identifikasi semua tabel yang dibaca atau ditulis oleh fitur, termasuk tabel mirror/snapshot, relasi, ekspor, dan metadata file.
+- Untuk setiap jalur read, pastikan hanya record aktif yang dapat masuk ke hasil, hitungan, agregat, kalender, hasil pencarian, dashboard, dan jawaban natural-language.
+- Untuk create, pastikan insert baru dengan ID baru; jangan mencari lalu menghidupkan kembali record archived. Pertahankan token konfirmasi yang terikat payload.
+- Untuk update dan archive, scope mutasi dengan `whereNull('archived_at')`; berikan respons jelas jika record sudah archived atau tidak ditemukan.
+- Jangan menghapus file saat metadata atau record diarsipkan. Penghapusan permanen, bila kelak dibutuhkan, harus menjadi alur admin terpisah dan eksplisit.
+- Catat audit tanpa token, kredensial, isi dokumen, atau payload sensitif.
+- Pertahankan batas client dan divisi yang sudah ada. Jangan mengubah perilaku modul ERP di luar Digital Marketing.
+- Jangan menambahkan unique index/constraint baru untuk data Digital Marketing.
+
+### Tes regresi
+
+Tes CRUD OAuth mencakup lifecycle per area berikut:
+
+```bash
+php artisan test tests/Feature/ContentPlanCrudTest.php tests/Feature/ContentPlanDatabaseOAuthTest.php tests/Feature/BrandGuidelineDatabaseOAuthTest.php tests/Feature/MarketResearchDatabaseOAuthTest.php tests/Feature/MarketingTaskDatabaseOAuthTest.php tests/Feature/MarketingAssetMetadataDatabaseOAuthTest.php tests/Feature/CampaignDatabaseOAuthTest.php tests/Feature/MarketingAnalyticsApiTest.php
+```
+
+Ketika menambah reader atau mutasi baru, tambahkan tes yang membuktikan record aktif terlihat, record archived tidak muncul di daftar/pencarian/ringkasan terkait, duplikasi create menghasilkan ID baru, update archived ditolak, dan archive menghilangkan record dari hasil aktif. Jalankan suite terkait beserta pemeriksaan format diff sebelum menyerahkan perubahan.
 
 ## MCP Marketing Analytics
 

@@ -31,8 +31,8 @@ final class BrandGuidelineCrudService
         $clientId = (int) $data['client_id']; $payload = $this->payload($data);
         $this->policy->assert($user, $clientId, MarketingCrudPermissions::BRAND_GUIDELINE_CREATE);
         $this->confirmation->consume($user, $data['confirmation_token'], 'create', 'brand_guideline', 0, $this->hash($clientId, $payload));
-        $id = DB::table('brand_identify')->insertGetId($payload + ['produk_client_id' => $clientId, 'created_at' => now(), 'updated_at' => now()]);
-        $this->audit->record($user, 'CREATE', $id, $clientId, $payload);
+        $id = DB::table('brand_identify')->insertGetId($payload + ['produk_client_id' => $clientId, 'archived_at' => null, 'archived_by' => null, 'created_at' => now(), 'updated_at' => now()]);
+        $this->audit->record($user, 'CREATE', $id, $clientId);
         return $this->read($id);
     }
 
@@ -40,11 +40,10 @@ final class BrandGuidelineCrudService
     {
         $record = $this->policy->assertObject($user, $id, MarketingCrudPermissions::BRAND_GUIDELINE_UPDATE);
         abort_if($record->archived_at, 409, 'Brand guideline sudah diarsipkan.');
-        $this->assertArchiveReason($data['reason'] ?? null);
         abort_unless((int) ($data['client_id'] ?? 0) === (int) $record->produk_client_id, 403, 'client_id tidak sesuai dengan record brand guideline.');
         $payload = $this->payload($data);
         $this->confirmation->consume($user, $data['confirmation_token'], 'update', 'brand_guideline', $id, $this->hash((int) $record->produk_client_id, $payload));
-        DB::table('brand_identify')->where('id', $id)->update($payload + ['updated_at' => now()]);
+        DB::table('brand_identify')->where('id', $id)->whereNull('archived_at')->update($payload + ['updated_at' => now()]);
         $this->audit->record($user, 'UPDATE', $id, (int) $record->produk_client_id, $payload);
         return $this->read($id);
     }
@@ -55,13 +54,14 @@ final class BrandGuidelineCrudService
         abort_if($record->archived_at, 409, 'Brand guideline sudah diarsipkan.');
         $payload = ['reason' => $data['reason']];
         $this->confirmation->consume($user, $data['confirmation_token'], 'archive', 'brand_guideline', $id, $this->hash((int) $record->produk_client_id, $payload));
-        DB::table('brand_identify')->where('id', $id)->update(['archived_at' => now(), 'archived_by' => $user->getAuthIdentifier(), 'updated_at' => now()]);
-        $this->audit->record($user, 'ARCHIVE', $id, (int) $record->produk_client_id, $payload);
+        $updated = DB::table('brand_identify')->where('id', $id)->whereNull('archived_at')->update(['archived_at' => now(), 'archived_by' => $user->getAuthIdentifier(), 'updated_at' => now()]);
+        abort_if($updated === 0, 409, 'Brand guideline sudah diarsipkan.');
+        $this->audit->record($user, 'ARCHIVE', $id, (int) $record->produk_client_id);
         return ['id' => $id, 'archived' => true, 'scope' => 'client'];
     }
 
     private function payload(array $data): array { return array_intersect_key($data, array_flip(['identify', 'platform'])); }
     private function assertArchiveReason(?string $reason): void { abort_if($reason === null || trim($reason) === '', 422, 'reason_required'); abort_if(mb_strlen(trim($reason)) < 5 || mb_strlen($reason) > 500, 422, 'reason_invalid'); }
     private function hash(int $clientId, array $payload): string { return hash('sha256', json_encode(['client_id' => $clientId, 'payload' => $payload], JSON_THROW_ON_ERROR)); }
-    private function read(int $id): array { return (array) DB::table('brand_identify')->where('id', $id)->first(['id', 'produk_client_id', 'identify', 'platform', 'archived_at']); }
+    private function read(int $id): array { return (array) DB::table('brand_identify')->where('id', $id)->whereNull('archived_at')->first(['id', 'produk_client_id', 'identify', 'platform', 'archived_at']); }
 }

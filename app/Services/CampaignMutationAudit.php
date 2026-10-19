@@ -10,7 +10,7 @@ final class CampaignMutationAudit
 
     public function record(Authenticatable $user, string $action, int $id, int $clientId, array $after = []): void
     {
-        $safe = array_diff_key($after, array_flip(['confirmation_token', 'password', 'credential', 'secret', 'private_key']));
+        $safe = in_array(strtoupper($action), ['CREATE', 'ARCHIVE'], true) ? [] : array_diff_key($after, array_flip(['confirmation_token', 'password', 'credential', 'secret', 'private_key']));
         $this->activityLog->record([
             'action' => strtoupper($action),
             'module' => 'campaign',

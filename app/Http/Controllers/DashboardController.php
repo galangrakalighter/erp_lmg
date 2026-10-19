@@ -57,6 +57,11 @@ class DashboardController extends Controller
         $totalEmployees = User::query()->where('isAdmin', false)->count();
 
         $taskBase = DB::table('task');
+        $taskBase->where(function ($query): void {
+            $query->whereNull('task.archived_at')->orWhereNotIn('task.divisi', function ($subquery): void {
+                $subquery->select('id')->from('divisions')->whereRaw('LOWER(TRIM(name)) = ?', ['digital marketing']);
+            });
+        });
         $tasksToday = (clone $taskBase)->when($selectedDivisionId, fn ($query) => $query->where('divisi', $selectedDivisionId))->whereDate('tanggal_mulai', $today)->count();
         $tasksDoneThisMonth = (clone $taskBase)->when($selectedDivisionId, fn ($query) => $query->where('divisi', $selectedDivisionId))
             ->where('status', 4)
@@ -70,6 +75,7 @@ class DashboardController extends Controller
 
         $divisionPerformance = DB::table('divisions as d')
             ->leftJoin('task as t', 't.divisi', '=', 'd.id')
+            ->where(function ($query): void { $query->whereNull('t.archived_at')->orWhereRaw('LOWER(TRIM(d.name)) <> ?', ['digital marketing']); })
             ->selectRaw("d.id, d.name, COUNT(t.id) as total_tasks, SUM(CASE WHEN t.status = 4 THEN 1 ELSE 0 END) as completed_tasks, SUM(CASE WHEN t.status = 3 THEN 1 ELSE 0 END) as awaiting_approval, SUM(CASE WHEN t.status <> 4 AND t.tanggal_deadline < ? THEN 1 ELSE 0 END) as overdue_tasks", [$today->toDateString()])
             ->groupBy('d.id', 'd.name')
             ->when($selectedDivisionId, fn ($query) => $query->where('d.id', $selectedDivisionId))
@@ -93,6 +99,7 @@ class DashboardController extends Controller
             ->leftJoin('divisions as d', 'd.id', '=', 't.divisi')
             ->leftJoin('produk_client as pc', 'pc.id', '=', 't.project')
             ->leftJoin('users as u', 'u.id', '=', 't.pic')
+            ->where(function ($query): void { $query->whereNull('t.archived_at')->orWhereRaw('LOWER(TRIM(d.name)) <> ?', ['digital marketing']); })
             ->where('t.status', '!=', 4)
             ->when($selectedDivisionId, fn ($query) => $query->where('t.divisi', $selectedDivisionId))
             ->orderBy('t.tanggal_deadline')

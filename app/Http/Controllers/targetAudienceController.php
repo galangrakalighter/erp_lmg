@@ -13,6 +13,7 @@ class targetAudienceController extends Controller
         $produk = DB::table('produk_client')->whereIn('id', $visibleClientIds)->get();
         $data = TargetAudience::join('produk_client', 'produk_client.id', '=', 'target_audience.produk_client_id')
         ->whereIn('produk_client.id', $visibleClientIds)
+        ->whereNull('target_audience.archived_at')
         ->select('target_audience.*', 'produk_client.nama')
         ->get();
         // dd($data);
@@ -71,7 +72,7 @@ class targetAudienceController extends Controller
             'manfaat' => 'nullable|string',
         ]);
         
-        TargetAudience::findOrFail($id)->update([
+        TargetAudience::query()->whereNull('archived_at')->findOrFail($id)->update([
             'produk_client_id' => $request->produk,
             'indikator' => $request->indikator,
             'usia' => $request->usia, 
@@ -91,7 +92,7 @@ class targetAudienceController extends Controller
 
     public function destroy($id){
         $id = (int)$id;
-        TargetAudience::destroy($id);
+        DB::table('target_audience')->where('id', $id)->whereNull('archived_at')->update(['archived_at' => now(), 'archived_by' => auth()->id(), 'updated_at' => now()]);
         return redirect()->back()->with('success', 'Berhasil Di Hapus');
     }
 }

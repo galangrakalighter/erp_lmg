@@ -45,7 +45,7 @@ final class MarketingApprovalService
                 'action' => $action, 'status' => $status, 'note' => $payload['note'], 'audit_reference' => (string) Str::uuid(), 'created_at' => now(),
             ]);
             if ($data['record_type'] === 'asset_metadata') {
-                DB::table('marketing_asset_metadata')->where('id', $recordId)->update(['approval_status' => $status, 'updated_at' => now()]);
+                DB::table('marketing_asset_metadata')->where('id', $recordId)->whereNull('archived_at')->update(['approval_status' => $status, 'updated_at' => now()]);
             }
 
             return DB::table('marketing_approval_events')->where('id', $id)->first();

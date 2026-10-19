@@ -94,6 +94,7 @@ class ManajemenKontenController extends Controller
                 ->leftJoin('jenis_body', 'jenis_body.id', '=', 'data_jasa.body_id')
                 ->leftJoin('jenis_cta', 'jenis_cta.id', '=', 'data_jasa.cta_id')
                 ->where('data_jasa.produk_client_id', $produk_id)
+                ->whereNull('data_jasa.archived_at')
                 ->whereIn('data_jasa.platform', $mirroredPlatforms)
                 ->when(count($mirroredPlatforms) > 1, fn ($query) => $query->whereNotIn(
                     'data_jasa.id', $mirroring->copiedTargetIds((int) $produk_id, 'data_jasa')
@@ -208,6 +209,8 @@ class ManajemenKontenController extends Controller
                 'platform'         => $request->platform,
                 'content_source'   => $request->content_source,
                 'funneling'        => $request->funneling,
+                'archived_at'      => null,
+                'archived_by'      => null,
                 'created_at'       => now(),
                 'updated_at'       => now(),
             ]);
@@ -300,8 +303,8 @@ class ManajemenKontenController extends Controller
     }
 
     public function update($id, Request $request, PlatformMirroringService $mirroring){
-        $data = DB::table('data_jasa')->where('id', $id)->first();
-        abort_unless($data, 404);
+        $data = DB::table('data_jasa')->where('id', $id)->whereNull('archived_at')->first();
+        abort_unless($data, 404, 'Content plan aktif tidak ditemukan.');
 
         abort_if($this->isMultimediaUser(), 403, 'Multimedia hanya dapat melihat Content Plan.');
         $dmRole = DigitalMarketingPermissions::role(Auth::user());
@@ -381,7 +384,7 @@ class ManajemenKontenController extends Controller
         );
 
         try {
-            DB::table('data_jasa')->where('id', $id)->update([
+            $updated = DB::table('data_jasa')->where('id', $id)->whereNull('archived_at')->update([
                 'judul'            => $request->judul,
                 'inspirasi'        => $request->inspirasi,
                 // 'menit'              => $request->menit,
@@ -404,9 +407,9 @@ class ManajemenKontenController extends Controller
                 'platform'         => $request->platform,
                 'content_source'   => $request->content_source,
                 'funneling'        => $request->funneling,
-                'created_at'       => now(),
                 'updated_at'       => now(),
             ]);
+            abort_unless($updated > 0, 404, 'Content plan aktif tidak ditemukan.');
             $mirroring->syncRow(
                 (int) $data->produk_client_id,
                 'data_jasa',
@@ -467,19 +470,15 @@ class ManajemenKontenController extends Controller
     public function destroy($id, PlatformMirroringService $mirroring) {
         abort_if($this->isMultimediaUser(), 403, 'Multimedia tidak dapat menghapus Content Plan.');
         $id = (int)$id;
-        $data = DB::table('data_jasa')->where('id', $id)->first();
+        $data = DB::table('data_jasa')->where('id', $id)->whereNull('archived_at')->first();
         $dmRole = DigitalMarketingPermissions::role(Auth::user());
         if ($data) $this->authorizeManagerClient((int) $data->produk_client_id, $dmRole);
         abort_unless($data && DigitalMarketingPermissions::canManageContentPlan($dmRole, (string) $data->content_source), 403);
-        $mirroring->deleteMirroredRow(
-            (int) $data->produk_client_id,
-            'data_jasa',
-            (int) $id,
-            $data->content_source === 'paid' ? 'content-plan-paid' : 'content-plan-organic'
-        );
-        DB::table("data_jasa")->delete($id);
-        DB::table("task")->where('id_manajement_konten', $id)->delete();
-        return redirect()->back()->with('success', 'Data Berhasil Di Hapus');
+        $updated = DB::table('data_jasa')->where('id', $id)->whereNull('archived_at')->update([
+            'archived_at' => now(), 'archived_by' => Auth::id(), 'updated_at' => now(),
+        ]);
+        abort_unless($updated > 0, 404, 'Content plan aktif tidak ditemukan.');
+        return redirect()->back()->with('success', 'Content plan berhasil diarsipkan');
     }
 
     private function isMultimediaUser(): bool

@@ -13,6 +13,7 @@ class segmentasiController extends Controller
         $produk = DB::table('produk_client')->whereIn('id', $visibleClientIds)->get();
         $data = Segmentasi::join('produk_client', 'produk_client.id', '=', 'segmentasi.produk_client_id')
         ->whereIn('produk_client.id', $visibleClientIds)
+        ->whereNull('segmentasi.archived_at')
         ->select('segmentasi.*', 'produk_client.nama')
         ->get();
         return view('cms_market.segmentasi.index', compact(
@@ -70,7 +71,7 @@ class segmentasiController extends Controller
             'manfaat' => 'nullable|string',
         ]);
         
-        Segmentasi::findOrFail($id)->update([
+        Segmentasi::query()->whereNull('archived_at')->findOrFail($id)->update([
             'produk_client_id' => $request->produk,
             'usia' => $request->usia, 
             'gender' => $request->gender,
@@ -90,7 +91,7 @@ class segmentasiController extends Controller
 
     public function destroy($id){
         $id = (int)$id;
-        Segmentasi::destroy($id);
+        DB::table('segmentasi')->where('id', $id)->whereNull('archived_at')->update(['archived_at' => now(), 'archived_by' => auth()->id(), 'updated_at' => now()]);
         return redirect()->back()->with('success', 'Berhasil Di Hapus');
     }
 }

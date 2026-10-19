@@ -61,7 +61,7 @@ class DigitalMarketingDataService
         $rows = collect();
         foreach ($definitions as $section => [$table, $columns]) {
             $items = DB::table($table)->where('produk_client_id', $clientId)
-                ->when($table === 'brand_identify', fn (Builder $query) => $query->whereNull('archived_at'))
+                ->when(Schema::hasColumn($table, 'archived_at'), fn (Builder $query) => $query->whereNull('archived_at'))
                 ->when($platform, fn (Builder $query) => $query->whereRaw('LOWER(platform) = ?', [$platform]))
                 ->get($columns)->map(fn ($row) => ['section' => $section] + (array) $row);
             $rows = $rows->concat($items);

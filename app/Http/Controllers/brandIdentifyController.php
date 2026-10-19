@@ -31,13 +31,15 @@ class brandIdentifyController extends Controller
             'produk_client_id' => $request->produk,
             'identify'     => $path,
             'platform'     => $request->platform,
+            'archived_at'  => null,
+            'archived_by'  => null,
         ]);
 
         return redirect()->back()->with('success', 'Moodboard berhasil disimpan!');
     }
 
     public function update($id, Request $request){
-        $identify = Identify::findOrFail($id);
+        $identify = Identify::query()->whereNull('archived_at')->findOrFail($id);
         if ($request->hasFile('image')) {
             $validator = Validator::make($request->all(), [
                 'image' => 'image|mimes:jpeg,png,jpg,webp|max:5120',
@@ -59,15 +61,13 @@ class brandIdentifyController extends Controller
     }
 
     public function destroy($id){
-        $identify = Identify::findOrFail($id);
+        $updated = DB::table('brand_identify')->where('id', $id)->whereNull('archived_at')->update([
+            'archived_at' => now(),
+            'archived_by' => auth()->id(),
+            'updated_at' => now(),
+        ]);
 
-        // 2. Cek apakah file gambar ada di storage, jika ada hapus permanen
-        if ($identify->image && Storage::disk('public')->exists($identify->image)) {
-            Storage::disk('public')->delete($identify->image);
-        }
-
-        // 3. Hapus data dari database
-        $identify->delete();
-        return redirect()->back()->with('success', 'Berhasil Menghapus Data');
+        abort_unless($updated > 0, 404, 'Branding aktif tidak ditemukan.');
+        return redirect()->back()->with('success', 'Moodboard berhasil diarsipkan');
     }
 }

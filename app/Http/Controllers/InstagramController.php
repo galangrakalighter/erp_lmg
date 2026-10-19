@@ -38,6 +38,7 @@ class InstagramController extends Controller
         ->join('pilar', 'pilar.id', '=', 'data_jasa.pilar_id')
         ->join('hooks', 'hooks.id', '=', 'data_jasa.hooks_id')
         ->where('data_jasa.produk_client_id', $produk)
+            ->whereNull('data_jasa.archived_at')
         ->select('data_jasa.*', 'type_produk.type', 'strategy.strategy', 'status.nama_status', 'pilar.pilar', 'hooks.hooks')
         ->paginate(10);
         

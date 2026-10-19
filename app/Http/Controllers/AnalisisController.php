@@ -61,6 +61,7 @@ class AnalisisController extends Controller
             ->leftJoin('jenis_body', 'jenis_body.id', '=', 'data_jasa.body_id')
             ->leftJoin('jenis_cta', 'jenis_cta.id', '=', 'data_jasa.cta_id')
             ->where('data_jasa.produk_client_id', $produk)
+            ->whereNull('data_jasa.archived_at')
             ->whereRaw('LOWER(data_jasa.platform) = ?', [strtolower($platform)])
             ->when($sinceDate, function ($query) use ($sinceDate) {
                 $query->where(

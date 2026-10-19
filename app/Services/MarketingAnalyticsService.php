@@ -88,7 +88,7 @@ class MarketingAnalyticsService
                     ->where('mirror_copy.table_name', '=', 'data_jasa')
                     ->on('mirror_copy.target_id', '=', 'data_jasa.id');
             })
-            ->where('produk_client_id', $clientId)
+            ->where('data_jasa.produk_client_id', $clientId)
             ->whereBetween('tanggal_posting', [$start->toDateString(), $end->toDateString()])
             ->when($platform, fn (Builder $query) => $query->whereRaw('LOWER(platform) = ?', [$platform]))
             ->selectRaw('LOWER(data_jasa.platform) as platform, LOWER(data_jasa.content_source) as source, COUNT(DISTINCT data_jasa.id) as record_count, COUNT(DISTINCT CASE WHEN mirror_copy.id IS NOT NULL THEN data_jasa.id END) as mirrored_record_count, MIN(data_jasa.tanggal_posting) as first_date, MAX(data_jasa.tanggal_posting) as last_date, MAX(data_jasa.updated_at) as last_updated_at')

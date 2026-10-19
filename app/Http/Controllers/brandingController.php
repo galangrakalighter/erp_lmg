@@ -24,6 +24,7 @@ class brandingController extends Controller
                 ->join('produk_client', 'produk_client.id', '=', 'brand_identify.produk_client_id')
                 ->select("produk_client.nama", 'brand_identify.*')
                 ->where("brand_identify.produk_client_id", $id)
+                ->whereNull('brand_identify.archived_at')
                 ->whereIn("brand_identify.platform", $mirroredPlatforms)
                 ->tap(fn ($query) => $withoutMirrorCopies($query, 'brand_identify'))
                 ->first();

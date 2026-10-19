@@ -92,7 +92,8 @@ class PlatformMirroringService
             return;
         }
 
-        $source = DB::table($table)->where('id', $rowId)->where('produk_client_id', $clientId)->first();
+        $source = DB::table($table)->where('id', $rowId)->where('produk_client_id', $clientId)
+            ->when(Schema::hasColumn($table, 'archived_at'), fn ($query) => $query->whereNull('archived_at'))->first();
         if (! $source || blank($source->platform ?? null)) {
             return;
         }
@@ -109,7 +110,8 @@ class PlatformMirroringService
     /** Hapus salinan pada platform mirror aktif ketika sumber dihapus. */
     public function deleteMirroredRow(int $clientId, string $table, int $rowId, string $scope): void
     {
-        $source = DB::table($table)->where('id', $rowId)->where('produk_client_id', $clientId)->first();
+        $source = DB::table($table)->where('id', $rowId)->where('produk_client_id', $clientId)
+            ->when(Schema::hasColumn($table, 'archived_at'), fn ($query) => $query->whereNull('archived_at'))->first();
         if (! $source || blank($source->platform ?? null)) {
             return;
         }
@@ -145,6 +147,7 @@ class PlatformMirroringService
 
         DB::table($table)
             ->where('produk_client_id', $clientId)
+            ->when(Schema::hasColumn($table, 'archived_at'), fn ($query) => $query->whereNull('archived_at'))
             ->whereRaw('LOWER(platform) = ?', [strtolower($sourcePlatform)])
             ->when($onlySourceId !== null, fn ($query) => $query->where('id', $onlySourceId))
             ->when($table === 'data_jasa' && $scope === 'content-plan-organic', fn ($query) => $query->where('content_source', 'organic'))

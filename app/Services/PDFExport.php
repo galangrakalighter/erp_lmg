@@ -2,6 +2,7 @@
 
 namespace App\Services;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 class PDFExport
 {
     protected string $token;
@@ -32,6 +33,7 @@ class PDFExport
             ->leftJoin('jenis_body', 'jenis_body.id', '=', 'data_jasa.body_id')
             ->leftJoin('jenis_cta', 'jenis_cta.id', '=', 'data_jasa.cta_id')
             ->where('data_jasa.produk_client_id', $id)
+            ->whereNull('data_jasa.archived_at')
             ->when($platforms !== [], fn ($query) => $query->whereIn('data_jasa.platform', $platforms))
             ->when(count($platforms) > 1 && $mirroring, fn ($query) => $query->whereNotIn(
                 'data_jasa.id',
@@ -67,6 +69,7 @@ class PDFExport
         $getData = ['analize_4p', 'analize_swot', 'positioning', 'segmentasi', 'target_audience'];
         for ($i=0; $i < count($getData); $i++) { 
           $market = DB::table($getData[$i])
+            ->when(Schema::hasColumn($getData[$i], 'archived_at'), fn ($query) => $query->whereNull('archived_at'))
                     ->join('produk_client', 'produk_client.id', '=', $getData[$i].'.produk_client_id')
                     ->where($getData[$i].'.produk_client_id', $id)
                     ->when($platforms !== [], fn ($query) => $query->whereIn($getData[$i].'.platform', $platforms))
@@ -79,6 +82,7 @@ class PDFExport
           array_push($data, $market);
           
           $jumlahData = DB::table($getData[$i])
+            ->when(Schema::hasColumn($getData[$i], 'archived_at'), fn ($query) => $query->whereNull('archived_at'))
                     ->select('produk_client_id', DB::raw('count(*) as total'))
                     ->where('produk_client_id', $id)
                     ->when($platforms !== [], fn ($query) => $query->whereIn('platform', $platforms))
@@ -119,6 +123,7 @@ class PDFExport
           ->join('produk_client', 'produk_client.id', '=', 'brand_identify.produk_client_id')
           ->select("produk_client.nama", 'brand_identify.*')
           ->where("brand_identify.produk_client_id", $id)
+          ->whereNull('brand_identify.archived_at')
           ->when($platforms !== [], fn ($query) => $query->whereIn('brand_identify.platform', $platforms))
           ->when(count($platforms) > 1 && $mirroring, fn ($query) => $query->whereNotIn(
               'brand_identify.id',

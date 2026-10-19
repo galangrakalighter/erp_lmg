@@ -10,6 +10,7 @@ class ContentPlanMutationAudit
 
     public function record(Authenticatable $user, string $action, int $id, int $clientId, array $before = [], array $after = []): void
     {
+        if (in_array(strtoupper($action), ['CREATE', 'ARCHIVE'], true)) { $before = []; $after = []; }
         $this->activityLog->record([
             'action' => strtoupper($action), 'module' => 'content_plan', 'target_id' => $id,
             'target_type' => 'data_jasa', 'description' => 'Content plan mutation '.$action,

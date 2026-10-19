@@ -42,8 +42,8 @@ final class CampaignCrudService
         $this->policy->assert($user, $clientId, MarketingCrudPermissions::CAMPAIGN_CREATE);
         $this->assertOwner($clientId, $payload['owner_user_id'] ?? null);
         $this->confirmation->consume($user, $data['confirmation_token'], 'create', self::MODULE, 0, $this->hash($clientId, $payload));
-        $id = DB::table('marketing_campaigns')->insertGetId($payload + ['client_id' => $clientId, 'created_at' => now(), 'updated_at' => now()]);
-        $this->audit->record($user, 'CREATE', $id, $clientId, $payload);
+        $id = DB::table('marketing_campaigns')->insertGetId($payload + ['client_id' => $clientId, 'archived_at' => null, 'archived_by' => null, 'created_at' => now(), 'updated_at' => now()]);
+        $this->audit->record($user, 'CREATE', $id, $clientId);
 
         return $this->read($id);
     }
@@ -56,7 +56,7 @@ final class CampaignCrudService
         $payload = $this->payload($data);
         $this->assertOwner((int) $record->client_id, $payload['owner_user_id'] ?? null);
         $this->confirmation->consume($user, $data['confirmation_token'], 'update', self::MODULE, $id, $this->hash((int) $record->client_id, $payload));
-        DB::table('marketing_campaigns')->where('id', $id)->update($payload + ['updated_at' => now()]);
+        DB::table('marketing_campaigns')->where('id', $id)->whereNull('archived_at')->update($payload + ['updated_at' => now()]);
         $this->audit->record($user, 'UPDATE', $id, (int) $record->client_id, $payload);
 
         return $this->read($id);
@@ -70,8 +70,9 @@ final class CampaignCrudService
         $this->assertArchiveReason($data['reason'] ?? null);
         $payload = ['reason' => $data['reason']];
         $this->confirmation->consume($user, $data['confirmation_token'], 'archive', self::MODULE, $id, $this->hash((int) $record->client_id, $payload));
-        DB::table('marketing_campaigns')->where('id', $id)->update(['archived_at' => now(), 'archived_by' => $user->getAuthIdentifier(), 'updated_at' => now()]);
-        $this->audit->record($user, 'ARCHIVE', $id, (int) $record->client_id, $payload);
+        $updated = DB::table('marketing_campaigns')->where('id', $id)->whereNull('archived_at')->update(['archived_at' => now(), 'archived_by' => $user->getAuthIdentifier(), 'updated_at' => now()]);
+        abort_if($updated === 0, 409, 'Campaign sudah diarsipkan.');
+        $this->audit->record($user, 'ARCHIVE', $id, (int) $record->client_id);
 
         return ['id' => $id, 'client_id' => (int) $record->client_id, 'archived' => true, 'scope' => 'client'];
     }
@@ -105,6 +106,6 @@ final class CampaignCrudService
 
     private function read(int $id): array
     {
-        return (array) DB::table('marketing_campaigns')->where('id', $id)->first(['id', 'client_id', 'owner_user_id', 'name', 'status', 'platform', 'source', 'start_date', 'end_date', 'objective', 'budget', 'currency', 'target', 'archived_at']);
+        return (array) DB::table('marketing_campaigns')->where('id', $id)->whereNull('archived_at')->first(['id', 'client_id', 'owner_user_id', 'name', 'status', 'platform', 'source', 'start_date', 'end_date', 'objective', 'budget', 'currency', 'target', 'archived_at']);
     }
 }

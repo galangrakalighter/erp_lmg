@@ -22,9 +22,9 @@ final class ContentPlanCrudService
         $this->validateMasters($clientId, $payload);
         $this->validateStatusAndPic($payload);
         $this->confirmation->consume($user, $data['confirmation_token'], 'create', 'content_plan', 0, $this->hash($payload));
-        $id = DB::table('data_jasa')->insertGetId($payload + ['produk_client_id' => $clientId, 'created_at' => now(), 'updated_at' => now()]);
-        $this->audit->record($user, 'CREATE', $id, $clientId, [], $this->safe($payload));
-        return $this->read($user, $id);
+        $id = DB::table('data_jasa')->insertGetId($payload + ['produk_client_id' => $clientId, 'archived_at' => null, 'archived_by' => null, 'created_at' => now(), 'updated_at' => now()]);
+        $this->audit->record($user, 'CREATE', $id, $clientId);
+        return $this->read($user, $id, false);
     }
 
     public function update(Authenticatable $user, int $id, array $data): array
@@ -38,7 +38,7 @@ final class ContentPlanCrudService
         $this->validateMasters((int) $plan->produk_client_id, $payload);
         $this->validateStatusAndPic($payload);
         $this->confirmation->consume($user, $data['confirmation_token'], 'update', 'content_plan', $id, $this->hash($payload));
-        DB::table('data_jasa')->where('id', $id)->update($payload + ['updated_at' => now()]);
+        DB::table('data_jasa')->where('id', $id)->whereNull('archived_at')->update($payload + ['updated_at' => now()]);
         $this->audit->record($user, 'UPDATE', $id, (int) $plan->produk_client_id, [], $this->safe($payload));
         return $this->read($user, $id);
     }
@@ -50,8 +50,9 @@ final class ContentPlanCrudService
         $this->assertArchiveReason($data['reason'] ?? null);
         $payload = ['reason' => $data['reason']];
         $this->confirmation->consume($user, $data['confirmation_token'], 'archive', 'content_plan', $id, $this->hash(['client_id' => (int) $plan->produk_client_id, 'payload' => $payload]));
-        DB::table('data_jasa')->where('id', $id)->update(['archived_at' => now(), 'archived_by' => $user->getAuthIdentifier(), 'updated_at' => now()]);
-        $this->audit->record($user, 'ARCHIVE', $id, (int) $plan->produk_client_id, [], $payload);
+        $updated = DB::table('data_jasa')->where('id', $id)->whereNull('archived_at')->update(['archived_at' => now(), 'archived_by' => $user->getAuthIdentifier(), 'updated_at' => now()]);
+        abort_if($updated === 0, 409, 'Content plan sudah diarsipkan.');
+        $this->audit->record($user, 'ARCHIVE', $id, (int) $plan->produk_client_id);
         return ['id' => $id, 'archived_at' => now('Asia/Jakarta')->toIso8601String(), 'scope' => 'client'];
     }
 
@@ -78,9 +79,11 @@ final class ContentPlanCrudService
         return ['action' => $action, 'module' => 'content_plan', 'object_id' => $objectId, 'client_id' => $clientId, 'draft' => $draft, 'expires_in' => 300, 'confirmation_token' => $token];
     }
 
-    private function read(Authenticatable $user, int $id): array
+    private function read(Authenticatable $user, int $id, bool $activeOnly = true): array
     {
-        $plan = DB::table('data_jasa')->where('id', $id)->first(['id', 'produk_client_id', 'judul', 'inspirasi', 'note', 'platform', 'content_source', 'tanggal_posting', 'status_id', 'pic', 'priority', 'menit', 'archived_at']);
+        $query = DB::table('data_jasa')->where('id', $id);
+        if ($activeOnly) $query->whereNull('archived_at');
+        $plan = $query->first(['id', 'produk_client_id', 'judul', 'inspirasi', 'note', 'platform', 'content_source', 'tanggal_posting', 'status_id', 'pic', 'priority', 'menit', 'archived_at']);
         $this->policy->assert($user, (int) $plan->produk_client_id, MarketingCrudPermissions::CONTENT_PLAN_UPDATE);
         return (array) $plan;
     }

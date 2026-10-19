@@ -5,6 +5,7 @@ namespace App\Services\MarketResearch;
 use LaravelEasyRepository\ServiceApi;
 use App\Repositories\MarketResearch\MarketResearchRepository;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 class MarketResearchServiceImplement extends ServiceApi implements MarketResearchService{
 
     /**
@@ -35,6 +36,7 @@ class MarketResearchServiceImplement extends ServiceApi implements MarketResearc
           $market = DB::table($getData[$i])
                     ->join('produk_client', 'produk_client.id', '=', $getData[$i].'.produk_client_id')
                     ->where($getData[$i].'.produk_client_id', $id)
+                    ->when(Schema::hasColumn($getData[$i], 'archived_at'), fn ($query) => $query->whereNull($getData[$i].'.archived_at'))
                     ->whereIn($getData[$i].'.platform', $platforms)
                     ->when(count($platforms) > 1, fn ($query) => $query->whereNotIn(
                         $getData[$i].'.id',
@@ -47,6 +49,7 @@ class MarketResearchServiceImplement extends ServiceApi implements MarketResearc
           $jumlahData = DB::table($getData[$i])
                     ->select('produk_client_id', DB::raw('count(*) as total'))
                     ->where('produk_client_id', $id)
+                    ->when(Schema::hasColumn($getData[$i], 'archived_at'), fn ($query) => $query->whereNull('archived_at'))
                     ->whereIn('platform', $platforms)
                     ->when(count($platforms) > 1, fn ($query) => $query->whereNotIn(
                         'id',

@@ -40,7 +40,7 @@ final class BrandGuidelineDatabaseOAuthTest extends ContentPlanDatabaseOAuthTest
             ->assertOk()->assertJsonPath('data.archived', true);
         $this->assertDatabaseHas('brand_identify', ['id' => $id, 'archived_by' => $this->authorizedUser->id]);
         $this->withToken($bearer)->getJson("/api/oauth-marketing-mcp/clients/{$this->allowedClient}/brand-guidelines")
-            ->assertOk()->assertJsonMissing(['id' => $id]);
+            ->assertOk()->assertJsonPath('pagination.total', 1)->assertJsonPath('data.0.section', 'content_pillar');
 
         $this->activityLog->flush();
         $records = array_values(array_filter($this->firestore->records, fn (array $row): bool => ($row['data']['module'] ?? null) === 'brand_guideline'));

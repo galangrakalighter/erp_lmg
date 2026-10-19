@@ -51,10 +51,12 @@ final class MarketingDocumentUploadService
                         'client_id' => $clientId, 'created_by' => $user->getAuthIdentifier(),
                         'name' => $metadata['name'], 'asset_type' => 'document', 'mime_type' => 'application/pdf',
                         'description' => $metadata['description'] ?? null, 'approval_status' => 'draft',
-                        'current_version' => 0, 'created_at' => now(), 'updated_at' => now(),
+                        'current_version' => 0, 'archived_at' => null, 'archived_by' => null,
+                        'created_at' => now(), 'updated_at' => now(),
                     ]);
                 }
-                $current = (int) DB::table('marketing_asset_metadata')->where('id', $id)->lockForUpdate()->value('current_version');
+                $current = DB::table('marketing_asset_metadata')->where('id', $id)->whereNull('archived_at')->lockForUpdate()->value('current_version');
+                abort_if($current === null, 409, 'Dokumen sudah diarsipkan.');
                 $version = $current + 1;
                 DB::table('marketing_asset_versions')->insert([
                     'asset_metadata_id' => $id, 'version_number' => $version, 'label' => 'v'.$version,
@@ -62,7 +64,7 @@ final class MarketingDocumentUploadService
                     'original_name' => $safeOriginal, 'mime_type' => 'application/pdf', 'file_size' => $file->getSize(),
                     'storage_disk' => $disk, 'storage_path' => $path, 'upload_status' => 'uploaded', 'created_at' => now(),
                 ]);
-                DB::table('marketing_asset_metadata')->where('id', $id)->update(['mime_type' => 'application/pdf', 'current_version' => $version, 'updated_at' => now()]);
+                DB::table('marketing_asset_metadata')->where('id', $id)->whereNull('archived_at')->update(['mime_type' => 'application/pdf', 'current_version' => $version, 'updated_at' => now()]);
                 return ['document_id' => (int) $id, 'client_id' => $clientId, 'file_name' => $safeOriginal, 'mime' => 'application/pdf', 'size' => (int) $file->getSize(), 'version' => $version, 'upload_status' => 'uploaded', 'timestamp' => now('Asia/Jakarta')->toIso8601String()];
             });
         } catch (Throwable $exception) {

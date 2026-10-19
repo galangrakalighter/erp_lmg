@@ -10,7 +10,7 @@ final class MarketingTaskMutationAudit
 
     public function record(Authenticatable $user, string $action, int $id, int $clientId, array $data = []): void
     {
-        $safe = array_diff_key($data, array_flip(['confirmation_token', 'password', 'credential', 'secret', 'private_key', 'completion_proof_path']));
+        $safe = in_array(strtoupper($action), ['CREATE', 'ARCHIVE'], true) ? [] : array_diff_key($data, array_flip(['confirmation_token', 'password', 'credential', 'secret', 'private_key', 'completion_proof_path']));
         $tool = match (strtoupper($action)) {
             'CREATE' => 'marketing_create_task', 'UPDATE' => 'marketing_update_task', 'ARCHIVE' => 'marketing_archive_task',
             'CHANGE_PIC' => 'marketing_change_task_pic', 'CHANGE_DEADLINE' => 'marketing_change_task_deadline',

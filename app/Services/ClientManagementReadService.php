@@ -53,6 +53,7 @@ class ClientManagementReadService
     {
         $this->access->assertClientAccess($user, $clientId);
         $audience = Schema::hasTable('target_audience') ? DB::table('target_audience')->where('produk_client_id', $clientId)
+            ->whereNull('archived_at')
             ->get(['id', 'indikator', 'usia', 'gender', 'negara', 'wilayah', 'pekerjaan', 'gaya_hidup', 'status_sosial', 'penggunaan', 'manfaat', 'platform']) : collect();
         $projects = $this->projectSummary($clientId);
         return ['client_id' => $clientId, 'needs' => [], 'target_audience' => $audience->map(fn ($item) => (array) $item)->values(),
@@ -63,7 +64,7 @@ class ClientManagementReadService
     {
         $this->access->assertClientAccess($user, $clientId);
         $tasks = Schema::hasTable('task') ? DB::table('task as t')->leftJoin('users as u', 'u.id', '=', 't.pic')
-            ->where('t.project', $clientId)->orderBy('t.tanggal_deadline')->get([
+            ->where('t.project', $clientId)->whereNull('t.archived_at')->orderBy('t.tanggal_deadline')->get([
                 't.id', 't.nama_task', 't.status', 't.tanggal_mulai', 't.tanggal_deadline', 't.pic', 'u.name as pic_name', 't.priority'
             ]) : collect();
         $today = now('Asia/Jakarta')->toDateString();
@@ -97,14 +98,15 @@ class ClientManagementReadService
     public function documentsAndHistory(Authenticatable $user, int $clientId): array
     {
         $this->access->assertClientAccess($user, $clientId);
-        $documents = Schema::hasTable('file_pdf') ? DB::table('file_pdf as f')->leftJoin('divisions as d', 'd.id', '=', 'f.division_id')
+        $documents = Schema::hasTable('marketing_asset_metadata') ? DB::table('marketing_asset_metadata as f')->where('f.client_id', $clientId)->whereNull('f.archived_at')->orderByDesc('f.updated_at')->get(['f.id','f.name','f.asset_type','f.approval_status','f.created_at','f.updated_at'])->map(fn ($file) => (array) $file)->values() : collect();
+        if (! Schema::hasTable('marketing_asset_metadata') && Schema::hasTable('file_pdf')) $documents = DB::table('file_pdf as f')->leftJoin('divisions as d', 'd.id', '=', 'f.division_id')
             ->where('f.client', $clientId)->orderByDesc('f.updated_at')->get([
                 'f.id', 'f.nama_file as name', 'f.division_id', 'd.name as division_name', 'f.is_pinned', 'f.is_generated_document', 'f.is_system_template', 'f.created_at', 'f.updated_at'
             ])->map(function ($file) {
                 $file->versions = Schema::hasTable('file_pdf_versions') ? DB::table('file_pdf_versions')->where('file_pdf_id', $file->id)->count() : null;
                 return (array) $file;
-            })->values() : collect();
-        $approvals = Schema::hasTable('task') ? DB::table('task')->where('project', $clientId)
+            })->values();
+        $approvals = Schema::hasTable('task') ? DB::table('task')->where('project', $clientId)->whereNull('archived_at')
             ->where(function ($q) { $q->whereNotNull('tanggal_approve')->orWhereNotNull('tanggal_revisi'); })
             ->orderByDesc('tanggal_approve')->get(['id', 'nama_task', 'status', 'tanggal_approve as approved_at', 'tanggal_revisi as revised_at'])->map(fn ($row) => (array) $row)->values() : collect();
         $contracts = ['available' => false, 'items' => [], 'reason' => 'Tidak ada sumber kontrak kanonik yang terhubung ke client pada scope MCP.'];
@@ -139,10 +141,13 @@ class ClientManagementReadService
             })->limit(50)->get(['id', 'judul as title', 'platform'])->map(fn ($r) => ['type' => 'brief', 'id' => (int) $r->id, 'title' => $r->title, 'platform' => $r->platform]));
         }
         if (Schema::hasTable('task')) {
-            $results = $results->merge(DB::table('task')->where('project', $clientId)->where('nama_task', 'like', $like)->limit(50)->get(['id', 'nama_task as title', 'status'])->map(fn ($r) => ['type' => 'task', 'id' => (int) $r->id, 'title' => $r->title, 'status' => $r->status]));
+            $results = $results->merge(DB::table('task')->where('project', $clientId)->whereNull('archived_at')->where('nama_task', 'like', $like)->limit(50)->get(['id', 'nama_task as title', 'status'])->map(fn ($r) => ['type' => 'task', 'id' => (int) $r->id, 'title' => $r->title, 'status' => $r->status]));
         }
         if (Schema::hasTable('file_pdf')) {
             $results = $results->merge(DB::table('file_pdf')->where('client', $clientId)->where('nama_file', 'like', $like)->limit(50)->get(['id', 'nama_file as title'])->map(fn ($r) => ['type' => 'document', 'id' => (int) $r->id, 'title' => $r->title]));
+        }
+        if (Schema::hasTable('marketing_asset_metadata')) {
+            $results = $results->merge(DB::table('marketing_asset_metadata')->where('client_id', $clientId)->whereNull('archived_at')->where('name', 'like', $like)->limit(50)->get(['id', 'name as title'])->map(fn ($r) => ['type' => 'asset_metadata', 'id' => (int) $r->id, 'title' => $r->title]));
         }
         return ['client_id' => $clientId, 'query' => $query, 'results' => $results->values(), 'scope' => 'client', 'source' => 'data_jasa_task_file_pdf', 'as_of' => now('Asia/Jakarta')->toIso8601String()];
     }
@@ -163,7 +168,7 @@ class ClientManagementReadService
             $summary['latest_posting_date'] = DB::table('data_jasa')->where('produk_client_id', $clientId)->whereNull('archived_at')->max('tanggal_posting');
         }
         if (Schema::hasTable('task')) {
-            $summary['tasks'] = DB::table('task')->where('project', $clientId)->count();
+            $summary['tasks'] = DB::table('task')->where('project', $clientId)->whereNull('archived_at')->count();
         }
         return $summary;
     }

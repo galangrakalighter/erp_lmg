@@ -40,7 +40,7 @@ final class MarketingTaskCrudService
         $this->assertPic($clientId, (int) $payload['pic']);
         $this->assertContentPlan($clientId, $payload['id_manajement_konten'] ?? null);
         $this->confirmation->consume($user, $data['confirmation_token'], 'create', self::MODULE, 0, $this->hash($clientId, $payload));
-        $id = DB::table('task')->insertGetId($payload + ['project' => $clientId, 'divisi' => $divisionId, 'status' => 0, 'created_at' => now(), 'updated_at' => now()]);
+        $id = DB::table('task')->insertGetId($payload + ['project' => $clientId, 'divisi' => $divisionId, 'status' => 0, 'archived_at' => null, 'archived_by' => null, 'created_at' => now(), 'updated_at' => now()]);
         $this->audit->record($user, 'CREATE', $id, $clientId, $payload);
 
         return $this->read($id);
@@ -54,7 +54,7 @@ final class MarketingTaskCrudService
         abort_if(isset($payload['tanggal_mulai']) && $payload['tanggal_mulai'] > $task->tanggal_deadline, 422, 'Tanggal mulai tidak boleh setelah deadline task.');
         $this->assertContentPlan((int) $task->project, $payload['id_manajement_konten'] ?? null);
         $this->confirmation->consume($user, $data['confirmation_token'], 'update', self::MODULE, $id, $this->hash((int) $task->project, $payload));
-        DB::table('task')->where('id', $id)->update($payload + ['updated_at' => now()]);
+        DB::table('task')->where('id', $id)->whereNull('archived_at')->update($payload + ['updated_at' => now()]);
         $this->audit->record($user, 'UPDATE', $id, (int) $task->project, $payload);
 
         return $this->read($id);
@@ -67,8 +67,9 @@ final class MarketingTaskCrudService
         $this->assertArchiveReason($data['reason'] ?? null);
         $payload = ['reason' => $data['reason']];
         $this->confirmation->consume($user, $data['confirmation_token'], 'archive', self::MODULE, $id, $this->hash((int) $task->project, $payload));
-        DB::table('task')->where('id', $id)->update(['archived_at' => now(), 'archived_by' => $user->getAuthIdentifier(), 'updated_at' => now()]);
-        $this->audit->record($user, 'ARCHIVE', $id, (int) $task->project, $payload);
+        $updated = DB::table('task')->where('id', $id)->whereNull('archived_at')->update(['archived_at' => now(), 'archived_by' => $user->getAuthIdentifier(), 'updated_at' => now()]);
+        abort_if($updated === 0, 409, 'Task sudah diarsipkan.');
+        $this->audit->record($user, 'ARCHIVE', $id, (int) $task->project);
 
         return ['id' => $id, 'client_id' => (int) $task->project, 'archived' => true, 'scope' => 'client'];
     }
@@ -95,7 +96,7 @@ final class MarketingTaskCrudService
         $this->confirmation->consume($user, $data['confirmation_token'], 'change_status', self::MODULE, $id, $this->hash((int) $task->project, $payload));
         $update = $payload + ['updated_at' => now()];
         if ((int) $payload['status'] === 2) $update['tanggal_revisi'] = now('Asia/Jakarta')->toDateString();
-        DB::table('task')->where('id', $id)->update($update);
+        DB::table('task')->where('id', $id)->whereNull('archived_at')->update($update);
         $this->audit->record($user, 'CHANGE_STATUS', $id, (int) $task->project, $payload);
 
         return $this->read($id);
@@ -110,7 +111,7 @@ final class MarketingTaskCrudService
         $payload = ['note' => $data['note'] ?? null];
         $this->confirmation->consume($user, $data['confirmation_token'], 'complete', self::MODULE, $id, $this->hash((int) $task->project, $payload));
         $status = (int) $task->status === 9 ? 7 : 4;
-        DB::table('task')->where('id', $id)->update(['status' => $status, 'tanggal_approve' => now('Asia/Jakarta')->toDateString(), 'updated_at' => now()]);
+        DB::table('task')->where('id', $id)->whereNull('archived_at')->update(['status' => $status, 'tanggal_approve' => now('Asia/Jakarta')->toDateString(), 'updated_at' => now()]);
         $this->audit->record($user, 'COMPLETE', $id, (int) $task->project, ['status' => $status, 'note' => $payload['note']]);
 
         return $this->read($id);
@@ -123,7 +124,7 @@ final class MarketingTaskCrudService
         $payload = $this->payload($action, $data);
         $guard?->__invoke($task, $payload);
         $this->confirmation->consume($user, $data['confirmation_token'], $action, self::MODULE, $id, $this->hash((int) $task->project, $payload));
-        DB::table('task')->where('id', $id)->update($payload + ['updated_at' => now()]);
+        DB::table('task')->where('id', $id)->whereNull('archived_at')->update($payload + ['updated_at' => now()]);
         $this->audit->record($user, strtoupper($action), $id, (int) $task->project, $payload);
 
         return $this->read($id);
@@ -175,5 +176,5 @@ final class MarketingTaskCrudService
     private function active(object $task): object { abort_if($task->archived_at, 409, 'Task sudah diarsipkan.'); return $task; }
     private function hash(int $clientId, array $payload): string { ksort($payload); return hash('sha256', json_encode(['client_id' => $clientId, 'payload' => $payload], JSON_THROW_ON_ERROR)); }
     private function assertArchiveReason(?string $reason): void { abort_if($reason === null || trim($reason) === '', 422, 'reason_required'); abort_if(mb_strlen(trim($reason)) < 5 || mb_strlen($reason) > 500, 422, 'reason_invalid'); }
-    private function read(int $id): array { return (array) DB::table('task')->where('id', $id)->first(['id', 'nama_task', 'project as client_id', 'divisi as division_id', 'pic as pic_id', 'priority', 'menit as estimated_minutes', 'id_manajement_konten as content_plan_id', 'tanggal_mulai as start_date', 'tanggal_deadline as deadline', 'note', 'status', 'jam_mulai as start_time', 'tanggal_approve as completed_at', 'archived_at']); }
+    private function read(int $id): array { return (array) DB::table('task')->where('id', $id)->whereNull('archived_at')->first(['id', 'nama_task', 'project as client_id', 'divisi as division_id', 'pic as pic_id', 'priority', 'menit as estimated_minutes', 'id_manajement_konten as content_plan_id', 'tanggal_mulai as start_date', 'tanggal_deadline as deadline', 'note', 'status', 'jam_mulai as start_time', 'tanggal_approve as completed_at', 'archived_at']); }
 }

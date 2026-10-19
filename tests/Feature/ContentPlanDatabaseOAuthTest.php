@@ -82,6 +82,14 @@ class ContentPlanDatabaseOAuthTest extends TestCase
         $id = (int) $created->json('data.id');
         $this->assertDatabaseHas('oauth_access_tokens', ['id' => $tokenId, 'user_id' => $this->authorizedUser->id, 'revoked' => false]);
         $this->assertDatabaseHas('data_jasa', ['id' => $id, 'produk_client_id' => $this->allowedClient, 'judul' => 'OAuth database plan']);
+        $this->assertDatabaseHas('data_jasa', ['id' => $id, 'archived_at' => null, 'archived_by' => null]);
+
+        // Identical active payloads are independent records with fresh IDs.
+        $duplicateToken = $this->confirmation($bearer, 'create', $this->allowedClient, 0, $createPayload);
+        $duplicate = $this->withToken($bearer)->postJson('/api/oauth-marketing-crud/content-plans', $createPayload + ['client_id' => $this->allowedClient, 'confirmation_token' => $duplicateToken])->assertCreated();
+        $duplicateId = (int) $duplicate->json('data.id');
+        $this->assertNotSame($id, $duplicateId);
+        $this->assertDatabaseHas('data_jasa', ['id' => $duplicateId, 'archived_at' => null]);
 
         $updatePayload = ['judul' => 'OAuth updated'];
         $updateToken = $this->confirmation($bearer, 'update', $this->allowedClient, $id, $updatePayload);
@@ -98,7 +106,7 @@ class ContentPlanDatabaseOAuthTest extends TestCase
 
         $this->activityLog->flush();
         $mutationRecords = array_values(array_filter($this->firestore->records, fn (array $record): bool => ($record['data']['module'] ?? null) === 'content_plan'));
-        $this->assertCount(3, $mutationRecords);
+        $this->assertCount(4, $mutationRecords);
         foreach ($mutationRecords as $record) {
             $audit = $record['data'];
             $this->assertSame((string) $this->authorizedUser->id, $audit['user_id']);

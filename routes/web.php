@@ -458,6 +458,10 @@ Route::post('/ai/chat-proxy', function (Request $request) {
 Route::middleware('guest')->group(function () {
     Route::get('/', [App\Http\Controllers\LoginController::class, 'showLoginForm'])->name('login');
     Route::post('/post-login', [App\Http\Controllers\LoginController::class, 'login'])->name('post-login');
+    Route::get('/login/otp', [App\Http\Controllers\LoginController::class, 'showOtpForm'])->name('login.otp.form');
+    Route::post('/login/otp', [App\Http\Controllers\LoginController::class, 'verifyOtp'])->name('login.otp.verify');
+    Route::post('/login/otp/resend', [App\Http\Controllers\LoginController::class, 'resendOtp'])->name('login.otp.resend');
+    Route::post('/login/otp/cancel', [App\Http\Controllers\LoginController::class, 'cancelOtp'])->name('login.otp.cancel');
 });
 Route::post('/n8n-trigger', [App\Http\Controllers\BarangClientController::class, 'trigger'])->name('n8n.trigger');
 Route::post('/n8n-trigger-baru-lagi', [App\Http\Controllers\BarangClientController::class, 'triggerBaru'])->name('n8n.triggerBaru');

@@ -341,19 +341,31 @@ class CRMController extends Controller
                 : 'tanggal_chat';
             $perPage = min(100, max(10, (int) $request->input('per_page', 25)));
 
+            // Hindari whereDate() pada kolom timestamp Supabase. Fungsi SQL
+            // tersebut membungkus kolom dengan DATE(...), sehingga index tanggal
+            // tidak dapat digunakan dan request CRM mudah timeout.
+            $timezone = 'Asia/Jakarta';
+            $rangeStart = \Carbon\Carbon::parse($startDate, $timezone)
+                ->startOfDay()
+                ->utc();
+            $rangeEndExclusive = \Carbon\Carbon::parse($endDate, $timezone)
+                ->addDay()
+                ->startOfDay()
+                ->utc();
+
             $query = CRM_HUMAN::query()
                 ->whereNotNull(
                     $dateColumn
                 )
-                ->whereDate(
+                ->where(
                     $dateColumn,
                     '>=',
-                    $startDate
+                    $rangeStart
                 )
-                ->whereDate(
+                ->where(
                     $dateColumn,
-                    '<=',
-                    $endDate
+                    '<',
+                    $rangeEndExclusive
                 );
 
             $this->excludeHiddenCrmPhones($query);

@@ -156,7 +156,7 @@
                             </h2>
 
                             <p class="mt-3 text-sm leading-6 text-zinc-500">
-                                Enter your credentials to access the ERP system.
+                                Masukkan email dan password. Kami akan mengirim kode OTP sebelum Anda masuk.
                             </p>
                         </div>
 
@@ -226,7 +226,7 @@
                                 type="submit"
                                 class="group flex w-full items-center justify-center gap-3 rounded-xl bg-black px-5 py-3.5 text-sm font-semibold text-white transition duration-200 hover:-translate-y-0.5 hover:bg-zinc-800 hover:shadow-xl active:translate-y-0"
                             >
-                                <span id="loginButtonLabel">Sign In</span>
+                                <span id="loginButtonLabel">Kirim Kode OTP</span>
 
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -293,13 +293,13 @@
         function resetLoginButton() {
             loginButton.disabled = false;
             loginButton.classList.remove('cursor-wait', 'opacity-80');
-            loginButtonLabel.textContent = 'Sign In';
+            loginButtonLabel.textContent = 'Kirim Kode OTP';
         }
 
         loginForm.addEventListener('submit', function () {
             loginButton.disabled = true;
             loginButton.classList.add('cursor-wait', 'opacity-80');
-            loginButtonLabel.textContent = 'Signing in…';
+            loginButtonLabel.textContent = 'Mengirim OTP…';
         });
 
         window.addEventListener('pageshow', resetLoginButton);
